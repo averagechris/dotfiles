@@ -1,4 +1,3 @@
-" A
 " --- the plugins are between the call plug begin and end
 call plug#begin('~/.vim/plugged')
 
@@ -72,6 +71,9 @@ autocmd Filetype go command! -bang AS call go#alternate#Switch(<bang>0, 'split')
 let g:syntastic_go_checkers = ['golint', 'govet', 'errcheck']
 let g:syntastic_mode_map = { 'mode': 'active', 'passive_filetypes': ['go'] }
 let g:go_list_type = "quickfix"
+
+" -- ctrl p config
+set wildignore+=*/.git/*,*/node_modules/*,*/vendor/**/*  " -- hide .git, node_modules, vendor/
 
 " -- LOOK AND FEEL
 set background=dark
