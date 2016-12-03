@@ -1,16 +1,12 @@
+" A
 " --- the plugins are between the call plug begin and end
 call plug#begin('~/.vim/plugged')
 
 Plug 'bronson/vim-trailing-whitespace'
-Plug 'rking/ag.vim'
 Plug 'SirVer/ultisnips', { 'on': [] } | Plug 'honza/vim-snippets'
 Plug 'Valloric/YouCompleteMe', { 'on': [] }
 Plug 'rdnetto/YCM-Generator', { 'branch': 'stable'}
 Plug 'tpope/vim-surround'
-
-" Unite depend on vimproc
-Plug 'Shougo/vimproc.vim',{'do':'make'}
-Plug 'Shougo/unite.vim'
 
 " Swift syntax and indent files
 Plug 'keith/swift.vim'
@@ -79,7 +75,6 @@ let g:go_list_type = "quickfix"
 
 " -- LOOK AND FEEL
 set background=dark
-colorscheme Tomorrow-Night
 filetype on
 syntax enable  " enable syntax processing
 set number  " set line numbers
@@ -121,8 +116,6 @@ set nowrap
 nnoremap gV `[v`]
 " jj  - is escape in insert mode
 inoremap jj <esc>
-"  \a  - invoces :Ag
-nnoremap <leader>a :Ag
 " \j  - next buffer
 nnoremap <leader>j :bn<ENTER>
 " \jw  - next buffer in new window
