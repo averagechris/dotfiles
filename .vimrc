@@ -6,6 +6,9 @@ Plug 'SirVer/ultisnips', { 'on': [] } | Plug 'honza/vim-snippets'
 Plug 'Valloric/YouCompleteMe', { 'on': [] }
 Plug 'rdnetto/YCM-Generator', { 'branch': 'stable'}
 Plug 'tpope/vim-surround'
+Plug 'vim-airline/vim-airline'
+Plug 'vim-airline/vim-airline-themes'
+Plug 'tpope/vim-fugitive'
 
 " Swift syntax and indent files
 Plug 'keith/swift.vim'
@@ -58,6 +61,13 @@ highlight link SyntasticWarningSign SignColumn
 highlight link SyntasticStyleErrorSign SignColumn
 highlight link SyntasticStyleWarningSign SignColumn
 
+" -- status line config
+set laststatus=2
+set noshowmode
+let g:airline_theme='serene'
+let g:airline#extensions#tabline#enabled = 1
+
+
 " -- VIM-GO config
 let g:go_fmt_command = "goimports"
 let g:go_metalinter_autosave = 1
@@ -72,8 +82,8 @@ let g:syntastic_go_checkers = ['golint', 'govet', 'errcheck']
 let g:syntastic_mode_map = { 'mode': 'active', 'passive_filetypes': ['go'] }
 let g:go_list_type = "quickfix"
 
-" -- ctrl p config
-set wildignore+=*/.git/*,*/node_modules/*,*/vendor/**/*  " -- hide .git, node_modules, vendor/
+" -- ctr-p config
+set wildignore+=*/.git/*,*/node_modules/*  " -- hide .git, node_modules
 
 " -- LOOK AND FEEL
 set background=dark
@@ -84,21 +94,23 @@ set showcmd  " show command in bottom bar
 set lazyredraw  " redraw only when needed. (speeds things up)
 set showmatch  " highlight matching braces, brackets, parens
 
-" -- save on buffer switch
 set autowrite
+set hidden
+set history=30
+set scrolloff=8  " scroll down when 8 lines away from being off screen
+set sidescrolloff=20 " scroll sideways when 20 columns away from being off screen
+set sidescroll=1
 
 " -- SEARCHING
 set ignorecase  " ignore case for searches
 set incsearch  " search as characters are input
 set hlsearch  " highlight search matches
 nnoremap <silent> <Esc> :nohlsearch<Bar>:echo<CR>
-
-" -- Keep more info in memory to speed things up:
-set hidden
-set history=100
+set magic
 
 " -- INDENT SETTINGS
 autocmd Filetype html setlocal ts=2 sw=2 expandtab
+autocmd Filetype css setlocal ts=2 sw=2 expandtab
 autocmd Filetype ruby setlocal ts=2 sw=2 expandtab
 autocmd Filetype javascript setlocal ts=4 sw=4 sts=0 noexpandtab
 autocmd Filetype c setlocal ts=4 sw=4 expandtab cindent
@@ -122,8 +134,12 @@ inoremap jj <esc>
 nnoremap <leader>j :bn<ENTER>
 " \jw  - next buffer in new window
 nnoremap <leader>wj :sbnext<ENTER>
+" \k  - prev buffer
+nnoremap <leader>k :bp<ENTER>
 " \pp - paste into buffer
 nnoremap <leader>pp :r !pbpaste<CR>
+" \cc -- copy visually selected text into system clipboard
+vmap <leader>cc :'<,'>:w !pbcopy<CR>
 " -- GO lang specific remapings
 " \rr go run file
 autocmd FileType go nmap <leader>rr  <Plug>(go-run)
