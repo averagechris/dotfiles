@@ -87,6 +87,7 @@ set wildignore+=*/.git/*,*/node_modules/*  " -- hide .git, node_modules
 
 " -- LOOK AND FEEL
 set background=dark
+set nocompatible
 filetype on
 syntax enable  " enable syntax processing
 set number  " set line numbers

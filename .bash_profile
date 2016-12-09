@@ -10,7 +10,8 @@ source /usr/local/Cellar/git/2.11.0/etc/bash_completion.d/git-prompt.sh
 # PATH SETTINGS
 ################
 export GOPATH=$HOME/go_projects
-export PATH=/usr/local/bin:$GOPATH/bin:$PATH
+export YARNPATH=`yarn global bin`
+export PATH=/usr/local/bin:$GOPATH/bin:$YARNPATH:$PATH
 
 # swift repl fix - due to brew python being at the front of $PATH variable
 alias swift="PATH=/usr/bin:$PATH swift"
@@ -38,12 +39,12 @@ alias lr='ls -R | grep ":$" | sed -e '\''s/:$//'\'' -e '\''s/[^-][^\/]*\//--/g'\
 ###################
 # QUICK NAV Aliases
 ###################
-export GOSRC=$GOPATH/src/github.com/mistahchris/
+export GOCODE=$GOPATH/src/github.com/mistahchris/
 
 #####################
 # Eventbrite Aliases
 #####################
-export EBPATH='~/Eb-Github/eventbrite/'
+export EBPATH='/Users/ccummings/Eb-Github/eventbrite'
 
 #######################
 # GENERAL USE FUNCTIONS
@@ -72,6 +73,10 @@ zip -r "$1".zip "$1" ;
 mcd () {
         mkdir -p $1;
         cd $1;
+}
+
+calc () {
+    echo "print($@)" | python3
 }
 
 # cdfinder changes the directory to the frontmost open finder window
@@ -106,8 +111,13 @@ parseBranch() {
 # switches back to whatever branch it was originally
 pullall () {
         dir=`pwd`
+        echo "Begin pulling new master branch code for every child repo..."
+        echo "..."
         for REPO in `ls -l | grep ^d | grep -oE '[^ ]+$'`;
             do
+                echo "----------------------------"
+                echo ""
+
                 command -p cd "$REPO";
                 if [ -d ".git" ]; then
                         cbranch=`parseBranch`
@@ -151,13 +161,13 @@ extract () {
 }
 
 
-####################
-# STUFF TO LOAD LAST
-####################
+#############################
+# IMPRTANT STUFF TO LOAD LAST
+#############################
 export CLICOLOR=1  # enable colors
 
 # terminal prompt
-PS1='\u @ \[\033[0;35m\]\h\[\033[0m\]\n|   \[\033[1;34m\]\w\[\033[0;32m\]$(__git_ps1)\[\033[0m\]\n└─ $ '
+PS1='----------\n\u @ \[\033[0;35m\]\h\[\033[0m\]\n|   \[\033[1;34m\]\w\[\033[0;32m\]$(__git_ps1)\[\033[0m\]\n└─ $ '
 
 # set vi mode
 set -o vi
