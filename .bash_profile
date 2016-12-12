@@ -45,6 +45,8 @@ export GOCODE=$GOPATH/src/github.com/mistahchris/
 # Eventbrite Aliases
 #####################
 export EBPATH='/Users/ccummings/Eb-Github/eventbrite'
+export ARCANIST_INSTALL_DIR=/Users/ccummings/.evbdevtools
+source $ARCANIST_INSTALL_DIR/devtools/scripts/devenv_bash/arcanist_helpers.sh
 
 #######################
 # GENERAL USE FUNCTIONS
@@ -99,6 +101,15 @@ EOT
 # sets the contents of a file to the macOS clipboard
 copy () {
         cat $1 | pbcopy
+}
+
+# kill a process by name
+die () {
+    name=$1
+    firstChar=${name:0:1}
+    rest=${name:1:${#name}}
+    pid=`ps aux | grep "[$firstChar]$rest" | awk '{print $2}'`
+    kill $pid
 }
 
 # extracts the git branch name
