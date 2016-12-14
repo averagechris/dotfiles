@@ -1,3 +1,5 @@
+# this is pretty old and is prob worthless at this point
+
 # set vi mode by default
 set -o vi
 
