@@ -44,10 +44,11 @@ export GOCODE=$GOPATH/src/github.com/mistahchris/
 #####################
 # Eventbrite Aliases
 #####################
-export EBPATH='/Users/ccummings/Eb-Github/eventbrite'
-export ARCANIST_INSTALL_DIR=/Users/ccummings/.evbdevtools
-source $ARCANIST_INSTALL_DIR/devtools/scripts/devenv_bash/arcanist_helpers.sh
+export EBPATH=~/Eb-Github/eventbrite
+export ARCANISTHELPERS=~/.evbdevtools/devtools/scripts/devenv_bash/arcanist_helpers.sh
+test -f $ARCANISTHELPERS && source $ARCANISTHELPERS
 
+test -f ~/.bashrc && source ~/.bashrc
 #######################
 # GENERAL USE FUNCTIONS
 #######################
