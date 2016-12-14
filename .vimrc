@@ -121,9 +121,10 @@ filetype indent on
 imap <S-tab> <C-d>
 set smartindent
 set autoindent
-set tabstop=4  " number of visual spaces per TAB
-set softtabstop=4  " number of spaces in tab when editing
-set expandtab  " tabs are spaces
+set tabstop=4
+set shiftwidth=4
+set softtabstop=4
+set expandtab
 set nowrap
 
 " -- KEY BINDINGS / REMAPS
