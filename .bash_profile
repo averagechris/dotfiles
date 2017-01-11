@@ -82,7 +82,7 @@ calc () {
     echo "print($@)" | python3
 }
 
-# cdfinder changes the directory to the frontmost open finder window
+    # cdfinder changes the directory to the frontmost open finder window
     cdfinder () {
         currFolderPath=$( /usr/bin/osascript <<EOT
             tell application "Finder"

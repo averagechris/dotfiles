@@ -118,6 +118,7 @@ autocmd Filetype c setlocal ts=4 sw=4 expandtab cindent
 autocmd Filetype swift setlocal ts=4 sw=4 expandtab cindent
 autocmd BufNewFile,BufRead *.go setlocal noexpandtab ts=4 sw=4
 filetype indent on
+filetype plugin indent on
 imap <S-tab> <C-d>
 set smartindent
 set autoindent
