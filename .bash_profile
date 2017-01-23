@@ -1,6 +1,3 @@
-# Load .bashrc if it exists
-test -f ~/.bashrc && source ~/.bashrc
-
 # Load brew git completion and git prompt scripts
 source /usr/local/Cellar/git/2.11.0/etc/bash_completion.d/git-completion.bash
 source /usr/local/Cellar/git/2.11.0/etc/bash_completion.d/git-prompt.sh
@@ -45,6 +42,7 @@ export GOCODE=$GOPATH/src/github.com/mistahchris/
 # Eventbrite Aliases
 #####################
 export EBPATH=~/Eb-Github/eventbrite
+export ARCANIST_INSTALL_DIR=/Users/ccummings/.evbdevtools
 export ARCANISTHELPERS=~/.evbdevtools/devtools/scripts/devenv_bash/arcanist_helpers.sh
 test -f $ARCANISTHELPERS && source $ARCANISTHELPERS
 
@@ -153,25 +151,37 @@ pullall () {
 # useful for extracting compressed folders
 extract () {
     if [ -f $1 ] ; then
-      case $1 in
-        *.tar.bz2)   tar xjf $1     ;;
-        *.tar.gz)    tar xzf $1     ;;
-        *.bz2)       bunzip2 $1     ;;
-        *.rar)       unrar e $1     ;;
-        *.gz)        gunzip $1      ;;
-        *.tar)       tar xf $1      ;;
-        *.tbz2)      tar xjf $1     ;;
-        *.tgz)       tar xzf $1     ;;
-        *.zip)       unzip $1       ;;
-        *.Z)         uncompress $1  ;;
-        *.7z)        7z x $1        ;;
-        *)     echo "'$1' cannot be extracted via extract()" ;;
-         esac
-     else
-         echo "'$1' is not a valid file"
-     fi
+        case $1 in
+            *.tar.bz2)   tar xjf $1     ;;
+            *.tar.gz)    tar xzf $1     ;;
+            *.bz2)       bunzip2 $1     ;;
+            *.rar)       unrar e $1     ;;
+            *.gz)        gunzip $1      ;;
+            *.tar)       tar xf $1      ;;
+            *.tbz2)      tar xjf $1     ;;
+            *.tgz)       tar xzf $1     ;;
+            *.zip)       unzip $1       ;;
+            *.Z)         uncompress $1  ;;
+            *.7z)        7z x $1        ;;
+            *)           echo "'$1' cannot be extracted via extract()" ;;
+        esac
+    else
+        echo "'$1' is not a valid file"
+    fi
 }
 
+
+######################
+# Eventbrite FUNCTIONS
+######################
+waiting-room-qa () {
+    eid=$1
+    if [ "$eid" -eq "$eid" ] 2>/dev/null; then
+        while true ; do curl http://evbqa.com/queue_rpc/get/$eid; done
+    else
+        echo "Try again with a valid Eventbrite Event ID"
+    fi
+}
 
 #############################
 # IMPRTANT STUFF TO LOAD LAST
@@ -186,3 +196,8 @@ set -o vi
 
 # to make sure global python packages are only installed intentionally, limit pip to running only in venv
 export PIP_REQUIRE_VIRTUALENV=true
+
+export TUG_HOME=/Users/ccummings/Eb-Github/eventbrite/docker-dev
+export DM_START=/Users/ccummings/.evbdevtools/devtools/scripts/install_devenv/dm_start.sh
+source $DM_START
+
