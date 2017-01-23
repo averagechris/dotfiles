@@ -1,0 +1,26 @@
+more info: http://stackoverflow.com/questions/22842016/launch-shell-script-on-login-in-mac-os-os-x
+
+on a new machine, you must create a plist file like the one below and place it in
+~/Library/LaunchAgents/
+
+ex: ~/Libary/LaunchAgents/startscripts.plist
+
+after you create the plist, run
+launchctl load ~/Library/LaunchAgents/pathto.plist
+
+
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>NAMEOFSCRIPTS</string>
+    <key>ProgramArguments</key>
+    <array>
+          <!-- YOUR LITERAL SCRIPT PATH HERE -->
+        <string>/Users/ccummings/script.sh</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+</dict>
+</plist>
