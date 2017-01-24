@@ -11,11 +11,11 @@ def get_snippet_content(filepath):
         return file.read()
 
 
-def add_snippet_to_te_xml(dict_of_snippets):  # abbreviation, content):
+def add_snippet_to_te_xml(dict_of_snippets):
     tree = ET.parse("./eventbrite/build/template.xml")
 
     snippet_nodes = tree.getroot()[0][3]
-    print snippet_nodes.text
+
     template_node = snippet_nodes[0]
     # is the parent node which contains a <dict> node relevant nodes are
     # abbreviation string: [1]
@@ -58,7 +58,7 @@ def main():
     abbreviation_content_dict = {}
 
     for snippet in snippets:
-        name = re.search(r"\w+(?=_snippet\.js)", snippet)
+        name = re.search(r"\w+(\s\w+)?(?=_snippet\.js)", snippet)
         if name:
             name = "$" + name.group(0)
             abbreviation_content_dict[name] = get_snippet_content(snippet)
