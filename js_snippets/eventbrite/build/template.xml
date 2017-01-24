@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>expandAfterMode</key>
+	<dict>
+		<key>expandAfterMode</key>
+		<integer>0</integer>
+		<key>groupName</key>
+		<string>yoyotest</string>
+	</dict>
+	<key>snippetsTE2</key>
+	<array>
+		<dict>
+			<key>abbreviation</key>
+            <string>##example abbreviation##</string>
+			<key>abbreviationMode</key>
+			<integer>1</integer>
+			<key>creationDate</key>
+			<date>2017-01-23T00:00:00Z</date>
+			<key>label</key>
+			<string>##example label##</string>
+			<key>modificationDate</key>
+			<date>2017-01-23T00:00:00Z</date>
+			<key>plainText</key>
+			<string>##example content##</string>
+			<key>snippetType</key>
+			<integer>4</integer>
+			<key>uuidString</key>
+			<string></string>
+		</dict>
+	</array>
+	<key>snippetUUIDs</key>
+	<array>
+		<string>##example uuid string###</string>
+	</array>
+	<key>suggestAbbreviations</key>
+	<integer>1</integer>
+	<key>updateFrequency</key>
+	<integer>0</integer>
+	<key>uuidString</key>
+	<string></string>
+	<key>writable</key>
+	<integer>1</integer>
+</dict>
+</plist>
