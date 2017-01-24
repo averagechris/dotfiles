@@ -14,8 +14,8 @@ def get_snippet_content(filepath):
 def add_snippet_to_te_xml(dict_of_snippets):  # abbreviation, content):
     tree = ET.parse("./eventbrite/build/template.xml")
 
-    snippet_nodes = tree.getroot()[0][7]
-
+    snippet_nodes = tree.getroot()[0][3]
+    print snippet_nodes.text
     template_node = snippet_nodes[0]
     # is the parent node which contains a <dict> node relevant nodes are
     # abbreviation string: [1]
@@ -38,7 +38,7 @@ def add_snippet_to_te_xml(dict_of_snippets):  # abbreviation, content):
 
     snippet_nodes.remove(template_node)
 
-    uuids_array_node = tree.getroot()[0][9]
+    uuids_array_node = tree.getroot()[0][5]
     template_node = uuids_array_node[0]
     for u in uuids:
         new_node = copy.deepcopy(template_node)
@@ -47,7 +47,7 @@ def add_snippet_to_te_xml(dict_of_snippets):  # abbreviation, content):
 
     uuids_array_node.remove(template_node)
 
-    tree.write("~/Desktop/efficiency_js_snippets.xml")
+    tree.write(os.path.expanduser("~/Desktop/efficiency_js_snippets.xml"))
 
 
 def main():
