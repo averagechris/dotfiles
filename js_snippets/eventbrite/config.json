@@ -1,7 +1,0 @@
-{
-    "snippets": [
-        {"$order": "./order_lookup.js"},
-        {"$manage": "./manage_lookup.js"},
-        {"$edit": "./edit_lookup.js"}
-    ]
-}

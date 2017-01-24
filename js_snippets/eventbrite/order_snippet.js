@@ -1,8 +1,7 @@
 var ENV = "eventbrite";
-var INPUT = `%clipboard`;
 var PATTERN = /\b[0-9]{9}\b/g;
-
-ID = INPUT.match(PATTERN);
+var INPUT = `%clipboard`;
+var ID = INPUT.match(PATTERN);
 
 if (!ID) {
 	var app = Application.currentApplication();

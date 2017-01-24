@@ -51,7 +51,8 @@ def add_snippet_to_te_xml(dict_of_snippets):  # abbreviation, content):
 
 
 def main():
-    snippets = ["./eventbrite/" + f for f in os.listdir("./eventbrite")
+    path_to_snippets = "./eventbrite/"
+    snippets = [path_to_snippets + f for f in os.listdir(path_to_snippets)
                 if "snippet.js" in f]
 
     abbreviation_content_dict = {}

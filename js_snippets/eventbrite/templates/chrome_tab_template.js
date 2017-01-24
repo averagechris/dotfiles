@@ -4,21 +4,22 @@ var INPUT = `%clipboard`;
 var ID = INPUT.match(PATTERN);
 
 if (!ID) {
+	// handle the ID not matching the needed pattern
 	var app = Application.currentApplication();
-	var message = "Please copy an event ID and try again.";
+	var message = "Please copy valid input";
 
    	app.includeStandardAdditions = true;
 	app.displayNotification(message, {
-		withTitle: "Event Lookup",
-		subtitle: "Not an Event ID",
+		withTitle: "Lookup Something",
+		subtitle: "Not valid input",
 		soundName: "text"
 	});
 } else {
-	var URL = "https://www." + ENV + ".com/myevent?eid=" + ID;
+	ID = ID[0];
+	var URL = "https://" + ENV + "" + ID + "";
 	var chrome = Application('Google Chrome');
 	var tab = chrome.Tab({url: URL});
 
 	chrome.windows[0].tabs.push(tab);
 	chrome.activate();
 }
-ignoreOutput;
