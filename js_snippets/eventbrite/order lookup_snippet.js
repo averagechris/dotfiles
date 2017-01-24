@@ -1,13 +1,13 @@
 var ENV = "eventbrite";
 var PATTERN = /\b[0-9]{9}\b/g;
-var INPUT = `%clipboard`;
+var app = Application.currentApplication();
+app.includeStandardAdditions();
+var INPUT = app.theClipboard();
 var ID = INPUT.match(PATTERN);
 
 if (!ID) {
-	var app = Application.currentApplication();
 	var message = "Please copy an order ID and try again.";
 
-   	app.includeStandardAdditions = true;
 	app.displayNotification(message, {
 		withTitle: "Order Lookup",
 		subtitle: "Not an Order ID",
