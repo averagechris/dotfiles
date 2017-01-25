@@ -1,7 +1,7 @@
 var ENV = "evbqa";
 var PATTERN = /\b[0-9]{9}\b/g;
 var app = Application.currentApplication();
-app.includeStandardAdditions();
+app.includeStandardAdditions = true;
 var INPUT = app.theClipboard();
 var ID = INPUT.match(PATTERN);
 
