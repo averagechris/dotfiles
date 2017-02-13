@@ -50,6 +50,20 @@ test -f ~/.bashrc && source ~/.bashrc
 #######################
 # GENERAL USE FUNCTIONS
 #######################
+# sets up the terminal to make working on a project easy
+
+workon () {
+    project=$1
+
+    case $project in
+        "eventbrite"*)
+            cd $EBPATH
+            ;;
+        "fastfile"*)
+            cd /Users/ccummings/Eb-Github/triage_projects/jira_modal
+            ;;
+    esac
+}
 # Always list directory contents after 'cd'
 cd () {
     builtin cd "$@"; ls -a;

@@ -113,7 +113,7 @@ set magic
 autocmd Filetype html setlocal ts=2 sw=2 expandtab
 autocmd Filetype css setlocal ts=2 sw=2 expandtab
 autocmd Filetype ruby setlocal ts=2 sw=2 expandtab
-autocmd Filetype javascript setlocal ts=4 sw=4 sts=0 noexpandtab
+autocmd Filetype javascript setlocal ts=4 sw=4 sts=0 expandtab
 autocmd Filetype c setlocal ts=4 sw=4 expandtab cindent
 autocmd Filetype swift setlocal ts=4 sw=4 expandtab cindent
 autocmd BufNewFile,BufRead *.go setlocal noexpandtab ts=4 sw=4
