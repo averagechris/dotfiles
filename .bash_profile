@@ -41,7 +41,7 @@ export GOCODE=$GOPATH/src/github.com/mistahchris/
 #####################
 # Eventbrite Aliases
 #####################
-export EBPATH=~/Eb-Github/eventbrite
+export EBPATH=~/eventbrite_github/eventbrite
 export ARCANIST_INSTALL_DIR=/Users/ccummings/.evbdevtools
 export ARCANISTHELPERS=~/.evbdevtools/devtools/scripts/devenv_bash/arcanist_helpers.sh
 test -f $ARCANISTHELPERS && source $ARCANISTHELPERS
@@ -60,7 +60,11 @@ workon () {
             cd $EBPATH
             ;;
         "fastfile"*)
-            cd /Users/ccummings/Eb-Github/triage_projects/jira_modal
+            cd /Users/ccummings/eventbrite_github/triage_projects/jira_modal
+            ;;
+        "data_nerds"*)
+            cd /Users/ccummings/mistahchris_github/data_nerds/
+            pyenv activate data_nerds
             ;;
     esac
 }
@@ -200,18 +204,24 @@ waiting-room-qa () {
 #############################
 # IMPRTANT STUFF TO LOAD LAST
 #############################
-export CLICOLOR=1  # enable colors
-
-# terminal prompt
-PS1='----------\n\u @ \[\033[0;35m\]\h\[\033[0m\]\n|   \[\033[1;34m\]\w\[\033[0;32m\]$(__git_ps1)\[\033[0m\]\n└─ $ '
-
-# set vi mode
-set -o vi
 
 # to make sure global python packages are only installed intentionally, limit pip to running only in venv
 export PIP_REQUIRE_VIRTUALENV=true
+# auto-activate pyvenv python versions when entering that dir
+export PYENV_ROOT=$HOME/.pyenv
+export PYENV_VIRTUALENV_DISABLE_PROMPT=1
+eval "$(pyenv init -)"
+eval "$(pyenv virtualenv-init -)"
 
 export TUG_HOME=/Users/ccummings/Eb-Github/eventbrite/docker-dev
 export DM_START=/Users/ccummings/.evbdevtools/devtools/scripts/install_devenv/dm_start.sh
 source $DM_START
 
+
+export CLICOLOR=1  # enable colors
+
+# terminal prompt
+PS1='  \u @ \[\033[0;35m\]\h\[\033[0m\]\n|   \[\033[1;34m\]\w\[\033[0;32m\]$(__git_ps1)\[\033[0m\]\n└─ $ '
+
+# set vi mode
+set -o vi
