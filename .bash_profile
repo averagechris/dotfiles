@@ -29,6 +29,7 @@ alias finder='open -a Finder ./'  # Open current directory in MacOS Finder
 alias path='echo -e ${PATH//:/\\n}'  # Echo all executable Paths
 alias numFiles='echo $(ls -1 | wc -l)'  # Count of non-hidden files in current dir
 alias staticip='dig +short myip.opendns.com @resolver1.opendns.com' # get the static ip of the current network
+alias vim=nvim  # use neovim instead of vim
 
 # lr is a full recursive directory listing piped to less
 alias lr='ls -R | grep ":$" | sed -e '\''s/:$//'\'' -e '\''s/[^-][^\/]*\//--/g'\'' -e '\''s/^/   /'\'' -e '\''s/-/|/'\'' | less'
@@ -65,6 +66,11 @@ workon () {
         "data_nerds"*)
             cd /Users/ccummings/mistahchris_github/data_nerds/
             pyenv activate data_nerds
+            ;;
+        "tableau_help"*)
+            cd /Users/ccummings/tableau_help
+            source ./private/config_vars.sh
+            source ./.profile.d/000-react-app-exports.sh
             ;;
     esac
 }
@@ -202,6 +208,19 @@ waiting-room-qa () {
 }
 
 #############################
+# Enable fzf key bindings
+#############################
+[ -f ~/.fzf.bash ] && source ~/.fzf.bash
+
+# use ag not find command
+export FZF_DEFAULT_COMMAND='ag -g ""'
+export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+
+_fzf_compgen_path() {
+	ag -g "" "$1"
+}
+
+#############################
 # IMPRTANT STUFF TO LOAD LAST
 #############################
 
@@ -225,3 +244,6 @@ PS1='  \u @ \[\033[0;35m\]\h\[\033[0m\]\n|   \[\033[1;34m\]\w\[\033[0;32m\]$(__g
 
 # set vi mode
 set -o vi
+
+export BAY_HOME=/Users/ccummings/eventbrite_github/eventbrite/docker-dev
+
