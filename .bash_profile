@@ -1,3 +1,4 @@
+test -f ~/.bashrc && . ~/.bashrc
 export CLICOLOR=1  # enable colors
 
 # Load brew git completion and git prompt scripts
@@ -10,6 +11,7 @@ source /usr/local/Cellar/git/2.11.0/etc/bash_completion.d/git-prompt.sh
 export GOPATH=$HOME/go_projects
 export YARNPATH=`yarn global bin`
 export PATH=/usr/local/bin:$GOPATH/bin:$YARNPATH:$PATH
+export RUST_SRC_PATH=/Users/ccummings/.multirust/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src
 
 #####################
 # Eventbrite Stuff
@@ -38,4 +40,4 @@ eval "$(pyenv virtualenv-init -)"
 PS1='  \u @ \[\033[0;35m\]\h\[\033[0m\]\n|   \[\033[1;34m\]\w\[\033[0;32m\]$(__git_ps1)\[\033[0m\]\n└─ $ '
 
 
-test -f ~/.bashrc && . .bashrc
+export PATH="$HOME/.cargo/bin:$PATH"

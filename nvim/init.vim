@@ -9,12 +9,14 @@ call plug#begin()
     Plug 'janko-m/vim-test'  " test runner engine
     Plug 'Shougo/deoplete.nvim', { 'do': ':UpdateRemotePlugins' }
     Plug 'zchee/deoplete-jedi'
+    Plug 'sebastianmarkow/deoplete-rust'
     Plug 'tpope/vim-fugitive'
     Plug 'tpope/vim-rhubarb'
     Plug 'tpope/vim-surround'
     Plug 'fatih/vim-go', { 'tag': '*' }
     Plug 'bling/vim-airline'
     Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
+    Plug 'junegunn/fzf.vim'
     Plug 'mitermayer/vim-prettier', {'do': 'yarn install', 'for': ['javascript', 'typescript', 'css', 'less', 'scss']}
 
     " syntax color plugins and indent plugins
@@ -23,6 +25,7 @@ call plug#begin()
     Plug 'othree/html5.vim'
     Plug 'hail2u/vim-css3-syntax'
     Plug 'mxw/vim-jsx'
+    Plug 'rust-lang/rust.vim'
 
 call plug#end()
 
@@ -31,8 +34,17 @@ call plug#end()
 set ignorecase
 set smartcase
 set magic
-set gdefault
 nnoremap <silent> <Esc> :nohlsearch<Bar>:echo<CR>
+
+" rg fzf config
+let g:rg_command = '
+			\ rg --column --line-number --no-heading --fized-strings --ignore-case --no-ignore --hidden --follow --color "always"
+			\ -g "!{.git,node_modules,vendor}/*" '
+command! -bang -nargs=* F call fzf#vim#grep(g:rg_command .shellescape(<q-args>), 1, <bang>0)
+nmap <C-p> :Files<cr>
+
+let g:fzf_action = {'ctrl-s': 'vsplit' }
+let g:fzf_layout = { 'down': '~20%' }
 
 " lint engine configuration options
 let g:ale_sign_column_always = 1
@@ -58,13 +70,20 @@ autocmd BufWritePre *.js,*.css,*.scss,*.less PrettierAsync  " runs prettier befo
 " vim-test config
 let test#strategy = "neovim"  " runs test in :term instead of :!
 
+" rust config
+let g:rustfmt_autosave = 1
+let g:deoplete#sources#rust#racer_binary='/Users/ccummings/.cargo/bin/racer'
+let g:deoplete#sources#rust#rust_source_path='/Users/ccummings/.multirust/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src'
+" let g:deoplete#sources#rust#documentation_max_height=20
+
+
 " -- Normal Mode Remaps
 nnoremap <leader>r :call NumberToggle()<cr>
-nnoremap <leader>j :bn<ENTER>
-nnoremap <leader>k :bp<ENTER>
-nnoremap <leader>T :vsplit term://bash<ENTER>a. ~/.bash_profile<ENTER>
-nnoremap <leader>Th :sp term://bash<ENTER>a. ~/.bash_profile<ENTER>
-nnoremap <leader>tt :TestFile<ENTER>
+nnoremap <leader>j :bn<cr>
+nnoremap <leader>k :bp<cr>
+nnoremap <leader>T :vsplit term://bash<cr>a. ~/.bash_profile<cr>
+nnoremap <leader>Th :sp term://bash<cr>a. ~/.bash_profile<cr>
+nnoremap <leader>tt :TestFile<cr>
 
 " -- Terminal Mode Remaps
 :tnoremap <Esc> <C-\><C-n>  " press escape to get into normal mode
@@ -82,8 +101,8 @@ set sidescrolloff=5
 set hidden
 colorscheme nova
 
-" -- highlight trailing whitespace and tab characters in red
-highlight ExtraWhitespace ctermbg=red guibg=red
+" -- highlight trailing whitespace and tab characters in darkgreen
+highlight ExtraWhitespace ctermbg=darkgreen guibg=darkgreen
 match ExtraWhitespace /\s\+$\|\t/
 
 "###FUNCTIONS###

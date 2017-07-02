@@ -8,12 +8,14 @@ alias mysql=/usr/local/mysql/bin/mysql
 alias mysqladmin=/usr/local/mysql/bin/mysqladmin
 
 #############################
-# Enable fzf key bindings
+# Enable fzf cool stuffs
 #############################
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
-# use ag not find command
-export FZF_DEFAULT_COMMAND='ag -g ""'
+# use ripgrep (default is find)
+export FZF_DEFAULT_COMMAND='rg --files --no-ignore --hidden --follow -g "!{.git,node_modules}/*" 2> /dev/null'
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+bind -x '"\C-p": vim $(fzf);'
+
 _fzf_compgen_path() {
     ag -g "" "$1"
 }
@@ -184,7 +186,6 @@ extract () {
         echo "'$1' is not a valid file"
     fi
 }
-
 
 ######################
 # Eventbrite FUNCTIONS
