@@ -49,7 +49,8 @@ let g:fzf_layout = { 'down': '~20%' }
 " lint engine configuration options
 let g:ale_sign_column_always = 1
 let g:ale_fixers = {
-    \ 'javascript': ['eslint']
+    \ 'javascript': ['eslint'],
+    \ 'rust': ['rustfmt']
     \ }
 
 " enable deoplete, set tab complettion remap, close scratch window automatically
@@ -72,8 +73,9 @@ let test#strategy = "neovim"  " runs test in :term instead of :!
 
 " rust config
 let g:rustfmt_autosave = 1
-let g:deoplete#sources#rust#racer_binary='~/.cargo/bin/racer'
-let g:deoplete#sources#rust#rust_source_path='~/.multirust/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src'
+let g:racer_cmd='~/.cargo/bin/racer'
+let g:deoplete#sources#rust#racer_binary=$HOME . '/.cargo/bin/racer'
+let g:deoplete#sources#rust#rust_source_path=$HOME . '/.multirust/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src'
 " let g:deoplete#sources#rust#documentation_max_height=20
 
 
@@ -101,8 +103,8 @@ set sidescrolloff=5
 set hidden
 colorscheme nova
 
-" -- highlight trailing whitespace and tab characters in darkgreen
-highlight ExtraWhitespace ctermbg=darkgreen guibg=darkgreen
+" -- highlight trailing whitespace and tab characters in black
+highlight ExtraWhitespace ctermbg=black guibg=black
 match ExtraWhitespace /\s\+$\|\t/
 
 "###FUNCTIONS###
