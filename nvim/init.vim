@@ -1,6 +1,6 @@
 " enable python plugins for neovim using neovim's own pyenv
-let g:python_host_prog = '/Users/ccummings/.pyenv/versions/neovim2/bin/python'
-let g:python3_host_prog = '/Users/ccummings/.pyenv/versions/neovim3/bin/python'
+let g:python_host_prog =$HOME . '/.pyenv/versions/neovim2/bin/python'
+let g:python3_host_prog =$HOME . '/.pyenv/versions/neovim3/bin/python'
 
 
 call plug#begin()
@@ -72,8 +72,8 @@ let test#strategy = "neovim"  " runs test in :term instead of :!
 
 " rust config
 let g:rustfmt_autosave = 1
-let g:deoplete#sources#rust#racer_binary='/Users/ccummings/.cargo/bin/racer'
-let g:deoplete#sources#rust#rust_source_path='/Users/ccummings/.multirust/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src'
+let g:deoplete#sources#rust#racer_binary='~/.cargo/bin/racer'
+let g:deoplete#sources#rust#rust_source_path='~/.multirust/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src'
 " let g:deoplete#sources#rust#documentation_max_height=20
 
 
