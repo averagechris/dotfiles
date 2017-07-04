@@ -71,12 +71,19 @@ autocmd BufWritePre *.js,*.css,*.scss,*.less PrettierAsync  " runs prettier befo
 " vim-test config
 let test#strategy = "neovim"  " runs test in :term instead of :!
 
-" rust config
+" rust language specific config
 let g:rustfmt_autosave = 1
 let g:racer_cmd='~/.cargo/bin/racer'
 let g:deoplete#sources#rust#racer_binary=$HOME . '/.cargo/bin/racer'
 let g:deoplete#sources#rust#rust_source_path=$HOME . '/.multirust/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src'
 " let g:deoplete#sources#rust#documentation_max_height=20
+
+augroup rust
+	autocmd!
+	autocmd FileType rust nnoremap <leader>rr :term cargo run<cr>
+	autocmd FileType rust nnoremap <leader>bb :term cargo build<cr>
+	"use vim-test autocmd FileType rust nnoremap <leader>tt :term cargo test<cr>
+augroup END
 
 
 " -- Normal Mode Remaps
@@ -103,8 +110,8 @@ set sidescrolloff=5
 set hidden
 colorscheme nova
 
-" -- highlight trailing whitespace and tab characters in black
-highlight ExtraWhitespace ctermbg=black guibg=black
+" -- highlight trailing whitespace and tab characters in grey
+highlight ExtraWhitespace ctermbg=grey guibg=grey
 match ExtraWhitespace /\s\+$\|\t/
 
 "###FUNCTIONS###
