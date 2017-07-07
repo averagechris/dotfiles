@@ -44,8 +44,12 @@ export GOCODE=$GOPATH/src/github.com/mistahchris/
 #######################
 # GENERAL USE FUNCTIONS
 #######################
-# sets up the terminal to make working on a project easy
+dash () {
+	query=$1
+	open dash://{$query}
+}
 
+# sets up the terminal to make working on a project easy
 workon () {
     project=$1
 

@@ -8,16 +8,21 @@ call plug#begin()
     Plug 'w0rp/ale'  " lint engine
     Plug 'janko-m/vim-test'  " test runner engine
     Plug 'Shougo/deoplete.nvim', { 'do': ':UpdateRemotePlugins' }
+    Plug 'Shougo/neosnippet'
+    Plug 'Shougo/neosnippet-snippets'
     Plug 'zchee/deoplete-jedi'
     Plug 'sebastianmarkow/deoplete-rust'
     Plug 'tpope/vim-fugitive'
     Plug 'tpope/vim-rhubarb'
     Plug 'tpope/vim-surround'
+    Plug 'scrooloose/nerdcommenter'
     Plug 'fatih/vim-go', { 'tag': '*' }
     Plug 'bling/vim-airline'
     Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
     Plug 'junegunn/fzf.vim'
     Plug 'mitermayer/vim-prettier', {'do': 'yarn install', 'for': ['javascript', 'typescript', 'css', 'less', 'scss']}
+    Plug 'rizzatti/dash.vim'  " dash is an osx documentation gui viewer
+
 
     " syntax color plugins and indent plugins
     Plug 'trevordmiller/nova-vim'
@@ -58,8 +63,17 @@ let g:deoplete#enable_at_startup = 1
 inoremap <expr><tab> pumvisible() ? "\<c-n>" : "\<tab>"
 autocmd InsertLeave,CompleteDone * if pumvisible() == 0 | pclose | endif
 
+" neosnippet config
+imap <C-k> <Plug>(neosnippet_expand_or_jump)
+smap <C-k> <Plug>(neosnippet_expand_or_jump)
+xmap <C-k> <Plug>(neosnippet_expand_target)
+
 " status line vim airline config
 let g:airline#extensions#tabline#enabled = 1
+
+" nerd comment config
+let g:NERDSpaceDelims = 1
+let g:NERDTrimTrailingWhitespace = 1
 
 " vim-javascript config
 let g:javascript_plugin_flow = 1  " enable javascript flow shit to be highlighted correctly
@@ -98,7 +112,7 @@ nnoremap <leader>tt :TestFile<cr>
 :tnoremap <Esc> <C-\><C-n>  " press escape to get into normal mode
 
 " -- Visual Mode Remaps
-vmap <leader>cc :'<,'>:w !pbcopy<CR>
+vmap <leader>cp :'<,'>:w !pbcopy<cr><cr>
 
 " -- misc settings
 set number
