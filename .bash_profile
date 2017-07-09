@@ -9,6 +9,8 @@ else
 	echo brew git not installed at expected location, to install it, run: brew install git
 fi
 
+export EDITOR=`which nvim`
+
 ################
 # PATH SETTINGS
 ################
