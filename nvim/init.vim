@@ -96,6 +96,7 @@ augroup rust
 	autocmd!
 	autocmd FileType rust nnoremap <leader>rr :term cargo run<cr>
 	autocmd FileType rust nnoremap <leader>bb :term cargo build<cr>
+	autocmd FileType rust nnoremap <leader>qb :term cargo check<cr>
 	"use vim-test autocmd FileType rust nnoremap <leader>tt :term cargo test<cr>
 augroup END
 
