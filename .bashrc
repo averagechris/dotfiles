@@ -7,6 +7,11 @@ alias swift="PATH=/usr/bin:$PATH swift"
 alias mysql=/usr/local/mysql/bin/mysql
 alias mysqladmin=/usr/local/mysql/bin/mysqladmin
 
+# enable excercism cli bash completion
+if [ -f ~/.config/exercism/exercism_completion.bash ]; then
+	source ~/.config/exercism/exercism_completion.bash
+fi
+
 #############################
 # Enable fzf cool stuffs
 #############################
