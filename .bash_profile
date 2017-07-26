@@ -2,9 +2,9 @@ test -f ~/.bashrc && . ~/.bashrc
 export CLICOLOR=1  # enable colors
 
 # Load brew git completion and git prompt scripts
-if [ -d "/usr/local/Cellar/git/2.11.0" ]; then
-	source /usr/local/Cellar/git/2.11.0/etc/bash_completion.d/git-completion.bash
-	source /usr/local/Cellar/git/2.11.0/etc/bash_completion.d/git-prompt.sh
+if [ -d "/usr/local/Cellar/git/2.13.3" ]; then
+	source /usr/local/Cellar/git/2.13.3/etc/bash_completion.d/git-completion.bash
+	source /usr/local/Cellar/git/2.13.3/etc/bash_completion.d/git-prompt.sh
 else
 	echo brew git not installed at expected location, to install it, run: brew install git
 fi
