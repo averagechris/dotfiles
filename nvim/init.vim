@@ -126,7 +126,7 @@ set hidden
 colorscheme nova
 
 " -- highlight trailing whitespace and tab characters in grey
-highlight ExtraWhitespace ctermbg=grey guibg=grey
+highlight ExtraWhitespace ctermbg=Black guibg=Black
 match ExtraWhitespace /\s\+$\|\t/
 
 "###FUNCTIONS###
