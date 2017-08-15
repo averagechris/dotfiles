@@ -53,9 +53,11 @@ let g:fzf_layout = { 'down': '~20%' }
 
 " lint engine configuration options
 let g:ale_sign_column_always = 1
+let g:ale_fix_on_save = 1
 let g:ale_fixers = {
     \ 'javascript': ['eslint'],
-    \ 'rust': ['rustfmt']
+    \ 'rust': ['rustfmt'],
+    \ 'python': ['yapf'],
     \ }
 
 " enable deoplete, set tab complettion remap, close scratch window automatically
