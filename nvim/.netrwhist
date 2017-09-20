@@ -1,7 +1,8 @@
 let g:netrw_dirhistmax  =10
-let g:netrw_dirhist_cnt =5
+let g:netrw_dirhist_cnt =6
 let g:netrw_dirhist_1='/Users/ccummings/.config/nvim'
 let g:netrw_dirhist_2='/Users/ccummings/.config'
 let g:netrw_dirhist_3='/Users/ccummings/.config/nvim'
 let g:netrw_dirhist_4='/Users/ccummings/eventbrite_github/triage_projects/jira_modal/csv_checker_src/src'
 let g:netrw_dirhist_5='/Users/ccummings/misc_projects/rust/hello_carg/.git'
+let g:netrw_dirhist_6='/private/etc'
