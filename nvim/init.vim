@@ -7,11 +7,14 @@ call plug#begin()
 
     Plug 'w0rp/ale'  " lint engine
     Plug 'janko-m/vim-test'  " test runner engine
-    Plug 'Shougo/deoplete.nvim', { 'do': ':UpdateRemotePlugins' }
+    Plug 'roxma/nvim-completion-manager'
+    Plug 'autozimu/LanguageClient-neovim', { 'do': ':UpdateRemotePlugins' }
+    Plug 'roxma/nvim-cm-tern',  {'do': 'npm install'}
+    " Plug 'Shougo/deoplete.nvim', { 'do': ':UpdateRemotePlugins' }
     Plug 'Shougo/neosnippet'
     Plug 'Shougo/neosnippet-snippets'
-    Plug 'zchee/deoplete-jedi'
-    Plug 'sebastianmarkow/deoplete-rust'
+    " Plug 'zchee/deoplete-jedi'
+    " Plug 'sebastianmarkow/deoplete-rust'
     Plug 'tpope/vim-fugitive'
     Plug 'tpope/vim-rhubarb'
     Plug 'tpope/vim-surround'
@@ -61,7 +64,7 @@ let g:ale_fixers = {
     \ }
 
 " enable deoplete, set tab complettion remap, close scratch window automatically
-let g:deoplete#enable_at_startup = 1
+" let g:deoplete#enable_at_startup = 1
 inoremap <expr><tab> pumvisible() ? "\<c-n>" : "\<tab>"
 autocmd InsertLeave,CompleteDone * if pumvisible() == 0 | pclose | endif
 
@@ -90,8 +93,8 @@ let test#strategy = "neovim"  " runs test in :term instead of :!
 " rust language specific config
 let g:rustfmt_autosave = 1
 let g:racer_cmd='~/.cargo/bin/racer'
-let g:deoplete#sources#rust#racer_binary=$HOME . '/.cargo/bin/racer'
-let g:deoplete#sources#rust#rust_source_path=$HOME . '/.multirust/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src'
+" let g:deoplete#sources#rust#racer_binary=$HOME . '/.cargo/bin/racer'
+" let g:deoplete#sources#rust#rust_source_path=$HOME . '/.multirust/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src'
 " let g:deoplete#sources#rust#documentation_max_height=20
 
 augroup rust

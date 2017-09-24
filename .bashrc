@@ -203,10 +203,21 @@ rgvim () {
     fi
 }
 
+_sleep_then_restore_clipboard() {
+	sleep 30
+	echo "$@" | pbcopy
+}
+
+lastpass() {
+	CLIPBOARD_CONTENTS=`pbpaste`
+	`lpass show -cp $@ -G`  # set the lpass cli result to clipboard
+	$(_sleep_then_restore_clipboard $CLIPBOARD_CONTENTS) &
+}
+
 ######################
 # Eventbrite FUNCTIONS
 ######################
-waiting-room-qa () {
+waiting-room-qa() {
     eid=$1
     if [ "$eid" -eq "$eid" ] 2>/dev/null; then
         while true ; do curl http://evbqa.com/queue_rpc/get/$eid; done
