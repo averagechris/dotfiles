@@ -84,7 +84,7 @@ let g:NERDTrimTrailingWhitespace = 1
 let g:javascript_plugin_flow = 1  " enable javascript flow shit to be highlighted correctly
 let g:prettier#exec_cmd_async = 1  " enable async js / css code formatting through prettier
 let g:prettier#autoformat = 0
-autocmd BufWritePre *.js,*.css,*.scss,*.less PrettierAsync  " runs prettier before saving
+" autocmd BufWritePre *.js,*.css,*.scss,*.less PrettierAsync  " runs prettier before saving
 
 
 " vim-test config

@@ -15,7 +15,8 @@ export EDITOR=`which nvim`
 # PATH SETTINGS
 ################
 export GOPATH=$HOME/go_projects
-export YARNPATH=`yarn global bin`
+export YARNPATH=/usr/local/bin
+# export YARNPATH=`yarn global bin`
 export RUSTPATH=$HOME/.cargo/bin
 export PATH=/usr/local/bin:$GOPATH/bin:$YARNPATH:$RUSTPATH:$PATH
 export RUST_SRC_PATH=$HOME/.multirust/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src

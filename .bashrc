@@ -217,6 +217,12 @@ lastpass() {
 ######################
 # Eventbrite FUNCTIONS
 ######################
+alias ebpresto="presto --server http://presto.prod.dataf.eb:8080 --user ccummings"
+
+ebpresto_csv () {
+	`presto --server http://presto.prod.dataf.eb:8080 --user ccummings --file $1 --output-format CSV_HEADER > query_result.csv`
+}
+
 waiting-room-qa() {
     eid=$1
     if [ "$eid" -eq "$eid" ] 2>/dev/null; then
