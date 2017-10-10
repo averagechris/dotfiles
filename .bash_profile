@@ -15,10 +15,13 @@ export EDITOR=`which nvim`
 # PATH SETTINGS
 ################
 export GOPATH=$HOME/go_projects
+<<<<<<< Updated upstream
 export YARNPATH=/usr/local/bin
 # export YARNPATH=`yarn global bin`
+=======
+>>>>>>> Stashed changes
 export RUSTPATH=$HOME/.cargo/bin
-export PATH=/usr/local/bin:$GOPATH/bin:$YARNPATH:$RUSTPATH:$PATH
+export PATH=/usr/local/bin:$GOPATH/bin:$RUSTPATH:$PATH
 export RUST_SRC_PATH=$HOME/.multirust/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src
 
 #####################
