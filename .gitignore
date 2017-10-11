@@ -1,4 +1,5 @@
 nvim/plugged
 nvim/.netrwhist
+.DS_Store
 *.swp
 fishd.*

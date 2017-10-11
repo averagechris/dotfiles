@@ -3,10 +3,6 @@ set -o vi
 # swift repl fix - due to brew python being at the front of $PATH variable
 alias swift="PATH=/usr/bin:$PATH swift"
 
-# set mysql to the brew install path
-alias mysql=/usr/local/mysql/bin/mysql
-alias mysqladmin=/usr/local/mysql/bin/mysqladmin
-
 # enable excercism cli bash completion
 if [ -f ~/.config/exercism/exercism_completion.bash ]; then
 	source ~/.config/exercism/exercism_completion.bash
