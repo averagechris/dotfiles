@@ -1,2 +1,4 @@
+nvim/plugged
+nvim/.netrwhist
 *.swp
 fishd.*
