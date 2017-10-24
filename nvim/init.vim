@@ -29,6 +29,7 @@ call plug#begin()
 
     " syntax color plugins and indent plugins
     Plug 'trevordmiller/nova-vim'
+    Plug 'dag/vim-fish'
     Plug 'pangloss/vim-javascript'
     Plug 'othree/html5.vim'
     Plug 'hail2u/vim-css3-syntax'
@@ -57,9 +58,9 @@ let g:fzf_layout = { 'down': '~20%' }
 " lint engine configuration options
 let g:ale_sign_column_always = 1
 let g:ale_fix_on_save = 1
+let g:ale_linters = {'rust': ['rls']}
 let g:ale_fixers = {
     \ 'javascript': ['eslint'],
-    \ 'rust': ['rustfmt'],
     \ 'python': ['yapf'],
     \ }
 
