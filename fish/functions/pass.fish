@@ -1,4 +1,15 @@
-function pass --description 'fuzzy find password from lastpass-cli'
+function pass --description 'fuzzy find passwords from lastpass-cli'
+
+	for arg in $argv
+		switch $arg
+			case --help
+				echo 'pass: fuzzy find passwords from lastpass-cli'
+				echo 'USEAGE: pass [pattern]'
+				echo 'Note: most flags will get passed to ripgrep'
+				return 0
+		end
+	end
+
 	# filter account list by argv, store in tmp_file
 	set tmp_file (mktemp /tmp/getpass_tmp_file.XXXXXXXXXXXXXXX)
 	lpass ls | rg -i "$argv" > $tmp_file
