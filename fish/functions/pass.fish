@@ -23,7 +23,14 @@ function pass --description 'fuzzy find passwords from lastpass-cli'
 
 	else if test $match_count -ge 2
 		# fuzzy find account, pass account id back, lpass finds then copies pass to clipboard
-		set choice (cat $tmp_file | fzf | rg -o $lpass_id_regex)
+		set choice (cat $tmp_file | fzf)
+
+		if test $status -eq 130
+			# fzf was quit without a choice
+			return 0
+		end
+
+		set choice (echo $choice | rg -o $lpass_id_regex)
 		lpass show -cp $choice
 	else
 		lpass show -cp (cat $tmp_file | rg -o $lpass_id_regex)
