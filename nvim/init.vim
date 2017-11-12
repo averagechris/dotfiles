@@ -1,3 +1,9 @@
+" defaults to load before plugins
+" plugins can override these for stuff where it makes sense
+set ts=4
+
+
+
 " enable python plugins for neovim using neovim's own pyenv
 let g:python_host_prog =$HOME . '/.pyenv/versions/neovim2/bin/python'
 let g:python3_host_prog =$HOME . '/.pyenv/versions/neovim3/bin/python'
