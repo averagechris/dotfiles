@@ -3,7 +3,6 @@
 set ts=4
 
 
-
 " enable python plugins for neovim using neovim's own pyenv
 let g:python_host_prog =$HOME . '/.pyenv/versions/neovim2/bin/python'
 let g:python3_host_prog =$HOME . '/.pyenv/versions/neovim3/bin/python'
@@ -11,16 +10,17 @@ let g:python3_host_prog =$HOME . '/.pyenv/versions/neovim3/bin/python'
 
 call plug#begin()
 
-    Plug 'w0rp/ale'  " lint engine
-    Plug 'janko-m/vim-test'  " test runner engine
+    Plug 'w0rp/ale'
+    Plug 'janko-m/vim-test'
     Plug 'roxma/nvim-completion-manager'
     Plug 'autozimu/LanguageClient-neovim', { 'do': ':UpdateRemotePlugins' }
     Plug 'roxma/nvim-cm-tern',  {'do': 'npm install'}
-    " Plug 'Shougo/deoplete.nvim', { 'do': ':UpdateRemotePlugins' }
+    Plug 'Shougo/deoplete.nvim', { 'do': ':UpdateRemotePlugins' }
     Plug 'Shougo/neosnippet'
     Plug 'Shougo/neosnippet-snippets'
-    " Plug 'zchee/deoplete-jedi'
+    Plug 'zchee/deoplete-jedi'
     " Plug 'sebastianmarkow/deoplete-rust'
+	Plug 'wellle/tmux-complete.vim'
     Plug 'tpope/vim-fugitive'
     Plug 'tpope/vim-rhubarb'
     Plug 'tpope/vim-surround'
@@ -30,8 +30,6 @@ call plug#begin()
     Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
     Plug 'junegunn/fzf.vim'
     Plug 'mitermayer/vim-prettier', {'do': 'yarn install', 'for': ['javascript', 'typescript', 'css', 'less', 'scss']}
-    Plug 'rizzatti/dash.vim'  " dash is an osx documentation gui viewer
-
 
     " syntax color plugins and indent plugins
     Plug 'trevordmiller/nova-vim'
@@ -44,6 +42,7 @@ call plug#begin()
 
 call plug#end()
 
+let g:deoplete#enable_at_startup = 1
 
 " / search config
 set ignorecase
@@ -51,13 +50,13 @@ set smartcase
 set magic
 nnoremap <silent> <Esc> :nohlsearch<Bar>:echo<CR>
 
+
 " rg fzf config
 let g:rg_command = '
 			\ rg --column --line-number --no-heading --fized-strings --ignore-case --no-ignore --hidden --follow --color "always"
 			\ -g "!{.git,node_modules,vendor}/*" '
 command! -bang -nargs=* F call fzf#vim#grep(g:rg_command .shellescape(<q-args>), 1, <bang>0)
 nmap <C-p> :Files<cr>
-
 let g:fzf_action = {'ctrl-s': 'vsplit' }
 let g:fzf_layout = { 'down': '~20%' }
 
@@ -70,15 +69,11 @@ let g:ale_fixers = {
     \ 'python': ['yapf'],
     \ }
 
-" enable deoplete, set tab complettion remap, close scratch window automatically
-" let g:deoplete#enable_at_startup = 1
-inoremap <expr><tab> pumvisible() ? "\<c-n>" : "\<tab>"
-autocmd InsertLeave,CompleteDone * if pumvisible() == 0 | pclose | endif
-
 " neosnippet config
-imap <C-k> <Plug>(neosnippet_expand_or_jump)
-smap <C-k> <Plug>(neosnippet_expand_or_jump)
-xmap <C-k> <Plug>(neosnippet_expand_target)
+imap <C-i> <Plug>(neosnippet_expand_or_jump)
+smap <C-i> <Plug>(neosnippet_expand_or_jump)
+xmap <C-i> <Plug>(neosnippet_expand_target)
+let g:neosnippet#snippets_directory='~/dotfiles/nvim/snippets'
 
 " status line vim airline config
 let g:airline#extensions#tabline#enabled = 1
@@ -91,7 +86,7 @@ let g:NERDTrimTrailingWhitespace = 1
 let g:javascript_plugin_flow = 1  " enable javascript flow shit to be highlighted correctly
 let g:prettier#exec_cmd_async = 1  " enable async js / css code formatting through prettier
 let g:prettier#autoformat = 0
-" autocmd BufWritePre *.js,*.css,*.scss,*.less PrettierAsync  " runs prettier before saving
+autocmd BufWritePre *.js,*.css,*.scss,*.less PrettierAsync  " runs prettier before saving
 
 
 " vim-test config
@@ -137,10 +132,6 @@ set sidescrolloff=5
 set hidden
 colorscheme nova
 
-" -- highlight trailing whitespace and tab characters in grey
-" highlight ExtraWhitespace ctermbg=Black guibg=Black
-" match ExtraWhitespace /\s\+$\|\t/
-
 "###FUNCTIONS###
 "###############
 function! NumberToggle()
@@ -150,4 +141,8 @@ function! NumberToggle()
   else
     set rnu
   endif
+endfunc
+
+function! AleFixersToggle()
+		let g:ale_fix_on_save = exists('g:ale_fix_on_save') ? !g:ale_fix_on_save : 1
 endfunc
