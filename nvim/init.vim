@@ -4,8 +4,8 @@ set ts=4
 
 
 " enable python plugins for neovim using neovim's own pyenv
-let g:python_host_prog =$HOME . '/.pyenv/versions/neovim2/bin/python'
-let g:python3_host_prog =$HOME . '/.pyenv/versions/neovim3/bin/python'
+let g:python_host_prog = $PYENV_ROOT . '/versions/neovim2/bin/python'
+let g:python3_host_prog = $PYENV_ROOT . '/versions/neovim3/bin/python'
 
 
 call plug#begin()
@@ -19,6 +19,7 @@ call plug#begin()
     Plug 'Shougo/neosnippet'
     Plug 'Shougo/neosnippet-snippets'
     Plug 'zchee/deoplete-jedi'
+	Plug 'davidhalter/jedi-vim'
     " Plug 'sebastianmarkow/deoplete-rust'
 	Plug 'wellle/tmux-complete.vim'
     Plug 'tpope/vim-fugitive'
@@ -42,6 +43,7 @@ call plug#begin()
 
 call plug#end()
 
+let g:jedi#completions_enabled = 0  " use deoplete for completions
 let g:deoplete#enable_at_startup = 1
 
 " / search config
@@ -68,6 +70,9 @@ let g:ale_fixers = {
     \ 'javascript': ['eslint'],
     \ 'python': ['yapf'],
     \ }
+
+nmap <silent> <C-j> :cn<CR>
+nmap <silent> <C-k> :cp<CR>
 
 " neosnippet config
 imap <C-i> <Plug>(neosnippet_expand_or_jump)
@@ -109,7 +114,6 @@ augroup END
 
 
 " -- Normal Mode Remaps
-nnoremap <leader>r :call NumberToggle()<cr>
 nnoremap <leader>j :bn<cr>
 nnoremap <leader>k :bp<cr>
 nnoremap <leader>T :vsplit term://bash<cr>a. ~/.bash_profile<cr>
@@ -142,7 +146,9 @@ function! NumberToggle()
     set rnu
   endif
 endfunc
+command! NumToggle call NumberToggle()
 
 function! AleFixersToggle()
 		let g:ale_fix_on_save = exists('g:ale_fix_on_save') ? !g:ale_fix_on_save : 1
 endfunc
+command! ToggleFixers call AleFixersToggle()
