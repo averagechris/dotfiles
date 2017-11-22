@@ -43,7 +43,7 @@ call plug#begin()
 
 call plug#end()
 
-let g:jedi#completions_enabled = 0  " use deoplete for completions
+let g:jedi#completions_enabled = 1  " use deoplete for completions
 let g:deoplete#enable_at_startup = 1
 
 " / search config
