@@ -11,7 +11,8 @@ set -x PATH $RUSTPATH $PYTHON_2_PATH $PYTHON_3_PATH $PYENV_ROOT/bin $PYENV_ROOT/
 set -x FZF_DEFAULT_COMMAND 'fd --type f --follow --hidden --exclude .git'
 set -x FZF_CTRL_T_COMMAND $FZF_DEFAULT_COMMAND
 
-if test "$TERM" != 'dumb'
+set -l ALLOW_VI_IN_TERM 'xterm-256color' 'screen-256color'
+if contains $TERM $ALLOW_VI_IN_TERM
   fish_vi_key_bindings
 end
 
