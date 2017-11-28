@@ -12,7 +12,7 @@ function emacs --description 'convenience wrapper for starting an emacs client a
     end
   end
 
-  if ps aux | grep -v grep | grep 'emacs.* \-\-daemon' --silent
+  if not ps aux | grep -v grep | grep 'emacs.* \-\-daemon' --silent
     /usr/local/bin/emacs --daemon ^ /dev/null > /dev/null
   end
 
