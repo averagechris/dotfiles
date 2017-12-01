@@ -1,6 +1,7 @@
 function srch
   set RG_ARGS
   set N_LARGEST 0
+  set USE_FZF 1
 
   for arg in $argv
     switch $arg
@@ -11,23 +12,39 @@ function srch
           set N_LARGEST $num
         end
 
+      case '--print'
+        set USE_FZF 0
+
       case '*'
         set RG_ARGS $RG_ARGS $arg
     end
   end
 
-  set PY_SCRIPT "
-from heapq import nlargest
-from sys import stdin
-from sys import stdout
-
-for match_count in nlargest($N_LARGEST, stdin.readlines(), key=lambda l: l.split(':')[-1]):
-    print(match_count.strip())
-"
+  set COMMAND "rg $RG_ARGS"
 
   if test $N_LARGEST -gt 0
-    rg $RG_ARGS | python -c "$PY_SCRIPT"
-  else
-    rg $RG_ARGS
+    set PY_FILE (mktemp /tmp/srch_py.XXXXXXXXXXXXX)
+    printf "
+from heapq import nlargest
+from sys import stdin
+
+for match in nlargest($N_LARGEST, stdin.readlines(), key=lambda l: l.split(':')[-1]):
+    print(match.strip())
+" > $PY_FILE
+
+    set COMMAND "$COMMAND | python $PY_FILE"
+
+  end
+
+  if test $USE_FZF -gt 0
+    set FILTER_FILE_NAME 'cut -f 1 -d :'
+    set FZF_COMMAND "fzf --preview 'cat {}'"
+    set COMMAND "$COMMAND | $FILTER_FILE_NAME | $FZF_COMMAND"
+  end
+
+  eval $COMMAND
+
+  if test -e "$PY_FILE"
+    rm $PY_FILE
   end
 end

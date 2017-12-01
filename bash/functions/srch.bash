@@ -1,6 +1,7 @@
 function srch() {
     RG_ARGS=""
     N_LARGEST=0
+    USE_FZF=1
 
     for arg in $@
     do
@@ -12,23 +13,37 @@ function srch() {
                     N_LARGEST=$num
                 fi
                 ;;
+            --print)
+                USE_FZF=0
+                ;;
             *)
                 RG_ARGS="$RG_ARGS $arg"
         esac
     done
 
-    PY_SCRIPT="
-from heapq import nlargest
-from sys import stdin
-from sys import stdout
-
-for match_count in nlargest($N_LARGEST, stdin.readlines(), key=lambda l: l.split(':')[-1]):
-    print(match_count.strip())
-"
+    COMMAND="rg $RG_ARGS"
 
     if ((N_LARGEST > 0)); then
-        rg $RG_ARGS | python -c "$PY_SCRIPT";
-    else
-        rg $RG_ARGS
+        PY_FILE=$(mktemp /tmp/srch_py.XXXXXXXXXXXXX)
+        printf "
+from heapq import nlargest
+from sys import stdin
+
+for match in nlargest($N_LARGEST, stdin.readlines(), key=lambda l: l.split(':')[-1]):
+    print(match.strip())
+" > $PY_FILE
+        COMMAND="$COMMAND | python $PY_FILE"
+    fi
+
+    if ((USE_FZF > 0)); then
+        FILTER_FILE_NAME='cut -f 1 -d :'
+        FZF_COMMAND="fzf --preview 'cat {}'"
+        COMMAND="$COMMAND | $FILTER_FILE_NAME | $FZF_COMMAND"
+    fi
+
+    eval $COMMAND
+
+    if [ -f $PY_FILE ]; then
+        rm $PY_FILE
     fi
 }
