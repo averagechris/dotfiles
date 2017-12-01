@@ -1,4 +1,7 @@
 function srch() {
+    # wrapper around ripgrep and fzf.
+    # USAGE: find top 5 files by num of matches:
+    #       $ srch PATTERN -g GLOB -n5
     RG_ARGS=""
     N_LARGEST=0
     USE_FZF=1
@@ -7,8 +10,8 @@ function srch() {
     do
         case "$arg" in
             -n*)
-                num=$(echo "$arg" | rg -o '\d+')
-                if ((nag > 0)); then
+                num=$(echo "$arg" | rg --replace '$1' -- '-n(\d+)')
+                if ((num > 0)); then
                     RG_ARGS="$RG_ARGS -c"  # add count flag to rg
                     N_LARGEST=$num
                 fi
