@@ -19,7 +19,7 @@ function update_brew_packages --description 'update selected (or all) brew packa
 	brew outdated > $outdated_list_tmp_file
 
 	if test (new_lines_count $outdated_list_tmp_file) -ne 0
-		if no_confirm
+		if eval $no_confirm
 			cat outdated_list_tmp_file | xargs brew upgrade
 		else
 			cat outdated_list_tmp_file | fzf -m -n 1 --tac --header='choose packages to update with tab' | xargs brew upgrade
