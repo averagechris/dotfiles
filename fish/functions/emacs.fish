@@ -17,7 +17,7 @@ function emacs --description 'convenience wrapper for starting an emacs client a
   end
 
   if eval $TERMINAL_EMACS
-    /usr/local/bin/emacsclient $passed_args > /dev/null &
+    /usr/local/bin/emacsclient -t $passed_args
   else
     /usr/local/bin/emacsclient -c $passed_args > /dev/null &
   end
