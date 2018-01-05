@@ -16,4 +16,5 @@ if contains $TERM $ALLOW_VI_IN_TERM
   fish_vi_key_bindings
 end
 
-alias vim nvim
+set -x EVENTBRITE ~/eventbrite_github/eventbrite
+set -x BAY_HOME $EVENTBRITE/docker_dev
