@@ -12,13 +12,21 @@ function emacs --description 'convenience wrapper for starting an emacs client a
     end
   end
 
-  if not ps aux | grep -v grep | grep 'emacs.* \-\-daemon' --silent
+  if not ps aux | grep -v grep | grep --silent 'emacs.* \-\-daemon'
+    # if there is not an emacs server running, start one
     /usr/local/bin/emacs --daemon ^ /dev/null > /dev/null
   end
 
   if eval $TERMINAL_EMACS
     /usr/local/bin/emacsclient -t $passed_args
   else
-    /usr/local/bin/emacsclient -c $passed_args > /dev/null &
+
+    if not ps aux | grep -v grep | grep --silent 'emacsclient \-c'
+      # create frame if one doesn't exist otherwise use existing gui frame
+      set passed_args -c $passed_args
+    end
+
+    /usr/local/bin/emacsclient $passed_args > /dev/null &
+
   end
 end
