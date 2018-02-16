@@ -16,6 +16,7 @@ function update_brew_packages --description 'update selected (or all) brew packa
 	end
 
 	set outdated_list_tmp_file (mktemp /tmp/outdated_list_tmp_file.XXXXXXXXXXX)
+  brew update > /dev/null
 	brew outdated > $outdated_list_tmp_file
 
 	if test (new_lines_count $outdated_list_tmp_file) -ne 0
