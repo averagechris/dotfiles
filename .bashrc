@@ -1,4 +1,8 @@
 set -o vi
+export VISUAL="/usr/local/bin/emacsclient -c"
+
+[ -d ~/dotfiles ] && for f in ~/dotfiles/bash/functions/*; do source $f; done
+
 
 # swift repl fix - due to brew python being at the front of $PATH variable
 alias swift="PATH=/usr/bin:$PATH swift"
