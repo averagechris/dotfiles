@@ -3,7 +3,7 @@
         "fields": [
             {
                 "name": "code",
-                "pattern": "@.-_+!abcdefghijklmnopqrstuvwxyz1234567890",
+                "pattern": "@.-_!abcdefghijklmnopqrstuvwxyz1234567890",
                 "caseSensitive": false,
                 "maxLength": 0,
                 "minLength": 3,
