@@ -4,3 +4,4 @@ nvim/.netrwhist
 *.swp
 fishd.*
 fish/functions/fzf_key_bindings.fish
+/fish/private_variables.fish
