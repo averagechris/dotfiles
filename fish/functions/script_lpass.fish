@@ -4,5 +4,10 @@ function script_lpass
         /usr/local/bin/lpass login $EB_LAST_PASS_USER
     end
 
-    /usr/local/bin/lpass show -p -G "$argv"
+    set result (/usr/local/bin/lpass show -p -G "$argv")
+    if echo $result | grep -iq "multiple matches found"
+        set result (lpass show -p (lpass ls | fzf | rg -o --replace '$1' '\[id: (\d+)\]'))
+    end
+
+    echo $result
 end
