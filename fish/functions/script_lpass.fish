@@ -6,7 +6,7 @@ function script_lpass
 
     set result (/usr/local/bin/lpass show -p -G "$argv")
     if echo $result | grep -iq "multiple matches found"
-        set result (lpass show -p (lpass ls | fzf | rg -o --replace '$1' '\[id: (\d+)\]'))
+        set result (lpass show -p (lpass ls | grep -i -E "$argv" | fzf | rg -o --replace '$1' '\[id: (\d+)\]'))
     end
 
     echo $result
