@@ -1,12 +1,15 @@
+from os import path
 from traceback import format_exc
 
 import click
 
 from lib import Validator, RuleDoesNotExist, RuleCannotBeParsed, FileNewLineError
 
+DEFAULT_RULES_PATH = path.expanduser('~/dotfiles/csv_validator/rules.json')
+DEFAULT_RULES_PATH = DEFAULT_RULES_PATH if path.exists(DEFAULT_RULES_PATH) else 'rules.json'
 
 @click.group(invoke_without_command=True)
-@click.option('--rules', type=click.Path(exists=True), default='rules.json')
+@click.option('--rules', type=click.Path(exists=True), default=DEFAULT_RULES_PATH)
 @click.option('--rules-string', type=click.STRING)
 @click.argument('csv', type=click.File('r'))
 @click.argument('rule_name', type=click.STRING, required=False)
