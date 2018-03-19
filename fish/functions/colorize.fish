@@ -33,4 +33,6 @@ function colorize
 		else
 				error_message "$COLOR is not an available color"
 		end
+
+    set_color normal
 end
