@@ -52,6 +52,7 @@ function ebapi
         end
     end
 
-    set url "$host$path?token=$token&expand=$expansions$parameters"
-    json_request $url $args_to_pass
+    # set url "$host$path?token=$token&expand=$expansions$parameters"
+    set url "$host$path?expand=$expansions$parameters"
+    json_request $url $args_to_pass -H "Authorization: Bearer $token"
 end
