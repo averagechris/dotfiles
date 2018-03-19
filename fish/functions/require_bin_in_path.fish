@@ -3,6 +3,7 @@ function require_bin_in_path
   for arg in $argv
     which $arg > /dev/null
     if test $status -ne 0
+      echo $arg
       set COUNT_NOT_IN_PATH (math $COUNT_NOT_IN_PATH + 1)
     end
   end
