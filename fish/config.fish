@@ -20,6 +20,10 @@ end
 set -x EVENTBRITE ~/eventbrite_github/eventbrite
 set -x BAY_HOME $EVENTBRITE/docker-dev
 
+# source other misc variables if exist
+set -x MISC_VARIABLES_FILE "$DOTFILES/fish/misc_variables.fish"
+test -e "$MISC_VARIABLES_FILE"; and source $MISC_VARIABLES_FILE
+
 # source private variables if exist
 set -x PRIVATE_VARIABLES_FILE "$DOTFILES/fish/private_variables.fish"
 test -e "$PRIVATE_VARIABLES_FILE"; and source $PRIVATE_VARIABLES_FILE
