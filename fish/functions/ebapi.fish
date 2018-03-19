@@ -9,6 +9,14 @@ function ebapi
 
     for arg in $argv
         switch $arg
+            case '--help'
+                echo USAGE:
+                echo 'ebapi [ENDPOINT] [FLAGS]'
+                echo 'FLAGS AVAILABLE: -h -p -e -t'
+                echo 'host, parameter, expansion, token'
+                echo 'any other arguments are passed directly to curl'
+                return 0
+
             case '--host=*' '--env=*'
                 set host_pattern (echo $arg | cut -d '=' -f 2)
                 set host (find_in_env "api.*$host_pattern")
