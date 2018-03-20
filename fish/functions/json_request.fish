@@ -34,7 +34,7 @@ see `man curl` and `man jq` for help with flags and options
   set CAT_JSON_PARSE_FAILURES false
   set CURL_ARGS -sS
   set DRY_RUN false
-  set JQ_ARGS
+  set JQ_ARGS '.'
   set PRINT_CURL_COMMAND_OUT false
   set PRINT_TO_CLIPBOARD false
   set RETURN_STATUS_CODE 0
