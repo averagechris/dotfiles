@@ -16,7 +16,7 @@ OPTIONS:
 
 EXAMPLES:
     * json_request https://www.evbqaapi.com/v3/users/me/ -H "Authorization: Bearer SOME-TOKEN"
-    * json_request https://www.evbqaapi.com/v3/users/me/ --jq="[any jq command or option]"
+    * json_request https://www.evbqaapi.com/v3/users/me/owned_events/ --jq="[.events[] | select(.status == "live")], .pagination"
 
 INFO:
     * every argument is passed directly to curl _except_ the --jq="" argument.
