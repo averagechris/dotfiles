@@ -1,0 +1,7 @@
+Hi,
+
+You've contacted the Developer Support team. It seems that this may have been in error. For general support requests (not regarding API usage) please contact our support team here.
+
+If you are seeking assistance with Eventbrite's API, I apologize for the confusion. Would you please provide more information on the error or unexpected behavior you are experiencing while trying to work with the API?
+
+Thanks!

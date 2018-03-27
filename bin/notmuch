@@ -1,0 +1,4 @@
+#!/bin/sh
+
+printf -v ARGS "%q " "$@"
+exec ssh thesogu notmuch ${ARGS}
