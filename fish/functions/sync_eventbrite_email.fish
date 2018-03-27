@@ -1,6 +1,10 @@
 function sync_eventbrite_email
     # get new mail from imap.gmail.com
-    ssh thesogu "mbsync ebmail" > /dev/null
+    if test (hostname) -eq "notmuch-thesogu"
+        mbsync ebmail > /dev/null
+    else
+        ssh thesogu "mbsync ebmail" > /dev/null
+    end
 
     if test $status -eq 0
       # index new mail
