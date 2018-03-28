@@ -58,7 +58,7 @@ see `man curl` and `man jq` for help with flags and options
           set PRINT_TO_CLIPBOARD true
 
       case '--jq=*'
-        set JQ_ARGS (echo $arg | cut -d '=' -f 2)
+        set JQ_ARGS $JQ_ARGS (echo $arg | cut -d '=' -f 2)
 
       case '--log-parse-failures'
         set CAT_JSON_PARSE_FAILURES true
@@ -97,6 +97,7 @@ see `man curl` and `man jq` for help with flags and options
     eval $CURL_COMMAND $CURL_ARGS > $JSON_FILE
 
     # pretty format json file if can be parsed as json
+    echo $JQ_ARGS
     cat $JSON_FILE | jq $JQ_ARGS ^ /dev/null
 
     if test $status -ne 0
