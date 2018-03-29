@@ -1,7 +1,7 @@
 function sync_personal_email
     # get new mail from imap.fastmail.com
     if test (hostname) = "notmuch-thesogu"
-        mbsync ebmail > /dev/null
+        mbsync fastmail > /dev/null
     else
         ssh thesogu "mbsync fastmail" > /dev/null
     end
