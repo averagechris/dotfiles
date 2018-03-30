@@ -15,14 +15,14 @@ function sync_eventbrite_email
       notmuch tag +eventbrite -- tag:new "(to:@eventbrite.com or from:ccummings%@eventbrite.com)"
 
       # add tags to things that I want to call out, but still see in my inbox
-      notmuch tag +jira_mention -- tag:new from:jira@eventbrite.com 'mentioned you on'
+      notmuch tag +jira_mention -- tag:new from:jira@eventbrite.com "('mentioned you on' OR 'Chris Cummings')"
       notmuch tag +api_support -- tag:new "(to:api@eventbrite.com OR to:eventbrite-api@googlegroups.com)"
 
       # add tags to things I want to see, but not in my inbox
       notmuch tag +eventbrite_github -inbox -- tag:new from:notifications@github.com subject:eventbrite
 
       # filter out cruft that I don't really want to see
-      notmuch tag -inbox +low_priority -- tag:new from:jira@eventbrite.com not 'mentioned you on'
+      notmuch tag -inbox +low_priority -- tag:new from:jira@eventbrite.com not "Chris Cummings"
       notmuch tag -inbox +deleted +sentry -- tag:new from:sentry@eventbrite.com or from:site-errors@eventbrite.com
       notmuch tag -inbox +low_priority +jenkins -- tag:new from:eng-ops@eventbrite.com
       notmuch tag -inbox +spam -- tag:new from:notifaction%@facebookmail.com
