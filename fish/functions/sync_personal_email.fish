@@ -30,8 +30,8 @@ function sync_personal_email
 
         # do clean up
         # tag messages from work email as sent
-        notmuch tag -inbox -unread +sent -- from:chris@thesogu.com AND tag:new
+        notmuch tag -inbox -unread +sent -- from:chris@thesogu.com AND tag:personal
         # remove inbox tag from emails that I've replied to
-        notmuch tag -inbox -unread -- tag:inbox AND tag:replied
+        # notmuch tag -inbox -unread -- tag:inbox AND tag:replied
     end
 end
