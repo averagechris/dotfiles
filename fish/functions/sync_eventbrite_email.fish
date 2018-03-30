@@ -13,8 +13,6 @@ function sync_eventbrite_email
 
       # add eventbrite tag
       notmuch tag +eventbrite -- tag:new "(to:@eventbrite.com or from:ccummings%@eventbrite.com)"
-      notmuch tag +eventbrite -- tag:new AND not tag:personal
-
 
       # add tags to things that I want to call out, but still see in my inbox
       notmuch tag +jira_mention -- tag:new from:jira@eventbrite.com 'mentioned you on'
