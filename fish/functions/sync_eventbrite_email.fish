@@ -16,7 +16,7 @@ function sync_eventbrite_email
 
       # add tags to things that I want to call out, but still see in my inbox
       notmuch tag +jira_mention -- tag:new from:jira@eventbrite.com 'mentioned you on'
-      notmuch tag +api_support -- tag:new "(from:api@eventbrite.com OR from:eventbrite-api@googlegroups.com)"
+      notmuch tag +api_support -- tag:new "(to:api@eventbrite.com OR to:eventbrite-api@googlegroups.com)"
 
       # add tags to things I want to see, but not in my inbox
       notmuch tag +eventbrite_github -inbox -- tag:new from:notifications@github.com subject:eventbrite
