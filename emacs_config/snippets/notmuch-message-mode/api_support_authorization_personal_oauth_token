@@ -1,0 +1,23 @@
+# -*- mode: snippet -*-
+# name: api_support_authorization_personal_oauth_token
+# key: api_support_authorization_personal_oauth_token
+# --
+Hi there,
+
+Are you sending requests with your "Personal Oauth Token"?
+It's not the app key, that you want to include with your requests.
+
+To get your Personal Oauth Token:
+* go to https://www.eventbrite.com/myaccount/apps/
+* click "Show Client Secret and OAuth Token"
+* copy the token labeled Your Personal OAuth Token
+
+The send the token in the request either as:
+* a url parameter:
+$ curl https://eventbriteapi.com/v3/users/me/?token=YOUR-TOKEN
+* an authorization header in the request:
+$ curl -H 'Authorization: Bearer YOUR-TOKEN' https://eventbriteapi.com/v3/users/me/
+
+
+Best,
+Chris
