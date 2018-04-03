@@ -337,33 +337,35 @@ you should place your code here."
    css-indent-offset 2
    web-mode-markup-indent-offset 2
    web-mode-code-indent-offset 2
-   web-mode-attr-indent-offset 2)
-  )
+   web-mode-attr-indent-offset 2))
 
+
+  (add-to-list 'load-path "/usr/local/share/emacs/site-lisp/notmuch")
+  (load "notmuch")
   (require 'notmuch)
   (setq notmuch-command "notmuch-remote")
   (define-key notmuch-search-mode-map "r" 'notmuch-search-reply-to-thread)
   (define-key notmuch-search-mode-map "R" 'notmuch-search-reply-to-thread-sender)
 
-  (require 'smtpmail-multi)
   (setq smtpmail-multi-accounts
-        (quote
-        ((work . ((getenv "EVENTBRITE_EMAIL")
-                  (getenv "EVENTBRITE_SMTP")
+        (quote ((work . ("ccummings@eventbrite.com"
+                  "smtp.gmail.com"
                   587
-                  (getenv "EVENTBRITE_EMAIL")
+                  "ccummings@eventbrite.com"
                   nil nil nil nil))
-          (personal . ((getenv "PERSONAL_EMAIL")
-                    (geteng "PERSONAL_SMTP")
+          (personal . ("chris@thesogu.com"
+                    "smtp.fastmail.com"
                     587
-                    (getenv "PERSONAL_EMAIL")
+                    "chris@thesogu.com"
                     nil nil nil nil)))))
-  (setq smtpmail-multi-default-account (quote work))
+  (setq smtpmail-multi-default-account 'work)
+  (setq smtpmail-multi-associations
+        (quote (("ccummings@eventbrite.com" work)
+        ("chris@thesogu.com" personal))))
   (setq send-mail-function 'smtpmail-multi-send-it)
   (setq message-kill-buffer-on-exit t)
-
-  (add-to-list 'load-path "/usr/local/share/emacs/site-lisp/notmuch")
-  (load "notmuch")
+  ;; (setq smtpmail-debug-info t)
+  ;; (setq smtpmail-debug-verbose t)
 
 ;; Do not write anything past this comment. This is where Emacs will
 ;; auto-generate custom variable definitions.
@@ -376,20 +378,19 @@ you should place your code here."
    ["#0a0814" "#f2241f" "#67b11d" "#b1951d" "#4f97d7" "#a31db1" "#28def0" "#b2b2b2"])
  '(custom-safe-themes
    (quote
-    ("bffa9739ce0752a37d9b1eee78fc00ba159748f50dc328af4be661484848e476" default)))
+    ("fa2b58bb98b62c3b8cf3b6f02f058ef7827a8e497125de0254f56e373abee088" "bffa9739ce0752a37d9b1eee78fc00ba159748f50dc328af4be661484848e476" default)))
  '(evil-want-Y-yank-to-eol nil)
  '(helm-ag-base-command "rg --no-heading")
  '(notmuch-saved-searches
    (quote
     ((:name "personal inbox" :query "tag:inbox and tag:personal")
-     (:name "api-queue" :query "tag:eventbrite and tag:api_support and tag:inbox")
+     (:name "api-queue" :query "tag:eventbrite and tag:api_support and not tag:api_answered and not from:ccummings@eventbrite.com")
      (:name "eventbrite inbox" :query "tag:inbox and tag:eventbrite and not tag:api_support")
      (:name "eventbrite-today" :query "date:today..! tag:eventbrite not tag:low_priority")
      (:name "eventbrite low priority this week" :query "tag:eventbrite and tag:low_priority date:7d..today"))))
  '(package-selected-packages
    (quote
     (smtpmail-multi ghub let-alist org-mime php-auto-yasnippets drupal-mode phpunit phpcbf php-extras php-mode yaml-mode sql-indent vmd-mode helm-gtags ggtags slime-company slime common-lisp-snippets rvm ruby-tools ruby-test-mode rubocop rspec-mode robe rbenv rake minitest chruby bundler inf-ruby web-beautify livid-mode skewer-mode simple-httpd json-mode json-snatcher json-reformat js2-refactor multiple-cursors js2-mode js-doc company-tern tern coffee-mode web-mode tagedit slim-mode scss-mode sass-mode pug-mode less-css-mode helm-css-scss haml-mode emmet-mode company-web web-completion-data vimrc-mode dactyl-mode xterm-color shell-pop multi-term eshell-z eshell-prompt-extras esh-help toml-mode racer flycheck-rust seq cargo rust-mode flyspell-correct-helm flyspell-correct auto-dictionary insert-shebang fish-mode company-shell csv-mode unfill smeargle orgit org-projectile org-category-capture org-present org-pomodoro alert log4e gntp org-download mwim mmm-mode markdown-toc markdown-mode magit-gitflow htmlize helm-gitignore helm-company helm-c-yasnippet gnuplot gitignore-mode gitconfig-mode gitattributes-mode git-timemachine git-messenger git-link git-gutter-fringe+ git-gutter-fringe fringe-helper git-gutter+ git-gutter gh-md fuzzy flycheck-pos-tip pos-tip flycheck evil-magit magit magit-popup git-commit with-editor diff-hl company-statistics company-anaconda company auto-yasnippet yasnippet ac-ispell auto-complete yapfify pyvenv pytest pyenv-mode py-isort pip-requirements live-py-mode hy-mode dash-functional helm-pydoc cython-mode anaconda-mode pythonic ws-butler winum which-key volatile-highlights vi-tilde-fringe uuidgen use-package toc-org spaceline powerline restart-emacs request rainbow-delimiters popwin persp-mode pcre2el paradox spinner org-plus-contrib org-bullets open-junk-file neotree move-text macrostep lorem-ipsum linum-relative link-hint info+ indent-guide hydra hungry-delete hl-todo highlight-parentheses highlight-numbers parent-mode highlight-indentation hide-comnt help-fns+ helm-themes helm-swoop helm-projectile helm-mode-manager helm-make projectile pkg-info epl helm-flx helm-descbinds helm-ag google-translate golden-ratio flx-ido flx fill-column-indicator fancy-battery eyebrowse expand-region exec-path-from-shell evil-visualstar evil-visual-mark-mode evil-unimpaired evil-tutor evil-surround evil-search-highlight-persist evil-numbers evil-nerd-commenter evil-mc evil-matchit evil-lisp-state smartparens evil-indent-plus evil-iedit-state iedit evil-exchange evil-escape evil-ediff evil-args evil-anzu anzu evil goto-chg undo-tree eval-sexp-fu highlight elisp-slime-nav dumb-jump f dash s diminish define-word column-enforce-mode clean-aindent-mode bind-map bind-key auto-highlight-symbol auto-compile packed aggressive-indent adaptive-wrap ace-window ace-link ace-jump-helm-line helm avy helm-core popup async)))
- '(send-mail-function (quote smtpmail-send-it))
  '(smtpmail-smtp-server "smtp.fastmail.com")
  '(smtpmail-smtp-service 587))
 (custom-set-faces
