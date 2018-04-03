@@ -1,7 +1,0 @@
-Hi,
-
-Unfortunately this is not yet possible with our API.
-There is an open feature request about this but I can't speak to when
-it will be implemented.
-
-Best,
