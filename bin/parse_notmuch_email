@@ -32,14 +32,17 @@ def parse_emails(blob):
         subject = email['headers']['Subject']
         body = email['body']
         try:
-            body = body[0].get('content')[0].get('content').replace('\n\n', '')
+            body = body[0].get('content')[0].get('content')
         except:
             pass
 
+        body = str(body).replace('\n', ' ').replace('\t', '').replace('  ', ' ')
         yield {"tags": tags, "date": date, "to": to, "from": from_address, "subject": subject, "body": body}
+
 
 def run(blob):
     print(json.dumps(list(parse_emails(blob))))
+
 
 if __name__ == "__main__":
     try:
