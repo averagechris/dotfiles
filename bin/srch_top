@@ -1,0 +1,56 @@
+#! /usr/bin/env python3
+
+from heapq import nlargest
+import sys
+import subprocess
+
+#  err_msg = f'-c, --count flag must be followed by an argument, not "{num}"'
+
+
+def _stop_loop():
+    raise StopIteration
+
+
+def print_help_message_and_exit():
+    msg = f''
+    print(msg)
+    sys.exit()
+
+
+def parse_args(args):
+    rg_args = ['rg', '-c']
+    heap_size = 100
+    print_count = False
+
+    for arg in args:
+
+        if arg == '--help':
+            print_help_message_and_exit()
+        elif '--top-' in arg:
+            heap_size = [int(c) if c.isdigit() else _stop_loop() for c in reversed(arg)]
+        elif arg in ('-c', '--count'):
+            print_count = True
+
+        else:
+            rg_args.append(arg)
+
+    return rg_args, heap_size, print_count
+
+
+def run():
+    rg_args, heap_size, print_count = parse_args(sys.argv[1:])
+    ripgrep = subprocess.Popen(' '.join(rg_args), shell=True, stdout=subprocess.PIPE)
+    results = []
+
+    for line in ripgrep.stdout:
+        path, count = line.decode('utf-8').strip().split(':')
+        results.append((int(count), path))
+
+    for result in nlargest(heap_size, results, key=lambda r: r[0]):
+        if print_count:
+            print(f'{result[0]}:', end=' ')
+        print(result[-1])
+
+
+if __name__ == '__main__':
+    run()
