@@ -26,11 +26,11 @@ def parse_emails(blob):
 
     for email in emails:
         tags = email['tags']
-        date = email['headers']['Date']
-        to = email['headers']['To']
-        from_address = email['headers']['From']
-        subject = email['headers']['Subject']
-        body = email['body']
+        date = email.get('headers').get('Date') or ""
+        to = email.get('headers').get('To') or ""
+        from_address = email.get('headers').get('From') or ""
+        subject = email.get('headers').get('Subject') or ""
+        body = email.get('body') or ""
         try:
             body = body[0].get('content')[0].get('content')
         except:
