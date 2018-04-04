@@ -12,7 +12,17 @@ function sync_personal_email
         # INFO: notmuch tags all new mail with: inbox new unread
 
         # add personal tag
-        notmuch tag +personal -- tag:new AND "(from:chris@thesogu.com or to:chris@thesogu.com or from:mistahcummings@gmail.com or to:mistahcummings%@gmail.com)"
+        notmuch tag +personal -- tag:new AND "(from:$PERSONAL_EMAIL or to:$PERSONAL_EMAIL or from:$PERSONAL_GMAIL or to:%@gmail.com)"
+
+        # filter out spam
+        set SPAM_SEARCH "(tag:personal AND tag:new) AND (from:spam@spam.spam"
+        for email in (cat "$DOTFILES/email_spam_list" "$DOTFILES/personal_email_filter")
+            set SPAM_SEARCH $SPAM_SEARCH " OR from:$email"  # the leading space is intentional
+        end
+        set SPAM_SEARCH $SPAM_SEARCH ")"
+
+        notmuch tag +spam -inbox -new -- "$SPAM_SEARCH"
+
 
         # add tags to things that I want to call out, but still see in my inbox
 
