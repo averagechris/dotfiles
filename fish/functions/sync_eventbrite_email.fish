@@ -31,7 +31,7 @@ function sync_eventbrite_email
       # tag messages from work email as sent
       notmuch tag -inbox -unread +sent -- from:ccummings@eventbrite.com tag:new
       # remove inbox tag from emails that I've replied to
-      notmuch tag -inbox -unread -- tag:inbox tag:replied tag:new
+      # notmuch tag -inbox -unread -- tag:inbox tag:replied tag:new
 
       # remove new tag from everything
       notmuch tag -new -- tag:new

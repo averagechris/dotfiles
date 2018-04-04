@@ -1,0 +1,26 @@
+# -*- mode: snippet -*-
+# name: events search past events
+# key: events search past events
+# --
+
+Hi there,
+
+The events search end point is best for retrieving data about
+public events, but keep in mind that past events are not
+publicly available. Only user account that owns the data can
+access past events.
+
+Past events are best accessed on the users owned_events endpoint,
+which will return all of a user's events based on the token passed
+in during the request.
+
+For example:
+GET /users/me/owned_events/
+
+Related Documentation:
+  * users endpoint: https://www.eventbrite.com/developer/v3/endpoints/users/
+  * events endpoint: https://www.eventbrite.com/developer/v3/endpoints/events/
+  * events response format: https://www.eventbrite.com/developer/v3/response_formats/event/
+
+Best,
+Chris
