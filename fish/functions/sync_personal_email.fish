@@ -14,19 +14,8 @@ function sync_personal_email
         # add personal tag
         notmuch tag +personal -- tag:new AND "(from:$PERSONAL_EMAIL or to:$PERSONAL_EMAIL or from:$PERSONAL_GMAIL or to:%@gmail.com)"
 
-        # filter out spam
-        set SPAM_SEARCH "(tag:personal AND tag:new) AND (from:spam@spam.spam"
-        for email in (cat "$DOTFILES/email_spam_list" "$DOTFILES/personal_email_filter")
-            set SPAM_SEARCH $SPAM_SEARCH " OR from:$email"  # the leading space is intentional
-        end
-        set SPAM_SEARCH $SPAM_SEARCH ")"
-
-        notmuch tag +spam -inbox -new -- "$SPAM_SEARCH"
-
-
         # add tags to things that I want to call out, but still see in my inbox
 
-        # add tags to things I want to see, but not in my inbox
 
         # archive stuff that's important but I don't want in inbox
           # receipts and order confirmations
@@ -34,6 +23,27 @@ function sync_personal_email
 
         # filter out cruft that I don't really want to see
         notmuch tag -inbox +social_media_notifications -- tag:new AND tag:personal "(from:@twitter.com or from:@facebookmail.com)"
+
+
+        # add tags to things I want to see, but not in my inbox
+        set LOW_PRIORITY_SEARCH "(tag:personal AND tag:new) AND (from:spam@spam.spam"
+        for phrase in (cat "$DOTFILES/low_priority_list")
+            set LOW_PRIORITY_SEARCH $LOW_PRIORITY_SEARCH " OR from:$phrase"  # the leading space is intentional
+        end
+        set LOW_PRIORITY_SEARCH $LOW_PRIORITY_SEARCH ") AND (not tag:receipt)"
+
+        notmuch tag +low_priority -inbox -new -- "$SPAM_SEARCH"
+
+
+        # filter out spam
+        set SPAM_SEARCH "(tag:personal AND tag:new) AND (from:spam@spam.spam"
+        for email in (cat "$DOTFILES/email_spam_list" "$DOTFILES/personal_email_filter")
+            set SPAM_SEARCH $SPAM_SEARCH " OR from:$email"  # the leading space is intentional
+        end
+        set SPAM_SEARCH $SPAM_SEARCH ") AND (not tag:receipt)"
+
+        notmuch tag +spam -inbox -new -- "$SPAM_SEARCH"
+
 
         # remove new tag from everything
         notmuch tag -new tag:new
