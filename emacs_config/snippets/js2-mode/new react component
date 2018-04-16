@@ -1,0 +1,16 @@
+# -*- mode: snippet -*-
+# name: new react component
+# key: new react comonent
+# --
+
+import React from "react";
+import PropTypes from "prop-types";
+
+const ${1:ComponentName} = props => {
+  return (
+    <div>hello</div>
+  );
+}
+
+$1.defaultProps = {};
+$1.propTypes = {};

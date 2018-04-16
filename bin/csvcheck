@@ -1,4 +1,4 @@
-#! /usr/env fish
+#! /usr/bin/env fish
 
 if test -d ~/dotfiles
   set CSVCHECK_HOME ~/dotfiles/csv_validator
