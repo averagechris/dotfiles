@@ -328,6 +328,8 @@ This is the place where most of your configurations should be done. Unless it is
 explicitly specified that a variable should be set before a package is loaded,
 you should place your code here."
 
+  (setq-default dotspacemacs-persistent-server t)
+
   ;; enable prettier-js-mode if using .js or .jsx buffer
   (add-hook 'web-mode-hook #'(lambda () (enable-minor-mode '("\\.jsx?\\'" . prettier-js-mode))))
 
@@ -384,7 +386,7 @@ you should place your code here."
  '(notmuch-saved-searches
    (quote
     ((:name "personal inbox" :query "tag:inbox and tag:personal")
-     (:name "api-queue" :query "tag:eventbrite and tag:api_support and not tag:api_answered and not tag:api_will_not_answer and not from:ccummings@eventbrite.com")
+     (:name "api-queue" :query "tag:eventbrite and tag:api_support and not tag:api_answered and not tag:api_will_not_answer and not from:ccummings@eventbrite.com and not tag:not_api")
      (:name "eventbrite inbox" :query "tag:inbox and tag:eventbrite and not tag:api_support")
      (:name "eventbrite-today" :query "date:today..! tag:eventbrite not tag:low_priority")
      (:name "eventbrite low priority this week" :query "tag:eventbrite and tag:low_priority date:7d..today")

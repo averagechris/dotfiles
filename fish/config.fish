@@ -27,3 +27,5 @@ test -e "$MISC_VARIABLES_FILE"; and source $MISC_VARIABLES_FILE
 # source private variables if exist
 set -x PRIVATE_VARIABLES_FILE "$DOTFILES/fish/private_variables.fish"
 test -e "$PRIVATE_VARIABLES_FILE"; and source $PRIVATE_VARIABLES_FILE
+
+set -x EDITOR emacsclient -c
