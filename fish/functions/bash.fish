@@ -1,3 +1,3 @@
 function bash
-    /bin/bash --login
+    /bin/bash --login $argv
 end

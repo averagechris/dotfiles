@@ -1,3 +1,3 @@
 function arc
-    eval $HOME/.evbdevtools/arcanist/bin/arc $argv
+    echo 'dont fucking use this bro, login to bash'
 end

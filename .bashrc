@@ -1,6 +1,7 @@
 set -o vi
 export EDITOR="/usr/local/bin/emacsclient -c"
-export VISUAL=$EDITOR
+export VISUAL="$EDITOR"
+alias nano="$EDITOR"
 
 [ -d ~/dotfiles ] && for f in ~/dotfiles/bash/functions/*; do source $f; done
 
