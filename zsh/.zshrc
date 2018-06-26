@@ -67,9 +67,9 @@ source $ZSH/oh-my-zsh.sh
 export LANG=en_US.UTF-8
 
 if [[ -n $SSH_CONNECTION ]]; then
-  export EDITOR='vim'
+  export EDITOR=$(which vim)
 else
-  export EDITOR=$(which nvim)
+  export EDITOR=$(which emacsclient)
 fi
 
 # Set personal aliases, overriding those provided by oh-my-zsh libs,
@@ -85,10 +85,10 @@ if [ -d $HOME/.cargo/bin ]; then
     PATH=$PATH:$RUSTPATH
 fi
 
-if [ -d "$HOME/eventbrite_github/eventbrite"]; then
+if [ -d "$HOME/eventbrite_github/eventbrite" ]; then
     export EVENTBRITE="$HOME/eventbrite_github/eventbrite"
     export ARCANIST_INSTALL_DIR="$HOME/.evbdevtools"
-    export $ARCANIST_BIN="$ARCANIST_INSTALL_DIR/arcanist/bin"
+    export ARCANIST_BIN="$ARCANIST_INSTALL_DIR/arcanist/bin"
     export ARCANISTHELPERS="$ARCANIST_INSTALL_DIR/devtools/scripts/devenv_bash/arcanist_helpers.sh"
 	  export BAY_HOME="$EVENTBRITE/docker-dev"
 	  export DM_START="$ARCANIST_INSTALL_DIR/devtools/scripts/install_devenv/dm_start.sh"

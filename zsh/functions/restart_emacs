@@ -1,0 +1,4 @@
+killall emacsclient
+killall Emacs
+brew services stop emacs-plus
+brew services start emacs-plus
