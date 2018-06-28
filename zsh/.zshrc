@@ -78,6 +78,9 @@ fi
 # For a full list of active aliases, run `alias`.
 export DOTFILES=$HOME/dotfiles
 export PYENV_ROOT=$HOME/.pyenv
+export PYTHON_2_PATH=$PYENV_ROOT/versions/misc2/bin
+export PYTHON_3_PATH=$PYENV_ROOT/versions/misc3/bin
+PATH=$PYTHON_2_PATH:$PYTHON_3_PATH:$PYENV_ROOT/bin:$PYENV_ROOT/shims:$PATH
 
 if [ -d $HOME/.cargo/bin ]; then
     export RUSTPATH=$HOME/.cargo/bin
