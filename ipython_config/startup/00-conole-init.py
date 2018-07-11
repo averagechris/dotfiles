@@ -2,13 +2,18 @@ from collections import (
     defaultdict,
     Sequence,
 )
-from datetime import datetime  # noqa
-import json  # noqa
+from datetime import datetime  # noqa: F401
+import itertools
+import json  # noqa: F401
 import re
 import subprocess
 
-from requests import get, post  # noqa
+from requests import get, post  # noqa: F401
 import six
+
+
+class EventbriteAPIException(Exception):
+    pass
 
 
 def find_credentials(search_term):
@@ -17,14 +22,15 @@ def find_credentials(search_term):
         'lpass ls',
         shell=True,
         stdout=subprocess.PIPE,
-    ).stdout.readlines()
+    ).stdout.read().decode('utf-8').split('\n')
+
     matching_accounts = map(
         lambda account: tuple(
             # produces: (account_name, account_id)
             re.sub('[\[\]]', '', account).strip().split(' id:')
         ),
         (
-            account.decode('utf-8') for account in lastpass_accounts
+            account for account in lastpass_accounts
             if re.match(
                     '.*{}.*'.format(search_term),
                     account,
@@ -39,7 +45,7 @@ def find_credentials(search_term):
         'lpass show -p {}'.format(account_id),
         shell=True,
         stdout=subprocess.PIPE,
-    ).stdout.read().strip()
+    ).stdout.read().decode('utf-8').strip()
 
     return account_name, password
 
@@ -56,34 +62,86 @@ class EventbriteAPI(object):
         'dev': BASE_EVENTBRITE_API_URL_DEV
     }
 
-    def __init__(self, environment='qa', credentials=None):
-        self.environment = environment
+    def __init__(self, environment=None, credentials=None):
+        self.environment = environment or 'qa'
         self.base_url = self.EVENTBRITE_API_URL_MAP.get(self.environment, self.BASE_EVENTBRITE_API_URL_QA)
-        self.reset_token(credentials=None)
+        self.base_headers = lambda: {'Authorization': 'Bearer {}'.format(self.token)}
+        self.organization_id = None
+        self.token = None
+        self.reset_token(credentials=credentials)
+
+        self.eventbrite_url_format_str = '{base_url}{organization_base}{path}'.format(
+            base_url=self.base_url,
+            organization_base='organizations/{}/'.format(self.organization_id) or '',
+            path='{path}'
+        )
 
     def reset_token(self, credentials=None):
         self.token = credentials or find_credentials('{} token'.format(self.environment))[1]
+        try:
+            self.organization_id = self._get_organization_id()
+        except (KeyError, IndexError, AttributeError) as exc:
+            print(self.token, exc)
+            self.organization_id = None
+
+    def is_legacy_user(self):
+        return not bool(self.organization_id)
+
+    def _get_organization_id(self):
+        api_response = get(
+            self.base_url + 'users/me/organizations/',
+            headers=self.base_headers()
+        )
+        if not api_response.ok:
+            raise EventbriteAPIException('Getting organization information failed')
+
+        return api_response.json()['organizations'][0]['id']
+
+    def post_ticket_classes_to_event(self, event_id, **kwargs):
+        if self.is_legacy_user():
+            return self.post_ticket_classes_to_event_legacy(self, event_id, **kwargs)
+
+        path = '{base_url}events/{event_id}/ticket_classes/'.format(base_url=self.base_url, event_id=event_id)
+        headers = self.base_headers()
+        headers.update(kwargs.pop('headers', {}))
+        params = kwargs.pop('params', {})
+        return post(
+            path,
+            headers=headers,
+            params=params,
+            **kwargs
+        )
+
+    def post_ticket_classes_to_event_legacy(self, event_id, **kwargs):
+        path = 'events/{event_id}/ticket_classes/'.format(event_id=event_id)
+        headers = self.base_headers()
+        headers.update(kwargs.pop('headers', {}))
+        params = kwargs.pop('params', {})
+        return post(
+            self.eventbrite_url_format_str.format(path=path),
+            headers=headers,
+            params=params,
+            **kwargs
+        )
 
     def retrieve_n_pages(self, path, pages=None, **kwargs):
-        headers = {'Authorization': 'Bearer {}'.format(self.token)}
+        headers = self.base_headers()
         headers.update(kwargs.pop('headers', {}))
+        pages = pages or 0
 
         results = defaultdict(list)
-        has_more_items = True
         continuation_token = None
         next_page = 1
 
-        while has_more_items:
-            parameters = {}
-            if continuation_token:
-                parameters['continuation'] = continuation_token
-            else:
-                parameters['page'] = next_page
+        has_more_items = True
+        iteration_counter = itertools.count()
 
+        while has_more_items and pages <= next(iteration_counter):
+            parameters = dict(continuation=continuation_token) if continuation_token else dict(page=next_page)
             parameters.update(kwargs.pop('params', {}))
 
             api_response = get(
-                '{base}{path}'.format(base=self.base_url, path=path),
+                self.eventbrite_url_format_str.format(path=path),
                 headers=headers,
                 params=parameters,
                 **kwargs
@@ -96,29 +154,17 @@ class EventbriteAPI(object):
                 break
 
             response_json = api_response.json()
-
-            pagination = response_json.pop('pagination', None)
-            if pagination is None:
-                break
-
-            current_page_number = int(pagination['page_number'])
+            pagination = response_json.pop('pagination', {})
+            current_page_number = int(pagination.get('page_number', 0))
+            next_page = current_page_number + 1
+            has_more_items = bool(pagination.get('has_more_items'))
+            continuation_token = pagination.get('continuation')
 
             for key, val in six.iteritems(response_json):
                 if isinstance(val, Sequence):
                     results[key].extend(val)
                 else:
                     results[key].append(val)
-
-            has_more_items = pagination['has_more_items']
-            if has_more_items:
-                continuation_token = pagination.get('continuation')
-                next_page = current_page_number + 1
-
-            if current_page_number >= pages:
-                print
-
-            if current_page_number >= pages:
-                break
 
         return results
 
