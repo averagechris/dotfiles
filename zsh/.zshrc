@@ -86,6 +86,7 @@ if [ -d $HOME/.cargo/bin ]; then
     export RUSTPATH=$HOME/.cargo/bin
     export RUST_SRC_PATH=$HOME/.multirust/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src
     PATH=$PATH:$RUSTPATH
+	test -f $HOME/.zfunc && fpath+=~/.zfunc
 fi
 
 if [ -d "$HOME/eventbrite_github/eventbrite" ]; then
