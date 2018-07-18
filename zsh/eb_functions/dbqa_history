@@ -1,0 +1,1 @@
+mycli -h $EVENTBRITE_MYSQL_QA_HISTORY -p $(script_lpass database) -D eb_history $@

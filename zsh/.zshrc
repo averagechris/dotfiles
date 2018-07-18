@@ -55,6 +55,7 @@ ZSH_THEME="bira"
 # Add wisely, as too many plugins slow down shell startup.
 plugins=(
   git
+  pyenv
   tmux
 )
 
@@ -66,11 +67,7 @@ source $ZSH/oh-my-zsh.sh
 
 export LANG=en_US.UTF-8
 
-if [[ -n $SSH_CONNECTION ]]; then
-  export EDITOR=$(which vim)
-else
-  export EDITOR=$(which emacsclient)
-fi
+export EDITOR=vim
 
 # Set personal aliases, overriding those provided by oh-my-zsh libs,
 # plugins, and themes. Aliases can be placed here, though oh-my-zsh
@@ -80,7 +77,9 @@ export DOTFILES=$HOME/dotfiles
 export PYENV_ROOT=$HOME/.pyenv
 export PYTHON_2_PATH=$PYENV_ROOT/versions/misc2/bin
 export PYTHON_3_PATH=$PYENV_ROOT/versions/misc3/bin
-PATH=$PYTHON_2_PATH:$PYTHON_3_PATH:$PYENV_ROOT/bin:$PYENV_ROOT/shims:$PATH
+PYENV_SHIMS=/Users/ccummings/.pyenv/shims
+PYENV_VENV_SHIMS=/usr/local/Cellar/pyenv-virtualenv/1.1.1/shims
+PATH=$PYTHON_2_PATH:$PYTHON_3_PATH:$PYENV_ROOT/bin:$PYENV_ROOT/shims:$DOTFILES/bin:/usr/local/bin:$PYENV_VENVSHIMS:$PYENV_SHIMS:$HOME/.fzf/bin:$PATH
 
 if [ -d $HOME/.cargo/bin ]; then
     export RUSTPATH=$HOME/.cargo/bin
@@ -97,15 +96,24 @@ if [ -d "$HOME/eventbrite_github/eventbrite" ]; then
 	  export BAY_HOME="$EVENTBRITE/docker-dev"
 	  export DM_START="$ARCANIST_INSTALL_DIR/devtools/scripts/install_devenv/dm_start.sh"
 
-	  test -f $ARCANISTHELPERS && source $ARCANISTHELPERS
-	  test -f $DM_START && source $DM_START
+	  [ -f $ARCANISTHELPERS ] && source $ARCANISTHELPERS
+	  [ -f $DM_START ] && source $DM_START
     PATH="$PATH:$ARCANIST_BIN"
+
+    source "$HOME/.private_variables"
+    EB_FUNCTIONS=$DOTFILES/zsh/eb_functions
+    fpath=($EB_FUNCTIONS $fpath)
+    for func in $(ls $EB_FUNCTIONS); do autoload $func; done;
 fi
 
-PATH="$DOTFILES/bin:/usr/local/bin:/usr/local/Cellar/pyenv-virtualenv/1.1.1/shims:/Users/ccummings/.pyenv/shims:$HOME/.fzf/bin:$PATH"
-
-export MY_ZSH_FUNCTIONS=$DOTFILES/zsh/functions
+MY_ZSH_FUNCTIONS=$DOTFILES/zsh/functions
 fpath=($MY_ZSH_FUNCTIONS $fpath)
-for func in $(ls $MY_ZSH_FUNCTIONS); autoload $func;
+for func in $(ls $MY_ZSH_FUNCTIONS); do autoload $func; done;
+
+# less pager config
+export LESS="-SRXF"
+
 set -o vi
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+
+if which pyenv-virtualenv-init > /dev/null; then eval "$(pyenv virtualenv-init -)"; fi
