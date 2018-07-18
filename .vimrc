@@ -4,11 +4,9 @@ Plug 'tpope/vim-surround'
 call plug#end()
 
 " -- LOOK AND FEEL
-set background=dark
 set nocompatible
 filetype on
 syntax enable  " enable syntax processing
-set number  " set line numbers
 set showcmd  " show command in bottom bar
 set lazyredraw  " redraw only when needed. (speeds things up)
 set showmatch  " highlight matching braces, brackets, parens
@@ -24,7 +22,6 @@ set sidescroll=1
 set ignorecase  " ignore case for searches
 set incsearch  " search as characters are input
 set hlsearch  " highlight search matches
-nnoremap <silent> <Esc> :nohlsearch<Bar>:echo<CR>
 set magic
 
 " -- INDENT SETTINGS
@@ -49,5 +46,3 @@ set nowrap
 " -- KEY BINDINGS / REMAPS
 " \pp - paste into buffer
 nnoremap <leader>pp :r !pbpaste<CR>
-" \cc -- copy visually selected text into system clipboard
-vmap <leader>cc :'<,'>:w !pbcopy<CR>
