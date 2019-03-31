@@ -6,3 +6,4 @@ fishd.*
 fish/functions/fzf_key_bindings.fish
 /fish/private_variables.fish
 fish/fish_history
+/zsh/ebaliases.sh
