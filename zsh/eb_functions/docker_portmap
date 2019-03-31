@@ -1,0 +1,1 @@
+docker ps | grep "$@" | grep '\d*->' -o | grep -o '\d*' | sed '/^\s*$/d'

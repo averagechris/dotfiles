@@ -67,8 +67,6 @@ source $ZSH/oh-my-zsh.sh
 
 export LANG=en_US.UTF-8
 
-export EDITOR=vim
-
 # Set personal aliases, overriding those provided by oh-my-zsh libs,
 # plugins, and themes. Aliases can be placed here, though oh-my-zsh
 # users are encouraged to define aliases within the ZSH_CUSTOM folder.
@@ -79,7 +77,7 @@ export PYTHON_2_PATH=$PYENV_ROOT/versions/misc2/bin
 export PYTHON_3_PATH=$PYENV_ROOT/versions/misc3/bin
 PYENV_SHIMS=/Users/ccummings/.pyenv/shims
 PYENV_VENV_SHIMS=/usr/local/Cellar/pyenv-virtualenv/1.1.1/shims
-PATH=$PYTHON_2_PATH:$PYTHON_3_PATH:$PYENV_ROOT/bin:$PYENV_ROOT/shims:$DOTFILES/bin:/usr/local/bin:$PYENV_VENVSHIMS:$PYENV_SHIMS:$HOME/.fzf/bin:$PATH
+PATH=$PYENV_ROOT/bin:$PYENV_ROOT/shims:$DOTFILES/bin:/usr/local/bin:$PYENV_VENVSHIMS:$PYENV_SHIMS:$HOME/.fzf/bin:$PYTHON_2_PATH:$PYTHON_3_PATH:$PATH
 
 if [ -d $HOME/.cargo/bin ]; then
     export RUSTPATH=$HOME/.cargo/bin
@@ -104,11 +102,20 @@ if [ -d "$HOME/eventbrite_github/eventbrite" ]; then
     EB_FUNCTIONS=$DOTFILES/zsh/eb_functions
     fpath=($EB_FUNCTIONS $fpath)
     for func in $(ls $EB_FUNCTIONS); do autoload $func; done;
+
+    source $DOTFILES/zsh/ebaliases.sh
+
+    # at EB we run black on python 2 code bases, so I need an alias for black
+    # TODO: probably don't need this anymore cause pyenv kicks ass
+    # alias black=$PYENV_ROOT/versions/misc3/bin/black
 fi
 
 MY_ZSH_FUNCTIONS=$DOTFILES/zsh/functions
 fpath=($MY_ZSH_FUNCTIONS $fpath)
 for func in $(ls $MY_ZSH_FUNCTIONS); do autoload $func; done;
+
+alias edit='emacsclient -t -a vim'
+export EDITOR=vim
 
 # less pager config
 export LESS="-SRXF"
@@ -117,3 +124,16 @@ set -o vi
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 
 if which pyenv-virtualenv-init > /dev/null; then eval "$(pyenv virtualenv-init -)"; fi
+
+# pip zsh completion start
+function _pip_completion {
+  local words cword
+  read -Ac words
+  read -cn cword
+  reply=( $( COMP_WORDS="$words[*]" \
+             COMP_CWORD=$(( cword-1 )) \
+             PIP_AUTO_COMPLETE=1 $words[1] ) )
+}
+compctl -K _pip_completion pip
+# pip zsh completion end
+

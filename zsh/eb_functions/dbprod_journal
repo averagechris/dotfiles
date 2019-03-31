@@ -1,1 +1,1 @@
-mycli -h $EVENTBRITE_MYSQL_PROD_JOURNAL -p $(script_lpass okta) -D journal $@
+mycli -h $EVENTBRITE_MYSQL_PROD_JOURNAL -p $(script_lpass okta) -D transaction_journal $@

@@ -233,3 +233,5 @@ waiting-room-qa() {
         echo "Try again with a valid Eventbrite Event ID"
     fi
 }
+
+PATH=$HOME/dotfiles/bin:$PATH

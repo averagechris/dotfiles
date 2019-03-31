@@ -1,0 +1,1 @@
+mycli -h evbdev.com -u root -P `docker_portmap mysql-journal` -D transaction_journal
