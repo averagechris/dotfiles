@@ -7,3 +7,4 @@ fish/functions/fzf_key_bindings.fish
 /fish/private_variables.fish
 fish/fish_history
 /zsh/ebaliases.sh
+/emacs_config/snippets/text-mode/phabricator_username_*

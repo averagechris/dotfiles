@@ -86,8 +86,8 @@ if [ -d $HOME/.cargo/bin ]; then
 	test -f $HOME/.zfunc && fpath+=~/.zfunc
 fi
 
-if [ -d "$HOME/eventbrite_github/eventbrite" ]; then
-    export EVENTBRITE="$HOME/eventbrite_github/eventbrite"
+if [ -d "$HOME/eventbrite" ]; then
+    export EVENTBRITE="$HOME/eventbrite"
     export ARCANIST_INSTALL_DIR="$HOME/.evbdevtools"
     export ARCANIST_BIN="$ARCANIST_INSTALL_DIR/arcanist/bin"
     export ARCANISTHELPERS="$ARCANIST_INSTALL_DIR/devtools/scripts/devenv_bash/arcanist_helpers.sh"
@@ -136,4 +136,3 @@ function _pip_completion {
 }
 compctl -K _pip_completion pip
 # pip zsh completion end
-

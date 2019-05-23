@@ -1,1 +1,1 @@
-mycli -h $EVENTBRITE_MYSQL_PROD_MESSAGE -p $(script_lpass okta) -D message $@
+mycli -h $MYSQL_PROD_DB_MESSAGE -p $(script_lpass okta) -D message $@

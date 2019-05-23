@@ -1,0 +1,29 @@
+#! /usr/bin/env python
+
+import glob
+import os
+
+template = """# -*- mode: snippet -*-
+# name: {name}
+# key: phab {name}
+# --
+{name}
+"""
+
+load_path = "/Users/ccummings/.evbdevtools/phabricator_users.txt"
+save_dir = "/Users/ccummings/dotfiles/emacs_config/snippets/arcanist-mode/"
+prefix = "phabricator_username_"
+save_path = "{}{}{}".format(save_dir, prefix, "{name}")
+
+with open(load_path) as f:
+    users = f.readlines()
+
+for old_snippet_file in glob.glob("{}{}*".format(save_dir, prefix)):
+    os.remove(old_snippet_file)
+
+for name in users:
+    name = name.strip()
+    with open(save_path.format(name=name), mode="w") as f:
+        f.write(name)
+
+print(f"Updated snippets for {len(users)} users.")

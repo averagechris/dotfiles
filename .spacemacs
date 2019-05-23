@@ -377,7 +377,7 @@ you should place your code here."
    (quote
     ("bffa9739ce0752a37d9b1eee78fc00ba159748f50dc328af4be661484848e476" "fa2b58bb98b62c3b8cf3b6f02f058ef7827a8e497125de0254f56e373abee088" default)))
  '(evil-want-Y-yank-to-eol nil)
- '(helm-ag-base-command "rg --no-heading")
+ ;; '(helm-ag-base-command "rg --no-heading")
  '(notmuch-saved-searches
    (quote
     ((:name "eventbrite_inbox" :query "(not (tag:api_support or tag:low_priority)) and tag:eventbrite and tag:inbox")
