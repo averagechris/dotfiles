@@ -114,8 +114,7 @@ MY_ZSH_FUNCTIONS=$DOTFILES/zsh/functions
 fpath=($MY_ZSH_FUNCTIONS $fpath)
 for func in $(ls $MY_ZSH_FUNCTIONS); do autoload $func; done;
 
-alias edit='emacsclient -t -a vim'
-export EDITOR=vim
+export EDITOR="emacsclient -t"
 
 # less pager config
 export LESS="-SRXF"

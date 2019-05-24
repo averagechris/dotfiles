@@ -1,0 +1,7 @@
+curl $EB_WHEELHOUSE_URL | \
+    grep '>[a-z]*_service-.*<' | \
+    grep -o '[a-z]*_service-[0-9]*\.[0-9]*.[0-9]*' | \
+    sd - ' ' | \
+    sort | \
+    grep "$@"
+
