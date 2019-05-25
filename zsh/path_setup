@@ -1,0 +1,20 @@
+export PATH=$DOTFILES/bin:$PATH
+# note /usr/local/bin doesn't need to be added in zsh it's already there??
+
+# python related
+if [ -f $HOME/.pyenv ]; then
+    export PYENV_ROOT=$HOME/.pyenv
+    export PYTHON_2_PATH=$PYENV_ROOT/versions/misc2/bin
+    export PYTHON_3_PATH=$PYENV_ROOT/versions/misc3/bin
+    PYENV_SHIMS=/Users/ccummings/.pyenv/shims
+    PYENV_VENV_SHIMS=/usr/local/Cellar/pyenv-virtualenv/1.1.1/shims
+    export PATH=$PYENV_ROOT/bin:$PYENV_ROOT/shims:$PYENV_VENVSHIMS:$PYENV_SHIMS:$PYTHON_2_PATH:$PYTHON_3_PATH:$PATH
+fi
+
+# rust related
+if [ -d $HOME/.cargo/bin ]; then
+    export RUSTPATH=$HOME/.cargo/bin
+    export RUST_SRC_PATH=$HOME/.multirust/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src
+    export PATH=$PATH:$RUSTPATH
+	  test -f $HOME/.zfunc && fpath+=~/.zfunc
+fi

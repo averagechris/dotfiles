@@ -1,0 +1,3 @@
+choice=`fzf`
+[ $status -eq 0 ] && \
+    eval "$EDITOR" "$choice"

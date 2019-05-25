@@ -44,7 +44,7 @@ ZSH_THEME="bira"
 # Uncomment the following line if you want to disable marking untracked files
 # under VCS as dirty. This makes repository status check for large repositories
 # much, much faster.
-# DISABLE_UNTRACKED_FILES_DIRTY="true"
+DISABLE_UNTRACKED_FILES_DIRTY="true"
 
 # Would you like to use another custom folder than $ZSH/custom?
 # ZSH_CUSTOM=/path/to/new-custom-folder
@@ -72,55 +72,29 @@ export LANG=en_US.UTF-8
 # users are encouraged to define aliases within the ZSH_CUSTOM folder.
 # For a full list of active aliases, run `alias`.
 export DOTFILES=$HOME/dotfiles
-export PYENV_ROOT=$HOME/.pyenv
-export PYTHON_2_PATH=$PYENV_ROOT/versions/misc2/bin
-export PYTHON_3_PATH=$PYENV_ROOT/versions/misc3/bin
-PYENV_SHIMS=/Users/ccummings/.pyenv/shims
-PYENV_VENV_SHIMS=/usr/local/Cellar/pyenv-virtualenv/1.1.1/shims
-PATH=$PYENV_ROOT/bin:$PYENV_ROOT/shims:$DOTFILES/bin:/usr/local/bin:$PYENV_VENVSHIMS:$PYENV_SHIMS:$HOME/.fzf/bin:$PYTHON_2_PATH:$PYTHON_3_PATH:$PATH
+export EDITOR="emacsclient -t"
+export LESS="-SRXF"
 
-if [ -d $HOME/.cargo/bin ]; then
-    export RUSTPATH=$HOME/.cargo/bin
-    export RUST_SRC_PATH=$HOME/.multirust/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src
-    PATH=$PATH:$RUSTPATH
-	test -f $HOME/.zfunc && fpath+=~/.zfunc
-fi
+# vi mode config
+bindkey -v
+export KEYTIMEOUT=1
 
-if [ -d "$HOME/eventbrite" ]; then
-    export EVENTBRITE="$HOME/eventbrite"
-    export ARCANIST_INSTALL_DIR="$HOME/.evbdevtools"
-    export ARCANIST_BIN="$ARCANIST_INSTALL_DIR/arcanist/bin"
-    export ARCANISTHELPERS="$ARCANIST_INSTALL_DIR/devtools/scripts/devenv_bash/arcanist_helpers.sh"
-	  export BAY_HOME="$EVENTBRITE/docker-dev"
-	  export DM_START="$ARCANIST_INSTALL_DIR/devtools/scripts/install_devenv/dm_start.sh"
-
-	  [ -f $ARCANISTHELPERS ] && source $ARCANISTHELPERS
-	  [ -f $DM_START ] && source $DM_START
-    PATH="$PATH:$ARCANIST_BIN"
-
-    source "$HOME/.private_variables"
-    EB_FUNCTIONS=$DOTFILES/zsh/eb_functions
-    fpath=($EB_FUNCTIONS $fpath)
-    for func in $(ls $EB_FUNCTIONS); do autoload $func; done;
-
-    source $DOTFILES/zsh/ebaliases.sh
-
-    # at EB we run black on python 2 code bases, so I need an alias for black
-    # TODO: probably don't need this anymore cause pyenv kicks ass
-    # alias black=$PYENV_ROOT/versions/misc3/bin/black
-fi
-
+# lazy load functions defined in dotfiles/zsh/functions
 MY_ZSH_FUNCTIONS=$DOTFILES/zsh/functions
 fpath=($MY_ZSH_FUNCTIONS $fpath)
 for func in $(ls $MY_ZSH_FUNCTIONS); do autoload $func; done;
 
-export EDITOR="emacsclient -t"
+# broken out configs
+source $DOTFILES/zsh/path_setup
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh  # this is here cause fzf looks here on install
+source $DOTFILES/zsh/fzf_config
+[ -f $DOTFILES/zsh/eb_specific_config ] && source $DOTFILES/zsh/eb_specific_config
 
-# less pager config
-export LESS="-SRXF"
 
-set -o vi
-[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+###################################
+# below here are things appended to
+# automatically by various tools
+###################################
 
 if which pyenv-virtualenv-init > /dev/null; then eval "$(pyenv virtualenv-init -)"; fi
 
