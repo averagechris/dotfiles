@@ -86,6 +86,7 @@ for func in $(ls $my_funcs); do autoload $func; done;
 
 # broken out configs
 source $DOTFILES/zsh/path_setup
+source $DOTFILES/zsh/general_aliases
 test -f ~/.fzf.zsh && source ~/.fzf.zsh  # this is here cause fzf looks here on install
 source $DOTFILES/zsh/fzf_config
 test -f $DOTFILES/zsh/eb_specific_config  && source $DOTFILES/zsh/eb_specific_config

@@ -43,6 +43,7 @@ function install_everything {
     node
     ripgrep
     sd
+    terminal-notifier
     the_silver_searcher
     tmux
     wget

@@ -1,3 +1,6 @@
-alias cp='cp -iv'  # verbose and warning
-alias mv='mv -iv'  # verbose and warning
-alias mkdir='mkdir -pv'  # verbpose and make path
+alias cp='cp -iv'  # warning, verbose
+alias mv='mv -iv'  # warning, verbose
+alias mkdir='mkdir -pv'  # make path, verbose
+
+# remove empty lines, leading and trailing whitespace
+alias trim="sed '/^$/d' | sed -e 's/^ *//' | sed -e 's/ *$//'"
