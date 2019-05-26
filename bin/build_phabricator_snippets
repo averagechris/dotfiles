@@ -11,7 +11,7 @@ template = """# -*- mode: snippet -*-
 """
 
 load_path = "/Users/ccummings/.evbdevtools/phabricator_users.txt"
-save_dir = "/Users/ccummings/dotfiles/emacs_config/snippets/arcanist-mode/"
+save_dir = "/Users/ccummings/dotfiles/spacemacs/snippets/arcanist-mode/"
 prefix = "phabricator_username_"
 save_path = "{}{}{}".format(save_dir, prefix, "{name}")
 

@@ -1,0 +1,3 @@
+alias cp='cp -iv'  # verbose and warning
+alias mv='mv -iv'  # verbose and warning
+alias mkdir='mkdir -pv'  # verbpose and make path

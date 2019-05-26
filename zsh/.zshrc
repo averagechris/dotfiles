@@ -80,16 +80,16 @@ bindkey -v
 export KEYTIMEOUT=1
 
 # lazy load functions defined in dotfiles/zsh/functions
-MY_ZSH_FUNCTIONS=$DOTFILES/zsh/functions
-fpath=($MY_ZSH_FUNCTIONS $fpath)
-for func in $(ls $MY_ZSH_FUNCTIONS); do autoload $func; done;
+my_funcs=$DOTFILES/zsh/functions
+fpath=($my_funcs $fpath)
+for func in $(ls $my_funcs); do autoload $func; done;
 
 # broken out configs
 source $DOTFILES/zsh/path_setup
-[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh  # this is here cause fzf looks here on install
+test -f ~/.fzf.zsh && source ~/.fzf.zsh  # this is here cause fzf looks here on install
 source $DOTFILES/zsh/fzf_config
-[ -f $DOTFILES/zsh/eb_specific_config ] && source $DOTFILES/zsh/eb_specific_config
-
+test -f $DOTFILES/zsh/eb_specific_config  && source $DOTFILES/zsh/eb_specific_config
+source $DOTFILES/zsh/os_specific_config
 
 ###################################
 # below here are things appended to
