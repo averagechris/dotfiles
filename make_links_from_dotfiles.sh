@@ -18,9 +18,13 @@ echo -n "
     $dotfiles/zsh/.zshrc $HOME
 " | _trim | xargs ln -fs
 
-# link spacemacs snippets if spacemacs is installed
-test -d $HOME/.emacs.d/private && \
+# link spacemacs layers and snippets if spacemacs is installed
+if test -d $HOME/.emacs.d/private; then
+    for layer_dir in `ls $dotfiles/spacemacs/layers/`; do
+        ln -fs $dotfiles/spacemacs/layers/$layer_dir $HOME/.emacs.d/private/
+    done
     ln -fs $dotfiles/spacemacs/snippets $HOME/.emacs.d/private/snippets
+fi
 
 # link nvim config if nvim is installed
 test -d $HOME/.config -a `which nvim 2> /dev/null` != "" && \

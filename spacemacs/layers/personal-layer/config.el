@@ -1,0 +1,5 @@
+(setq dotspacemacs-themes '(spacemacs-light spacemacs-dark))
+(setq dotspacemacs-helm-resize t)
+(setq dotspacemacs-maximized-at-startup t)
+(setq dotspacemacs-search-tools '("ag" "grep"))
+(setq dotspacemacs-whitespace-cleanup 'trailing)
