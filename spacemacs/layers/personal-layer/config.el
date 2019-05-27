@@ -2,7 +2,7 @@
 (setq tramp-default-method "ssh")
 
 ;; default spacemacs overrides
-(setq dotspacemacs-themes '(spacemacs-dark spacemacs-light leuven))
+(setq-default dotspacemacs-themes '(spacemacs-light spacemacs-dark leuven))
 (setq dotspacemacs-helm-resize t)
 (setq dotspacemacs-maximized-at-startup t)
 (setq dotspacemacs-search-tools '("ag" "grep"))

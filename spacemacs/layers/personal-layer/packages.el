@@ -71,6 +71,6 @@
   (add-to-list 'auto-mode-alist '("\\.js\\'" . web-mode))
   (add-hook
    'web-mode-hook
-   #'(lambda () (enable-minor-mode '("\\.js\\'" . prettier-js-mode)))))
+   #'(lambda () (personal-layer/enable-minor-mode '("\\.js\\'" . prettier-js-mode)))))
 
 ;;; packages.el ends here
