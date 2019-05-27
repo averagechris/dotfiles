@@ -11,9 +11,13 @@ function _trim {
 function _filter_known_ok {
     # filter out log messages known to be ok
     _trim < $1 | \
+
+        # brew related filters
         grep -v "brew upgrade " | \
         grep -v "already installed" | \
         egrep -iv "re-?install" | \
+
+        # rustup related filters
         egrep -v "info: (latest)|(downloading)|(installing)|(default)"
 }
 
@@ -36,12 +40,14 @@ function install_everything {
     fish
     fzf
     go
+    ispell
     lastpass-cli
     moreutils
     mycli
     neovim
     node
     ripgrep
+    socat
     sd
     terminal-notifier
     the_silver_searcher
@@ -51,10 +57,11 @@ function install_everything {
     ' | _trim | xargs brew install
 
 
-    ###################
-    # install gui apps
-    ###################
+    ############################
+    # install gui and cask apps
+    ############################
     echo -n '
+    docker
     firefox
     flux
     flycut

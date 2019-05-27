@@ -16,6 +16,7 @@ echo -n "
     $dotfiles/bash/.bashrc $HOME
     $dotfiles/spacemacs/.spacemacs $HOME
     $dotfiles/zsh/.zshrc $HOME
+    $dotfiles/zsh/.zshenv $HOME
 " | _trim | xargs ln -fs
 
 # link spacemacs layers and snippets if spacemacs is installed

@@ -1,6 +1,3 @@
-fzf_bin=$HOME/.fzf/bin
-[ -f $fzf_bin ] && export PATH=$PATH:$fzf_bin
-
 # if fd is installed use it to make fzf faster
 which fd &> /dev/null && \
     export FZF_DEFAULT_COMMAND='fd' && \
