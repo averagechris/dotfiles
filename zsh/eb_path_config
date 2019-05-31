@@ -6,6 +6,7 @@ if [ -d "$HOME/eventbrite" ]; then
     export ARCANISTHELPERS="$ARCANIST_INSTALL_DIR/devtools/scripts/devenv_bash/arcanist_helpers.sh"
 	  export BAY_HOME="$EVENTBRITE/docker-dev"
 	  export DM_START="$ARCANIST_INSTALL_DIR/devtools/scripts/install_devenv/dm_start.sh"
-    export PATH="$PATH:$ARCANIST_BIN"
+
+    export PATH=$ARCANIST_INSTALL_DIR/arcanist/bin:$PATH
     source "$HOME/.private_variables"
 fi
