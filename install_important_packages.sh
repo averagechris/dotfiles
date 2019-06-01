@@ -44,6 +44,7 @@ function install_everything {
     lastpass-cli
     moreutils
     mycli
+    mysql
     neovim
     node
     ripgrep

@@ -9,14 +9,15 @@ function _trim {
 
 # symbolic links
 echo -n "
+    $dotfiles/.myclirc $HOME
     $dotfiles/.profile $HOME
     $dotfiles/.tmux.conf $HOME
     $dotfiles/.vimrc $HOME
     $dotfiles/bash/.bash_profile $HOME
     $dotfiles/bash/.bashrc $HOME
     $dotfiles/spacemacs/.spacemacs $HOME
-    $dotfiles/zsh/.zshrc $HOME
     $dotfiles/zsh/.zshenv $HOME
+    $dotfiles/zsh/.zshrc $HOME
 " | _trim | xargs ln -fs
 
 # link spacemacs layers and snippets if spacemacs is installed
