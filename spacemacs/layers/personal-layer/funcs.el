@@ -1,12 +1,11 @@
 (defun personal-layer/enable-minor-mode (pattern-and-minor-mode)
   "Enable minor mode if filename match the regexp. (regexp . minor-mode)."
-  (if (buffer-file-name)
-      (if (string-match (car pattern-and-minor-mode) buffer-file-name)
+  (when (buffer-file-name)
+      (when (string-match (car pattern-and-minor-mode) buffer-file-name)
           (funcall (cdr pattern-and-minor-mode)))))
 
 (defun personal-layer/start-end-points-current-word ()
   "Return start and end points of the current-word."
-  (interactive)
   (let ((word-pattern  "-_A-Za-z0-9")
         (start-pnt nil)
         (end-pnt nil))

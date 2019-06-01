@@ -8,5 +8,7 @@
 (setq dotspacemacs-search-tools '("ag" "grep"))
 (setq dotspacemacs-whitespace-cleanup 'trailing)
 
-(setq anaconda-mode-localhost-address "localhost")
-;; (setq python-shell-interpreter "usr/bin/python")
+(when (configuration-layer/package-usedp 'anaconda-mode)
+  (setq anaconda-mode-localhost-address "localhost")
+  ;; (setq python-shell-interpreter "usr/bin/python")
+  )
