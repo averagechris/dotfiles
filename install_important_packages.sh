@@ -16,6 +16,7 @@ function _filter_known_ok {
         grep -v "brew upgrade " | \
         grep -v "already installed" | \
         egrep -iv "re-?install" | \
+        grep -v "It seems there is already an App at" \
 
         # rustup related filters
         egrep -v "info: (latest)|(downloading)|(installing)|(default)"
@@ -47,6 +48,7 @@ function install_everything {
     mysql
     neovim
     node
+    openssl
     ripgrep
     socat
     sd
@@ -73,8 +75,9 @@ function install_everything {
     #################################
     # install apps from special taps
     #################################
-    brew list | grep -q emacs-plus || \
-        (brew tap d12frosted/emacs-plus && brew install emacs-plus)
+    brew list | grep -q emacs-plus || {
+        brew tap d12frosted/emacs-plus && brew install emacs-plus
+    }
 
 
     ####################

@@ -1,8 +1,7 @@
-export PATH=$DOTFILES/bin:$PATH
-# note /usr/local/bin doesn't need to be added in zsh it's already there??
+export PATH=$DOTFILES/bin:/usr/local/bin:/usr/local/sbin:$PATH
 
 # python related
-if [ -f $HOME/.pyenv ]; then
+if [ -d $HOME/.pyenv ]; then
     export PYENV_ROOT=$HOME/.pyenv
     export PYTHON_2_PATH=$PYENV_ROOT/versions/misc2/bin
     export PYTHON_3_PATH=$PYENV_ROOT/versions/misc3/bin
