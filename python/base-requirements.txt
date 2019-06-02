@@ -1,0 +1,17 @@
+coverage
+django-nose
+factory_boy
+flake8
+freezegun
+ipdb
+ipython
+isort
+jedi
+json-rpc
+memory-profiler
+mock
+nose
+parameterized
+pympler
+service_factory
+ebgargoyle
