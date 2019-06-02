@@ -25,7 +25,7 @@ if test -d $HOME/.emacs.d/private; then
     for layer_dir in `ls $dotfiles/spacemacs/layers/`; do
         ln -fs $dotfiles/spacemacs/layers/$layer_dir $HOME/.emacs.d/private/
     done
-    ln -fs $dotfiles/spacemacs/snippets $HOME/.emacs.d/private/snippets
+    ln -fs $dotfiles/spacemacs/snippets $HOME/.emacs.d/private/
 fi
 
 # link nvim config if nvim is installed
