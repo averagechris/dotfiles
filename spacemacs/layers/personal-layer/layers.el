@@ -1,7 +1,6 @@
 (configuration-layer/declare-layers
  '(
    ansible
-   auto-completion
    better-defaults
    common-lisp
    csv
@@ -27,4 +26,8 @@
    syntax-checking
    version-control
    vimscript
-   yaml))
+   yaml
+
+   (auto-completion :variables
+                    auto-completion-enable-sort-by-usage t
+                    auto-completion-enable-snippets-in-popup t)))
