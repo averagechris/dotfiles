@@ -19,26 +19,89 @@
 
 (defconst personal-layer-packages
   '(
+    anaconda-mode
     docker-tramp
-    evil-mode
     git-commit
     git-gutter+
     helm-ag
     prettier-js
+    python
     smtpmail-multi
     web-mode
+    (blacken :location (recipe
+                        :fetcher github
+                        :repo "proofit404/blacken"))
    ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;
+;; inits for ownership
+;;;;;;;;;;;;;;;;;;;;;;;;
+(defun personal-layer/init-blacken ()
+  "Own blacken package."
+  ;; (use-package blacken :defer t)
+  )
+
 (defun personal-layer/init-docker-tramp ()
-  "Own docker-tramp package.")
+  "Own docker-tramp package."
+  (use-package docker-tramp
+    :defer t))
 
 (defun personal-layer/init-prettier-js ()
-  "Own prettier-js package.")
-(defun personal-layer/init-smtpmail-multi ()
-  "Own smtpmail-multi package.")
+  "Own prettier-js package."
+  (use-package prettier-js
+    :defer t))
 
-(defun personal-layer/post-init-evil-mode ()
-  "Configure evil-mode.")
+(defun personal-layer/init-smtpmail-multi ()
+  "Own smtpmail-multi package."
+  (use-package smtpmail-multi
+    :defer t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; post inits for configuration of any packages
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun personal-layer/post-init-anaconda-mode ()
+  "Configure anaconda-mode."
+  (setq anaconda-mode-localhost-address "localhost"))
+
+(defun personal-layer/post-init-blacken ()
+  "Configure blacken."
+  (define-minor-mode blacken-mode
+    "Optionally run black before saving."
+    :lighter " Black"
+    (if blacken-mode
+        (add-hook 'before-save-hook 'personal-layer-maybe-format-buffer-with-black nil t)
+      (remove-hook 'before-save-hook 'personal-layer-maybe-format-buffer-with-black t))))
+
+(defun personal-layer/post-init-python ()
+  "Configure python."
+  (progn
+    ;; use black instead of yapf
+    (spacemacs|use-package-add-hook python
+      :post-config
+      (spacemacs/set-leader-keys-for-major-mode 'python-mode
+        "=" 'blacken-buffer))
+    (add-hook 'python-mode-hook 'blacken-mode)
+
+    ;; override python breakpoint function, copy pasted from python layer's funcs.el
+    (defun spacemacs/python-toggle-breakpoint ()
+      "Personally customized: Add a break point, highlight it."
+      (interactive)
+      (let ((trace (cond ((spacemacs/pyenv-executable-find "wdb") "import wdb; wdb.set_trace()")
+                         ((spacemacs/pyenv-executable-find "ipdb")
+                          "import ipdb; ipdb.set_trace(context=15)")
+                         ((spacemacs/pyenv-executable-find "pudb") "import pudb; pudb.set_trace()")
+                         ((spacemacs/pyenv-executable-find "ipdb3") "import ipdb; ipdb.set_trace()")
+                         ((spacemacs/pyenv-executable-find "pudb3") "import pudb; pudb.set_trace()")
+                         (t "import pdb; pdb.set_trace()")))
+            (line (thing-at-point 'line)))
+        (if (and line (string-match trace line))
+            (kill-whole-line)
+          (progn
+            (back-to-indentation)
+            (insert trace)
+            (insert "\n")
+            (python-indent-line)))))
+  ))
 
 (defun personal-layer/post-init-git-commit ()
   "Configure git-commit."

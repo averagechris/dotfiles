@@ -1,3 +1,5 @@
+(spacemacs/declare-prefix "o" "personal-layer")
+
 (when (configuration-layer/package-usedp 'evil-numbers)
   (spacemacs/set-leader-keys
     "o*" 'personal-layer/multiply-at-pt

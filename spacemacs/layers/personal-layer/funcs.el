@@ -1,3 +1,8 @@
+(defun personal-layer-maybe-format-buffer-with-black ()
+  "If \"personal-layer-use-black-formater\" is non nil, call \"blacken-buffer\"."
+  (when (or personal-layer-use-black-formater)
+    (blacken-buffer)))
+
 (defun personal-layer/enable-minor-mode (pattern-and-minor-mode)
   "Enable minor mode if filename match the regexp. (regexp . minor-mode)."
   (when (buffer-file-name)

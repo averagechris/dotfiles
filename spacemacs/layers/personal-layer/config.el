@@ -8,7 +8,4 @@
 (setq dotspacemacs-search-tools '("ag" "grep"))
 (setq dotspacemacs-whitespace-cleanup 'trailing)
 
-(when (configuration-layer/package-usedp 'anaconda-mode)
-  (setq anaconda-mode-localhost-address "localhost")
-  ;; (setq python-shell-interpreter "usr/bin/python")
-  )
+(defvar personal-layer-use-black-formater nil "Toggle for running black on saving a buffer.")
