@@ -9,4 +9,10 @@ if [ -d "$HOME/eventbrite" ]; then
 
     export PATH=$ARCANIST_INSTALL_DIR/arcanist/bin:$PATH
     source "$HOME/.private_variables"
+
+    # create a variable for each top-level directory in eventbrite
+    for dir in `ls $EVENTBRITE`; do
+        name=`echo $dir | sd _service '' | tr - _ | tr '[a-z]' '[A-Z]'`
+        eval export "$name"="$EVENTBRITE/$dir"
+    done;
 fi
