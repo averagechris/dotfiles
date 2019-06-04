@@ -28,6 +28,7 @@
     python
     smtpmail-multi
     web-mode
+    yasnippet
     (blacken :location (recipe
                         :fetcher github
                         :repo "proofit404/blacken"))
@@ -135,5 +136,17 @@
   (add-hook
    'web-mode-hook
    #'(lambda () (personal-layer/enable-minor-mode '("\\.js\\'" . prettier-js-mode)))))
+
+(defun personal-layer/post-init-yasnippet ()
+  "Configure yasnippet."
+
+  ;; add snippet dirs not in VCS to yas-snippet-dirs
+  (let (root-dir (getenv "HOME"))
+    (mapc
+     (lambda (path)
+       (when (file-directory-p path)
+         (setq yas-snippet-dirs (append yas-snippet-dirs path))))
+     '("Google Drive File Stream/My Drive/config_backups/snippets"
+       "Library/Mobile Documents/com~apple~CloudDocs/config_backups/snippets"))))
 
 ;;; packages.el ends here
