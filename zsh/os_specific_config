@@ -60,6 +60,15 @@ if test `uname` = "Darwin"; then
         defaults write NSGlobalDomain AppleKeyboardUIMode -int $value
     }
 
+    function toggle_hidden_files_in_finder {
+        case `defaults read com.apple.finder AppleShowAllFiles 2> /dev/null` in
+            "false") value="true";;
+            "true") value="false";;
+            *) value="true";;
+        esac
+        defaults write com.apple.finder AppleShowAllFiles $value && killall Finder
+    }
+
 else
     which xsel &> /dev/null && \
         alias copy='xsel --clipboard --input' && \

@@ -39,3 +39,14 @@ if test `uname` = "Darwin"; then
         ln -fs "$mydamons/$daemon" $daemon_dir
     done;
 fi
+
+
+# link private variables from google drive if available
+eb_gdrive="$HOME/Google Drive File Stream/My Drive/config_backups"
+test -d "$eb_gdrive" && \
+    ln -fs "$eb_gdrive/.private_variables" $HOME
+
+# link private variables from icould drive if available
+icloud="$HOME/Library/Mobile Documents/com~apple~CloudDocs/config_backups"
+test -d "$icloud" && \
+    ln -fs "$icloud/.personal_variables" $HOME
