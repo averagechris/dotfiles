@@ -1,7 +1,8 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 
 import glob
 import os
+import sys
 
 template = """# -*- mode: snippet -*-
 # name: {name}
@@ -10,10 +11,16 @@ template = """# -*- mode: snippet -*-
 {name}
 """
 
-load_path = "/Users/ccummings/.evbdevtools/phabricator_users.txt"
-save_dir = "/Users/ccummings/dotfiles/spacemacs/snippets/arcanist-mode/"
+home = os.environ.get("HOME")
+dotfiles = os.environ.get("DOTFILES")
+load_path = f"{home}/.evbdevtools/phabricator_users.txt"
+save_dir = f"{dotfiles}/spacemacs/snippets/phabricator/"
+
+if not os.path.exists(load_path):
+    print("phabricator_users.txt is required, but does not exist.", file=sys.stderr)
+    sys.exit(1)
+
 prefix = "phabricator_username_"
-save_path = "{}{}{}".format(save_dir, prefix, "{name}")
 
 with open(load_path) as f:
     users = f.readlines()
@@ -23,6 +30,7 @@ for old_snippet_file in glob.glob("{}{}*".format(save_dir, prefix)):
 
 for name in users:
     name = name.strip()
+    save_path = f"{save_dir}{prefix}{name}"
     with open(save_path.format(name=name), mode="w") as f:
         f.write(name)
 
