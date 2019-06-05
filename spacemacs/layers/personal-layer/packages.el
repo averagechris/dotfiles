@@ -26,9 +26,11 @@
     helm-ag
     prettier-js
     python
+    seq
     smtpmail-multi
     web-mode
     yasnippet
+    yasnippet-snippets
     (blacken :location (recipe
                         :fetcher github
                         :repo "proofit404/blacken"))
@@ -44,18 +46,23 @@
 
 (defun personal-layer/init-docker-tramp ()
   "Own docker-tramp package."
-  (use-package docker-tramp
-    :defer t))
+  (use-package docker-tramp :defer t))
 
 (defun personal-layer/init-prettier-js ()
   "Own prettier-js package."
-  (use-package prettier-js
-    :defer t))
+  (use-package prettier-js :defer t))
+
+(defun personal-layer/init-seq ()
+  "Own seq package."
+  (use-package seq :defer t))
 
 (defun personal-layer/init-smtpmail-multi ()
   "Own smtpmail-multi package."
-  (use-package smtpmail-multi
-    :defer t))
+  (use-package smtpmail-multi :defer t))
+
+(defun personal-layer/init-yasnippet-snippets ()
+  "Own yasnippet-snippets package."
+  (use-package yasnippet-snippets :defer t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; post inits for configuration of any packages
@@ -139,17 +146,21 @@
 
 (defun personal-layer/post-init-yasnippet ()
   "Configure yasnippet."
-
   ;; add snippet dirs not in VCS to yas-snippet-dirs
-  (let ((root-dir (getenv "HOME")))
-    (mapc
-     (lambda (path)
-       (when (file-directory-p path)
-         (setq yas-snippet-dirs
-               (append
-                yas-snippet-dirs
-                (concat root-dir "/" path)))))
-     '("Google Drive File Stream/My Drive/config_backups/snippets"
-       "Library/Mobile Documents/com~apple~CloudDocs/config_backups/snippets"))))
+  (progn
+    (setq
+    yas-snippet-dirs
+    (append yas-snippet-dirs
+            (seq-filter
+              'file-directory-p
+              '("~/Google Drive File Stream/My Drive/config_backups/snippets"
+                "~/Library/Mobile Documents/com~apple~CloudDocs/config_backups/snippets"))))
+    ;; TODO: could this be moved somewhere earlier in the init process
+    ;; so that we don't have to call `yas-reload-all`?
+    (yas-reload-all)))
+
+(defun personal-layer/post-init-yassnippet-snippets ()
+  "Configure yasnippet-snippets."
+  (append yas-snippet-dirs yassnippet-snippets-dir))
 
 ;;; packages.el ends here
