@@ -1,0 +1,9 @@
+# -*- mode: snippet -*-
+# name: exc
+# key: exc
+# expand-env: ((yas-indent-line 'fixed))
+# --
+
+
+class $1(${2:Exception}):
+    ${3:pass}

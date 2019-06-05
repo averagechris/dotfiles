@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: strptime
+# key: strptime
+# --
+datetime.strptime("%Y-%m-%dT%H:%M:%SZ")

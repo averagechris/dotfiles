@@ -1,0 +1,16 @@
+# -*- mode: snippet -*-
+# name: def
+# key: def
+# expand-env: ((yas-indent-line 'fixed))
+# --
+
+def $1($2):
+    """
+    $3.
+
+    Params:
+        $2 -
+    Returns:
+        None
+    """
+    ${4:pass}
