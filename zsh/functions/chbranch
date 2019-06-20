@@ -1,4 +1,3 @@
 git branch &> /dev/null \
-    && git branch --list | fzf | xargs git checkout \
-    # show git's stderr msg if not in a git repo
-    || git branch --list
+    || git branch --list \
+    && git branch --list | grep -v '*' | fzf | xargs git checkout
