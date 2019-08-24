@@ -58,7 +58,7 @@ source $DOTFILES/zsh/eb_specific_config
 ###################################
 
 if which pyenv-virtualenv-init > /dev/null; then eval "$(pyenv virtualenv-init -)"; fi
-# if which rbenv > /dev/null; then eval "$(rbenv init -)"; fi
+if which rbenv > /dev/null; then eval "$(rbenv init -)"; fi
 
 # pip zsh completion start
 function _pip_completion {
