@@ -15,7 +15,6 @@ echo -n "
     $dotfiles/.vimrc $HOME
     $dotfiles/bash/.bash_profile $HOME
     $dotfiles/bash/.bashrc $HOME
-    $dotfiles/spacemacs/.spacemacs $HOME
     $dotfiles/zsh/.zshenv $HOME
     $dotfiles/zsh/.zshrc $HOME
 " | _trim | xargs ln -fs

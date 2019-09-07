@@ -23,11 +23,9 @@ DISABLE_UNTRACKED_FILES_DIRTY="true"
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
 plugins=(
-    docker
-    docker-compose
     git
     pyenv
-    tmux
+    ruby
 )
 
 source $ZSH/oh-my-zsh.sh
