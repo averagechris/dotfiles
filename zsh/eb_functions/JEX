@@ -1,0 +1,1 @@
+open "https://admin.eventbrite.com/admin/journal/?$1=$2"

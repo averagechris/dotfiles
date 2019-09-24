@@ -4,3 +4,6 @@ alias mkdir='mkdir -pv'  # make path, verbose
 
 # remove empty lines, leading and trailing whitespace
 alias trim="sed '/^$/d' | sed -e 's/^ *//' | sed -e 's/ *$//'"
+alias today='date +%Y-%m-%d'
+
+which gmake > /dev/null && alias make='gmake'

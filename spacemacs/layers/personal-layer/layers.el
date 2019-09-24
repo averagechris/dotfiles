@@ -11,6 +11,7 @@
    helm
    html
    javascript
+   lsp
    markdown
    org
    php
