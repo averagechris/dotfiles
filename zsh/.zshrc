@@ -23,11 +23,9 @@ DISABLE_UNTRACKED_FILES_DIRTY="true"
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
 plugins=(
-    docker
-    docker-compose
     git
     pyenv
-    tmux
+    ruby
 )
 
 source $ZSH/oh-my-zsh.sh
@@ -58,6 +56,7 @@ source $DOTFILES/zsh/eb_specific_config
 ###################################
 
 if which pyenv-virtualenv-init > /dev/null; then eval "$(pyenv virtualenv-init -)"; fi
+if which rbenv > /dev/null; then eval "$(rbenv init -)"; fi
 
 # pip zsh completion start
 function _pip_completion {

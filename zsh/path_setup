@@ -13,7 +13,8 @@ fi
 # rust related
 if [ -d $HOME/.cargo/bin ]; then
     export RUSTPATH=$HOME/.cargo/bin
-    export RUST_SRC_PATH=$HOME/.multirust/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src
     export PATH=$PATH:$RUSTPATH
-	  test -f $HOME/.zfunc && fpath+=~/.zfunc
+    export RUST_SRC_PATH=$HOME/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src
+    test -f $HOME/.zfunc && fpath+=~/.zfunc
 fi
+

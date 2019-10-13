@@ -11,13 +11,16 @@
    helm
    html
    javascript
+   lsp
    markdown
    org
    php
    python
    python
    react
-   ruby
+   (ruby :variables
+         ruby-version-manager 'rbenv)
+   ruby-on-rails
    rust
    shell
    shell-scripts
@@ -27,7 +30,6 @@
    version-control
    vimscript
    yaml
-
    (auto-completion :variables
                     auto-completion-enable-sort-by-usage t
                     auto-completion-enable-snippets-in-popup t)))
