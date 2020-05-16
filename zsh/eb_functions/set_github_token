@@ -1,1 +1,2 @@
-export GITHUB_TOKEN=$(script_lpass 'tokens/github.*eventbrite')
+export GITHUB_TOKEN="$(script_lpass 'tokens/github eb access token')"
+export HOMEBREW_GITHUB_API_TOKEN="$GITHUB_TOKEN"

@@ -13,8 +13,9 @@
   ;; toggle for running black on save if non nil
   (personal-layer-use-black-formater . t)
 
-  ;; this one is useful when the project is python 2 virtualenv
+  ;; these are useful when the project is python 2 virtualenv
   (blacken-executable . "full path to black")
+  (flycheck-python-mypy-executable . "full path to mypy")
 
   ;; useful for very django-y projects, or projects with local dependencies
   (python-shell-process-environment. "DJANGO_SETTINGS_MODULE=full path to settings module")

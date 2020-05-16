@@ -31,11 +31,11 @@ fi
 test -d $HOME/.config -a `which nvim 2> /dev/null` != "" && \
     ln -fs $dotfiles/nvim "$HOME/.config"
 
-if test `uname` = "Darwin"; then
+if test "$(uname)" = "Darwin"; then
     mydaemons=$dotfiles/start_scripts/daemons/macos
     daemon_dir=$HOME/Library/LaunchAgents
-    for daemon in $mydaemons/*.plist; do
-        ln -fs "$mydamons/$daemon" $daemon_dir
+    for daemon in "$mydaemons"/*.plist; do
+        ln -fs "$mydaemons/$daemon" "$daemon_dir"
     done;
 fi
 
