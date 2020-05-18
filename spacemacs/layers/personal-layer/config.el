@@ -6,7 +6,7 @@
 (setq
  dotspacemacs-helm-resize t
  dotspacemacs-maximized-at-startup t
- dotspacemacs-search-tools '("ag" "grep")
+ dotspacemacs-search-tools '("rg" "grep")
  dotspacemacs-whitespace-cleanup 'trailing
  dotspacemacs-maximized-at-startup t
  dotspacemacs-fullscreen-at-startup nil)

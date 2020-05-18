@@ -35,7 +35,7 @@ if test "$(uname)" = "Darwin"; then
     mydaemons=$dotfiles/start_scripts/daemons/macos
     daemon_dir=$HOME/Library/LaunchAgents
     for daemon in "$mydaemons"/*.plist; do
-        ln -fs "$mydaemons/$daemon" "$daemon_dir"
+        ln -fs "$daemon" "$daemon_dir"
     done;
 fi
 

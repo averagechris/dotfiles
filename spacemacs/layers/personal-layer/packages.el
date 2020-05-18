@@ -132,10 +132,12 @@
     (let ((file (tramp-file-name-localname (tramp-dissect-file-name file))))
       (replace-regexp-in-string (concat "\\`" dir) "" file))))
 
-(defun personal-layer/post-init-helm-ag ()
-  "Configure helm-ag package."
+;; NOTE: not needed for develop branch
+;; (defun personal-layer/post-init-helm-ag ()
+  ;; "Configure helm-ag package."
   ;; use rg instead of ag, ag must still be installed
-  (setq helm-ag-base-command "rg --no-heading"))
+  ;; (setq helm-ag-base-command "rg --no-heading")
+  ;; )
 
 (defun personal-layer/post-init-web-mode ()
   "Enable prettier-js-mode if using .js or .jsx buffer."
