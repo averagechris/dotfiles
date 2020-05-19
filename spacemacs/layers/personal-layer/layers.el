@@ -11,11 +11,12 @@
    helm
    html
    javascript
+   lsp
    markdown
    org
    php
-   python
-   python
+   (python :variables
+           python-backend 'lsp)
    react
    (ruby :variables
          ruby-version-manager 'rbenv)
