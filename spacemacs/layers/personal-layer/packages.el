@@ -82,34 +82,10 @@
 
 (defun personal-layer/post-init-python ()
   "Configure python."
-  (progn
-    ;; use black instead of yapf
-    (spacemacs|use-package-add-hook python
-      :post-config
-      (spacemacs/set-leader-keys-for-major-mode 'python-mode
-        "=" 'blacken-buffer))
-    (add-hook 'python-mode-hook 'blacken-mode)
-
-    ;; override python breakpoint function, copy pasted from python layer's funcs.el
-    (defun spacemacs/python-toggle-breakpoint ()
-      "Personally customized: Add a break point, highlight it."
-      (interactive)
-      (let ((trace (cond ((spacemacs/pyenv-executable-find "wdb") "import wdb; wdb.set_trace()")
-                         ((spacemacs/pyenv-executable-find "ipdb")
-                          "import ipdb; ipdb.set_trace(context=15)")
-                         ((spacemacs/pyenv-executable-find "pudb") "import pudb; pudb.set_trace()")
-                         ((spacemacs/pyenv-executable-find "ipdb3") "import ipdb; ipdb.set_trace()")
-                         ((spacemacs/pyenv-executable-find "pudb3") "import pudb; pudb.set_trace()")
-                         (t "import pdb; pdb.set_trace()")))
-            (line (thing-at-point 'line)))
-        (if (and line (string-match trace line))
-            (kill-whole-line)
-          (progn
-            (back-to-indentation)
-            (insert trace)
-            (insert "\n")
-            (python-indent-line)))))
-  ))
+  (spacemacs|use-package-add-hook python
+    :post-config
+    (spacemacs/set-leader-keys-for-major-mode 'python-mode
+      "dB" 'personal-layer/toggle-python-breakpoint)))
 
 (defun personal-layer/post-init-git-commit ()
   "Configure git-commit."

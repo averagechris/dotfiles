@@ -1,3 +1,11 @@
+(defun personal-layer/toggle-python-breakpoint ()
+  "Add a breakpoint for python"
+  (interactive)
+  (progn
+    (back-to-indentation)
+    (insert "import ipdb; ipdb.set_trace(context=20)\n")
+    (python-indent-line)))
+
 (defun personal-layer-maybe-format-buffer-with-black ()
   "If \"personal-layer-use-black-formater\" is non nil, call \"blacken-buffer\"."
   (when (or personal-layer-use-black-formater)
