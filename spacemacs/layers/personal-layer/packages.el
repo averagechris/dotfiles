@@ -122,20 +122,20 @@
    'web-mode-hook
    #'(lambda () (personal-layer/enable-minor-mode '("\\.js\\'" . prettier-js-mode)))))
 
-(defun personal-layer/post-init-yasnippet ()
-  "Configure yasnippet."
-  ;; add snippet dirs not in VCS to yas-snippet-dirs
-  (progn
-    (setq
-    yas-snippet-dirs
-    (append yas-snippet-dirs
-            (seq-filter
-              'file-directory-p
-              '("~/Google Drive File Stream/My Drive/config_backups/snippets"
-                "~/Library/Mobile Documents/com~apple~CloudDocs/config_backups/snippets"))))
-    ;; TODO: could this be moved somewhere earlier in the init process
-    ;; so that we don't have to call `yas-reload-all`?
-    (yas-reload-all)))
+;; (defun personal-layer/post-init-yasnippet ()
+;;   "Configure yasnippet."
+;;   ;; add snippet dirs not in VCS to yas-snippet-dirs
+;;   (progn
+;;     (setq
+;;     yas-snippet-dirs
+;;     (append yas-snippet-dirs
+;;             (seq-filter
+;;               'file-directory-p
+;;               '("~/Google Drive File Stream/My Drive/config_backups/snippets"
+;;                 "~/Library/Mobile Documents/com~apple~CloudDocs/config_backups/snippets"))))
+;;     ;; TODO: could this be moved somewhere earlier in the init process
+;;     ;; so that we don't have to call `yas-reload-all`?
+;;     (yas-reload-all)))
 
 (defun personal-layer/post-init-yassnippet-snippets ()
   "Configure yasnippet-snippets."
