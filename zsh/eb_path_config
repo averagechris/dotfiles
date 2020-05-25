@@ -1,13 +1,6 @@
 # guard everything by looking for eventbrite checkout
 if [ -d "$HOME/eventbrite" ]; then
     export EVENTBRITE="$HOME/eventbrite"
-    export ARCANIST_INSTALL_DIR="$HOME/.evbdevtools"
-    export ARCANIST_BIN="$ARCANIST_INSTALL_DIR/arcanist/bin"
-    export ARCANISTHELPERS="$ARCANIST_INSTALL_DIR/devtools/scripts/devenv_bash/arcanist_helpers.sh"
-	  export BAY_HOME="$EVENTBRITE/docker-dev"
-	  export DM_START="$ARCANIST_INSTALL_DIR/devtools/scripts/install_devenv/dm_start.sh"
-
-    export PATH=$ARCANIST_INSTALL_DIR/arcanist/bin:$PATH
     source "$HOME/.private_variables"
 
     # create a variable for each top-level directory in eventbrite
