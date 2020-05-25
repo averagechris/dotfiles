@@ -1,74 +1,7 @@
 if test `uname` = "Darwin"; then
-    alias to_plain_text='textutil -convert txt -stdin -stdout -encoding 30'
-    alias copy='to_plain_text | pbcopy'
-    alias fullcopy=pbcopy
-    alias paste=pbpaste
-
-    # open finder in $PWD
-    alias finder="open -a Finder ."
-
-    # change directories into the directory of top most finder window
-    alias cdfinder="cd `osascript < $DOTFILES/applescripts/finder_cwd.applescript`"
-
-    function preview {
-        # open a file in the default macOS preview
-        qlmanage -p "$@" &> /dev/null
-    }
-
-    function trash {
-        # put a file in the macOS default trash folder
-        command mv "$@" ~/.Trash
-    }
-
-    function start_screensaver {
-        /System/Library/CoreServices/ScreenSaverEngine.app/Contents/MacOS/ScreenSaverEngine
-    }
-
-    function lock_computer {
-        /System/Library/CoreServices/Menu\ Extras/User.menu/Contents/Resources/CGSession -suspend
-    }
-
-    function toggle_desktop_icons {
-        case `defaults read com.apple.finder CreateDesktop 2> /dev/null` in
-            0) enable="true";;
-            1) enable="false";;
-            *) enable="false";;
-        esac
-        defaults write \
-            com.apple.finder \
-            CreateDesktop -bool $enable \
-            && killall Finder
-    }
-
-    function toggle_autocorrect_mode {
-        case `defaults read -g NSAutomaticSpellingCorrectionEnabled 2> /dev/null` in
-            0) enable="true";;
-            1) enable="false";;
-            *) enable="false";;
-        esac
-        defaults write -g NSAutomaticSpellingCorrectionEnabled -bool $enable
-    }
-
-    function toggle_system_ui_keyboard_behavior {
-        # 0 is default, 3 enables things like tab in system dialogs
-        # https://github.com/herrbischoff/awesome-macos-command-line#full-keyboard-access
-        case `defaults read NSGlobalDomain AppleKeyboardUIMode 2> /dev/null` in
-            0) value=3;;
-            3) value=0;;
-            *) value=0;;
-        esac
-        defaults write NSGlobalDomain AppleKeyboardUIMode -int $value
-    }
-
-    function toggle_hidden_files_in_finder {
-        case `defaults read com.apple.finder AppleShowAllFiles 2> /dev/null` in
-            "false") value="true";;
-            "true") value="false";;
-            *) value="true";;
-        esac
-        defaults write com.apple.finder AppleShowAllFiles $value && killall Finder
-    }
-
+    MACOS_FUNCTIONS=$DOTFILES/zsh/macos_functions
+    fpath=($MACOS_FUNCTIONS $fpath)
+    for func in $(ls $MACOS_FUNCTIONS); do autoload $func; done;
 else
     which xsel &> /dev/null && \
         alias copy='xsel --clipboard --input' && \

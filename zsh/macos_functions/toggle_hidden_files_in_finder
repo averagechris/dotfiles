@@ -1,0 +1,6 @@
+case `defaults read com.apple.finder AppleShowAllFiles 2> /dev/null` in
+    "false") value="true";;
+    "true") value="false";;
+    *) value="true";;
+esac
+defaults write com.apple.finder AppleShowAllFiles $value && killall Finder

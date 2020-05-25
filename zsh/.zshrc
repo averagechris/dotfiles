@@ -56,7 +56,6 @@ source $DOTFILES/zsh/eb_specific_config
 ###################################
 
 if which pyenv-virtualenv-init > /dev/null; then eval "$(pyenv virtualenv-init -)"; fi
-if which rbenv > /dev/null; then eval "$(rbenv init -)"; fi
 
 # pip zsh completion start
 function _pip_completion {
@@ -69,7 +68,3 @@ function _pip_completion {
 }
 compctl -K _pip_completion pip
 # pip zsh completion end
-
-export NVM_DIR="$HOME/.nvm"
-[ -s "/usr/local/opt/nvm/nvm.sh" ] && . "/usr/local/opt/nvm/nvm.sh"  # This loads nvm
-[ -s "/usr/local/opt/nvm/etc/bash_completion.d/nvm" ] && . "/usr/local/opt/nvm/etc/bash_completion.d/nvm"  # This loads nvm bash_completion

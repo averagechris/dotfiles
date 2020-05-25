@@ -1,0 +1,2 @@
+# put a file in the macOS default trash folder
+command mv "$@" ~/.Trash

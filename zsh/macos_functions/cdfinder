@@ -1,0 +1,1 @@
+cd `osascript < $DOTFILES/applescripts/finder_cwd.applescript`

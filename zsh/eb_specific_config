@@ -3,7 +3,4 @@ if [ -d "$HOME/eventbrite" ]; then
     EB_FUNCTIONS=$DOTFILES/zsh/eb_functions
     fpath=($EB_FUNCTIONS $fpath)
     for func in $(ls $EB_FUNCTIONS); do autoload $func; done;
-
-    eb_aliases=$DOTFILES/zsh/ebaliases.sh
-    [ -f $ebaliases ] && source $eb_aliases || echo "WARNING: ebalieases.sh not found" 1>&2
 fi

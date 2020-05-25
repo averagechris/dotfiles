@@ -1,0 +1,6 @@
+case `defaults read -g NSAutomaticSpellingCorrectionEnabled 2> /dev/null` in
+    0) enable="true";;
+    1) enable="false";;
+    *) enable="false";;
+esac
+defaults write -g NSAutomaticSpellingCorrectionEnabled -bool $enable
