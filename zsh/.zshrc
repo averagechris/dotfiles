@@ -69,8 +69,6 @@ function _pip_completion {
 }
 compctl -K _pip_completion pip
 # pip zsh completion end
-#
-eval "$(rbenv init -)"
 
 export NVM_DIR="$HOME/.nvm"
 [ -s "/usr/local/opt/nvm/nvm.sh" ] && . "/usr/local/opt/nvm/nvm.sh"  # This loads nvm
