@@ -11,7 +11,8 @@
    helm
    html
    javascript
-   lsp
+   (lsp :variables
+        lsp-rust-server 'rust-analyzer)
    markdown
    org
    php
