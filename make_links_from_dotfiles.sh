@@ -20,11 +20,13 @@ echo -n "
 " | _trim | xargs ln -fs
 
 # link spacemacs layers and snippets if spacemacs is installed
-if test -d $HOME/.emacs.d/private; then
-    for layer_dir in `ls $dotfiles/spacemacs/layers/`; do
-        ln -fs $dotfiles/spacemacs/layers/$layer_dir $HOME/.emacs.d/private/
-    done
-    ln -fs $dotfiles/spacemacs/snippets $HOME/.emacs.d/private/
+if test -d "$HOME/.emacs.d/private"; then
+    for layer_dir in $(ls "$dotfiles/spacemacs/layers/"); do
+        ln -fs "$dotfiles/spacemacs/layers/$layer_dir" "$HOME/.emacs.d/private/"
+    done;
+    for snippet_dir in $(ls "$dotfiles/spacemacs/snippets/"); do
+        ln -fs "$dotfiles/spacemacs/snippets/$snippet_dir" "$HOME/.emacs.d/private/snippets/"
+    done;
 fi
 
 # link nvim config if nvim is installed
