@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.chriscummings.rust-update</string>
+    <key>ProcessType</key>
+    <string>Background</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/sh</string>
+        <string>-c</string>
+        <string>rustup update &amp;&amp; rustup self update &amp;&amp; /usr/local/bin/terminal-notifier -title 'Rust Updater' -message 'Rust Updated!' -appIcon http://cdn.curvve.com/wp-content/uploads/2013/09/homebrew_osx_logo.png</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>StandardErrorPath</key>
+    <string>/tmp/com.example.rustup-update.stderr</string>
+    <key>StandardOutPath</key>
+    <string>/tmp/com.example.rustup-update.stdout</string>
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict>
+            <key>Hour</key>
+            <integer>12</integer>
+        </dict>
+    </array>
+</dict>
+</plist>
