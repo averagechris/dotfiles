@@ -23,14 +23,10 @@
     docker-tramp
     git-commit
     git-gutter+
-    helm-ag
-    prettier-js
     python
     seq
     smtpmail-multi
     web-mode
-    yasnippet
-    yasnippet-snippets
     (blacken :location (recipe
                         :fetcher github
                         :repo "proofit404/blacken"))
@@ -39,18 +35,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ;; inits for ownership
 ;;;;;;;;;;;;;;;;;;;;;;;;
-(defun personal-layer/init-blacken ()
-  "Own blacken package."
-  ;; (use-package blacken :defer t)
-  )
-
 (defun personal-layer/init-docker-tramp ()
   "Own docker-tramp package."
   (use-package docker-tramp :defer t))
-
-(defun personal-layer/init-prettier-js ()
-  "Own prettier-js package."
-  (use-package prettier-js :defer t))
 
 (defun personal-layer/init-seq ()
   "Own seq package."
@@ -59,10 +46,6 @@
 (defun personal-layer/init-smtpmail-multi ()
   "Own smtpmail-multi package."
   (use-package smtpmail-multi :defer t))
-
-(defun personal-layer/init-yasnippet-snippets ()
-  "Own yasnippet-snippets package."
-  (use-package yasnippet-snippets :defer t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; post inits for configuration of any packages
