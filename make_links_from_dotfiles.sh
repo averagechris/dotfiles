@@ -30,8 +30,8 @@ if test -d "$HOME/.emacs.d/private"; then
 fi
 
 # link nvim config if nvim is installed
-test -d $HOME/.config -a `which nvim 2> /dev/null` != "" && \
-    ln -fs $dotfiles/nvim "$HOME/.config"
+test -d "$HOME/.config" -a "$(which nvim 2> /dev/null)" != "" && \
+    ln -fs "$dotfiles/nvim" "$HOME/.config"
 
 if test "$(uname)" = "Darwin"; then
     mydaemons=$dotfiles/start_scripts/daemons/macos
@@ -45,9 +45,9 @@ fi
 # link private variables from google drive if available
 eb_gdrive="$HOME/Google Drive File Stream/My Drive/config_backups"
 test -d "$eb_gdrive" && \
-    ln -fs "$eb_gdrive/.private_variables" $HOME
+    ln -fs "$eb_gdrive/.private_variables" "$HOME"
 
 # link private variables from icould drive if available
 icloud="$HOME/Library/Mobile Documents/com~apple~CloudDocs/config_backups"
 test -d "$icloud" && \
-    ln -fs "$icloud/.personal_variables" $HOME
+    ln -fs "$icloud/.personal_variables" "$HOME"
