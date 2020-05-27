@@ -6,9 +6,7 @@
     <string>com.chriscummings.launchctl-env-variables</string>
     <key>ProgramArguments</key>
     <array>
-        <string>/bin/sh</string>
-        <string>-c</string>
-        <string>launchctl setenv WORKON_HOME $HOME/.local/share/virtualenvs/ PATH $PATH:/usr/local/bin:$HOME/dotfiles/bin:$HOME/.cargo/bin:$HOME/.pyenv/:$HOME/.pyenv/versions:$HOME/.pyenv/shims</string>
+        <string>$HOME/dotfiles/start_scripts/macos_launchctl_env_variables.sh</string>
     </array>
     <key>RunAtLoad</key>
     <true/>
