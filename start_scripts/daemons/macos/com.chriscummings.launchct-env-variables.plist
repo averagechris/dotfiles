@@ -6,7 +6,7 @@
     <string>com.chriscummings.launchctl-env-variables</string>
     <key>ProgramArguments</key>
     <array>
-        <string>$HOME/dotfiles/start_scripts/macos_launchctl_env_variables.sh</string>
+        <string>/Users/ccummings/dotfiles/start_scripts/macos_launchctl_env_variables.sh</string>
     </array>
     <key>RunAtLoad</key>
     <true/>
