@@ -1,1 +1,1 @@
-mycli -h evbdev.com -u root -P `docker_portmap mysql-core` -D eb
+mycli -u root -P 3306 -D core
