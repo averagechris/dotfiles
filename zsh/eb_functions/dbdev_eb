@@ -1,1 +1,1 @@
-mycli -u root -P 3306 -D core
+mycli -u root -P 3306 -D eb
