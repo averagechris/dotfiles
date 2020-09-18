@@ -65,10 +65,11 @@
 
 (defun personal-layer/post-init-python ()
   "Configure python."
-  (spacemacs|use-package-add-hook python
-    :post-config
-    (spacemacs/set-leader-keys-for-major-mode 'python-mode
-      "dB" 'personal-layer/toggle-python-breakpoint)))
+  (progn
+    (spacemacs|use-package-add-hook python
+      :post-config
+      (spacemacs/set-leader-keys-for-major-mode 'python-mode
+        "dB" 'personal-layer/toggle-python-breakpoint))))
 
 (defun personal-layer/post-init-git-commit ()
   "Configure git-commit."

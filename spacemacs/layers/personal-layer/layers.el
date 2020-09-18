@@ -17,7 +17,8 @@
    org
    php
    (python :variables
-           python-backend 'lsp)
+           python-backend 'lsp
+           python-formatter 'black)
    react
    (ruby :variables
          ruby-version-manager 'rbenv)
