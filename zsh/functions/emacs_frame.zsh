@@ -8,7 +8,9 @@
 # widget / tray thing
 
 emacs_frame_quiet_emacsclient() {
-    emacsclient -nc > /dev/null 2>&1
+    # the elisp here forces emacs to focus the new frame
+    emacsclient -nc -e "(progn (raise-frame) (x-focus-frame (selected-frame)))" \
+                > /dev/null 2>&1
 }
 
 emacs_frame_start_emacs() {
