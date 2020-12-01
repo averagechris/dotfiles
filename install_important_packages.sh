@@ -69,6 +69,7 @@ function install_everything {
     flux
     flycut
     spectacle
+    karabiner-elements
     ' | _trim | xargs brew cask install
 
 
