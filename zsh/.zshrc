@@ -69,3 +69,6 @@ function _pip_completion {
 }
 compctl -K _pip_completion pip
 # pip zsh completion end
+
+autoload -U +X bashcompinit && bashcompinit
+complete -o nospace -C /usr/local/bin/terraform terraform

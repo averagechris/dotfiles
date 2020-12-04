@@ -17,6 +17,7 @@ echo -n "
     $dotfiles/bash/.bashrc $HOME
     $dotfiles/zsh/.zshenv $HOME
     $dotfiles/zsh/.zshrc $HOME
+    $dotfiles/.config $HOME/.config
 " | _trim | xargs ln -fs
 
 # link spacemacs layers and snippets if spacemacs is installed
@@ -28,10 +29,6 @@ if test -d "$HOME/.emacs.d/private"; then
         ln -fs "$dotfiles/spacemacs/snippets/$snippet_dir" "$HOME/.emacs.d/private/snippets/"
     done;
 fi
-
-# link nvim config if nvim is installed
-test -d "$HOME/.config" -a "$(which nvim 2> /dev/null)" != "" && \
-    ln -fs "$dotfiles/nvim" "$HOME/.config"
 
 if test "$(uname)" = "Darwin"; then
     mydaemons=$dotfiles/start_scripts/daemons/macos

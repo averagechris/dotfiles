@@ -125,3 +125,5 @@ extract () {
 }
 
 PATH=$HOME/dotfiles/bin:$PATH
+
+complete -C /usr/local/bin/terraform terraform

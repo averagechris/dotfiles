@@ -9,3 +9,7 @@ fish/fish_history
 /zsh/ebaliases.sh
 /spacemacs/snippets/text-mode/phabricator_username_*
 /spacemacs/.spacemacs
+/.config/karabiner/automatic_backups/
+/.config/karabiner/assets/
+/.config/doctl/cache/
+/.config/configstore/
