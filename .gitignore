@@ -13,3 +13,4 @@ fish/fish_history
 /.config/karabiner/assets/
 /.config/doctl/cache/
 /.config/configstore/
+/.config/doctl/
