@@ -57,6 +57,8 @@ function install_everything {
     tmux
     wget
     zsh
+    koekeishiya/formulae/skhd
+    koekeishiya/formulae/yabai
     ' | _trim | xargs brew install
 
 
