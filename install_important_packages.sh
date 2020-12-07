@@ -72,6 +72,7 @@ function install_everything {
     flycut
     spectacle
     karabiner-elements
+    hammerspoon
     ' | _trim | xargs brew cask install
 
 
