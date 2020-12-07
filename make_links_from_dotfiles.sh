@@ -22,20 +22,27 @@ echo -n "
 
 # link spacemacs layers and snippets if spacemacs is installed
 if test -d "$HOME/.emacs.d/private"; then
-    for layer_dir in $(ls "$dotfiles/spacemacs/layers/"); do
+    for layer_dir in "$dotfiles"/spacemacs/layers/*; do
         ln -fs "$dotfiles/spacemacs/layers/$layer_dir" "$HOME/.emacs.d/private/"
     done;
-    for snippet_dir in $(ls "$dotfiles/spacemacs/snippets/"); do
+    for snippet_dir in "$dotfiles"/spacemacs/snippets/*; do
         ln -fs "$dotfiles/spacemacs/snippets/$snippet_dir" "$HOME/.emacs.d/private/snippets/"
     done;
 fi
 
 if test "$(uname)" = "Darwin"; then
+    # if this is macOS
+
+    # 1. move stuff into launch control
     mydaemons=$dotfiles/start_scripts/daemons/macos
     daemon_dir=$HOME/Library/LaunchAgents
     for daemon in "$mydaemons"/*.plist; do
         ln -fs "$daemon" "$daemon_dir"
     done;
+
+    # 2. create and link hammerspoon config
+    mkdir "$HOME/.hammerspoon"
+    ln -fs "$dotfiles/hammerspoon/init.lua" "$HOME/.hammerspoon/"
 fi
 
 
