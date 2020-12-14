@@ -18,7 +18,9 @@
    php
    (python :variables
            python-backend 'lsp
-           python-formatter 'black)
+           python-lsp-server 'pyls
+           python-formatter 'black
+           python-sort-imports-on-save t)
    react
    (ruby :variables
          ruby-version-manager 'rbenv)
