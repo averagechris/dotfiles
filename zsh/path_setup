@@ -7,7 +7,8 @@ if [ -d $HOME/.pyenv ]; then
     export PYTHON_3_PATH=$PYENV_ROOT/versions/misc3/bin
     PYENV_SHIMS=/Users/ccummings/.pyenv/shims
     PYENV_VENV_SHIMS=/usr/local/Cellar/pyenv-virtualenv/1.1.1/shims
-    export PATH=$PYENV_ROOT/bin:$PYENV_ROOT/shims:$PYENV_VENVSHIMS:$PYENV_SHIMS:$PYTHON_2_PATH:$PYTHON_3_PATH:$PATH
+    POETRY_PATH="$HOME/.poetry/bin"
+    export PATH=$PYENV_ROOT/bin:$PYENV_ROOT/shims:$PYENV_VENVSHIMS:$PYENV_SHIMS:$PYTHON_2_PATH:$PYTHON_3_PATH:$POETRY_PATH:$PATH
 fi
 
 # rust related

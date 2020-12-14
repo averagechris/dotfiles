@@ -1,5 +1,7 @@
 #! /bin/bash
 
+set -o pipefail
+
 stderr_log=/tmp/install_important_packages_errors.log
 stdout_log=/tmp/install_important_packages.log
 
@@ -10,16 +12,16 @@ function _trim {
 
 function _filter_known_ok {
     # filter out log messages known to be ok
-    _trim < $1 | \
+    _trim < "$1" | \
 
         # brew related filters
         grep -v "brew upgrade " | \
         grep -v "already installed" | \
-        egrep -iv "re-?install" | \
+        gerp -Eiv "re-?install" | \
         grep -v "It seems there is already an App at" \
 
         # rustup related filters
-        egrep -v "info: (latest)|(downloading)|(installing)|(default)"
+        grep -Ev "info: (latest)|(downloading)|(installing)|(default)"
 }
 
 function install_everything {
@@ -87,34 +89,39 @@ function install_everything {
     ####################
     # install oh-my-zsh
     ####################
-    test -d $HOME/.oh-my-zsh || \
+    test -d "$HOME/.oh-my-zsh" || \
         sh -c "$(curl -fsSL https://raw.github.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
 
     ####################
     # install spacemacs
     ####################
     emacs_d=$HOME/.emacs.d
-    test -d $emacs_d || \
-        git clone https://github.com/syl20bnr/spacemacs $emacs_d
+    test -d "$emacs_d" || \
+        git clone https://github.com/syl20bnr/spacemacs "$emacs_d"
 
     ######################################
     # install vim-plug for vim and neovim
     ######################################
     vim_plug_file=$HOME/.vim/autoload/plug.vim
-    test -f $vim_plug_file || \
-        curl -fLo $vim_plug_file --create-dirs \
+    test -f "$vim_plug_file" || \
+        curl -fLo "$vim_plug_file" --create-dirs \
              https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
 
     nvim_plug_file=$HOME/.local/share/nvim/site/autoload/plug.vim
-    test -f $nvim_plug_file || \
-        curl -fLo $nvim_plug_file --create-dirs \
+    test -f "$nvim_plug_file" || \
+        curl -fLo "$nvim_plug_file" --create-dirs \
              https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
 
     ################
     # install pyenv
     ################
-    test -d $HOME/.pyenv || \
+    test -d "$HOME/.pyenv" || \
         curl https://pyenv.run | bash
+
+    ################################################
+    # globally install poetry python package manager
+    ################################################
+    curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
 
     #################
     # install rustup
@@ -124,9 +131,9 @@ function install_everything {
 }
 
 function on_success {
-    if test $(
+    if test "$(
         _filter_known_ok $stderr_log | wc -l
-    ) -eq 0; then
+    )" -eq 0; then
         echo "Install completed without error."
         rm $stderr_log
         rm $stdout_log
@@ -148,9 +155,8 @@ function on_error {
 
 # you can redirect stderr like this if you want to more easily debug:
 #     2> >(tee -a $stderr_log >&2)
-
-install_everything \
-    > $stdout_log \
-    2> $stderr_log \
-    && on_success \
-    || on_error
+if install_everything > $stdout_log 2> $stderr_log; then
+    on_success
+else
+    on_error
+fi
