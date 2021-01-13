@@ -1,1 +1,0 @@
-mycli -h $MYSQL_PROD_DB_EB_HISTORY -p $(script_lpass okta) -D eb_history $@

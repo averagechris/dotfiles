@@ -49,7 +49,6 @@ test -f $HOME/.zfunc && fpath+=~/.zfunc
 test -f ~/.fzf.zsh && source ~/.fzf.zsh  # this is here cause fzf looks here on install
 source $DOTFILES/zsh/fzf_config
 source $DOTFILES/zsh/os_specific_config
-source $DOTFILES/zsh/eb_specific_config
 
 ###################################
 # below here are things appended to

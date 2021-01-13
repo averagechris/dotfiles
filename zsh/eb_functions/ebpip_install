@@ -1,1 +1,0 @@
-pip install --find-links $EB_WHEEL --trusted-host $EB_JENKINS_HOST $@

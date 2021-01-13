@@ -1,1 +1,0 @@
-mycli -h www.evbdev.com -u $OKTA_USER -p $((script_lpass okta)) -P 3007 -D transaction_journal $@

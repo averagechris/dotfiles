@@ -1,9 +1,0 @@
-env | grep -q PIP_FIND_LINKS
-if [ $status -eq 0 ]; then
-    unset PIP_FIND_LINKS PIP_TRUSTED_SOURCE
-    echo "eb wheel deactivated"
-else
-    export PIP_FIND_LINKS=$EB_WHEEL
-    export PIP_TRUSTED_SOURCE=$EB_JENKINS_HOST
-    echo "eb wheel activated"
-fi

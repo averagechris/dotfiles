@@ -1,1 +1,0 @@
-mycli -h $MYSQL_PROD_DB_WEBHOOKS -p $(script_lpass okta) -D webhooks $@

@@ -1,6 +1,0 @@
-# guard everything by looking for eventbrite checkout
-if [ -d "$HOME/eventbrite" ]; then
-    EB_FUNCTIONS=$DOTFILES/zsh/eb_functions
-    fpath=($EB_FUNCTIONS $fpath)
-    for func in $(ls $EB_FUNCTIONS); do autoload $func; done;
-fi
