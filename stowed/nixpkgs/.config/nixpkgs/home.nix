@@ -40,6 +40,7 @@
     neofetch
     ripgrep
     signal-desktop
+    source-code-pro
     tree
     wget
     write_stylus
