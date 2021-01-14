@@ -1,7 +1,0 @@
-#!/usr/bin/env zsh
-
-DATE=`date +%Y-%m-%d`
-NAME=$DATE.note.md
-[ -f $NAME ] \
-  && echo "Note already exists for today" > /dev/stderr \
-  || echo "What are you working on?" > $NAME

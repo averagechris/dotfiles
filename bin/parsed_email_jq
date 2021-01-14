@@ -1,2 +1,0 @@
-#! /usr/local/bin/fish
-jq '.[] | [{date, to, from, tags, subject, body, snippet: ""}]'

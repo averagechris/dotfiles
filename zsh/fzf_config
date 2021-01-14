@@ -1,6 +1,0 @@
-# if fd is installed use it to make fzf faster
-which fd &> /dev/null && \
-    export FZF_DEFAULT_COMMAND='fd' && \
-    export FZF_CTRL_T_COMMAND='fd' && \
-    zle -N fzf_ctrl_p edit_fzf && \
-    bindkey '^p' fzf_ctrl_p

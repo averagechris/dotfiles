@@ -1,4 +1,0 @@
-alias cp='cp -iv'  # warning, verbose
-alias mv='mv -iv'  # warning, verbose
-alias mkdir='mkdir -pv'  # make path, verbose
-which gmake > /dev/null && alias make='gmake'
