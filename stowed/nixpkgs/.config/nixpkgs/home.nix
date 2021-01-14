@@ -1,13 +1,12 @@
-{ config, lib, pkgs, ... }:
+{ config, pkgs, ... }:
 
-let
-  spacevim = pkgs.fetchgit {
-    url = "https://github.com/SpaceVim/SpaceVim.git";
-    rev = "d870c6a1bc91437e77fee9eae62f67ef4cef6371";
-    sha256 = "1c884yq5ihxj9qgsjbkwkffa3f5lcmkbnghws6gkkfsv8y66s1s1";
-  };
+{
 
-in {
+  imports = [
+    ./neovim
+    ./tmux
+    ./zsh
+  ];
 
   # Let Home Manager install and manage itself.
   programs.home-manager.enable = true;
@@ -36,17 +35,17 @@ in {
     gcc
     gnumake
     gnutls
+    htop
     lastpass-cli
     neofetch
     ripgrep
     signal-desktop
     tree
     wget
+    write_stylus
     xclip
-    xsel
   ];
 
-  programs.htop.enable = true;
   programs.git = {
     enable = true;
     userName = "Chris Cummings";
@@ -54,50 +53,6 @@ in {
     extraConfig = {
       pull.rebase = true;
     };
-  };
-
-  programs.zsh = {
-    enable = true;
-
-    defaultKeymap = "viins";
-
-    history = {
-      size = 50000;
-      ignoreDups = true;
-    };
-
-    initExtra = builtins.readFile ./post-compinit.zsh;
-    shellAliases = import ./aliases.nix;
-
-    enableAutosuggestions = true;
-    enableCompletion = true;
-
-    oh-my-zsh = {
-      enable = true;
-      theme="clean";
-      plugins = [
-        "git"
-      ];
-    };
-
-    sessionVariables = rec {
-        EDITOR = "emacsclient -t";
-        FZF_CTRL_T_COMMAND = "fd";
-        FZF_DEFAULT_COMMAND = "fd";
-        GIT_EDITOR = EDITOR;
-        KEYTIMEOUT = "1";
-        LESS = "-SRXF";
-        VISUAL = "emacs";
-    };
-
-  };
-
-  programs.neovim = {
-    enable = true;
-    vimAlias = true;
-    extraConfig = ''
-      execute 'source' '${spacevim}/config/main.vim'
-    '';
   };
 
   programs.mu.enable = true;

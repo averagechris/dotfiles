@@ -7,10 +7,9 @@
   * run `stow nixpkgs -t ~`
   * run `home-manager switch`
 
+If on macos stow is also used for yabai, skhd and karabiner for now.
 
-  * TODO: add spacemacs private layer into stowed
-  * TODO: add tmux.conf to home-manager
+TODO: add spacemacs private layer into stowed
 
 ### TODO: for macos
-  * move skhd, yabai, karabiner to stowed
   * move start_scripts to home-manager
