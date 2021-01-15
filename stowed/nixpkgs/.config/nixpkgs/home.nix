@@ -29,7 +29,6 @@
 
   home.packages = with pkgs; [
     curl
-    emacs
     fd
     fzf
     ispell
@@ -57,5 +56,6 @@
     };
   };
 
+  programs.emacs.enable = true;
   programs.mu.enable = true;
 }

@@ -20,6 +20,11 @@
     extraConfig = ''
       CopyArrivalDate yes
     '';
+    groups = {
+      inboxes = {
+        personal = [];
+      };
+    };
   };
 
   services.mbsync = {
