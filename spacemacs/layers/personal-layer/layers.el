@@ -14,6 +14,7 @@
    (lsp :variables
         lsp-rust-server 'rust-analyzer)
    markdown
+   mu4e
    org
    php
    (python :variables

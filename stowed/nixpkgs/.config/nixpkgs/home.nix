@@ -3,6 +3,7 @@
 {
 
   imports = [
+    ./email
     ./neovim
     ./tmux
     ./zsh
