@@ -12,8 +12,10 @@
     # e.g.:
     # example = import ./example-email.nix;
     personal = import ./personal.nix;
+    icloud = import ./icloud.nix;
   };
 
+  programs.mu.enable = true;
   programs.msmtp.enable = true;
   programs.mbsync = {
     enable = true;
@@ -21,8 +23,9 @@
       CopyArrivalDate yes
     '';
     groups = {
-      inboxes = {
+      personal-inboxes = {
         personal = [];
+        icloud = [];
       };
     };
   };

@@ -3,7 +3,9 @@
 {
 
   imports = [
+    ./doom
     ./email
+    ./python
     ./neovim
     ./tmux
     ./zsh
@@ -31,7 +33,6 @@
     curl
     fd
     fzf
-    ispell
     gcc
     gnumake
     gnutls
@@ -40,7 +41,6 @@
     neofetch
     ripgrep
     signal-desktop
-    source-code-pro
     tree
     wget
     write_stylus
@@ -56,6 +56,4 @@
     };
   };
 
-  programs.emacs.enable = true;
-  programs.mu.enable = true;
 }
