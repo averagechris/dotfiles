@@ -1,11 +1,12 @@
-let
-  pkgs = import <nixpkgs> { };
-in email: realName: imapHost: smtpHost: {
+let pkgs = import <nixpkgs> { };
+in { email, realName, imapHost, smtpHost, gmail ? false }: {
+  flavor = if gmail then "gmail.com" else "plain";
   address = email;
   userName = email;
   realName = realName;
 
-  passwordCommand = "${pkgs.gnome3.libsecret}/bin/secret-tool lookup email ${email}";
+  passwordCommand =
+    "${pkgs.gnome3.libsecret}/bin/secret-tool lookup email ${email}";
 
   imap.host = imapHost;
   smtp.host = smtpHost;

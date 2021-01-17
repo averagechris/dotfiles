@@ -39,6 +39,7 @@
     htop
     lastpass-cli
     neofetch
+    nixfmt
     ripgrep
     signal-desktop
     tree

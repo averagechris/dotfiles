@@ -25,7 +25,7 @@
 ;; There are two ways to load a theme. Both assume the theme is installed and
 ;; available. You can either set `doom-theme' or manually load a theme with the
 ;; `load-theme' function. This is the default:
-(setq doom-theme 'doom-one)
+(setq doom-theme 'doom-one-light)
 
 ;; If you use `org' and don't want your org files in the default location below,
 ;; change `org-directory'. It must be set before org loads!
@@ -52,3 +52,24 @@
 ;;
 ;; You can also try 'gd' (or 'C-c c d') to jump to their definition and see how
 ;; they are implemented.
+
+(set-email-account! "personal"
+                    '((mu4e-sent-folder . "/personal/Sent")
+                      (mu4e-drafts-folder . "/personal/Drafts")
+                      (mu4e-trash-folder . "/personal/Trash")
+                      (mu4e-refile-folder . "/personal/Archive"))
+                    t)
+
+(set-email-account! "icloud"
+                    '((mu4e-sent-folder . "/icloud/Sent Messages")
+                      (mu4e-drafts-folder . "/icloud/Drafts")
+                      (mu4e-trash-folder . "/icloud/Deleted Messages")
+                      (mu4e-refile-folder . "/icloud/Archive"))
+                    t)
+
+(set-email-account! "sure"
+                    '((mu4e-sent-folder . "/sure/[Gmail]/Sent Mail")
+                      (mu4e-drafts-folder . "/sure/[Gmail]/Drafts")
+                      (mu4e-trash-folder . "/sure/[Gmail]/Trash")
+                      (mu4e-refile-folder . "/sure/[Gmail]/All Mail"))
+                    t)

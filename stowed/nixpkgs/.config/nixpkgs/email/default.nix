@@ -8,11 +8,13 @@
 
   accounts.email.accounts = {
     # add a new email account by adding a nix module, then adding it to the .gitignore
+    # or ignore privately
     # see example-email.nix for an example
     # e.g.:
     # example = import ./example-email.nix;
     personal = import ./personal.nix;
     icloud = import ./icloud.nix;
+    sure = import ./sure.nix;
   };
 
   programs.mu.enable = true;
@@ -26,6 +28,9 @@
       personal-inboxes = {
         personal = [];
         icloud = [];
+      };
+      work = {
+        sure = [ "[Gmail]/Inbox" ];
       };
     };
   };

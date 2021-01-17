@@ -6,10 +6,21 @@ let
   })
   {
     doomPrivateDir = ./doom.d;
+    extraConfig = ''
+      (setq
+          mu4e-mu-binary "${pkgs.mu}/bin/mu"
+          sendmail-program "${pkgs.msmtp}/bin/msmtp"
+          message-sendmail-f-is-evil t
+          message-sendmail-extra-arguments '("--read-envelope-from")
+          message-send-mail-function 'message-send-mail-with-sendmail))
+    '';
+    extraPackages = epkgs: [
+      pkgs.mu
+      epkgs.vterm
+    ];
   };
 
 in {
-  programs.emacs.extraPackages = epkgs: [ epkgs.emacs-libvterm ];
   home.packages = with pkgs; [
     doom-emacs
 
