@@ -2,9 +2,8 @@
 
 let
   doom-emacs = pkgs.callPackage (builtins.fetchTarball {
-    url = https://github.com/vlaci/nix-doom-emacs/archive/master.tar.gz;
-  })
-  {
+    url = "https://github.com/vlaci/nix-doom-emacs/archive/master.tar.gz";
+  }) {
     doomPrivateDir = ./doom.d;
     extraConfig = ''
       (setq
@@ -14,10 +13,7 @@ let
           message-sendmail-extra-arguments '("--read-envelope-from")
           message-send-mail-function 'message-send-mail-with-sendmail))
     '';
-    extraPackages = epkgs: [
-      pkgs.mu
-      epkgs.vterm
-    ];
+    extraPackages = epkgs: [ pkgs.mu epkgs.vterm ];
   };
 
 in {
@@ -25,6 +21,7 @@ in {
     doom-emacs
 
     (aspellWithDicts (dicts: with dicts; [ en en-computers en-science ]))
+    nixfmt
     ripgrep
     shellcheck
   ];

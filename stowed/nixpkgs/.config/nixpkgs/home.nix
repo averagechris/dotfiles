@@ -2,20 +2,8 @@
 
 {
 
-  imports = [
-    ./doom
-    ./email
-    ./python
-    ./neovim
-    ./tmux
-    ./zsh
-  ];
+  imports = [ ./doom ./email ./python ./neovim ./tmux ./zsh ];
 
-  # Let Home Manager install and manage itself.
-  programs.home-manager.enable = true;
-
-  # Home Manager needs a bit of information about you and the
-  # paths it should manage.
   home.username = "chris";
   home.homeDirectory = "/home/chris";
 
@@ -28,6 +16,7 @@
   # the Home Manager release notes for a list of state version
   # changes in each release.
   home.stateVersion = "21.03";
+  programs.home-manager.enable = true;
 
   home.packages = with pkgs; [
     curl
@@ -39,7 +28,6 @@
     htop
     lastpass-cli
     neofetch
-    nixfmt
     ripgrep
     signal-desktop
     tree
