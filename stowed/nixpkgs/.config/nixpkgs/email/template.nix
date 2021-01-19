@@ -5,8 +5,10 @@ in { email, realName, imapHost, smtpHost, gmail ? false }: {
   userName = email;
   realName = realName;
 
-  passwordCommand =
-    "${pkgs.gnome3.libsecret}/bin/secret-tool lookup email ${email}";
+  passwordCommand = if pkgs.stdenv.hostPlatform.isLinux then
+    "${pkgs.gnome3.libsecret}/bin/secret-tool lookup email ${email}"
+  else
+    "security find-generic-password -a christophercummings -s ${email} -w";
 
   imap.host = imapHost;
   smtp.host = smtpHost;
