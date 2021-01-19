@@ -20,6 +20,7 @@
 
   home.packages = with pkgs; [
     curl
+    direnv
     fd
     fzf
     gcc
@@ -40,9 +41,8 @@
     enable = true;
     userName = "Chris Cummings";
     userEmail = "chris@thesogu.com";
-    extraConfig = {
-      pull.rebase = true;
-    };
+    extraConfig = { pull.rebase = true; };
   };
 
+  services.lorri.enable = true;
 }

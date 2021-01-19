@@ -5,3 +5,5 @@ zle -N fzf_ctrl_p edit_fzf && bindkey '^p' fzf_ctrl_p
 my_funcs=$HOME/dotfiles/zsh/functions
 fpath=($my_funcs $fpath)
 for func in $(ls $my_funcs); do autoload $func; done;
+
+eval "$(direnv hook zsh)"
