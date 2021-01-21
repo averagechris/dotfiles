@@ -1,0 +1,1 @@
+django-admin test --settings $TESTING_DJANGO_SETTINGS_MODULE --keepdb  $@
