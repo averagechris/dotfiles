@@ -1,0 +1,7 @@
+#! /usr/bin/env zsh
+
+fn_kube_shell_context="$(choose-kube-context ${1-qa})"
+
+kube-attach "$fn_kube_shell_context" "$(choose-kube-pod --context $fn_kube_shell_context)" ${@:2}
+
+unset fn_kube_shell_context

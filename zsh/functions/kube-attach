@@ -1,0 +1,12 @@
+#! /usr/bin/env zsh
+
+# $1 context alias
+# $2 pod name
+# $3 optional command to execute defaults to a bash shell
+# $4+ args to pass to $3
+
+kubectl exec --stdin --tty \
+    --context "$1" \
+    "$2" \
+    -- "${3-/bin/bash}" "${@:4}"
+

@@ -1,0 +1,5 @@
+kubectl config get-contexts --no-headers \
+    | grep -e " ${1-.*} " \
+    | fzf -1 --header "Choose a kubectl context"\
+    | tr -s ' ' \
+    | cut -d ' ' -f 2
