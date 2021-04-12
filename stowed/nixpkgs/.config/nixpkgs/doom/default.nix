@@ -1,6 +1,8 @@
 { pkgs, ... }:
 
 let
+  emacs-pkg =
+    if pkgs.stdenv.hostPlatform.isLinux then pkgs.emacs else pkgs.emacsMacport;
   doom-emacs = pkgs.callPackage (builtins.fetchTarball {
     url = "https://github.com/vlaci/nix-doom-emacs/archive/master.tar.gz";
   }) {
@@ -14,6 +16,7 @@ let
           message-send-mail-function 'message-send-mail-with-sendmail)
     '';
     extraPackages = epkgs: [ pkgs.mu epkgs.vterm ];
+    emacsPackages = pkgs.emacsPackagesFor emacs-pkg;
   };
 
 in {
