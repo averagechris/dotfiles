@@ -26,6 +26,7 @@
     gnumake
     gnutls
     htop
+    jq
     lastpass-cli
     neofetch
     ripgrep
