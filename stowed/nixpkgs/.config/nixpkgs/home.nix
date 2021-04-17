@@ -22,7 +22,6 @@
     curl
     direnv
     fd
-    fzf
     gcc
     gnumake
     gnutls

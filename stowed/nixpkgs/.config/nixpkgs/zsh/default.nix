@@ -27,8 +27,6 @@
 
     sessionVariables = rec {
         EDITOR = "emacsclient -t";
-        FZF_CTRL_T_COMMAND = "fd";
-        FZF_DEFAULT_COMMAND = "fd";
         GIT_EDITOR = EDITOR;
         KEYTIMEOUT = "1";
         LESS = "-SRXF";
@@ -36,4 +34,14 @@
     };
 
   };
+
+  programs.fzf = {
+    enable = true;
+    defaultCommand = "fd --type f";
+    fileWidgetCommand = "fd --type f --hidden";
+    changeDirWidgetCommand = "fd --type d";
+    enableZshIntegration = true;
+  };
+  home.packages = [pkgs.fd];
+
 }
