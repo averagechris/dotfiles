@@ -1,3 +1,5 @@
+#! /usr/bin/env zsh
+
 # try to find it by name explicitly
 local lpass_result=$(lpass show -p -G "$@" 2> /dev/null)
 local multiple_matches=$(echo "$lpass_result" | grep -io "multiple matches found")
