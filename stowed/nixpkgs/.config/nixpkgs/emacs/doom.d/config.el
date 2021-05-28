@@ -91,3 +91,6 @@
                       (mu4e-trash-folder . "/sure/[Gmail]/Trash")
                       (mu4e-refile-folder . "/sure/[Gmail]/All Mail"))
                     t)
+
+(map! :leader
+      :desc "sort visual lines" "tS" #'sort-lines)
