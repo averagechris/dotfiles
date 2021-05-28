@@ -17,7 +17,7 @@
 
 ### Things to remember
 * to update to the latest packages run `nix-channel --update` before running `home-manager switch`
-
+* Optionally run `stow $DIR -t ~` for any other $DIR in `~/dotfiles/stowed` to symlink the related configs
 
 
 ### TODO: for macos
