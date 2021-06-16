@@ -24,7 +24,10 @@ in {
     doom-emacs
 
     (aspellWithDicts (dicts: with dicts; [ en en-computers en-science ]))
+    direnv
+    fd
     nixfmt
+    pandoc
     ripgrep
     shellcheck
   ];

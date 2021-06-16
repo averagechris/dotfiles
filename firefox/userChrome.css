@@ -1,9 +1,11 @@
 @namespace url(http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul);
 
-#sidebar-box[sidebarcommand="treestyletab_piro_sakura_ne_jp-sidebar-action"] #sidebar-header {
-    display: none;
-}
-
+/* hides firefox's default tab bar */
 #tabbrowser-tabs {
     visibility: collapse !important;
+}
+
+/* makes the treestyle tab view look cleaner */
+#sidebar-box[sidebarcommand="treestyletab_piro_sakura_ne_jp-sidebar-action"] #sidebar-header {
+    display: none;
 }

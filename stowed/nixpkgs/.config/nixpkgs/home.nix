@@ -19,6 +19,7 @@
   programs.home-manager.enable = true;
 
   home.packages = with pkgs; [
+    cargo
     curl
     direnv
     fd
@@ -28,7 +29,9 @@
     htop
     jq
     lastpass-cli
+    mycli
     neofetch
+    pgcli
     ripgrep
     signal-desktop
     tree

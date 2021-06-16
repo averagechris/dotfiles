@@ -1,6 +1,3 @@
-# TODO ctrl p isn't working
-zle -N fzf_ctrl_p edit_fzf && bindkey '^p' fzf_ctrl_p
-
 function () {
     # anonymous functions are evaluated without being called
     # # so we're just using this to scope our variables
