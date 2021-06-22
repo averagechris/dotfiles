@@ -53,6 +53,23 @@
 ;; You can also try 'gd' (or 'C-c c d') to jump to their definition and see how
 ;; they are implemented.
 
+
+;; ;;;;;;;;;;;;;
+;; KEYBINDINGS
+;; ;;;;;;;;;;;;;
+
+(map! :leader
+      :desc "Comment line" :nv "tc" #'comment-line)
+
+;; while in python mode
+(map! :leader :localleader :mode python-mode
+      :desc "Start poetry transient buffer" :nv "p" #'poetry
+      :desc "Insert breakpoint with context" :n "b" #'(lambda ()
+                                                        (interactive)
+                                                        (progn
+                                                          (insert "breakpoint(context=12)")
+                                                          (newline-and-indent))))
+
 (set-email-account! "personal"
                     '((mu4e-sent-folder . "/personal/Sent")
                       (mu4e-drafts-folder . "/personal/Drafts")
