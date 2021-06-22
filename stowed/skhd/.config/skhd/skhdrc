@@ -11,10 +11,10 @@ hyper - k : yabai -m window --focus north
 hyper - l : yabai -m window --focus east
 
 # -- rearraging within the current "space" --
-cmd + alt - h : yabai -m window --warp east
+cmd + alt - h : yabai -m window --warp west
 cmd + alt - j : yabai -m window --warp south
 cmd + alt - k : yabai -m window --warp north
-cmd + alt - l : yabai -m window --warp west
+cmd + alt - l : yabai -m window --warp east
 
 cmd + alt - u : yabai -m window --swap west
 cmd + alt - i : yabai -m window --swap south
@@ -30,6 +30,7 @@ cmd + alt - e : yabai -m window --toggle split
 # -- resizing --
 cmd + alt - 0 : yabai -m space --balance
 cmd + alt - f : yabai -m window --toggle zoom-fullscreen
+cmd + alt + shift - f  : yabai -m window --toggle zoom-parent
 hyper - 0x18  : yabai -m window --toggle zoom-parent
 
 # uses brackets left: [ right: ]

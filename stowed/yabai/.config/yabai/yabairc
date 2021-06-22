@@ -28,10 +28,9 @@ yabai -m rule --add app="^Disk Utility$" manage=off
 yabai -m rule --add app="^Flux$" manage=off
 yabai -m rule --add app="^Messages$" manage=off
 
-# float emacs popup windwos used for autocompletion etc
-yabai -m rule --add app='^Emacs$' title!="^Emacs@$USER" manage=off
-
 # float iterm window that emulate guake (floats from bottom)
 yabai -m rule --add app='^iTerm2$' title="^Hotkey Window$" manage=off
+
+yabai -m rule --add app='sure-zooms' manage=off
 
 echo "$(date "+%Y-%m-%d %H:%M:%s") - yabai configuration loaded..."
