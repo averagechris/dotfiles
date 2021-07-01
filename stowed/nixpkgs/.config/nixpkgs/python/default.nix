@@ -9,7 +9,7 @@ let
     isort
     pyflakes
     pytest
-    python-language-server
+    # python-language-server
     ipdb
     ipython
     poetry
