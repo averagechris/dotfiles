@@ -59,7 +59,8 @@
 ;; ;;;;;;;;;;;;;
 
 (map! :leader
-      :desc "Comment line" :nv "tc" #'comment-line)
+      :desc "Comment line" :nv "tc" #'comment-line
+      :desc "Sort lines" :nv "as" #'sort-lines)
 
 ;; while in python mode
 (map! :leader :localleader :mode python-mode

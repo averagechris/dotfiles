@@ -1,6 +1,10 @@
 { config, pkgs, ... }:
 
-{
+let
+  isLinux = (import <nixpkgs> {}).stdenv.hostPlatform.isLinux;
+  linuxOnlyPackages = with pkgs; [ xclip ];
+  darwinOnlyPackages = with pkgs; [ ];
+in {
   programs.zsh = {
     enable = true;
 
@@ -44,9 +48,22 @@
   };
 
   home.packages = with pkgs; [
+    curl
+    direnv
     fd
+    gcc
+    gnumake
+    gnutls
+    htop
+    jq
+    lastpass-cli
+    mycli
+    neofetch
+    pgcli
+    procs
     ripgrep
-    xclip
-  ];
+    tree
+    wget
+  ] ++ linuxOnlyPackages ++ darwinOnlyPackages;
 
 }
