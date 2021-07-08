@@ -1,10 +1,9 @@
 { pkgs, ... }:
 
-{
-  home.packages = with pkgs; [
-    libsecret
-    mu
-  ];
+let
+  isLinux = pkgs.stdenv.hostPlatform.isLinux;
+in {
+  home.packages = with pkgs; if isLinux then [ libsecret mu ] else [];
 
   accounts.email.accounts = {
     # add a new email account by adding a nix module, then adding it to the .gitignore
