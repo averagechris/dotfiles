@@ -57,7 +57,6 @@ in {
     htop
     jq
     lastpass-cli
-    mycli
     neofetch
     pgcli
     procs
