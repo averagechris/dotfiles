@@ -20,7 +20,9 @@
     ../email
     ../firefox
     ../guiapps
+    ../mycli
     ../neovim
+    ../pgcli
     ../python
     ../rust
     ../shell

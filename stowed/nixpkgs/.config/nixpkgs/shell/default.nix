@@ -58,7 +58,6 @@ in {
     jq
     lastpass-cli
     neofetch
-    pgcli
     procs
     ripgrep
     tree
