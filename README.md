@@ -17,6 +17,10 @@
 If on macos stow is also used for yabai, skhd and karabiner for now.
 
 
+### Things to remember
+* to update to the latest packages run `nix-channel --update` before running `home-manager switch`
+
+
 
 ### TODO: for macos
   * move start_scripts to home-manager
