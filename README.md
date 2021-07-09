@@ -2,7 +2,7 @@
   * [install nix](https://nixos.org "nixos")
   * [install home-manager](https://github.com/nix-community/home-manager#installation)
   * install gnu stow `nix-env -Ia nixpkgs.stow`
-  * clone dotfiles
+  * clone this repo
   * change into the `dotfiles/stowed` directory
   * create `localhome/default.nix` based on `localhome/example.nix`
     * this is for local machine specific config like user name, directory and anything else
@@ -10,11 +10,9 @@
     * use `email/example-email.nix` as a guide
   * run `stow nixpkgs -t ~`
   * run `home-manager switch`
-  * From within emacs run
+  * start emacs and run
     * `all-the-icons-install-fonts` to install the fonts used for icons
     * `emojify-download-emoji` to be able to display emoji characters
-
-If on macos stow is also used for yabai, skhd and karabiner for now.
 
 
 ### Things to remember
