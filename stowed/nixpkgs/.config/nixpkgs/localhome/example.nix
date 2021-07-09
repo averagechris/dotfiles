@@ -26,6 +26,7 @@
     ../python
     ../rust
     ../shell
+    ../skhd
     ../tmux
     ../yabai
   ];
