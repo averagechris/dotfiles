@@ -7,7 +7,7 @@ import subprocess
 
 
 def print_help_message_and_exit(exit_code=0):
-    msg = '''srch is a wrapper around ripgrep to sort search results by number of occurences.
+    msg = """srch is a wrapper around ripgrep to sort search results by number of occurences.
 
     USAGE:
         $ srch PATTERN --top-N --flags-to-ripgrep --options-to-ripgrep
@@ -23,23 +23,25 @@ def print_help_message_and_exit(exit_code=0):
         >>> will print the 5 files with top number of occurences of "ticket_class" case
             insensitively that are in a path that contains "event_service" and are python
             files
-    '''
+    """
     print(msg)
     sys.exit(exit_code)
 
 
 def parse_args(args):  # noqa: C901
-    rg_args = ['rg', '-c']
+    rg_args = ["rg", "-c"]
     heap_size = 100
     print_count = False
 
     if args:
         for arg in args:
-            if arg == '--help':
+            if arg == "--help":
                 print_help_message_and_exit()
-            elif '--top-' in arg:
-                heap_size = int(''.join(filter(str.isdigit, arg)) or heap_size)  # prevent ValueError if no number
-            elif arg in ('-c', '--count'):
+            elif "--top-" in arg:
+                heap_size = int(
+                    "".join(filter(str.isdigit, arg)) or heap_size
+                )  # prevent ValueError if no number
+            elif arg in ("-c", "--count"):
                 print_count = True
             else:
                 rg_args.append(arg)
@@ -51,18 +53,18 @@ def parse_args(args):  # noqa: C901
 
 def run():
     rg_args, heap_size, print_count = parse_args(sys.argv[1:])
-    ripgrep = subprocess.Popen(' '.join(rg_args), shell=True, stdout=subprocess.PIPE)
+    ripgrep = subprocess.Popen(" ".join(rg_args), shell=True, stdout=subprocess.PIPE)
     results = []
 
     for line in ripgrep.stdout:
-        path, count = line.decode('utf-8').strip().split(':')
+        path, count = line.decode("utf-8").strip().split(":")
         results.append((int(count), path))
 
     for result in nlargest(heap_size, results, key=getitem(0)):
         if print_count:
-            print(f'{result[0]}:', end=' ')
+            print(f"{result[0]}:", end=" ")
         print(result[-1])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run()
