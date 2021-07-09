@@ -9,4 +9,3 @@ kubectl exec --stdin --tty \
     --context "$1" \
     "$2" \
     -- "${3-/bin/bash}" "${@:4}"
-
