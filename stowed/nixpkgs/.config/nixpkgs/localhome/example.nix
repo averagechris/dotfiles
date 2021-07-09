@@ -27,6 +27,7 @@
     ../rust
     ../shell
     ../tmux
+    ../yabai
   ];
 
   home.username = "your_user_name";
