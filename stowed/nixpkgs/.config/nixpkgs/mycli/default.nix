@@ -3,19 +3,20 @@
 let
   utils = (import ../utils pkgs);
   mycliConfig = {
-      general = {
-        smart_completion = true;
-        multi_line = true;
-        destructive_warning = true;
-        table_format = "ascii";
-        key_bindings = "vi";
-        wider_completion_menu = true;
-        less_chatty = true;
-        keyword_casing = "auto";
-        enable_pager = true;
-      };
+    general = {
+      smart_completion = true;
+      multi_line = true;
+      destructive_warning = true;
+      table_format = "ascii";
+      key_bindings = "vi";
+      wider_completion_menu = true;
+      less_chatty = true;
+      keyword_casing = "auto";
+      enable_pager = true;
     };
-in {
+  };
+in
+{
 
   home.packages = with pkgs; [
     mycli

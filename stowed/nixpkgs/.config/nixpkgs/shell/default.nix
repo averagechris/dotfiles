@@ -1,10 +1,11 @@
 { config, pkgs, ... }:
 
 let
-  isLinux = (import <nixpkgs> {}).stdenv.hostPlatform.isLinux;
+  isLinux = (import <nixpkgs> { }).stdenv.hostPlatform.isLinux;
   linuxOnlyPackages = with pkgs; [ xclip ];
   darwinOnlyPackages = with pkgs; [ ];
-in {
+in
+{
   programs.zsh = {
     enable = true;
 
@@ -23,18 +24,18 @@ in {
 
     oh-my-zsh = {
       enable = true;
-      theme="clean";
+      theme = "clean";
       plugins = [
         "git"
       ];
     };
 
     sessionVariables = rec {
-        EDITOR = "emacsclient -t";
-        GIT_EDITOR = EDITOR;
-        KEYTIMEOUT = "1";
-        LESS = "-SRXF";
-        VISUAL = "emacs";
+      EDITOR = "emacsclient -t";
+      GIT_EDITOR = EDITOR;
+      KEYTIMEOUT = "1";
+      LESS = "-SRXF";
+      VISUAL = "emacs";
     };
 
   };

@@ -43,7 +43,7 @@ let
     mkKey = k: "yabai -m config ${k}";
     mkValue = v:
       if lib.isBool v then (if v then "on" else "off")
-      else lib.generators.mkValueStringDefault {} v;
+      else lib.generators.mkValueStringDefault { } v;
   };
 
   yabaiifyRules = utils.stringify {
@@ -51,7 +51,8 @@ let
     mkValue = v: "manage=${if v then "on" else "off"}";
   };
 
-in {
+in
+{
 
   home.packages = [
     pkgs.yabai

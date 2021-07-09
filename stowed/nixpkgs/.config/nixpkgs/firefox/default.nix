@@ -20,8 +20,8 @@
       };
       userChrome = builtins.readFile ./userChrome.css;
       userContent = ''
-          /* Hide scrollbar */
-          *{scrollbar-width: none !important}
+        /* Hide scrollbar */
+        *{scrollbar-width: none !important}
       '';
 
     };

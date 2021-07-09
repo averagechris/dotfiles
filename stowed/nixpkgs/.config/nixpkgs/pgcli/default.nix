@@ -3,27 +3,28 @@
 let
   utils = (import ../utils pkgs);
   pgcliConfig = {
-      main = {
-        smart_completion = true;
-        wider_completion_menu = true;
-        multi_line = true;
-        destructive_warning = true;
-        keyword_casing = "auto";
-        show_bottom_toolbar = true;
-        vi = true;  # keybindings
-        prompt = "\u@\h:\d> ";
-        keyring = false;  # for storing credentials
-        less_chatty = true;
-        enable_pager = true;
+    main = {
+      smart_completion = true;
+      wider_completion_menu = true;
+      multi_line = true;
+      destructive_warning = true;
+      keyword_casing = "auto";
+      show_bottom_toolbar = true;
+      vi = true; # keybindings
+      prompt = "\u@\h:\d> ";
+      keyring = false; # for storing credentials
+      less_chatty = true;
+      enable_pager = true;
 
-        # table_format = "ascii";
-        table_format = "psql";
-      };
-      "named queries" = {};
-      "alias dsn" = {};
+      # table_format = "ascii";
+      table_format = "psql";
     };
+    "named queries" = { };
+    "alias dsn" = { };
+  };
 
-in {
+in
+{
 
   home.packages = with pkgs; [
     pgcli

@@ -11,7 +11,7 @@
 ##################################################
 ##################################################
 
-{config, pgks, ...}:
+{ config, pgks, ... }:
 
 {
   # import whatever modules you want on this system
@@ -49,18 +49,18 @@
   };
 
   pam.sessionVariables = config.home.sessionVariables // {
-    LANGUAGE="en_US:en";
-    LANG="en_US.UTF-8";
-    LC_NUMERIC="en_US.UTF-8";
-    LC_TIME="en_US.UTF-8";
-    LC_MONETARY="en_US.UTF-8";
-    LC_PAPER="en_US.UTF-8";
-    LC_NAME="en_US.UTF-8";
-    LC_ADDRESS="en_US.UTF-8";
-    LC_TELEPHONE="en_US.UTF-8";
-    LC_MEASUREMENT="en_US.UTF-8";
-    LC_IDENTIFICATION="en_US.UTF-8";
-    PAPERSIZE="letter";
+    LANGUAGE = "en_US:en";
+    LANG = "en_US.UTF-8";
+    LC_NUMERIC = "en_US.UTF-8";
+    LC_TIME = "en_US.UTF-8";
+    LC_MONETARY = "en_US.UTF-8";
+    LC_PAPER = "en_US.UTF-8";
+    LC_NAME = "en_US.UTF-8";
+    LC_ADDRESS = "en_US.UTF-8";
+    LC_TELEPHONE = "en_US.UTF-8";
+    LC_MEASUREMENT = "en_US.UTF-8";
+    LC_IDENTIFICATION = "en_US.UTF-8";
+    PAPERSIZE = "letter";
   };
 
   # allows Gnome to find the gui applications
@@ -70,12 +70,12 @@
 
   # make sure all of the distro's default XDG_DATA_DIRS values are in here
   xdg.systemDirs.data = [
-      "/usr/share/pop"
-      "/home/chris/.local/share/flatpak/exports/share"
-      "/var/lib/flatpak/exports/share"
-      "/usr/local/share"
-      "/usr/share"
-      "/home/chris/.nix-profile/share"
-      "/home/chris/.nix-profile/share/applications"
+    "/usr/share/pop"
+    "/home/chris/.local/share/flatpak/exports/share"
+    "/var/lib/flatpak/exports/share"
+    "/usr/local/share"
+    "/usr/share"
+    "/home/chris/.nix-profile/share"
+    "/home/chris/.nix-profile/share/applications"
   ];
 }
