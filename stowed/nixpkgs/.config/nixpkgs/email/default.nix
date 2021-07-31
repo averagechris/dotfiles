@@ -14,7 +14,6 @@ in
     # example = import ./example-email.nix;
     personal = import ./personal.nix;
     icloud = import ./icloud.nix;
-    sure = import ./sure.nix;
   };
 
   programs.mu.enable = true;
@@ -28,9 +27,6 @@ in
       personal-inboxes = {
         personal = [ ];
         icloud = [ ];
-      };
-      work = {
-        sure = [ "[Gmail]/Inbox" ];
       };
     };
   };
