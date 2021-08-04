@@ -1,8 +1,13 @@
 { config, pkgs, ... }:
 
+let
+
+  isLinux = pkgs.stdenv.hostPlatform.isLinux;
+
+in
 {
   home.packages =
-    if pkgs.stdenv.hostPlatform.isLinux then
+    if isLinux then
       with pkgs; [
         signal-desktop
         write_stylus
