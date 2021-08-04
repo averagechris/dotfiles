@@ -61,6 +61,8 @@ in
     neofetch
     procs
     ripgrep
+    shellcheck
+    shfmt
     tree
     wget
   ] ++ linuxOnlyPackages ++ darwinOnlyPackages;

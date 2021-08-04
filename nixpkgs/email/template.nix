@@ -1,5 +1,6 @@
 let pkgs = import <nixpkgs> { };
-in { email, realName, imapHost, smtpHost, gmail ? false }: {
+in
+{ email, realName, imapHost, smtpHost, gmail ? false }: {
   flavor = if gmail then "gmail.com" else "plain";
   address = email;
   userName = email;

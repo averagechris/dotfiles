@@ -1,18 +1,27 @@
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v3.2.0
+    rev: v4.0.1
     hooks:
-    -   id: trailing-whitespace
-    -   id: end-of-file-fixer
-    -   id: check-yaml
-    -   id: check-added-large-files
+    - id: trailing-whitespace
+    - id: end-of-file-fixer
+    - id: check-yaml
+    - id: check-added-large-files
+    - id: destroyed-symlinks
+    - id: mixed-line-ending
 
 -   repo: https://github.com/nix-community/nixpkgs-fmt
-    rev: master
+    rev: v1.2.0
     hooks:
     -   id: nixpkgs-fmt
 
 -   repo: https://github.com/psf/black
-    rev: 21.6b0
+    rev: 21.7b0
     hooks:
       - id: black
+
+- repo: https://github.com/syntaqx/git-hooks
+  rev: v0.0.17
+  hooks:
+  # NOTE: these require shellcheck and shfmt to be installed in the environment manually
+  - id: shellcheck
+  - id: shfmt
