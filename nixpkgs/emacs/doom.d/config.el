@@ -68,8 +68,9 @@
       :desc "Insert breakpoint with context" :n "b" #'(lambda ()
                                                         (interactive)
                                                         (progn
+                                                          (evil-insert-newline-above)
                                                           (insert "breakpoint(context=12)")
-                                                          (newline-and-indent))))
+                                                          (indent-according-to-mode))))
 
 (set-email-account! "personal"
                     '((mu4e-sent-folder . "/personal/Sent")
@@ -91,6 +92,3 @@
                       (mu4e-trash-folder . "/sure/[Gmail]/Trash")
                       (mu4e-refile-folder . "/sure/[Gmail]/All Mail"))
                     t)
-
-(map! :leader
-      :desc "sort visual lines" "tS" #'sort-lines)
