@@ -1,2 +1,4 @@
+#! /usr/bin/env zsh
+
 mkdir -p "$@"
 cd "$@"

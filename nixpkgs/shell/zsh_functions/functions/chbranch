@@ -1,3 +1,5 @@
+#! /usr/bin/env zsh
+
 git branch &> /dev/null \
     || git branch --list \
     && git branch --list | grep -v '*' | fzf | xargs git checkout

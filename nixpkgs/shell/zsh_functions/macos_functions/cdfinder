@@ -1,1 +1,3 @@
+#! /usr/bin/env zsh
+
 cd `osascript < $DOTFILES/applescripts/finder_cwd.applescript`

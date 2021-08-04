@@ -1,3 +1,5 @@
+#! /usr/bin/env zsh
+
 # 0 is default, 3 enables things like tab in system dialogs
 # https://github.com/herrbischoff/awesome-macos-command-line#full-keyboard-access
 case `defaults read NSGlobalDomain AppleKeyboardUIMode 2> /dev/null` in

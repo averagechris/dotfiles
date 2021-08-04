@@ -1,2 +1,4 @@
+#! /usr/bin/env zsh
+
 # open a file in the default macOS preview
 qlmanage -p "$@" &> /dev/null

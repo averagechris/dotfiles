@@ -1,2 +1,4 @@
+#! /usr/bin/env zsh
+
 # open finder in $PWD
 open -a Finder .

@@ -1,1 +1,3 @@
+#! /usr/bin/env zsh
+
 to_plain_text | pbcopy

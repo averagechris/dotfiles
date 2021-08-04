@@ -1,3 +1,5 @@
+#! /usr/bin/env zsh
+
 case `defaults read -g NSAutomaticSpellingCorrectionEnabled 2> /dev/null` in
     0) enable="true";;
     1) enable="false";;
