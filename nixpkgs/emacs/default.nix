@@ -34,6 +34,7 @@ in
     pandoc
     ripgrep
     shellcheck
+    nodePackages.pyright
   ];
   home.file.".emacs.d/init.el".text = ''
     (load "default.el")

@@ -15,3 +15,4 @@ fish/fish_history
 /.config/configstore/
 /.config/doctl/
 /stowed/nixpkgs/.config/nixpkgs/localhome/default.nix
+nixpkgs/localhome/default.nix

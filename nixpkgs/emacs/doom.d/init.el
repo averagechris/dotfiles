@@ -106,6 +106,7 @@
        org
        (python
         +lsp
+        +pyright
         +poetry)
        rest
        ;;rust
