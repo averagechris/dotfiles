@@ -41,7 +41,8 @@ in
   '';
 
   services.emacs = {
-    enable = true;
+    # TODO make this work with launchctl on macos
+    enable = pkgs.stdenv.hostPlatform.isLinux;
     package = doom-emacs;
   };
 
