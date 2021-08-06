@@ -22,6 +22,7 @@
     ../emacs
     ../email
     ../firefox
+    ../git
     ../guiapps
     ../linux_destop
     ../mycli
