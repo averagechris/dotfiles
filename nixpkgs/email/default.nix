@@ -6,16 +6,6 @@ in
 {
   home.packages = with pkgs; if isLinux then [ libsecret mu ] else [ ];
 
-  accounts.email.accounts = {
-    # add a new email account by adding a nix module, then adding it to the .gitignore
-    # or ignore privately
-    # see example-email.nix for an example
-    # e.g.:
-    # example = import ./example-email.nix;
-    personal = import ./personal.nix;
-    icloud = import ./icloud.nix;
-  };
-
   programs.mu.enable = true;
   programs.msmtp.enable = true;
   programs.mbsync = {

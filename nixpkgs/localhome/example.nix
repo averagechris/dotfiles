@@ -14,12 +14,16 @@
 { config, pgks, ... }:
 
 {
+  config.home.username = "your_user_name";
+  config.home.homeDirectory = "/home/chris";
+
   # import whatever modules you want on this system
   imports = [
     ../emacs
     ../email
     ../firefox
     ../guiapps
+    ../linux_destop
     ../mycli
     ../neovim
     ../pgcli
@@ -31,52 +35,23 @@
     ../yabai
   ];
 
-  home.username = "your_user_name";
-  home.homeDirectory = "/home/chris";
-  home.stateVersion = "21.05";
-  programs.home-manager.enable = true;
-
-  programs.git = {
-    enable = true;
-    userName = "My full name";
+  config.programs.git = {
+    userName = ":)";
     userEmail = "email@email.com";
-    extraConfig = { pull.rebase = true; };
   };
 
-
-  # probably don't need any of the below on macos
-  home.sessionVariables = {
-    BROSWER = "firefox";
+  config.accounts.email.accounts = {
+    # add a new email account by adding a nix module, then adding it to the .gitignore
+    # or ignore privately
+    # see example-email.nix for an example
+    # e.g.:
+    # example = import ../email/example-email.nix;
   };
-
-  pam.sessionVariables = config.home.sessionVariables // {
-    LANGUAGE = "en_US:en";
-    LANG = "en_US.UTF-8";
-    LC_NUMERIC = "en_US.UTF-8";
-    LC_TIME = "en_US.UTF-8";
-    LC_MONETARY = "en_US.UTF-8";
-    LC_PAPER = "en_US.UTF-8";
-    LC_NAME = "en_US.UTF-8";
-    LC_ADDRESS = "en_US.UTF-8";
-    LC_TELEPHONE = "en_US.UTF-8";
-    LC_MEASUREMENT = "en_US.UTF-8";
-    LC_IDENTIFICATION = "en_US.UTF-8";
-    PAPERSIZE = "letter";
-  };
-
-  # allows Gnome to find the gui applications
-  targets.genericLinux.enable = true;
-  xdg.enable = true;
-  xdg.mime.enable = true;
 
   # make sure all of the distro's default XDG_DATA_DIRS values are in here
-  xdg.systemDirs.data = [
+  # most of these should be set in linux_desktop/default.nix
+  config.xdg.systemDirs.data = [
     "/usr/share/pop"
-    "/home/chris/.local/share/flatpak/exports/share"
     "/var/lib/flatpak/exports/share"
-    "/usr/local/share"
-    "/usr/share"
-    "/home/chris/.nix-profile/share"
-    "/home/chris/.nix-profile/share/applications"
   ];
 }
