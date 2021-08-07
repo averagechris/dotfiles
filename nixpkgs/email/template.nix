@@ -10,6 +10,7 @@ in
     if pkgs.stdenv.hostPlatform.isLinux then
       "${pkgs.gnome3.libsecret}/bin/secret-tool lookup email ${email}"
     else
+    # TODO use config.home.username
       "security find-generic-password -a christophercummings -s ${email} -w";
 
   imap.host = imapHost;

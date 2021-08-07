@@ -68,8 +68,8 @@
 
   # if on a machine using aws cli you probably want to set this
   # to the profile you use most often
-  programs.zsh.sessionVariables = {
-    AWS_PROFILE="????";
+  config.programs.zsh.sessionVariables = {
+    AWS_PROFILE = "????";
   };
 
   # if on pop-os you probably want to add these
