@@ -3,6 +3,8 @@
 # https://github.com/koekeishiya/yabai
 #########################################
 
+# we use the yabai package from nix-darwin
+
 { pkgs, lib, ... }:
 
 let
@@ -53,10 +55,6 @@ let
 
 in
 {
-
-  home.packages = [
-    pkgs.yabai
-  ];
 
   xdg.configFile."yabai/yabairc".text = ''
     #!/usr/bin/env sh

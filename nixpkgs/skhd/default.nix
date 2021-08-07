@@ -3,13 +3,11 @@
 # https://github.com/koekeishiya/skhd
 #####################################
 
-{ pkgs, ... }:
+# the package used comes from nix-darwin instead of home-manager.
+
+{ ... }:
 
 {
-
-  home.packages = [
-    pkgs.skhd
-  ];
 
   xdg.configFile."skhd/skhdrc".text = ''
     #############################################################

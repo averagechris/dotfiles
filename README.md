@@ -30,6 +30,12 @@
     ```
     * modify `localhome/default.nix` according to the needs of the system (like choosing what to install and some PII info)
 
+  * create `darwin/local_config.nix` based on `darwin/example_local_config.nix`
+    ``` shell
+    cp ~/dotfiles/nixpkgs/darwin/example_local_config.nix ~/dotfiles/nixpkgs/darwin/local_config.nix
+    ```
+    * modify `darwin/local_config.nix` by adding the right user name and home directory
+
   * symlink `~/dotfiles/nixpkgs` to `~/.config/`
 
   ``` sh
