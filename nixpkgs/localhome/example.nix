@@ -19,7 +19,7 @@
   ###
   config.home.username = "<username>";
   # on macos this is /Users/<username>
-  config.home.homeDirectory = "/home/chris";
+  config.home.homeDirectory = "/home/<username>";
 
   ###
   ### Choose which modules to install on this system
@@ -37,9 +37,11 @@
     ../python
     ../rust
     ../shell
-    ../skhd
     ../tmux
-    ../yabai
+
+    # probably don't want these since they're macos only and are configured in darwin.skhd and darwin.yabai
+    # ../skhd
+    # ../yabai
   ];
 
   ###
