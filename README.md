@@ -8,7 +8,7 @@
       * on recent versions of macos you'll need to add a special flag
 
     ``` sh
-    sh <(curl -L https://nixos.org/nix/install) --darwin-use-unencrypted-nix-store-volume
+    sh <(curl -L https://nixos.org/nix/install) --darwin-use-unencrypted-nix-store-volume --daemon
     ```
   * [install nix-darwin](https://github.com/LnL7/nix-darwin#install "nix-darwin-install-instructions") if on macos
 

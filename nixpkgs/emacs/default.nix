@@ -1,8 +1,9 @@
 { pkgs, ... }:
 
 let
-  emacs-pkg =
-    if pkgs.stdenv.hostPlatform.isLinux then pkgs.emacs else pkgs.emacsMacport;
+  # TODO inquire / fix upstream emacsMacport currently breaks due to a missing attribute: `passthru`
+  emacs-pkg = pkgs.emacs;
+    # if pkgs.stdenv.hostPlatform.isLinux then pkgs.emacs else pkgs.emacsMacport;
   doom-emacs = pkgs.callPackage
     (builtins.fetchTarball {
       url = "https://github.com/vlaci/nix-doom-emacs/archive/master.tar.gz";
@@ -41,7 +42,7 @@ in
   '';
 
   services.emacs = {
-    # TODO make this work with launchctl on macos
+    # on macos nix-darwin handles the service configuration
     enable = pkgs.stdenv.hostPlatform.isLinux;
     package = doom-emacs;
   };
