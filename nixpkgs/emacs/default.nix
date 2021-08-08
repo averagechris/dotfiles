@@ -17,7 +17,7 @@ let
             message-sendmail-extra-arguments '("--read-envelope-from")
             message-send-mail-function 'message-send-mail-with-sendmail)
       '';
-      extraPackages = epkgs: [ pkgs.mu epkgs.vterm ];
+      extraPackages = epkgs: [ pkgs.emacs-all-the-icons-fonts pkgs.mu epkgs.vterm ];
       emacsPackages = pkgs.emacsPackagesFor emacs-pkg;
     };
 
