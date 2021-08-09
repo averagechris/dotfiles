@@ -3,7 +3,7 @@
 # https://github.com/koekeishiya/yabai
 #########################################
 
-{ config, pkgs, ...}:
+{ config, pkgs, ... }:
 
 let
   utils = (import ../utils pkgs);
@@ -23,7 +23,8 @@ let
     "sure-zooms" = false;
   };
 
-in {
+in
+{
   config.services.yabai = {
     enable = true;
     package = pkgs.yabai;

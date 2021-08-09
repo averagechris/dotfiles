@@ -3,7 +3,8 @@
 let
   userName = "<username>";
   homeDirectory = "/Users/<username>";
-in {
+in
+{
   users.users."${userName}" = {
     name = "${userName}";
     home = "${homeDirectory}";

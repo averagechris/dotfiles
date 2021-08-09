@@ -2,9 +2,10 @@
 
 let
   isLinux = pkgs.stdenv.hostPlatform.isLinux;
-  doom = (import ./doom.nix {pkgs=pkgs;});
+  doom = (import ./doom.nix { pkgs = pkgs; });
 
-in {
+in
+{
   config.home.packages = with pkgs; [
     (aspellWithDicts (dicts: with dicts; [ en en-computers en-science ]))
 
@@ -22,10 +23,11 @@ in {
   '';
 
   # on macos nix-darwin handles the service configuration
-  config.services = if isLinux then {
-    emacs.enable = isLinux;
-    emacs.package = doom;
-    lorri.enable = true;
-  } else {};
+  config.services =
+    if isLinux then {
+      emacs.enable = isLinux;
+      emacs.package = doom;
+      lorri.enable = true;
+    } else { };
 
 }
