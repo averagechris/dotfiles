@@ -23,6 +23,11 @@ repos:
   - id: shellcheck
   - id: shfmt
 
+- repo: https://github.com/executablebooks/mdformat
+  rev: 0.7.8
+  hooks:
+  - id: mdformat
+
 -   repo: local
     hooks:
     -  id: nixpkgs-fmt

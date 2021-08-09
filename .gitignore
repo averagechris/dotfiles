@@ -17,3 +17,4 @@ fish/fish_history
 /stowed/nixpkgs/.config/nixpkgs/localhome/default.nix
 nixpkgs/localhome/default.nix
 /nixpkgs/darwin/local_config.nix
+/nixpkgs/darwin/pii.nix
