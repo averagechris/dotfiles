@@ -7,7 +7,6 @@ in
     <home-manager/nix-darwin>
 
     ./desktop.nix
-    ./local_config.nix
     ./skhd.nix
     ./yabai.nix
   ];

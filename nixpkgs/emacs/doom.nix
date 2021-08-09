@@ -1,6 +1,8 @@
 { pkgs }:
 
-pkgs.callPackage
+let
+  isLinux = pkgs.stdenv.hostPlatform.isLinux;
+in pkgs.callPackage
   (builtins.fetchTarball {
     url = "https://github.com/vlaci/nix-doom-emacs/archive/master.tar.gz";
   })
@@ -15,7 +17,9 @@ pkgs.callPackage
         message-send-mail-function 'message-send-mail-with-sendmail)
   '';
   extraPackages = epkgs: [ pkgs.emacs-all-the-icons-fonts pkgs.mu epkgs.vterm ];
-  # TODO on macos we should pass pkgs.emacsMacPort here but it's currently broken
-  # FIXME upstream a change with attr overrides breaks due to a missing attribute `passthru`
-  emacsPackages = pkgs.emacsPackagesFor pkgs.emacs;
+  # NOTE: won't need to overrideAttrs on emacsMacport once the below PR is released
+  # https://github.com/NixOS/nixpkgs/pull/133260/
+  emacsPackages = pkgs.emacsPackagesFor (if isLinux then pkgs.emacs else pkgs.emacsMacport.overrideAttrs(old: {
+    passthru = old.passthru or {};
+  }));
 }
