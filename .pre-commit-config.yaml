@@ -38,3 +38,11 @@ repos:
        files: \.nix$
        always_run: true
        minimum_pre_commit_version: 1.14.2
+
+    - id: mdl-markdown-linter
+      name: markdown-linter
+      description: ruby gem to lint markdown files
+      entry: mdl -g
+      language: system
+      types: [markdown]
+      minimum_pre_commit_version: 1.14.2

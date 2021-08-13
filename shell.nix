@@ -2,6 +2,7 @@
 
 pkgs.mkShell {
   buildInputs = with pkgs; [
+    mdl
     nixpkgs-fmt
     pre-commit
     shellcheck
