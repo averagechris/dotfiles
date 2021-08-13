@@ -17,28 +17,26 @@
 (doom! :input
 
        :completion
-       company
-       (ivy
-        +fuzzy
-        +icons
-        +childframe
-        +prescient)
+       (company +childframe)
+       (ivy +fuzzy
+            +icons
+            +childframe
+            +prescient)
 
        :ui
        doom
        doom-dashboard
        doom-quit
-       (emoji
-        +github
-        +unicode)
+       (emoji +github
+              +unicode)
        hl-todo
        indent-guides
        modeline
        ophints
-       (popup
-        +defaults)
-       (treemacs
-        +lsp)
+       navflash
+       (popup +all
+              +defaults)
+       (treemacs +lsp)
        unicode
        vc-gutter
        vi-tilde-fringe
@@ -46,8 +44,7 @@
        zen
 
        :editor
-       (evil
-        +everywhere)
+       (evil +everywhere)
        file-templates
        fold
        ; (format +onsave)
@@ -56,22 +53,18 @@
        word-wrap
 
        :emacs
-       (dired
-        +icons)
+       (dired +icons)
        electric
-       (ibuffer
-        +icons)
+       (ibuffer +icons)
        undo
        vc
 
        :term
-       ;;eshell
        vterm
 
        :checkers
-       syntax
-       (spell
-        +everywhere)
+       (syntax +childframe)
+       (spell +everywhere)
 
        :tools
        debugger
@@ -80,47 +73,36 @@
        editorconfig
        (eval +overlay)
        gist
-       (lookup
-        +dictionary
-        +offline)
-       (lsp
-        +peek)
-       magit
-       ;;make
+       (lookup +dictionary
+               +offline)
+       (lsp +peek)
+       (magit +forge)
        pdf
-       ;;terraform
 
        :os
        (:if IS-MAC macos)
-       tty
+       (tty +osc)
 
        :lang
-       ;;common-lisp
-       data              ; config/data formats
+       data
        emacs-lisp
        json
-       ;; javascript
-       ;;lua
-       markdown
+       (markdown +grip)
        nix
        org
-       (python
-        +lsp
-        +pyright
-        +poetry)
+       (python +lsp
+               +pyright
+               +poetry)
        rest
        ;;rust
        sh
-       yaml
+       (yaml +lsp)
 
        :email
        (mu4e +gmail)
 
        :app
-       ;;calendar
-       ;;irc
-       ;;(rss +org)
-       ;;twitter
+       everywhere
 
        :config
        (default +bindings +smartparens))

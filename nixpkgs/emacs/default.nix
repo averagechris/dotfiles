@@ -4,20 +4,46 @@ let
   isLinux = pkgs.stdenv.hostPlatform.isLinux;
   doom = (import ./doom.nix { pkgs = pkgs; });
 
+  pkgs-markdownMode = with pkgs; [
+    mdl
+    pandoc
+    proselint
+    python39Packages.grip
+  ];
+
+  pkgs-pythonMode = with pkgs.python39Packages; [
+    black
+    isort
+    pkgs.poetry
+    pyflakes
+    pkgs.nodePackages.pyright
+  ];
+
+  pkgs-shellMode = with pkgs; [
+    shellcheck
+  ];
+
+  pkgs-misc = with pkgs; [
+    (aspellWithDicts (dicts: with dicts; [ en en-computers en-science ]))
+    direnv
+    fd
+    ripgrep
+    sqlite
+    wordnet
+  ];
+
+  pkgs-linux = with pkgs; [
+    # these are needed to support doom :tool everywhere (emacs-everywhere)
+    xclip
+    xdotool
+    xorg.xprop
+    xorg.xwininfo
+  ];
+
 in
 {
-  config.home.packages = with pkgs; [
-    (aspellWithDicts (dicts: with dicts; [ en en-computers en-science ]))
+  config.home.packages = [ doom ] ++ pkgs-markdownMode ++ pkgs-pythonMode ++ pkgs-shellMode ++ pkgs-misc ++ pkgs-linux;
 
-    direnv
-    doom
-    fd
-    nixfmt
-    pandoc
-    ripgrep
-    shellcheck
-    nodePackages.pyright
-  ];
   config.home.file.".emacs.d/init.el".text = ''
     (load "default.el")
   '';
@@ -27,7 +53,7 @@ in
     if isLinux then {
       emacs.enable = isLinux;
       emacs.package = doom;
-      lorri.enable = true;
+      lorri.enable = isLinux;
     } else { };
 
 }

@@ -71,6 +71,7 @@ ln -fs ~/dotfiles/nixpkgs ~/.config/
 
   - `all-the-icons-install-fonts` to install the fonts used for icons
   - `emojify-download-emoji` to be able to display emoji characters
+  - on macos: optionally allow emacs to "control your computer" in **Settings > Accessibility** to allow `emacs-everywhere` to work.
 
 ### Things to remember
 
