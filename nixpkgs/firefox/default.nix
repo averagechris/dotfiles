@@ -4,19 +4,19 @@
   programs.firefox = {
     enable = true;
 
-    package = pkgs.firefox.override {
-      cfg = {
-        enableGnomeExtensions = true;
-      };
-    };
-
-    profiles.mine = {
-      id = 0;
+    profiles.me = {
+      name = "me";
       settings = {
         "browser.startup.homepage" = "https://duckduckgo.com";
         "browser.search.region" = "US";
         "browser.search.isUS" = true;
         "browser.bookmarks.showMobileBookmarks" = true;
+
+        # allows firefox to see userChrome.css etc
+        "toolkit.legacyUserProfileCustomizations.stylesheets" = true;
+
+        # https://wiki.archlinux.org/title/HiDPI#Firefox
+        "layout.css.devPixelsPerPx" = "2.0";
       };
       userChrome = builtins.readFile ./userChrome.css;
       userContent = ''
