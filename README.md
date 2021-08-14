@@ -6,7 +6,7 @@
     things may have changed upstream
 
   ```shell
-  sh <(curl -L https://nixos.org/nix/install)
+  sh <(curl -L https://nixos.org/nix/install) --daemon
   ```
 
   - on recent versions of macos you'll need to add a special flag
