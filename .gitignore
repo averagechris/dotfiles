@@ -18,3 +18,4 @@ fish/fish_history
 nixpkgs/localhome/default.nix
 /nixpkgs/darwin/local_config.nix
 /nixpkgs/darwin/pii.nix
+__pycache__/
