@@ -8,6 +8,10 @@
 (after! treemacs (setq +treemacs-git-mode 'deferred))
 
 
+(add-hook! python-mode
+  (setq poetry-tracking-strategy 'projectile))
+
+
 ;; ;;;;;;;;;;;;;
 ;; KEYBINDINGS
 ;; ;;;;;;;;;;;;;

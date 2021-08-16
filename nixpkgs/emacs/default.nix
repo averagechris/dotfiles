@@ -32,13 +32,13 @@ let
     wordnet
   ];
 
-  pkgs-linux = with pkgs; [
+  pkgs-linux = with pkgs; if isLinux then [
     # these are needed to support doom :tool everywhere (emacs-everywhere)
     xclip
     xdotool
     xorg.xprop
     xorg.xwininfo
-  ];
+  ] else [];
 
 in
 {
