@@ -1,5 +1,4 @@
 import os
-import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Generator, Optional
@@ -24,6 +23,8 @@ class PathFinder:
             if not path.is_dir():
                 path = path.parent
 
+            path = path.resolve()
+
             if parent_name:
                 parents = (parent.joinpath(parent_name) for parent in path.parents)
                 path = next((parent for parent in parents if parent.exists()), path)
@@ -32,19 +33,3 @@ class PathFinder:
 
             if result_path.exists():
                 yield result_path
-
-
-if __name__ == "__main__":
-    if 2 > len(sys.argv) < 3:
-        print("USAGE:path_finder name [parent_name]", file=sys.stderr)
-        sys.exit(1)
-
-    _, name, *rest = sys.argv
-
-    if rest:
-        parent_name = rest[0]
-    else:
-        parent_name = ""
-
-    if path_finder := PathFinder.from_env().find_first(name, parent_name=parent_name):
-        print(path_finder)
