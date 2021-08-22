@@ -2,7 +2,10 @@ from typing import Optional
 
 import typer
 
-from .lib import PathFinder
+if __package__:
+    from .lib import PathFinder
+else:
+    from lib import PathFinder
 
 
 cli = typer.Typer()

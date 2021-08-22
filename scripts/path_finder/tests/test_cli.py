@@ -1,10 +1,9 @@
 from unittest.mock import patch
 
 import pytest
+from path_finder.cli import cli
+from path_finder.lib import PathFinder
 from typer.testing import CliRunner
-
-from scripts.path_finder.cli import cli
-from scripts.path_finder.lib import PathFinder
 
 
 @pytest.fixture

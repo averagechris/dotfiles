@@ -1,4 +1,4 @@
-{ pkgs ? import <nixpkgs> { } }:
+{ pkgs ? import <nixpkgs> { }, lib ? pkgs.lib, ... }:
 
 let
   # typer doesn't support click 8 which is what's packaged upstream
@@ -17,33 +17,14 @@ let
     };
   };
 
-  pypkgs = with python39Packages; [
-    pkgs.python39
-    pkgs.nodePackages.pyright
-
-    black
-    flake8
-    importmagic
-    ipdb
-    ipython
-    isort
-    pytest
-    typer
-  ];
-
 in
 
-pkgs.mkShell {
-  buildInputs = with pkgs; [
-    mdl
-    nixpkgs-fmt
-    pre-commit
-    shellcheck
-    shfmt
-  ] ++ pypkgs;
-
-  shellHook = ''
-    export PYTHONBREAKPOINT=ipdb.set_trace
-    export PYTHONDONTWRITEBYTECODE=true
-  '';
+pkgs.python39Packages.buildPythonApplication {
+  pname = "path_finder";
+  src = ./.;
+  # src = pkgs.lib.cleanSource ./.;
+  version = "0.0.1";
+  checkInputs = with python39Packages; [ pytest ];
+  test = "pytest";
+  propagatedBuildInputs = with python39Packages; [ typer ];
 }

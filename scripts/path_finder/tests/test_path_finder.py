@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from scripts.path_finder.lib import PathFinder
+from path_finder.lib import PathFinder
 
 
 def test_find_first_does_not_exist(tmp_path: Path):
