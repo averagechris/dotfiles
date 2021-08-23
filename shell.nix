@@ -43,7 +43,7 @@ pkgs.mkShell {
   ] ++ pypkgs;
 
   shellHook = ''
-    export PYTHONBREAKPOINT=ipdb.set_trace
-    export PYTHONDONTWRITEBYTECODE=true
+    export PYTHONBREAKPOINT=ipdb.set_trace;
+    export PYTHONDONTWRITEBYTECODE=true;
   '';
 }

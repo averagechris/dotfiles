@@ -21,10 +21,8 @@ in
 
 pkgs.python39Packages.buildPythonApplication {
   pname = "path_finder";
-  src = ./.;
-  # src = pkgs.lib.cleanSource ./.;
+  src = pkgs.lib.cleanSource ./.;
   version = "0.0.1";
-  checkInputs = with python39Packages; [ pytest ];
-  test = "pytest";
+  checkInputs = with python39Packages; [ pytestCheckHook ];
   propagatedBuildInputs = with python39Packages; [ typer ];
 }

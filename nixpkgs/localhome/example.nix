@@ -33,6 +33,7 @@
     ../linux_destop
     ../mycli
     ../neovim
+    ../personal_scripts
     ../pgcli
     ../python
     ../rust
