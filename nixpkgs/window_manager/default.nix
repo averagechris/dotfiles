@@ -1,0 +1,12 @@
+{ pkgs, config, ... }:
+
+let
+  # TODO why does using `pkgs` here cause an infinite recursion?
+  # this works just seems ugly 🤷🤷🤷
+  isLinux = (import <nixpkgs> {}).stdenv.hostPlatform.isLinux;
+in
+if isLinux then
+  import ./sway.nix { pkgs = pkgs; config = config; }
+else {
+  # TODO yabai & skhd or keep them in nix-darwin?
+}
