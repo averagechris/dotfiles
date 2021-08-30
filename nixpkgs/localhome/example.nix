@@ -38,6 +38,8 @@
     ../python
     ../rust
     ../shell
+    ../window_manager
+    ../terminal_emulator
     ../tmux
 
     # probably don't want these since they're macos only and are configured in darwin.skhd and darwin.yabai
@@ -82,4 +84,16 @@
     "/usr/share/pop"
     "/var/lib/flatpak/exports/share"
   ];
+
+  # if using sway window manager, make machine-specific
+  # configuration here, like rotating one of the monitors
+  # to be oriented vertically
+  # NOTE to see what sway knows about the available displays
+  # run: `swaymsg -t get_outputs`
+  config.wayland.windowManager.sway.config = {
+    output."HDMI-A-1".transform = "270";
+    startup = [];
+  };
+
 }
+
