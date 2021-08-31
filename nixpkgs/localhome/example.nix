@@ -13,13 +13,17 @@
 
 { config, pgks, ... }:
 
+let
+  userName = "chris";
+  # on macos this is /Users/<username>
+  homeDirectory = "/home/${userName}";
+in
 {
   ###
   ### Tell home-manager the basicss
   ###
-  config.home.username = "<username>";
-  # on macos this is /Users/<username>
-  config.home.homeDirectory = "/home/<username>";
+  config.home.username = userName;
+  config.home.homeDirectory = homeDirectory;
 
   ###
   ### Choose which modules to install on this system
@@ -91,7 +95,8 @@
   # NOTE to see what sway knows about the available displays
   # run: `swaymsg -t get_outputs`
   config.wayland.windowManager.sway.config = {
-    output."HDMI-A-1".transform = "270";
+    output."HDMI-A-1".transform = "90";
+    output."*".bg = "${homeDirectory}/wallpapers/1.jpg fill";
     startup = [];
   };
 

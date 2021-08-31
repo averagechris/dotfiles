@@ -6,7 +6,7 @@ let
   isLinux = (import <nixpkgs> {}).stdenv.hostPlatform.isLinux;
 in
 if isLinux then
-  import ./sway.nix { pkgs = pkgs; config = config; lib = lib; }
+  import ./sway { pkgs = pkgs; config = config; lib = lib; }
 else {
   # TODO yabai & skhd or keep them in nix-darwin?
 }
