@@ -5,6 +5,11 @@ let
   modkey = cfg.modifier;
 
 in {
+  imports = [
+    ./nwg-launchers.nix
+    ./screenshots.nix
+    ./waybar.nix
+  ];
 
   config.wayland.windowManager.sway = {
     enable = true;
@@ -16,7 +21,7 @@ in {
     config.gaps.smartGaps = true;
     config.input."*".natural_scroll = "enabled";
     config.input."touchpad".tap = "enabled";
-    config.keybindings = import ./keybindings.nix { modkey = modkey; cfg = cfg; };
+    config.keybindings = import ./keybindings.nix { modkey = modkey; cfg = cfg; pkgs = pkgs; };
     config.workspaceAutoBackAndForth = true;
     wrapperFeatures.base = true;
     wrapperFeatures.gtk = true;
@@ -25,24 +30,14 @@ in {
     '';
   };
 
-  config.programs.waybar = import ./waybar.nix { pkgs = pkgs; };
-
   # notifications daemon
   config.programs.mako = {
     enable = true;
     anchor = "top-center";
-    defaultTimeout = 1750;
+    defaultTimeout = 2750;
   };
 
-  config.xdg.configFile."swappy/config".text = ''
-    [Default]
-    save_dir=$HOME/screenshots
-    save_filename_format=%Y%m%d-%H%M%S-screenshot.png
-    show_panel=false
-    line_size=5
-    text_size=20
-    text_font=sans-serif
-  '';
+  config.services.blueman-applet.enable = true;
 
   config.home.packages = with pkgs; [
     source-code-pro
@@ -52,12 +47,5 @@ in {
     pavucontrol
     playerctl
     wl-clipboard
-
-    #####################
-    # screenshot utiities
-    #####################
-    grim
-    slurp
-    swappy
   ];
 }

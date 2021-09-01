@@ -1,8 +1,11 @@
-{ modkey, cfg }:
+{ modkey, cfg, pkgs }:
 {
   "${modkey}+t" = "exec ${cfg.terminal}";
   "${modkey}+q" = "kill";
-  "${modkey}+space" = "exec ${cfg.menu}";
+  "${modkey}+space" = "exec ${pkgs.nwg-launchers}/bin/nwgdmenu";
+  "XF86LaunchB" = "exec ${pkgs.nwg-launchers}/bin/nwggrid";
+  "${modkey}+Shift+q" = "exec ${pkgs.nwg-launchers}/bin/nwgbar";
+
   # take a screenshot
   "${modkey}+ctrl+5" = ''exec grim -g "$(slurp)" - | swappy -f -'';
 
@@ -56,8 +59,6 @@
   "${modkey}+minus" = "scratchpad show";
 
   "${modkey}+Shift+c" = "reload";
-  "${modkey}+Shift+q" =
-    "exec swaynag -t warning -m 'You pressed the exit shortcut. Do you really want to exit sway? This will end your Wayland session.' -b 'Yes, exit sway' 'swaymsg exit'";
 
   "${modkey}+r" = "mode resize";
 }
