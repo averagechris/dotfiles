@@ -1,7 +1,7 @@
 { config, pgks, isNixOS, ... }:
 
 let
-  isNixOS = (import ../utils {}).isNixOS;
+  isNixOS = (import ../utils { }).isNixOS;
 
 in
 {

@@ -70,7 +70,7 @@
   hardware.pulseaudio.enable = false;
   # #######################################
 
-  security.rtkit.enable = true;  # rtkit is optional but recommended
+  security.rtkit.enable = true; # rtkit is optional but recommended
   services.pipewire = {
     enable = true;
     alsa.enable = true;
@@ -86,7 +86,7 @@
     media-session.config.bluez-monitor.rules = [
       {
         # Matches all cards
-        matches = [ { "device.name" = "~bluez_card.*"; } ];
+        matches = [{ "device.name" = "~bluez_card.*"; }];
         actions = {
           "update-props" = {
             "bluez5.reconnect-profiles" = [ "hfp_hf" "hsp_hs" "a2dp_sink" ];

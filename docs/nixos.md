@@ -123,12 +123,13 @@ encryption and swap well. Here's a direct quote.
 > you probably wouldn't need partitioning advice from me. Also note that our swap
 > partition is encrypted. You don’t have any control over what’s moved into your
 > swap space, so it could end up containing all sorts of private stuff in the clear
+>
 > - for example passwords copied from a password manager
 
 NOTE: In the example below a swap of 32GB s created. But you can create whatever
 size you want.
 
-``` shell
+```shell
 # NOTE the command below will prompt you for a passphrase
 # REMEMBER IT! If you forget it, you'll have to start over.
 # this encrypts the partition with the passphrase you give
@@ -150,24 +151,25 @@ lvcreate -l '100%FREE' -n root nixos-vg
 
 ### Create the filesystem
 
-``` shell
+```shell
 # make the boot partition a FAT32 file system
 mkfs.vfat -n boot $BOOT_PARTITION  # e.g. /dev/sda1 or /dev/nvme0n1p1
 
 # make the root partition file system
 mkfs.ext4 -L nixos /dev/nixos-vg/root
 
-# making the swap partition a swap 
+# making the swap partition a swap
 mkswap -L swap /dev/nixos-vg/swap
 swapon /dev/nixos-vg/swap
 ```
 
 ### Generate the base NixOS Configuration
+
 The installation NixOs provides a command to generate a base nix configuration with
 some useful defaults and some hardware-detection baked in. But before we run that,
 we have to mount the file systems.
 
-``` shell
+```shell
 # mounting
 mount /dev/nixos-vg/root /mnt
 mount /mnt/boot
@@ -178,6 +180,7 @@ nixos-generate-config --root /mnt
 ```
 
 ### Required Configuration Changes
+
 The shell you're in has a few different text editors already installed that you can
 use. But thankfully, since this is nix, you can use `nix-shell -p` to get a shell
 with whatever editor you want to use to make these quick config changes.
@@ -190,7 +193,7 @@ You configure NixOs to work with the encrypted drive by adding it to the `config
 Add the following and feel free to un-comment any of the default stuff provided that
 makes sense, like the timezone setting etc.
 
-``` nix
+```nix
 # in /mnt/etc/nixos/configuration.nix
 
 # ... snip ...
@@ -235,14 +238,14 @@ nixos-install
 It'll take a little while for everything to install. So take a break! Afterward,
 once you've defined your root password you'll need to reboot.
 
-``` shell
+```shell
 reboot
 ```
 
 If anything goes wrong, you can boot back into the usb live media, mount your partitions
 and edit the configuration.
 
-``` shell
+```shell
 cryptsetup luksOpen $LVM_PARTITION nixos-enc
 
 lvscan

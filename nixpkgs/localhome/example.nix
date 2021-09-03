@@ -97,8 +97,7 @@ in
   config.wayland.windowManager.sway.config = {
     output."HDMI-A-1".transform = "90";
     output."*".bg = "${homeDirectory}/wallpapers/1.jpg fill";
-    startup = [];
+    startup = [ ];
   };
 
 }
-

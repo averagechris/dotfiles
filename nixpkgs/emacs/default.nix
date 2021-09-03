@@ -38,7 +38,7 @@ let
     xdotool
     xorg.xprop
     xorg.xwininfo
-  ] else [];
+  ] else [ ];
 
 in
 {
