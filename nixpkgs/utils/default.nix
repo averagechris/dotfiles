@@ -1,6 +1,7 @@
-{ pkgs ? import <nixpkgs>, lib ? pkgs.lib, ... }:
+{ pkgs ? import <nixpkgs> {}, lib ? pkgs.lib, ... }:
 {
 
+  isNixOS = lib.hasInfix "NAME=NixOS" (builtins.readFile /etc/os-release);
   mkINI = lib.generators.toINI {
     mkKeyValue = key: value:
       let

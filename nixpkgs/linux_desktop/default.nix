@@ -1,11 +1,15 @@
-{ config, pgks, ... }:
+{ config, pgks, isNixOS, ... }:
 
+let
+  isNixOS = (import ../utils {}).isNixOS;
+
+in
 {
   config.home.sessionVariables = {
     BROSWER = "firefox";
   };
 
-  config.pam.sessionVariables = config.home.sessionVariables // {
+  config.pam.sessionVariables = {
     LANGUAGE = "en_US:en";
     LANG = "en_US.UTF-8";
     LC_NUMERIC = "en_US.UTF-8";
@@ -20,20 +24,13 @@
     PAPERSIZE = "letter";
   };
 
-  # allows Gnome to find the gui applications
-  config.targets.genericLinux.enable = true;
+  config.targets.genericLinux.enable = !isNixOS;
   config.xdg.enable = true;
   config.xdg.mime.enable = true;
 
   # make sure all of the distro's default XDG_DATA_DIRS values are in here
   config.xdg.systemDirs.data = [
-    "/usr/local/share"
-    "/usr/share"
     "${config.home.homeDirectory}/.nix-profile/share"
     "${config.home.homeDirectory}/.nix-profile/share/applications"
-    "${config.home.homeDirectory}/local/share/flatpak/exports/share"
-
-    # "/usr/share/pop"
-    # "/var/lib/flatpak/exports/share"
   ];
 }
