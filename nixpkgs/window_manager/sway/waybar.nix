@@ -39,10 +39,12 @@
               warning = 30;
               critical = 15;
             };
-            format = "{capacity}% {icon}";
-            format-good = ""; # An empty format will hide the module
-            format-full = "";
+            format = "{icon}";
             format-icons = [ "" "" "" "" "" ];
+            tooltip-format = ''
+              {capacity}%
+              {timeTo}
+            '';
           };
           network = {
             # interface = "wlp2s0";  # (Optional) To force the use of this interface
