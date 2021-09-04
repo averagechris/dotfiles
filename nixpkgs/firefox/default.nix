@@ -16,8 +16,12 @@ in
       name = "me";
       settings =
         if isLinux then {
-          # https://wiki.archlinux.org/title/HiDPI#Firefox
-          # "layout.css.devPixelsPerPx" = "2.0";
+          # https://wiki.archlinux.org/title/Firefox#Hardware_video_acceleration
+          "media.ffmpeg.vaapi.enabled" = true;
+          "media.ffvpx.enabled" = false;
+          "media.rdd-vpx.enabled" = false;
+          "media.navigator.mediadatadecoder_vpx_enabled" = true;
+          "security.sandbox.content.level" = 0;
         } else { } // {
 
           # allows firefox to see userChrome.css etc
