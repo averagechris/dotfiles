@@ -114,7 +114,7 @@
 
   users.users.chris = {
     isNormalUser = true;
-    extraGroups = [ "wheel" ]; # Enable ‘sudo’ for the user.
+    extraGroups = [ "wheel" ];
     shell = pkgs.zsh;
   };
 
@@ -137,14 +137,6 @@
     enable = true;
     allowReboot = true;
   };
-
-  # Some programs need SUID wrappers, can be configured further or are
-  # started in user sessions.
-  # programs.mtr.enable = true;
-  # programs.gnupg.agent = {
-  #   enable = true;
-  #   enableSSHSupport = true;
-  # };
 
   services.blueman.enable = true;
   services.openssh.enable = true;
