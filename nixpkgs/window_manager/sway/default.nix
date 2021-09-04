@@ -16,7 +16,7 @@
     config.gaps.outer = 3;
     config.gaps.smartGaps = true;
     config.input."*".natural_scroll = "enabled";
-    config.input."touchpad".tap = "enabled";
+    config.input."type:touchpad".tap = "enabled";
     config.workspaceAutoBackAndForth = true;
     wrapperFeatures.base = true;
     wrapperFeatures.gtk = true;
