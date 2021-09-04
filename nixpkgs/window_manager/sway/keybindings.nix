@@ -6,6 +6,7 @@ let
   nwg-bar = (pkgs.callPackage ./nwg-bar.nix { });
   pactl = "${pkgs.pulseaudio}/bin/pactl";
   playerctl = "${pkgs.playerctl}/bin/playerctl";
+  brightnessctl = "${pkgs.brightnessctl}/bin/brightnessctl";
 
 in
 {
@@ -26,6 +27,8 @@ in
     "XF86AudioLowerVolume" = "exec ${pactl} set-sink-volume $(${pactl} list short sinks | grep RUNNING | cut -f 1) -5%";
     "XF86AudioRaiseVolume" = "exec ${pactl} set-sink-volume $(${pactl} list short sinks | grep RUNNING | cut -f 1) +5%";
     "XF86AudioMute" = "exec ${pactl} set-sink-volume $(${pactl} list short sinks | grep RUNNING | cut -f 1) 0%";
+    "XF86MonBrightnessDown" = "exec ${brightnessctl} set 5%-";
+    "XF86MonBrightnessUp" = "exec ${brightnessctl} set +5%";
 
     # take a screenshot
     "${modkey}+ctrl+5" = ''exec grim -g "$(slurp)" - | swappy -f -'';
