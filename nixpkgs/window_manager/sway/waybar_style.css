@@ -50,7 +50,7 @@ window#waybar {
 }
 
 #battery icon {
-    color: red;
+    color: orchid;
 }
 
 #battery.charging {
@@ -58,15 +58,19 @@ window#waybar {
 
 @keyframes blink {
     to {
-        background-color: white;
-        color: black;
+        background-color: orchid;
+        color: white;
     }
 }
 
 #battery.warning:not(.charging) {
-    color: white;
+    color: orchid;
+}
+
+#battery.critical:not(.charging) {
+    color: orchid;
     animation-name: blink;
-    animation-duration: 0.5s;
+    animation-duration: 1s;
     animation-timing-function: linear;
     animation-iteration-count: infinite;
     animation-direction: alternate;
@@ -82,7 +86,7 @@ window#waybar {
 }
 
 #network.disconnected {
-    background: red;
+    background: orchid;
 }
 
 #pulseaudio {

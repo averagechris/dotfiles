@@ -11,7 +11,7 @@
         height = 24;
         modules-left = [ "clock" "custom/media" ];
         modules-center = [ "sway/workspaces" ];
-        modules-right = [ "pulseaudio" "network" "bluetooth" "cpu" "memory" "battery" ];
+        modules-right = [ "pulseaudio" "network" "bluetooth" "battery" ];
         modules = {
           "sway/workspaces" = {
             disable-scroll = true;
@@ -30,14 +30,12 @@
             format = "{:%I:%M %p}";
             format-alt = "{:%Y-%m-%d}";
           };
-          cpu.format = "ＣＰＵ{usage}%";
-          memory.format = "ＭＥＭ{}%";
           battery = {
             bat = "BAT0";
             states = {
               good = 95;
-              warning = 30;
-              critical = 15;
+              warning = 25;
+              critical = 10;
             };
             format = "{icon}";
             format-icons = [ "" "" "" "" "" ];
