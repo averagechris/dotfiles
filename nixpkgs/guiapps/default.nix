@@ -9,6 +9,7 @@ in
   home.packages =
     if isLinux then
       with pkgs; [
+        apple-music-electron
         signal-desktop
         write_stylus
       ] else [ ];
