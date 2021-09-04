@@ -3,6 +3,7 @@
 let
 
   isLinux = pkgs.stdenv.hostPlatform.isLinux;
+  apple-music-electron = pkgs.callPackage ./apple-music-electron.nix { };
 
 in
 {
