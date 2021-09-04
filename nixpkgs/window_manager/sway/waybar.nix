@@ -9,7 +9,7 @@
         layer = "top";
         position = "top";
         height = 24;
-        modules-left = [ "clock" "custom/spotify" ];
+        modules-left = [ "clock" "custom/media" ];
         modules-center = [ "sway/workspaces" ];
         modules-right = [ "pulseaudio" "network" "bluetooth" "cpu" "memory" "battery" ];
         modules = {
@@ -70,12 +70,11 @@
             };
             on-click = "pavucontrol";
           };
-          "custom/spotify" = {
-            format = " {}";
+          "custom/media" = {
+            format = "🎵 {}";
             max-length = 40;
             interval = 30; # Remove this if your script is endless and write in loop
             exec = pkgs.writeShellScript "mediaplayer" (builtins.readFile ./playerctl.sh);
-            # exec-if = "pgrep spotify";
           };
         };
       }
