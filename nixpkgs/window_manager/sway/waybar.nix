@@ -69,6 +69,7 @@
             on-click = "pavucontrol";
           };
           "custom/media" = {
+            on-click = "playerctl play-pause";
             format = "🎵 {}";
             max-length = 40;
             interval = 30; # Remove this if your script is endless and write in loop

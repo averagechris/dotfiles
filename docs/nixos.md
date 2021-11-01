@@ -33,7 +33,7 @@ NixOS will show a splash screen for a few seconds while it's setting up, then dr
 you into a shell with root logged in, or if using a graphical iso, into a desktop
 environment.
 
-> NOTE: that shell commands from here should be run as root
+> 💡 NOTE: that shell commands from here should be run as root
 
 ### Optionally connect to WiFi
 
@@ -125,9 +125,9 @@ encryption and swap well. Here's a direct quote.
 > swap space, so it could end up containing all sorts of private stuff in the clear
 >
 > - for example passwords copied from a password manager
-
-NOTE: In the example below a swap of 32GB s created. But you can create whatever
-size you want.
+>
+> 💡 NOTE: In the example below a swap of 32GB is created. But you can create whatever
+> size you want.
 
 ```shell
 # NOTE the command below will prompt you for a passphrase
@@ -230,8 +230,9 @@ environment.systemPackages = with pkgs; [
 
 ### Finish Installation
 
+> 💡 NOTE: this prompts you to set the root password now
+
 ```shell
-# NOTE: this prompts you to set the root password now
 nixos-install
 ```
 

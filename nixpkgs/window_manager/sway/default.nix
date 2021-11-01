@@ -12,6 +12,7 @@
     config.bars = [ ];
     config.floating.criteria = [{ class = "Pavucontrol"; }];
     config.floating.titlebar = true;
+    config.focus.mouseWarping = true;
     config.gaps.inner = 3;
     config.gaps.outer = 3;
     config.gaps.smartGaps = true;
