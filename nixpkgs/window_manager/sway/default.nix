@@ -60,8 +60,13 @@
         "icon": "${config.xdg.configHome}/nwg-bar/icons/system-lock-screen.svg"
       },
       {
+        "label": "Sleep",
+        "exec": "systemctl hybrid-sleep",
+        "icon": "${config.xdg.configHome}/nwg-bar/icons/system-shutdown.svg"
+      },
+      {
         "label": "Logout",
-        "exec": "swaynag -t warning -m 'close sway and wayland?' -b 'yes' 'swaymsg exit'",
+        "exec": "swaymsg exit",
         "icon": "${config.xdg.configHome}/nwg-bar/icons/system-log-out.svg"
       },
       {
