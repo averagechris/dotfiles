@@ -24,12 +24,13 @@
   # Select internationalization properties.
   i18n.defaultLocale = "en_US.UTF-8";
   console = {
-    font = "Lat2-Terminus16";
+    font = "${pkgs.terminus_font}/share/consolefonts/ter-u32n.psf.gz";
     keyMap = "us";
   };
 
   environment.systemPackages = with pkgs; [
     git
+    nix-index
     nix-prefetch-scripts
     neovim
     which
