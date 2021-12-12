@@ -9,7 +9,7 @@ in
   imports =
     [
       <nixos-hardware/dell/xps/13-9310>
-      /etc/nixos/hardware-configuration.nix
+      ./hardware-configuration.nix
       ../common.nix
       ../greetd.nix
       ../networking.nix
@@ -22,6 +22,10 @@ in
 
   networking.wireless.interfaces = [ "wlp0s20f3" ];
   networking.interfaces.wlp0s20f3.useDHCP = true;
+
+  # these opengl is needed for sway to work right on intel graphics
+  hardware.opengl.enable = true;
+  hardware.opengl.driSupport = true;
 
   system.stateVersion = "21.05";
 }
