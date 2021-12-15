@@ -14,6 +14,7 @@ in
       ../greetd.nix
       ../gtk.nix
       ../networking.nix
+      ../podman.nix
       ../sound.nix
       ../users.nix
     ];
