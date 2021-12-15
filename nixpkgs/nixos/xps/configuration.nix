@@ -12,6 +12,7 @@ in
       ./hardware-configuration.nix
       ../common.nix
       ../greetd.nix
+      ../gtk.nix
       ../networking.nix
       ../sound.nix
       ../users.nix
