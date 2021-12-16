@@ -1,8 +1,11 @@
 { config, pkgs, lib, ... }:
 {
-  virtualisation.podman.enable = true;
+  virtualisation.docker.enable = true;
+  virtualisation.podman.enable = false;
 
   environment.systemPackages = with pkgs; [
-    podman-compose
+    docker
+    docker-compose
+    # podman-compose
   ];
 }
