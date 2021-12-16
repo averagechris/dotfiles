@@ -14,13 +14,13 @@ in
   # replecate pbcopy and pbpaste from macos everywhere 😎👍
   pbcopy =
     if isLinux then
-      "xclip -i -selection clipboard"
+      "wl-copy"
     else
       "pbcopy";
 
   pbpaste =
     if isLinux then
-      "xclip -o -selection clipboard"
+      "wl-paste"
     else
       "pbpaste";
 }
