@@ -2,6 +2,7 @@
 
 {
   imports = [
+    ./kanshi.nix
     ./keybindings.nix
     ./screenshots.nix
     ./waybar.nix

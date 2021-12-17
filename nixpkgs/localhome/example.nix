@@ -20,7 +20,7 @@ let
 in
 {
   ###
-  ### Tell home-manager the basicss
+  ### Tell home-manager the basics
   ###
   config.home.username = userName;
   config.home.homeDirectory = homeDirectory;
@@ -89,13 +89,12 @@ in
     "/var/lib/flatpak/exports/share"
   ];
 
-  # if using sway window manager, make machine-specific
-  # configuration here, like rotating one of the monitors
-  # to be oriented vertically
+  # if using sway window manager, make global display changes
+  # here
+  # but tweak display profiles in `window_managers/sway/kanshi.nix`
   # NOTE to see what sway knows about the available displays
   # run: `swaymsg -t get_outputs`
   config.wayland.windowManager.sway.config = {
-    output."HDMI-A-1".transform = "90";
     output."*".bg = "${homeDirectory}/wallpapers/1.jpg fill";
     startup = [ ];
   };
