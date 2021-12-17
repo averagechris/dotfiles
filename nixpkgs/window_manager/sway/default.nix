@@ -35,6 +35,12 @@
   };
 
   config.services.blueman-applet.enable = true;
+  config.services.redshift = {
+    enable = true;
+    package = pkgs.redshift-wlr;
+    latitude = "36.174465";
+    longitude = "-86.767960";
+  };
 
   config.home.packages = with pkgs; [
     imv
