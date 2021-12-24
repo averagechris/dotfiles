@@ -44,15 +44,11 @@ in
       };
       home-office = {
         outputs = [
-          {
-            criteria = "Dell Inc. DELL U4320Q 1LTJW13";
-            mode = "3840x2160@59.997Hz";
-          }
-          {
-            criteria = "Dell Inc. DELL U2713HM 7JNY544BAB6S";
-            mode = "2560x1440@59.951Hz";
-            transform = "270";
-          }
+          # TODO: is full res not supported via HDMI for some reason?
+          # Dell27's max res available is only 1080 wide, so we have to adjust the position
+          # of Dell43 to match
+          (scrnDell43 // { position = "1080,0"; })
+          (scrnDell27 // { mode = "1920x1080@60.000Hz"; })
         ];
       };
     };
