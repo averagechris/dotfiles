@@ -12,6 +12,7 @@ in
       /etc/nixos/hardware-configuration.nix
       ../common.nix
       ../greetd.nix
+      ../gtk.nix
       ../networking.nix
       ../podman.nix
       ../sound.nix
