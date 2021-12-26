@@ -1,7 +1,13 @@
 { config, pkgs, lib, ... }:
 
 {
-  nix.binaryCaches = [ "https://cache.nixos.org/" ];
+  nix = {
+    package = pkgs.nixFlakes;
+    binaryCaches = [ "https://cache.nixos.org/" ];
+    extraOptions = ''
+      experimental-features = nix-command flakes
+    '';
+  };
 
   time.timeZone = "America/Chicago";
 
