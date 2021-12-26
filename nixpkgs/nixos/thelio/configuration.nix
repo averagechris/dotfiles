@@ -28,4 +28,7 @@ in
   networking.interfaces.wlp6s0.useDHCP = true;
 
   system.stateVersion = "21.05";
+
+  # system76 doesn't use fwupd / fwupdmgr, they have their own cli
+  environment.systemPackages = [ pkgs.system76-firmware ];
 }
