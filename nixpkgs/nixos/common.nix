@@ -9,6 +9,8 @@
     '';
   };
 
+  nixpkgs.config.allowUnfree = true;
+
   time.timeZone = "America/Chicago";
 
   hardware.opengl = {

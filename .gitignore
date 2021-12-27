@@ -14,8 +14,6 @@ fish/fish_history
 /.config/doctl/cache/
 /.config/configstore/
 /.config/doctl/
-/stowed/nixpkgs/.config/nixpkgs/localhome/default.nix
-nixpkgs/localhome/default.nix
 /nixpkgs/darwin/local_config.nix
 /nixpkgs/darwin/pii.nix
 __pycache__/

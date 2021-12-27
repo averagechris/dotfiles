@@ -2,8 +2,6 @@
 
 let
   isLinux = pkgs.stdenv.hostPlatform.isLinux;
-  doom = (import ./doom.nix { pkgs = pkgs; });
-
   pkgs-markdownMode = with pkgs; [
     mdl
     pandoc
@@ -32,28 +30,25 @@ let
     wordnet
   ];
 
-  pkgs-linux = with pkgs; if isLinux then [
-    # these are needed to support doom :tool everywhere (emacs-everywhere)
-    xclip
-    xdotool
-    xorg.xprop
-    xorg.xwininfo
-  ] else [ ];
-
 in
 {
-  config.home.packages = [ doom ] ++ pkgs-markdownMode ++ pkgs-pythonMode ++ pkgs-shellMode ++ pkgs-misc ++ pkgs-linux;
+  config.home.packages = pkgs-markdownMode ++ pkgs-pythonMode ++ pkgs-shellMode ++ pkgs-misc;
 
-  config.home.file.".emacs.d/init.el".text = ''
-    (load "default.el")
-  '';
+  config.programs.doom-emacs = {
+    enable = true;
+    doomPrivateDir = ./doom.d;
+    extraConfig = ''
+      (setq
+          mu4e-mu-binary "${pkgs.mu}/bin/mu"
+          sendmail-program "${pkgs.msmtp}/bin/msmtp"
+          message-sendmail-f-is-evil t
+          message-sendmail-extra-arguments '("--read-envelope-from")
+          message-send-mail-function 'message-send-mail-with-sendmail)
+    '';
+    extraPackages = [ pkgs.emacs-all-the-icons-fonts pkgs.mu ];
+  };
 
   # on macos nix-darwin handles the service configuration
-  config.services =
-    if isLinux then {
-      emacs.enable = isLinux;
-      emacs.package = doom;
-      lorri.enable = isLinux;
-    } else { };
-
+  config.services.emacs.enable = isLinux;
+  config.services.lorri.enable = isLinux;
 }

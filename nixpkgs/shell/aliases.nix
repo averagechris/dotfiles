@@ -1,5 +1,6 @@
+{ pkgs }:
 let
-  isLinux = (import <nixpkgs> { }).stdenv.hostPlatform.isLinux;
+  isLinux = pkgs.stdenv.hostPlatform.isLinux;
 in
 {
   # warning, verbose

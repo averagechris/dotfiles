@@ -1,7 +1,7 @@
 { config, pkgs, ... }:
 
 let
-  isLinux = (import <nixpkgs> { }).stdenv.hostPlatform.isLinux;
+  isLinux = pkgs.stdenv.hostPlatform.isLinux;
   linuxOnlyPackages = with pkgs; [ xclip ];
   darwinOnlyPackages = with pkgs; [ ];
 in
@@ -17,7 +17,7 @@ in
     };
 
     initExtra = builtins.readFile ./post-compinit.zsh;
-    shellAliases = import ./aliases.nix;
+    shellAliases = import ./aliases.nix { inherit pkgs; };
 
     enableAutosuggestions = true;
     enableCompletion = true;

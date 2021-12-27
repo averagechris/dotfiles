@@ -1,9 +1,5 @@
-{ config, pgks, isNixOS, ... }:
+{ config, pkgs, ... }:
 
-let
-  isNixOS = (import ../utils { }).isNixOS;
-
-in
 {
   config.home.sessionVariables = {
     BROSWER = "firefox";
@@ -24,7 +20,7 @@ in
     PAPERSIZE = "letter";
   };
 
-  config.targets.genericLinux.enable = !isNixOS;
+  config.targets.genericLinux.enable = false;
   config.xdg.enable = true;
   config.xdg.mime.enable = true;
 

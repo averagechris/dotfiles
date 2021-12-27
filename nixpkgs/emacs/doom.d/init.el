@@ -47,7 +47,7 @@
        (evil +everywhere)
        file-templates
        fold
-       ; (format +onsave)
+       (format +onsave)
        multiple-cursors
        snippets
        word-wrap
