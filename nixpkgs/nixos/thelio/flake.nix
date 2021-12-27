@@ -4,7 +4,10 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixos-hardware.url = "github:nixos/nixos-hardware";
-    emacs-overlay.url = "github:nix-community/emacs-overlay";
+    emacs-overlay = {
+      url = "github:nix-community/emacs-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     home-manager = {
       url = "github:nix-community/home-manager";
@@ -24,13 +27,13 @@
     , home-manager
     , nixos-hardware
     , nix-doom-emacs
-    ,
-    }@inputs: {
+    }@inputs: rec {
 
-      overlays = [ emacs-overlay ];
+      system = "x86_64-linux";
+      overlays = [ emacs-overlay.overlay ];
 
       nixosConfigurations."thelio-nixos" = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
+        inherit system;
         specialArgs = { inherit inputs; };
         modules = [
           ./hardware-configuration.nix
@@ -65,7 +68,6 @@
             home-manager.useUserPackages = true;
             home-manager.users.chris = { pkgs, ... }: {
               imports = [
-                { nixpkgs.overlays = self.overlays; }
                 ../../home.nix
                 nix-doom-emacs.hmModule
               ];

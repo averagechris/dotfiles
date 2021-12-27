@@ -46,6 +46,7 @@ in
           message-send-mail-function 'message-send-mail-with-sendmail)
     '';
     extraPackages = [ pkgs.emacs-all-the-icons-fonts pkgs.mu ];
+    emacsPackage = pkgs.emacsPgtkGcc;
   };
 
   # on macos nix-darwin handles the service configuration
