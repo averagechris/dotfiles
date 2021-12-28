@@ -3,7 +3,6 @@
 let
 
   isLinux = pkgs.stdenv.hostPlatform.isLinux;
-  apple-music-electron = pkgs.callPackage ./apple-music-electron.nix { };
   zoom-us = pkgs.zoom-us.overrideAttrs (old: {
     postFixup = old.postFixup + ''
       wrapProgram $out/bin/zoom-us --unset XDG_SESSION_TYPE
@@ -70,7 +69,6 @@ in
   home.packages =
     if isLinux then
       with pkgs; [
-        apple-music-electron
         signal-desktop
         write_stylus
         zoom-us
