@@ -50,6 +50,7 @@ in
   };
 
   config.home.packages = with pkgs; [
+    wldash
     imv
     libnotify
     mpv

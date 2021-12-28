@@ -13,11 +13,7 @@ in
   config.wayland.windowManager.sway.config.keybindings = {
     "${modkey}+t" = "exec ${cfg.terminal}";
     "${modkey}+q" = "kill";
-    "${modkey}+space" = ''exec ${pkgs.wofi}/bin/wofi \
-      --show=drun \
-      --lines=5 \
-      --term=alacritty
-    '';
+    "${modkey}+space" = ''exec ${pkgs.wldash}/bin/wldash'';
     "${modkey}+Shift+q" = "exec ${nwg-bar}/bin/nwg-bar";
 
     "XF86LaunchB" = "exec ${nwg-drawer}/bin/nwg-drawer";
@@ -85,6 +81,6 @@ in
   config.home.packages = [
     nwg-drawer
     nwg-bar
-    pkgs.wofi
+    pkgs.wldash
   ];
 }

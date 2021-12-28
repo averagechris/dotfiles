@@ -8,6 +8,10 @@
       url = "github:nix-community/emacs-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    wayland-overlay = {
+      url = "github:nix-community/nixpkgs-wayland";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     home-manager = {
       url = "github:nix-community/home-manager";
@@ -27,14 +31,15 @@
     , home-manager
     , nixos-hardware
     , nix-doom-emacs
+    , wayland-overlay
     }@inputs: rec {
 
       system = "x86_64-linux";
-      overlays = [ emacs-overlay.overlay ];
+      overlays = [ emacs-overlay.overlay wayland-overlay.overlay ];
 
       nixosConfigurations."thelio-nixos" = nixpkgs.lib.nixosSystem {
         inherit system;
-        specialArgs = { inherit inputs; };
+        specialArgs = { inherit inputs overlays; };
         modules = [
           ./hardware-configuration.nix
           nixos-hardware.nixosModules.system76
