@@ -1,5 +1,9 @@
 { config, pkgs, lib, ... }:
 
+let
+  wallpapers = "${config.home.homeDirectory}/dotfiles/nixpkgs/sway/wallpapers";
+
+in
 {
   imports = [
     ./kanshi.nix
@@ -19,6 +23,8 @@
     config.gaps.smartGaps = true;
     config.input."*".natural_scroll = "enabled";
     config.input."type:touchpad".tap = "enabled";
+    config.output."*".bg = "${wallpapers}/1.jpg fill";
+    config.startup = [ ];
     config.workspaceAutoBackAndForth = true;
     wrapperFeatures.base = true;
     wrapperFeatures.gtk = true;

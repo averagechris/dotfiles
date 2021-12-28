@@ -57,6 +57,7 @@
 
             # system76 doesn't use fwupd / fwupdmgr, they have their own cli
             environment.systemPackages = [ pkgs.system76-firmware ];
+            programs.steam.enable = true;
 
             system.stateVersion = "21.05";
 
@@ -66,12 +67,6 @@
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
-            home-manager.users.chris = { pkgs, ... }: {
-              imports = [
-                ../../home.nix
-                nix-doom-emacs.hmModule
-              ];
-            };
           }
 
         ];
