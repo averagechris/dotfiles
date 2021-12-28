@@ -36,6 +36,7 @@ in
       ../../guiapps
       ../../linux_desktop
       ../../neovim
+      ../../nerdfonts
       ../../personal_scripts
       ../../python
       ../../shell

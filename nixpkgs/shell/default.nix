@@ -6,6 +6,9 @@ let
   darwinOnlyPackages = with pkgs; [ ];
 in
 {
+  # starship is the shell prompt
+  programs.starship.enable = true;
+
   programs.zsh = {
     enable = true;
 
@@ -25,9 +28,6 @@ in
     oh-my-zsh = {
       enable = true;
       theme = "clean";
-      plugins = [
-        "git"
-      ];
     };
 
     sessionVariables = rec {
