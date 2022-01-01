@@ -56,11 +56,6 @@
     which
   ];
 
-  programs.sway = {
-    enable = true;
-    wrapperFeatures.gtk = true;
-  };
-
   # decrypt the root volume
   boot.initrd.luks.devices.root.preLVM = true;
   # Use the systemd-boot EFI boot loader.
