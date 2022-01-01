@@ -45,7 +45,6 @@
           nixos-hardware.nixosModules.system76
           ../common.nix
           ../greetd.nix
-          ../gtk.nix
           ../networking.nix
           ../podman.nix
           ../sound.nix
@@ -63,6 +62,9 @@
             # system76 doesn't use fwupd / fwupdmgr, they have their own cli
             environment.systemPackages = [ pkgs.system76-firmware ];
             programs.steam.enable = true;
+
+            virtualisation.virtualbox.host.enable = true;
+            virtualisation.virtualbox.host.enableWebService = true;
 
             system.stateVersion = "21.05";
 
