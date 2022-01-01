@@ -1,8 +1,2 @@
 #! /usr/bin/env zsh
-
-if test "$(uname)" = "Darwin";
-then
-    script_lpass | pbcopy
-else
-    script_lpass | xclip -i -selection clipboard
-fi
+script_lpass | pbcopy
