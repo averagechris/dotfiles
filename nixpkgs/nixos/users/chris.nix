@@ -17,6 +17,8 @@ in
     };
   };
 
+  programs.sway.wrapperFeatures.gtk = true;
+
   home-manager.users."${userName}" = { pkgs, ... }: rec {
     home = {
       stateVersion = "21.05";
