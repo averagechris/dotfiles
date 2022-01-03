@@ -10,6 +10,7 @@ in
     ./keybindings.nix
     ./screenshots.nix
     ./waybar.nix
+    ./swayidle.nix
   ];
 
   config.wayland.windowManager.sway = {
