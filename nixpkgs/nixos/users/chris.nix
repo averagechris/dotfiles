@@ -17,7 +17,10 @@ in
     };
   };
 
-  programs.sway.wrapperFeatures.gtk = true;
+  programs.sway = {
+    enable = true;
+    wrapperFeatures.gtk = true;
+  };
 
   home-manager.users."${userName}" = { pkgs, ... }: rec {
     home = {
