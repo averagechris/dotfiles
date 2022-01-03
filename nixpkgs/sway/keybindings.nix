@@ -7,13 +7,18 @@ let
   pactl = "${pkgs.pulseaudio}/bin/pactl";
   playerctl = "${pkgs.playerctl}/bin/playerctl";
   brightnessctl = "${pkgs.brightnessctl}/bin/brightnessctl";
+  j4-dmenu-desktop = pkgs.j4-dmenu-desktop.overrideAttrs (old: {
+    postPatch = ''
+      sed -e 's,dmenu -i,${pkgs.bemenu}/bin/bemenu -i -b -f -l 5,g' -i ./src/Main.hh
+    '';
+  });
 
 in
 {
   config.wayland.windowManager.sway.config.keybindings = {
     "${modkey}+t" = "exec ${cfg.terminal}";
     "${modkey}+q" = "kill";
-    "${modkey}+space" = ''exec swaymsg exec $(${pkgs.dmenu}/bin/dmenu_path | ${pkgs.dmenu}/bin/dmenu -l 5 -i -b -f)'';
+    "${modkey}+space" = ''exec ${j4-dmenu-desktop}/bin/j4-dmenu-desktop'';
     "${modkey}+Shift+q" = "exec ${nwg-bar}/bin/nwg-bar";
 
     "XF86LaunchB" = "exec ${nwg-drawer}/bin/nwg-drawer";
