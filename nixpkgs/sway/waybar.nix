@@ -11,7 +11,7 @@
         height = 24;
         modules-left = [ "clock" "custom/media" ];
         modules-center = [ "sway/workspaces" ];
-        modules-right = [ "pulseaudio" "network" "bluetooth" "battery" ];
+        modules-right = [ "idle_inhibitor" "pulseaudio" "network" "bluetooth" "battery" ];
         modules = {
           "sway/workspaces" = {
             disable-scroll = true;
@@ -67,6 +67,13 @@
               default = [ "" "" ];
             };
             on-click = "pavucontrol";
+          };
+          idle_inhibitor = {
+            format = "{icon}";
+            format-icons = {
+              activated = "";
+              deactivated = "";
+            };
           };
           "custom/media" = {
             on-click = "playerctl play-pause";
