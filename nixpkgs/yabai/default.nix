@@ -7,7 +7,7 @@
 
 let
 
-  utils = (import ../utils pkgs);
+  utils = import ../utils pkgs;
 
   yabai = {
     config = {

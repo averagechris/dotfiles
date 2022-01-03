@@ -2,6 +2,6 @@ let
   userName = "<PUT_YOUR_USERNAME>";
 in
 {
-  userName = userName;
+  inherit userName;
   homeDirectory = "/Users/${userName}";
 }

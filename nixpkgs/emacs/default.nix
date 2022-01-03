@@ -1,7 +1,7 @@
 { pkgs, config, ... }:
 
 let
-  isLinux = pkgs.stdenv.hostPlatform.isLinux;
+  inherit (pkgs.stdenv.hostPlatform) isLinux;
   pkgs-markdownMode = with pkgs; [
     mdl
     pandoc

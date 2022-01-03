@@ -1,7 +1,7 @@
 { pkgs, lib, ... }:
 
 let
-  utils = (import ../utils pkgs);
+  utils = import ../utils pkgs;
   pgcliConfig = {
     main = {
       smart_completion = true;

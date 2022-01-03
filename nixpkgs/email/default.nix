@@ -1,7 +1,7 @@
 { pkgs, ... }:
 
 let
-  isLinux = pkgs.stdenv.hostPlatform.isLinux;
+  inherit (pkgs.stdenv.hostPlatform) isLinux;
 in
 {
   home.packages = with pkgs; if isLinux then [ libsecret mu ] else [ ];

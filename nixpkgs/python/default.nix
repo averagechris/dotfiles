@@ -1,7 +1,7 @@
 { pkgs, ... }:
 
 let
-  utils = (import ../utils pkgs);
+  utils = import ../utils pkgs;
   pythonPackagesForLinux =
     if pkgs.stdenv.hostPlatform.isLinux then with pkgs.python39Packages; [
       ipython

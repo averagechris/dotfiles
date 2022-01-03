@@ -26,6 +26,16 @@ repos:
 
   - repo: local
     hooks:
+      - id: statix
+        name: statix
+        description: static linter for nix code
+        entry: statix check .
+        language: system
+        files: \.nix$
+        always_run: true
+        minimum_pre_commit_version: 1.14.2
+        pass_filenames: false
+
       - id: nixpkgs-fmt
         name: nixpkgs-fmt
         description: Format nix code with nixpkgs-fmt.

@@ -1,6 +1,6 @@
 { pkgs }:
 let
-  isLinux = pkgs.stdenv.hostPlatform.isLinux;
+  inherit (pkgs.stdenv.hostPlatform) isLinux;
 in
 {
   # warning, verbose

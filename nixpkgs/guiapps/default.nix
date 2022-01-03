@@ -1,8 +1,7 @@
 { config, pkgs, ... }:
 
 let
-
-  isLinux = pkgs.stdenv.hostPlatform.isLinux;
+  inherit (pkgs.stdenv.hostPlatform) isLinux;
   zoom-us = pkgs.zoom-us.overrideAttrs (old: {
     postFixup = old.postFixup + ''
       wrapProgram $out/bin/zoom-us --unset XDG_SESSION_TYPE

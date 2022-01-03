@@ -6,7 +6,7 @@
 { config, pkgs, ... }:
 
 let
-  utils = (import ../utils pkgs);
+  utils = import ../utils pkgs;
   yabaiifyRules = utils.stringify {
     mkKey = k: "yabai -m rule --add app='^${k}$'";
     mkValue = v: "manage=${if v then "on" else "off"}";

@@ -14,7 +14,7 @@
 
   stringify =
     { mkKey ? (k: "${k}")
-    , mkValue ? (v: pkgs.lib.generators.mkValueStringDefault { } v)
+    , mkValue ? pkgs.lib.generators.mkValueStringDefault
     ,
     }: attrs:
     (pkgs.lib.strings.concatStringsSep

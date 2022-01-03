@@ -1,8 +1,8 @@
 { pkgs, inputs, ... }:
 
 let
+  inherit (inputs) home-manager;
   userName = "chris";
-  home-manager = inputs.home-manager;
 
 in
 {

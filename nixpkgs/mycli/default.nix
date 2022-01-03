@@ -1,7 +1,7 @@
 { pkgs, lib, ... }:
 
 let
-  utils = (import ../utils pkgs);
+  utils = import ../utils pkgs;
   mycliConfig = {
     general = {
       smart_completion = true;

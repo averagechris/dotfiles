@@ -1,7 +1,7 @@
 { config, pkgs, ... }:
 
 let
-  isLinux = pkgs.stdenv.hostPlatform.isLinux;
+  inherit (pkgs.stdenv.hostPlatform) isLinux;
   linuxOnlyPackages = with pkgs; [ xclip ];
   darwinOnlyPackages = with pkgs; [ ];
 in

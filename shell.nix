@@ -9,8 +9,8 @@ let
       click = super.click.overrideAttrs (old: rec {
         version = "7.1.2";
         src = super.fetchPypi {
+          inherit (old) pname;
           inherit version;
-          pname = old.pname;
           sha256 = "d2b5255c7c6349bc1bd1e59e08cd12acbbd63ce649f2588755783aa94dfb6b1a";
         };
       });
@@ -40,6 +40,7 @@ pkgs.mkShell {
     pre-commit
     shellcheck
     shfmt
+    statix
   ] ++ pypkgs;
 
   shellHook = ''

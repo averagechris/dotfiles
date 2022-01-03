@@ -33,6 +33,7 @@ in
       export MOZ_ENABLE_WAYLAND=1
       export MOZ_DBUS_REMOTE=1
     '';
+    extraConfig = "seat seat0 xcursor_theme breeze 62";
   };
 
   # notifications daemon
