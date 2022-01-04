@@ -9,6 +9,7 @@ in
     "${userName}" = {
       isNormalUser = true;
       extraGroups = [
+        "docker"
         "networkmanager"
         "wheel"
       ];
