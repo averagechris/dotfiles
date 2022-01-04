@@ -1,16 +1,55 @@
-{ config, pkgs, lib, ... }:
+{ pkgs, inputs, ... }:
 let
-  groups = [
-    "networkmanager"
-    "wheel"
-  ];
+  userName = "chris-focus";
+  sure = import ../../sure { inherit pkgs inputs; };
+
 in
 {
   users.users = {
-    chris-focus = {
+    "${userName}" = {
       isNormalUser = true;
-      extraGroups = groups;
+      extraGroups = [
+        "networkmanager"
+        "wheel"
+      ];
       shell = pkgs.zsh;
     };
   };
+
+  programs.sway = {
+    enable = true;
+    wrapperFeatures.gtk = true;
+  };
+
+  home-manager.users."${userName}" = { pkgs, ... }: {
+    home = {
+      stateVersion = "21.05";
+      username = userName;
+      homeDirectory = "/home/${userName}";
+    };
+
+    programs.git = {
+      userName = "Chris Cummings";
+      userEmail = "chris.cummings@sureapp.com";
+    };
+
+    imports = [
+      ../../emacs
+      ../../firefox
+      ../../git
+      ../../guiapps
+      ../../linux_desktop
+      ../../neovim
+      ../../nerdfonts
+      ../../personal_scripts
+      ../../python
+      ../../shell
+      ../../sway
+      ../../terminal_emulator
+      ../../tmux
+      inputs.nix-doom-emacs.hmModule
+      sure
+    ];
+  };
+
 }

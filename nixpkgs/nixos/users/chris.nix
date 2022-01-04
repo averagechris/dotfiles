@@ -1,7 +1,6 @@
 { pkgs, inputs, ... }:
 
 let
-  inherit (inputs) home-manager;
   userName = "chris";
 
 in
@@ -22,7 +21,7 @@ in
     wrapperFeatures.gtk = true;
   };
 
-  home-manager.users."${userName}" = { pkgs, ... }: rec {
+  home-manager.users."${userName}" = { pkgs, ... }: {
     home = {
       stateVersion = "21.05";
       username = userName;

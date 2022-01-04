@@ -22,6 +22,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    sli-repo = {
+      url = "github:sureapp/sli";
+      flake = false;
+    };
+
   };
 
   outputs =
@@ -32,10 +37,15 @@
     , nixos-hardware
     , nix-doom-emacs
     , wayland-overlay
-    }@inputs: rec {
+    , ...
+    }@inputs:
 
-      system = "x86_64-linux";
+    let
       overlays = [ emacs-overlay.overlay wayland-overlay.overlay ];
+      system = "x86_64-linux";
+    in
+    {
+      inherit overlays system;
 
       nixosConfigurations."thelio-nixos" = nixpkgs.lib.nixosSystem {
         inherit system;
@@ -49,6 +59,7 @@
           ../podman.nix
           ../sound.nix
           ../users/chris.nix
+          ../users/chris-focus.nix
 
           ({ pkgs, ... }: {
             boot.initrd.luks.devices.root.device = "/dev/sda2";

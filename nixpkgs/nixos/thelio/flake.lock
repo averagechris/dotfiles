@@ -417,6 +417,7 @@
         "nix-doom-emacs": "nix-doom-emacs",
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs",
+        "sli-repo": "sli-repo",
         "wayland-overlay": "wayland-overlay"
       }
     },
@@ -433,6 +434,22 @@
       "original": {
         "owner": "debug-ito",
         "repo": "rotate-text.el",
+        "type": "github"
+      }
+    },
+    "sli-repo": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1640212267,
+        "narHash": "sha256-Ump7cDAO5JB07rew1kWz3CIFhMxiFnjOy7EoPJXDKK0=",
+        "owner": "sureapp",
+        "repo": "sli",
+        "rev": "895f83aacb2e9421d9ed2667d74ca7891cc01c58",
+        "type": "github"
+      },
+      "original": {
+        "owner": "sureapp",
+        "repo": "sli",
         "type": "github"
       }
     },

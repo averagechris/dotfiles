@@ -1,13 +1,8 @@
-{ pkgs, ... }:
+{ pkgs, sli-repo }:
 
 with pkgs.poetry2nix;
 
 let
-  sli-repo = fetchGit {
-    url = "ssh://git@github.com/sureapp/sli.git";
-    rev = "bad1dbe93ea711f00bcea1433a53d7784f290c51";
-  };
-
   sli = mkPoetryApplication {
     projectDir = sli-repo;
     src = sli-repo;
@@ -45,10 +40,4 @@ EOF
   };
 
 in
-{
-
-  config.home.packages = with pkgs; [
-    sli
-  ];
-
-}
+sli

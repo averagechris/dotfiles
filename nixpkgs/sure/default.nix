@@ -1,9 +1,11 @@
-{ config, pkgs, ... }:
+{ pkgs, inputs, ... }:
 
+let
+  sli = import ./sli.nix { inherit pkgs; inherit (inputs) sli-repo; };
+in
 {
   imports = [
     ./aws.nix
-    ./sli.nix
   ];
 
   config.programs.zsh = {
@@ -26,5 +28,6 @@
   config.home.packages = with pkgs; [
     kubectl
     k9s
+    sli
   ];
 }
