@@ -56,7 +56,7 @@
             networking.hostName = "xps-nixos";
 
             networking.wireless.interfaces = [ "wlp0s20f3" ];
-            networking.interfaces.wlp6s0.useDHCP = true;
+            networking.interfaces.wlp6s0.useDHCP = false;
 
             # these opengl is needed for sway to work right on intel graphics
             hardware.opengl.enable = true;
