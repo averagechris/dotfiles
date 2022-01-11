@@ -46,7 +46,7 @@ in
   config.services.blueman-applet.enable = true;
   config.services.redshift = {
     enable = true;
-    package = pkgs.redshift-wlr;
+    package = pkgs.gammastep;
     latitude = "36.174465";
     longitude = "-86.767960";
   };
