@@ -72,7 +72,6 @@
             networking.wireless.interfaces = [ "wlp6s0" ];
 
             # dhcp and network manager are causinng issues
-            # so explicitly disabling dhcp
             # https://github.com/NixOS/nixpkgs/issues/152288
             networking.interfaces.enp5s0.useDHCP = true;
             networking.interfaces.enp7s0f3u4u3u4.useDHCP = true;
