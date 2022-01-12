@@ -6,6 +6,7 @@
     # is merged into nixos-unstable
     # nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixpkgs.url = "github:NixOS/nixpkgs/master";
+
     nixos-hardware.url = "github:nixos/nixos-hardware";
     emacs-overlay = {
       url = "github:nix-community/emacs-overlay";
@@ -58,7 +59,7 @@
           nixos-hardware.nixosModules.system76
           ../common.nix
           ../greetd.nix
-          ../networking.nix
+          # ../networking.nix
           ../podman.nix
           ../sound.nix
           ../users/chris.nix
@@ -73,9 +74,9 @@
             # dhcp and network manager are causinng issues
             # so explicitly disabling dhcp
             # https://github.com/NixOS/nixpkgs/issues/152288
-            networking.interfaces.enp5s0.useDHCP = false;
-            networking.interfaces.enp7s0f3u4u3u4.useDHCP = false;
-            networking.interfaces.wlp6s0.useDHCP = false;
+            networking.interfaces.enp5s0.useDHCP = true;
+            networking.interfaces.enp7s0f3u4u3u4.useDHCP = true;
+            networking.interfaces.wlp6s0.useDHCP = true;
 
             # system76 doesn't use fwupd / fwupdmgr, they have their own cli
             environment.systemPackages = [ pkgs.system76-firmware ];
