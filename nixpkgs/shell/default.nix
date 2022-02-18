@@ -59,6 +59,7 @@ in
     jq
     lastpass-cli
     neofetch
+    pre-commit
     procs
     ripgrep
     shellcheck
