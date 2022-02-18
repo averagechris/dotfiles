@@ -79,6 +79,8 @@ in
 
     "${modkey}+Shift+minus" = "move scratchpad";
     "${modkey}+minus" = "scratchpad show";
+    # NOTE: to remove a window from scratch pad toggle floating
+    # https://i3wm.org/docs/userguide.html#_scratchpad
 
     "${modkey}+r" = "mode resize";
   };
