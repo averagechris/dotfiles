@@ -61,7 +61,7 @@
           ../greetd.nix
           ../dropbox.nix
           # ../networking.nix
-          ../podman.nix
+          ../docker.nix
           ../sound.nix
           ../users/chris.nix
           ../users/chris-focus.nix

@@ -47,7 +47,7 @@
           ../graphical.nix
           ../greetd.nix
           ../networking.nix
-          ../podman.nix
+          ../docker.nix
           ../sound.nix
           ../users/chris.nix
 
