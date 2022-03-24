@@ -59,6 +59,7 @@
           nixos-hardware.nixosModules.system76
           ../common.nix
           ../greetd.nix
+          ../dropbox.nix
           # ../networking.nix
           ../podman.nix
           ../sound.nix
