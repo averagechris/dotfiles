@@ -45,6 +45,8 @@
             networking.usePredictableInterfaceNames = false;
             networking.interfaces.eth0.useDHCP = true;
 
+            networking.networkmanager.enable = true;
+
             services.openssh = {
               enable = true;
               permitRootLogin = "no";
