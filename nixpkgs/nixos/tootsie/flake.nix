@@ -23,7 +23,7 @@
     {
       inherit overlays system;
 
-      nixosConfigurations."nixos" = nixpkgs.lib.nixosSystem {
+      nixosConfigurations."tootsie" = nixpkgs.lib.nixosSystem {
         inherit system;
         specialArgs = { inherit inputs overlays; };
         modules = [
