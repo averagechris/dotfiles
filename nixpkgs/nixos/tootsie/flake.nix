@@ -29,6 +29,7 @@
         modules = [
           ./hardware-configuration.nix
           ../common.nix
+          ../tailscale.nix
 
           ({ pkgs, ... }: {
 
