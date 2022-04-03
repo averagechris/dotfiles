@@ -64,6 +64,7 @@
           # ../networking.nix
           ../docker.nix
           ../sound.nix
+          ../tailscale.nix
           ../users/chris.nix
           ../users/chris-focus.nix
 
