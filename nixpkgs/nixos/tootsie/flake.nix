@@ -28,7 +28,7 @@
         specialArgs = { inherit inputs overlays; };
         modules = [
           ./hardware-configuration.nix
-          ./common.nix
+          ../common.nix
 
           ({ pkgs, ... }: {
 
