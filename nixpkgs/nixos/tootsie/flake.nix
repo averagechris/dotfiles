@@ -37,7 +37,7 @@
             boot.loader.grub.version = 2;
 
             boot.kernel.sysctl."net.ipv4.ip_forward" = true;
-            boot.kernel.sysclt."net.ipv6.conf.all.forwarding" = true;
+            boot.kernel.sysctl."net.ipv6.conf.all.forwarding" = true;
 
             networking.hostName = "tootsie";
             networking.useDHCP = false;
