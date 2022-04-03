@@ -44,6 +44,7 @@
           ./hardware-configuration.nix
           nixos-hardware.nixosModules.dell-xps-13-9310
           ../common.nix
+          ../desktop_common.nix
           ../graphical.nix
           ../greetd.nix
           ../networking.nix
