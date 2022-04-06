@@ -2,7 +2,7 @@
   description = "My XPS desktop config";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/master";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixos-hardware.url = "github:nixos/nixos-hardware";
     emacs-overlay = {
       url = "github:nix-community/emacs-overlay";
@@ -50,6 +50,7 @@
           ../networking.nix
           ../docker.nix
           ../sound.nix
+          ../tailscale.nix
           ../users/chris.nix
 
           ({ pkgs, ... }: {
