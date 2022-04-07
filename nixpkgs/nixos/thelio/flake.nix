@@ -21,7 +21,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     sli-repo = {
-      url = "github:sureapp/sli";
+      url = "git+ssh://git@github.com/sureapp/sli";
       flake = false;
     };
 
