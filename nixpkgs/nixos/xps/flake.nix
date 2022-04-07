@@ -14,7 +14,8 @@
     };
 
     home-manager = {
-      url = "github:nix-community/home-manager";
+      # url = "github:nix-community/home-manager";
+      url = "github:wentasah/home-manager?rev=7bf9f0cd90169f93fa581dcd8db971eb7aa60ce7";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-doom-emacs = {
@@ -65,6 +66,15 @@
             hardware.opengl.driSupport = true;
 
             system.stateVersion = "21.05";
+
+            boot.kernelModules = [
+              "ipt_dnat"
+              "ipt_mark"
+              "iptable_filter"
+              "iptable_nat"
+              "sch_cake"
+              "xt_nat"
+            ];
 
           })
 
