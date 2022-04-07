@@ -2,11 +2,7 @@
   description = "My Thelio desktop config";
 
   inputs = {
-    # TODO switch back to nixos-unstable after https://github.com/NixOS/nixpkgs/pull/153339
-    # is merged into nixos-unstable
-    # nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    nixpkgs.url = "github:NixOS/nixpkgs/master";
-
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixos-hardware.url = "github:nixos/nixos-hardware";
     emacs-overlay = {
       url = "github:nix-community/emacs-overlay";
@@ -16,7 +12,6 @@
       url = "github:nix-community/nixpkgs-wayland";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -25,7 +20,6 @@
       url = "github:nix-community/nix-doom-emacs";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
     sli-repo = {
       url = "github:sureapp/sli";
       flake = false;
