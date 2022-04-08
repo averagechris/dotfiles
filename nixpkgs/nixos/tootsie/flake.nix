@@ -37,16 +37,10 @@
             boot.loader.grub.enable = true;
             boot.loader.grub.version = 2;
 
-            boot.kernel.sysctl."net.ipv4.ip_forward" = true;
-            boot.kernel.sysctl."net.ipv6.conf.all.forwarding" = true;
-
             networking.hostName = "tootsie";
             networking.useDHCP = false;
-            networking.interfaces.enp0s5.useDHCP = true;
             networking.usePredictableInterfaceNames = false;
             networking.interfaces.eth0.useDHCP = true;
-
-            networking.networkmanager.enable = true;
 
             services.openssh = {
               enable = true;
