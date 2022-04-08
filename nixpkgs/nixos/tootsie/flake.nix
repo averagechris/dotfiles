@@ -37,6 +37,11 @@
             boot.loader.grub.enable = true;
             boot.loader.grub.version = 2;
 
+            # forwarding required for tailscale exit-node
+            # https://tailscale.com/kb/1104/enable-ip-forwarding/
+            boot.kernel.sysctl."net.ipv4.ip_forward" = true;
+            boot.kernel.sysctl."net.ipv6.conf.all.forwarding" = true;
+
             networking.hostName = "tootsie";
             networking.useDHCP = false;
             networking.usePredictableInterfaceNames = false;
