@@ -83,6 +83,9 @@
             virtualisation.virtualbox.host.enableWebService = true;
 
             system.stateVersion = "21.05";
+            home-manager.users.chris = { pkgs, ... }: {
+              home.stateVersion = "21.11";
+            };
 
           })
 

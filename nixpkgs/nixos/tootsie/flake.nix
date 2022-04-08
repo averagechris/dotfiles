@@ -30,6 +30,7 @@
           ./hardware-configuration.nix
           ../common.nix
           ../tailscale.nix
+          ../users/chris-minimal.nix
 
           ({ pkgs, ... }: {
 
@@ -59,20 +60,16 @@
             ];
 
             system.stateVersion = "21.11";
+            home-manager.users.chris = { pkgs, ... }: {
+              home.stateVersion = "21.11";
+            };
 
             time.timeZone = "UTC";
 
-            users.users.chris = {
-              isNormalUser = true;
-              home = "/home/chris";
-              description = "Chris User";
-              extraGroups = [ "wheel" "networkmanager" ];
-              openssh.authorizedKeys.keys = [
-                "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGaGrbXoVGe5fXpOhG6+pUZw+aYANuiDPvoI82jftpPd chris@thesogu.com" # chris-thelio
-                "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPflVyCskMX25z8S3pQLyGbo67zBQyC+eMbCkksRw4o/ chris@thesogu.com" # chris-xps
-              ];
-            };
-
+            users.users.chris.openssh.authorizedKeys.keys = [
+              "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGaGrbXoVGe5fXpOhG6+pUZw+aYANuiDPvoI82jftpPd chris@thesogu.com" # chris-thelio
+              "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPflVyCskMX25z8S3pQLyGbo67zBQyC+eMbCkksRw4o/ chris@thesogu.com" # chris-xps
+            ];
           })
 
           home-manager.nixosModules.home-manager
