@@ -62,6 +62,7 @@
             home-manager.users.chris = { pkgs, ... }: {
               home.stateVersion = "21.11";
               home.packages = with pkgs; [ poetry ];
+              imports = [ ../../meganiz.nix ];
             };
 
             time.timeZone = "UTC";

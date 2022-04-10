@@ -16,6 +16,7 @@
       ../../firefox
       ../../guiapps
       ../../linux_desktop
+      ../../meganz.nix
       ../../nerdfonts
       ../../personal_scripts
       ../../sway
