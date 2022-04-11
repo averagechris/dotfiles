@@ -1,10 +1,5 @@
 { config, pkgs, ... }:
 
-let
-  inherit (pkgs.stdenv.hostPlatform) isLinux;
-  linuxOnlyPackages = with pkgs; [ xclip ];
-  darwinOnlyPackages = with pkgs; [ ];
-in
 {
   # starship is the shell prompt
   programs.starship.enable = true;
@@ -52,8 +47,6 @@ in
     curl
     direnv
     fd
-    gcc
-    gnumake
     gnutls
     htop
     jq
@@ -64,8 +57,9 @@ in
     ripgrep
     shellcheck
     shfmt
-    tree
+    sshfs
+    unzip
     wget
-  ] ++ linuxOnlyPackages ++ darwinOnlyPackages;
+  ];
 
 }
