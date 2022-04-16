@@ -30,6 +30,7 @@ in
     imports = [
       ../../git
       ../../neovim
+      ../../passhole
       ../../python
       ../../shell
       ../../tmux
