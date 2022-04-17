@@ -40,8 +40,10 @@ in
       ../../git
       ../../guiapps
       ../../linux_desktop
+      ../../meganz.nix
       ../../neovim
       ../../nerdfonts
+      ../../passhole
       ../../personal_scripts
       ../../python
       ../../shell
