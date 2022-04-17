@@ -68,6 +68,7 @@ in
   home.packages =
     if isLinux then
       with pkgs; [
+        keepass
         signal-desktop
         write_stylus
         zoom-us
