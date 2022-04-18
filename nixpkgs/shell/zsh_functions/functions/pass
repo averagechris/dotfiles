@@ -1,2 +1,0 @@
-#! /usr/bin/env zsh
-script_lpass | pbcopy

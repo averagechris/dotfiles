@@ -50,7 +50,6 @@
     gnutls
     htop
     jq
-    lastpass-cli
     neofetch
     pre-commit
     procs
