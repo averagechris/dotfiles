@@ -22,6 +22,10 @@
       url = "github:nix-community/nix-doom-emacs";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    sli-repo = {
+      url = "git+ssh://git@github.com/sureapp/sli";
+      flake = false;
+    };
 
   };
 
@@ -53,6 +57,7 @@
           ../sound.nix
           ../tailscale.nix
           ../users/chris.nix
+          ../users/chris-focus.nix
 
           ({ pkgs, ... }: {
             boot.initrd.luks.devices.root.device = "/dev/nvme0n1p2";
