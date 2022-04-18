@@ -1,7 +1,7 @@
 { config, pkgs, ... }:
 
 let
-  isEmacsEnabled = config.programs.doom-emacs.enable;
+  isEmacsEnabled = config.services.emacs.enable;
 in
 {
   # starship is the shell prompt
