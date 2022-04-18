@@ -1,5 +1,8 @@
 { config, pkgs, ... }:
 
+let
+  isEmacsEnabled = config.programs.doom-emacs.enable;
+in
 {
   # starship is the shell prompt
   programs.starship.enable = true;
@@ -26,12 +29,13 @@
     };
 
     sessionVariables = rec {
-      EDITOR = "emacsclient -t";
+      EDITOR = if isEmacsEnabled then "emacsclient -t" else "nvim";
       GIT_EDITOR = EDITOR;
       KEYTIMEOUT = "1";
       LESS = "-SRXF";
+    } // (if isEmacsEnabled then {
       VISUAL = "emacs";
-    };
+    } else { });
 
   };
 
