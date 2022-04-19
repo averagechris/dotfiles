@@ -37,6 +37,7 @@
     , nixos-hardware
     , nix-doom-emacs
     , wayland-overlay
+    , ...
     }@inputs: rec {
 
       system = "x86_64-linux";
