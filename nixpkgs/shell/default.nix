@@ -63,6 +63,10 @@ in
     sshfs
     unzip
     wget
+
+    (writeShellScriptBin "video_compress" ''
+      ${pkgs.handbrake}/bin/HandBrakeCLI -i "$1" -o "$2" -e x264 -q 18 -a 1,1 -E faac,copy:ac3 -B 256,256 -6 dpl2,auto -R Auto,Auto -D 0.0,0.0 -f mp4 --detelecine --decomb --loose-anamorphic -m -x b-adapt=2:rc-lookahead=50
+    '')
   ];
 
 }
