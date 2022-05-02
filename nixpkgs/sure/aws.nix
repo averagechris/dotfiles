@@ -31,6 +31,11 @@ in
       sso_account_id = "348777858795";
       sso_role_name = "RegistryReadAccess";
     };
+
+    "profile non-production-connect" = awscliConfig // {
+      sso_account_id = "186258024085";
+      sso_role_name = "non-production-backend-access";
+    };
   };
 
   config.programs.zsh = {
