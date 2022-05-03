@@ -15,6 +15,23 @@ let
 
 in
 {
+  config.wayland.windowManager.sway.config.modes = {
+    compose = {
+      "t" = ''exec swaymsg [app_id="scratch_terminal"] scratchpad show; mode default;'';
+      "f" = "fullscreen toggle; mode default;";
+      "Insert" = "mode default";
+      "Escape" = "mode default";
+      "Return" = "mode default";
+    };
+    resize = {
+      "h" = "resize shrink width 15 px";
+      "j" = "resize grow height 15 px";
+      "k" = "resize shrink height 15 px";
+      "l" = "resize grow width 15 px";
+      "Escape" = "mode default";
+      "Return" = "mode default";
+    };
+  };
   config.wayland.windowManager.sway.config.keybindings = {
     "${modkey}+t" = "exec ${cfg.terminal}";
     "${modkey}+q" = "kill";
@@ -83,6 +100,7 @@ in
     # https://i3wm.org/docs/userguide.html#_scratchpad
 
     "${modkey}+r" = "mode resize";
+    "Insert" = "mode compose";
   };
 
   config.home.packages = [

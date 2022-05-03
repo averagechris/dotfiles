@@ -1,0 +1,3 @@
+#! /usr/bin/env zsh
+
+ph_find | pbcopy

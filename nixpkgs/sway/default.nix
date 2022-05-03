@@ -33,7 +33,12 @@ in
       export MOZ_ENABLE_WAYLAND=1
       export MOZ_DBUS_REMOTE=1
     '';
-    extraConfig = "seat seat0 xcursor_theme breeze 62";
+    extraConfig = ''
+      seat seat0 xcursor_theme breeze 62
+      for_window [app_id="scratch_terminal"] move scratchpad, resize set 800 610
+      exec ${pkgs.alacritty}/bin/alacritty --title=scratch_terminal
+    '';
+
   };
 
   # notifications daemon

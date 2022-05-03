@@ -17,7 +17,17 @@ in
       ignoreDups = true;
     };
 
-    initExtra = builtins.readFile ./post-compinit.zsh;
+    initExtra = (builtins.readFile ./post-compinit.zsh) + ''
+      ph-widget() {
+        ph info | grep -q 'Database Version' && ph show --field password "$(ph grep -i . | fzf)" | wl-copy --trim-newline
+      }
+
+      zle -N ph-widget
+      bindkey -M emacs '^p' ph-widget
+      bindkey -M vicmd '^p' ph-widget
+      bindkey -M viins '^p' ph-widget
+    '';
+
     shellAliases = import ./aliases.nix { inherit pkgs; };
 
     enableAutosuggestions = true;
