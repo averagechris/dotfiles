@@ -50,12 +50,18 @@
       }
     },
     "emacs-overlay": {
+      "inputs": {
+        "flake-utils": "flake-utils",
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
       "locked": {
-        "lastModified": 1649561638,
-        "narHash": "sha256-exPLOKDoXIHMTKTbpwZJav2ro9TNVhd8oQos2/4mb2c=",
+        "lastModified": 1652440988,
+        "narHash": "sha256-XQjFmR5O8YJqF9zxNGcapqI+tTlZhLjwPllWkBFrmGw=",
         "owner": "nix-community",
         "repo": "emacs-overlay",
-        "rev": "ae3d3f1a0008651650cd58af19eb6afaf6f33acd",
+        "rev": "672ed963c05977c629f0ec7521b4d347968cd201",
         "type": "github"
       },
       "original": {
@@ -178,6 +184,21 @@
     },
     "flake-utils": {
       "locked": {
+        "lastModified": 1652372896,
+        "narHash": "sha256-lURGussfF3mGrFPQT3zgW7+RC0pBhbHzco0C7I+ilow=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "0d347c56f6f41de822a4f4c7ff5072f3382db121",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
+    "flake-utils_2": {
+      "locked": {
         "lastModified": 1644229661,
         "narHash": "sha256-1YdnJAsNy69bpcjuoKdOYQX0YxZBiCYZo4Twxerqv7k=",
         "owner": "numtide",
@@ -215,17 +236,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1649282402,
-        "narHash": "sha256-NrWqBJAfHHU6fk0kIt+lUDkHjqeGe3syrC4T2FP7J5o=",
-        "owner": "wentasah",
+        "lastModified": 1652452043,
+        "narHash": "sha256-nh3mdVB/Kk5ag1uRMAlKo8r+ssN3HNxwbLsqRG4xZkw=",
+        "owner": "nix-community",
         "repo": "home-manager",
-        "rev": "7bf9f0cd90169f93fa581dcd8db971eb7aa60ce7",
+        "rev": "273598f53e04f0111dca5724b37640e3907edaaf",
         "type": "github"
       },
       "original": {
-        "owner": "wentasah",
+        "owner": "nix-community",
         "repo": "home-manager",
-        "rev": "7bf9f0cd90169f93fa581dcd8db971eb7aa60ce7",
         "type": "github"
       }
     },
@@ -239,7 +259,7 @@
         "evil-org-mode": "evil-org-mode",
         "evil-quick-diff": "evil-quick-diff",
         "explain-pause-mode": "explain-pause-mode",
-        "flake-utils": "flake-utils",
+        "flake-utils": "flake-utils_2",
         "format-all": "format-all",
         "nix-straight": "nix-straight",
         "nixpkgs": [

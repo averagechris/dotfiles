@@ -13,8 +13,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     home-manager = {
-      # url = "github:nix-community/home-manager";
-      url = "github:wentasah/home-manager?rev=7bf9f0cd90169f93fa581dcd8db971eb7aa60ce7";
+      url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-doom-emacs = {
@@ -56,7 +55,7 @@
           ../desktop_common.nix
           ../greetd.nix
           ../dropbox.nix
-          # ../networking.nix
+          ../networking.nix
           ../docker.nix
           ../sound.nix
           ../tailscale.nix
