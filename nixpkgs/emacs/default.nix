@@ -34,19 +34,19 @@ in
 {
   config.home.packages = pkgs-markdownMode ++ pkgs-pythonMode ++ pkgs-shellMode ++ pkgs-misc;
 
-  config.programs.doom-emacs = {
+  config.programs.doom-emacs = with pkgs; {
     enable = true;
     doomPrivateDir = ./doom.d;
     extraConfig = ''
       (setq
-          mu4e-mu-binary "${pkgs.mu}/bin/mu"
-          sendmail-program "${pkgs.msmtp}/bin/msmtp"
+          mu4e-mu-binary "${mu}/bin/mu"
+          sendmail-program "${msmtp}/bin/msmtp"
           message-sendmail-f-is-evil t
           message-sendmail-extra-arguments '("--read-envelope-from")
           message-send-mail-function 'message-send-mail-with-sendmail)
     '';
-    extraPackages = [ pkgs.emacs-all-the-icons-fonts pkgs.mu ];
-    emacsPackage = pkgs.emacsPgtkNativeComp;
+    extraPackages = [ emacs-all-the-icons-fonts pkgs.mu ];
+    emacsPackage = emacsPgtkNativeComp;
   };
 
   # on macos nix-darwin handles the service configuration

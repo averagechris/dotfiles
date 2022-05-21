@@ -17,7 +17,9 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-doom-emacs = {
-      url = "github:nix-community/nix-doom-emacs";
+      # later revs up to edbe868dd5f8bf447eaffd4cff85167d0771ce0f
+      # are giving me an issue with an autoloads missing file erorr
+      url = "github:nix-community/nix-doom-emacs?rev=f1ca1906a5f0ff319cb08d9ab478cf377e327c92";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     sli-repo = {
