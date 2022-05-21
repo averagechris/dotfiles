@@ -15,6 +15,7 @@
     extraOptions = ''
       experimental-features = nix-command flakes
     '';
+    trustedUsers = [ "@wheel" ];
   };
 
   nixpkgs.config.allowUnfree = true;
