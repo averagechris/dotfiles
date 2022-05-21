@@ -42,10 +42,25 @@
             boot.kernel.sysctl."net.ipv4.ip_forward" = true;
             boot.kernel.sysctl."net.ipv6.conf.all.forwarding" = true;
 
-            networking.hostName = "tootsie";
-            networking.useDHCP = false;
-            networking.usePredictableInterfaceNames = false;
-            networking.interfaces.eth0.useDHCP = true;
+            networking = {
+              firewall.checkReversePath = "loose";
+              hostName = "tootsie";
+              useDHCP = false;
+              defaultGateway = {
+                address = "45.56.117.1";
+                interface = "eth0";
+              };
+              usePredictableInterfaceNames = false;
+              interfaces.eth0 = {
+                useDHCP = true;
+                ipv4.addresses = [
+                  {
+                    address = "45.56.117.1";
+                    prefixLength = 24;
+                  }
+                ];
+              };
+            };
 
             services.openssh = {
               enable = true;
