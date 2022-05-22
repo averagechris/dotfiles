@@ -16,7 +16,11 @@ in
   config.wayland.windowManager.sway = {
     enable = true;
     config.bars = [ ];
-    config.floating.criteria = [{ class = "Pavucontrol"; }];
+    config.floating.criteria = [
+      { app_id = "pavucontrol"; }
+      { app_id = "zenity"; }
+      { class = ".zoom"; }
+    ];
     config.floating.titlebar = true;
     config.focus.mouseWarping = true;
     config.gaps.inner = 3;

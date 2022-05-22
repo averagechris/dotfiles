@@ -27,13 +27,13 @@ in
     "${swayPrefix}+p" = with pkgs; ''
       exec ${wlrctl}/bin/wlrctl keyboard type \
         "$(${passhole}/bin/ph show --field password \
-          "$(${passhole}/bin/ph grep -i . \
+          "$(echo | ${passhole}/bin/ph grep -i . \
             | ${bemenu}/bin/bemenu --ignorecase --center --margin 10 --list 10)")"
     '';
     "${swayPrefix}+Shift+p" = with pkgs; ''
       exec ${wlrctl}/bin/wlrctl keyboard type \
         "$(${passhole}/bin/ph show --field username \
-          "$(${passhole}/bin/ph grep -i . \
+          "$(echo | ${passhole}/bin/ph grep -i . \
             | ${bemenu}/bin/bemenu --ignorecase --center --margin 10 --list 10)")"
     '';
   };
