@@ -31,5 +31,6 @@ buildPythonApplication rec {
     pykeepass_cache
     pynput
     pyotp
+    pkgs.gnome.zenity
   ];
 }
