@@ -55,8 +55,8 @@
           nixos-hardware.nixosModules.system76
           ../common.nix
           ../desktop_common.nix
+          ../graphical.nix
           ../greetd.nix
-          ../dropbox.nix
           ../networking.nix
           ../docker.nix
           ../sound.nix
