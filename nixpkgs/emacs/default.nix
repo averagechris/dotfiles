@@ -23,7 +23,6 @@ let
 
   pkgs-misc = with pkgs; [
     (aspellWithDicts (dicts: with dicts; [ en en-computers en-science ]))
-    direnv
     fd
     ripgrep
     sqlite
@@ -33,6 +32,11 @@ let
 in
 {
   config.home.packages = pkgs-markdownMode ++ pkgs-pythonMode ++ pkgs-shellMode ++ pkgs-misc;
+
+  config.programs.direnv = {
+    enable = true;
+    nix-direnv.enable = true;
+  };
 
   config.programs.doom-emacs = with pkgs; {
     enable = true;

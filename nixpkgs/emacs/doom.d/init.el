@@ -94,7 +94,7 @@
                +pyright
                +poetry)
        rest
-       ;;rust
+       (rust +lsp)
        sh
        (yaml +lsp)
 
