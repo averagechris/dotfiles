@@ -24,4 +24,6 @@ in
       "wl-paste"
     else
       "pbpaste";
+
+  nixos-switch = "nixos-rebuild switch --use-remote-sudo";
 }
