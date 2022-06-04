@@ -1,6 +1,7 @@
 { pkgs }:
+with pkgs;
 let
-  inherit (pkgs.stdenv.hostPlatform) isLinux;
+  inherit (stdenv.hostPlatform) isLinux;
 in
 {
   # warning, verbose
@@ -15,15 +16,17 @@ in
   # replecate pbcopy and pbpaste from macos everywhere 😎👍
   pbcopy =
     if isLinux then
-      "wl-copy"
+      "${wl-clipboard}/bin/wl-copy"
     else
       "pbcopy";
 
   pbpaste =
     if isLinux then
-      "wl-paste"
+      "${wl-clipboard}/bin/wl-paste"
     else
       "pbpaste";
 
   nixos-switch = "nixos-rebuild switch --use-remote-sudo";
+
+  today = "date +%Y-%m-%d";
 }

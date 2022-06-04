@@ -1,3 +1,0 @@
-#! /usr/bin/env zsh
-
-kube-shell $@ python manage.py shell

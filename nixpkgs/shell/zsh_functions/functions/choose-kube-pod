@@ -1,5 +1,0 @@
-#! /usr/bin/env zsh
-
-kubectl get po --no-headers "$@" \
-    | fzf --select-1 --exit-0 \
-    | cut -f 1 -d ' '

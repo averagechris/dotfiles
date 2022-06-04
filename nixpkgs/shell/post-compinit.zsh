@@ -17,4 +17,3 @@ function () {
 }
 
 eval "$(direnv hook zsh)"
-PATH=$HOME/.poetry/bin:$PATH

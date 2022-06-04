@@ -1,3 +1,0 @@
-#! /usr/bin/env zsh
-
-git branch | rg '(^\* )(.+)' --replace '$2' --color never
