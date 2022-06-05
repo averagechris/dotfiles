@@ -143,7 +143,7 @@ in
     # NOTE: to remove a window from scratch pad toggle floating
     # https://i3wm.org/docs/userguide.html#_scratchpad
 
-    "Shift+space" = "mode compose";
+    "Shift+space" = "mode compose_mode";
   };
 
   config.home.packages = [
