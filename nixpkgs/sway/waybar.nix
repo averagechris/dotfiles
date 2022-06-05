@@ -10,7 +10,7 @@
         position = "top";
         height = 24;
         modules-left = [ "clock" "custom/media" ];
-        modules-center = [ "sway/workspaces" ];
+        modules-center = [ "sway/mode" "sway/workspaces" ];
         modules-right = [ "idle_inhibitor" "pulseaudio" "network" "bluetooth" "battery" ];
         modules = {
           "sway/workspaces" = {
