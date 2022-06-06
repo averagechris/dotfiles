@@ -18,3 +18,4 @@ fish/fish_history
 /nixpkgs/darwin/pii.nix
 __pycache__/
 /.direnv/
+/.pre-commit-config.yaml
