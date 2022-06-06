@@ -17,4 +17,4 @@ jobs:
       with:
         name: averagechris-dotfiles
         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-    - run: nix flake check --extra-access-tokens '${{ secrets.REPO_TOKEN }}'
+    - run: nix flake check --extra-access-tokens github.com='${{ secrets.REPO_TOKEN }}'

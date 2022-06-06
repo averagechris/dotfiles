@@ -566,15 +566,15 @@
       "locked": {
         "lastModified": 1648504094,
         "narHash": "sha256-vcCaNMs7GDEaQPSGXXBnH1FHSDWJlLRzo7vNVa6dxOk=",
-        "ref": "master",
+        "owner": "sureapp",
+        "repo": "sli",
         "rev": "a360bf94e4d3a31febc6de047c50301ccb40b17e",
-        "revCount": 81,
-        "type": "git",
-        "url": "ssh://git@github.com/sureapp/sli"
+        "type": "github"
       },
       "original": {
-        "type": "git",
-        "url": "ssh://git@github.com/sureapp/sli"
+        "owner": "sureapp",
+        "repo": "sli",
+        "type": "github"
       }
     },
     "wayland-overlay": {
