@@ -1,16 +1,16 @@
-{ pkgs, inputs, ... }:
-
 {
-
-  imports = [ ./chris-minimal.nix ];
+  pkgs,
+  inputs,
+  ...
+}: {
+  imports = [./chris-minimal.nix];
 
   programs.sway = {
     enable = true;
     wrapperFeatures.gtk = true;
   };
 
-  home-manager.users."chris" = { ... }: {
-
+  home-manager.users."chris" = {...}: {
     imports = [
       ../../emacs
       ../../firefox
@@ -18,11 +18,9 @@
       ../../linux_desktop
       ../../meganz.nix
       ../../nerdfonts
-      ../../personal_scripts
       ../../sway
       ../../terminal_emulator
       inputs.nix-doom-emacs.hmModule
     ];
-
   };
 }

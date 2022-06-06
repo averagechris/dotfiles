@@ -17,3 +17,4 @@ fish/fish_history
 /nixpkgs/darwin/local_config.nix
 /nixpkgs/darwin/pii.nix
 __pycache__/
+/.direnv/

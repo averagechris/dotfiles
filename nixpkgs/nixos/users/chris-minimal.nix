@@ -1,10 +1,6 @@
-{ pkgs, ... }:
-
-let
+{pkgs, ...}: let
   userName = "chris";
-
-in
-{
+in {
   users.users = {
     "${userName}" = {
       isNormalUser = true;
@@ -16,7 +12,7 @@ in
     };
   };
 
-  home-manager.users."${userName}" = { ... }: {
+  home-manager.users."${userName}" = {...}: {
     home = {
       username = userName;
       homeDirectory = "/home/${userName}";
@@ -36,5 +32,4 @@ in
       ../../tmux
     ];
   };
-
 }

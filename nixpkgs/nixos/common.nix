@@ -1,6 +1,10 @@
-{ config, pkgs, lib, inputs, ... }:
-
 {
+  config,
+  pkgs,
+  lib,
+  inputs,
+  ...
+}: {
   nix = {
     package = pkgs.nixFlakes;
     settings.substituters = [
@@ -15,7 +19,7 @@
     extraOptions = ''
       experimental-features = nix-command flakes
     '';
-    trustedUsers = [ "@wheel" ];
+    trustedUsers = ["@wheel"];
   };
 
   nixpkgs.config.allowUnfree = true;

@@ -2,14 +2,19 @@
 # yabai is a macos tiling window manager
 # https://github.com/koekeishiya/yabai
 #########################################
-
-{ config, pkgs, ... }:
-
-let
+{
+  config,
+  pkgs,
+  ...
+}: let
   utils = import ../utils pkgs;
   yabaiifyRules = utils.stringify {
     mkKey = k: "yabai -m rule --add app='^${k}$'";
-    mkValue = v: "manage=${if v then "on" else "off"}";
+    mkValue = v: "manage=${
+      if v
+      then "on"
+      else "off"
+    }";
   };
 
   unmanaged_apps = {
@@ -22,9 +27,7 @@ let
     "Messages" = false;
     "sure-zooms" = false;
   };
-
-in
-{
+in {
   config.services.yabai = {
     enable = true;
     package = pkgs.yabai;

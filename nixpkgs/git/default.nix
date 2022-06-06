@@ -1,5 +1,4 @@
-{ pkgs, ... }:
-{
+{pkgs, ...}: {
   programs.git = {
     enable = true;
     delta.enable = true;
@@ -7,16 +6,17 @@
       pull.rebase = true;
       init.defaultBranch = "main";
     };
-    ignores = [ ".DS_Store" ];
+    ignores = [".DS_Store"];
     # these are be defined in the nixos user definition
     # userName
     # userEmail
 
     aliases = with pkgs; {
-      ch = let name = "git_alias_chbranch"; in
-        "!${writeShellApplication {
+      ch = let
+        name = "git_alias_chbranch";
+      in "!${writeShellApplication {
         inherit name;
-        runtimeInputs = [ git gnugrep findutils fzf ];
+        runtimeInputs = [git gnugrep findutils fzf];
         text = ''
           git branch --list \
             | grep --invert-match --regexp '^* ' \
@@ -25,8 +25,9 @@
         '';
       }}/bin/${name}";
 
-      del = let name = "git_alias_delete_branches"; in
-        "!${writeShellApplication {
+      del = let
+        name = "git_alias_delete_branches";
+      in "!${writeShellApplication {
         inherit name;
         runtimeInputs = [git findutils fzf];
         text = ''
@@ -36,7 +37,6 @@
             | xargs git branch -D
         '';
       }}/bin/${name}";
-
     };
   };
 }

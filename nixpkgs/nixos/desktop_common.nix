@@ -1,6 +1,10 @@
-{ config, pkgs, lib, inputs, ... }:
-
 {
+  config,
+  pkgs,
+  lib,
+  inputs,
+  ...
+}: {
   nixpkgs.overlays = [
     (import inputs.emacs-overlay)
     (import inputs.wayland-overlay)
@@ -10,7 +14,7 @@
 
   hardware.opengl = {
     enable = true;
-    extraPackages = with pkgs; [ amdvlk rocm-opencl-icd ];
+    extraPackages = with pkgs; [amdvlk rocm-opencl-icd];
     driSupport = true;
   };
 

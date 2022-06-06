@@ -1,10 +1,10 @@
-{ pkgs, ... }:
-
-let
+{pkgs, ...}: let
   inherit (pkgs.stdenv.hostPlatform) isLinux;
-in
-{
-  home.packages = with pkgs; if isLinux then [ libsecret mu ] else [ ];
+in {
+  home.packages = with pkgs;
+    if isLinux
+    then [libsecret mu]
+    else [];
 
   programs.mu.enable = true;
   programs.msmtp.enable = true;
@@ -15,8 +15,8 @@ in
     '';
     groups = {
       personal-inboxes = {
-        personal = [ ];
-        icloud = [ ];
+        personal = [];
+        icloud = [];
       };
     };
   };

@@ -1,10 +1,11 @@
-{ config, pkgs, lib, ... }:
-
-let
-  wallpapers = "${config.home.homeDirectory}/dotfiles/nixpkgs/sway/wallpapers";
-
-in
 {
+  config,
+  pkgs,
+  lib,
+  ...
+}: let
+  wallpapers = "${config.home.homeDirectory}/dotfiles/nixpkgs/sway/wallpapers";
+in {
   imports = [
     ./kanshi.nix
     ./keybindings.nix
@@ -15,11 +16,11 @@ in
 
   config.wayland.windowManager.sway = {
     enable = true;
-    config.bars = [ ];
+    config.bars = [];
     config.floating.criteria = [
-      { app_id = "pavucontrol"; }
-      { app_id = "zenity"; }
-      { class = ".zoom"; }
+      {app_id = "pavucontrol";}
+      {app_id = "zenity";}
+      {class = ".zoom";}
     ];
     config.floating.titlebar = true;
     config.focus.mouseWarping = true;
@@ -29,7 +30,7 @@ in
     config.input."*".natural_scroll = "enabled";
     config.input."type:touchpad".tap = "enabled";
     config.output."*".bg = "${wallpapers}/1.jpg fill";
-    config.startup = [ ];
+    config.startup = [];
     config.workspaceAutoBackAndForth = true;
     wrapperFeatures.base = true;
     wrapperFeatures.gtk = true;
@@ -42,7 +43,6 @@ in
       for_window [app_id="scratch_terminal"] move scratchpad, resize set 800 610
       exec ${pkgs.alacritty}/bin/alacritty --title=scratch_terminal
     '';
-
   };
 
   # notifications daemon

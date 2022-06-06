@@ -1,10 +1,11 @@
-{ pkgs, inputs, ... }:
-let
-  userName = "chris-focus";
-  sure = import ../../sure { inherit pkgs inputs; };
-
-in
 {
+  pkgs,
+  inputs,
+  ...
+}: let
+  userName = "chris-focus";
+  sure = import ../../sure {inherit pkgs inputs;};
+in {
   users.users = {
     "${userName}" = {
       isNormalUser = true;
@@ -22,7 +23,7 @@ in
     wrapperFeatures.gtk = true;
   };
 
-  home-manager.users."${userName}" = { pkgs, ... }: {
+  home-manager.users."${userName}" = {pkgs, ...}: {
     home = {
       stateVersion = "21.05";
       username = userName;
@@ -44,7 +45,6 @@ in
       ../../neovim
       ../../nerdfonts
       ../../passhole
-      ../../personal_scripts
       ../../python
       ../../shell
       ../../sway
@@ -54,5 +54,4 @@ in
       sure
     ];
   };
-
 }

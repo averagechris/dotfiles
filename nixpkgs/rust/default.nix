@@ -1,5 +1,7 @@
-{ config, pkgs, ... }:
-
 {
-  home.packages = with pkgs; [ cargo ];
+  config,
+  pkgs,
+  ...
+}: {
+  home.packages = with pkgs; [cargo];
 }
