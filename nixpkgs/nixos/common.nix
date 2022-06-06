@@ -1,6 +1,10 @@
-{ config, pkgs, lib, inputs, ... }:
-
 {
+  config,
+  pkgs,
+  lib,
+  inputs,
+  ...
+}: {
   nix = {
     package = pkgs.nixFlakes;
     settings.substituters = [
@@ -11,11 +15,12 @@
     settings.trusted-public-keys = [
       "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
       "nixpkgs-wayland.cachix.org-1:3lwxaILxMRkVhehr5StQprHdEo4IrE8sRho9R9HOLYA="
+      "averagechris-dotfiles.cachix.org-1:VwJkl5dG1+xGDY5x884mH/kVwwpgwBAdBKIF3BZiia4="
     ];
     extraOptions = ''
       experimental-features = nix-command flakes
     '';
-    trustedUsers = [ "@wheel" ];
+    trustedUsers = ["@wheel"];
   };
 
   nixpkgs.config.allowUnfree = true;

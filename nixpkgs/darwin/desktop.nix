@@ -1,5 +1,8 @@
-{ config, pkgs, ... }:
 {
+  config,
+  pkgs,
+  ...
+}: {
   system.defaults.NSGlobalDomain.AppleKeyboardUIMode = 3;
   system.defaults.NSGlobalDomain.NSAutomaticCapitalizationEnabled = false;
   system.defaults.NSGlobalDomain.NSAutomaticDashSubstitutionEnabled = false;

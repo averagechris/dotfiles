@@ -2,11 +2,11 @@
 # yabai is a macos tiling window manager
 # https://github.com/koekeishiya/yabai
 #########################################
-
-{ pkgs, lib, ... }:
-
-let
-
+{
+  pkgs,
+  lib,
+  ...
+}: let
   utils = import ../utils pkgs;
 
   yabai = {
@@ -42,18 +42,26 @@ let
   yabaiify = utils.stringify {
     mkKey = k: "yabai -m config ${k}";
     mkValue = v:
-      if lib.isBool v then (if v then "on" else "off")
-      else lib.generators.mkValueStringDefault { } v;
+      if lib.isBool v
+      then
+        (
+          if v
+          then "on"
+          else "off"
+        )
+      else lib.generators.mkValueStringDefault {} v;
   };
 
   yabaiifyRules = utils.stringify {
     mkKey = k: "yabai -m rule --add app='^${k}$'";
-    mkValue = v: "manage=${if v then "on" else "off"}";
+    mkValue = v: "manage=${
+      if v
+      then "on"
+      else "off"
+    }";
   };
-
-in
-{
-  home.packages = [ pkgs.yabai ];
+in {
+  home.packages = [pkgs.yabai];
 
   xdg.configFile."yabai/yabairc".text = ''
     #!/usr/bin/env sh

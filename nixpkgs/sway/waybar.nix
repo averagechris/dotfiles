@@ -1,5 +1,4 @@
-{ pkgs, ... }:
-{
+{pkgs, ...}: {
   programs.waybar = {
     enable = true;
     systemd.enable = true;
@@ -9,9 +8,9 @@
         layer = "top";
         position = "top";
         height = 24;
-        modules-left = [ "clock" "custom/media" ];
-        modules-center = [ "sway/mode" "sway/workspaces" ];
-        modules-right = [ "idle_inhibitor" "pulseaudio" "network" "bluetooth" "battery" ];
+        modules-left = ["clock" "custom/media"];
+        modules-center = ["sway/mode" "sway/workspaces"];
+        modules-right = ["idle_inhibitor" "pulseaudio" "network" "bluetooth" "battery"];
         modules = {
           "sway/workspaces" = {
             disable-scroll = true;
@@ -38,7 +37,7 @@
               critical = 10;
             };
             format = "{icon}";
-            format-icons = [ "" "" "" "" "" ];
+            format-icons = ["" "" "" "" ""];
             tooltip-format = ''
               {capacity}%
               {timeTo}
@@ -64,7 +63,7 @@
               phone = "";
               portable = "";
               car = "";
-              default = [ "" "" ];
+              default = ["" ""];
             };
             on-click = "pavucontrol";
           };
@@ -80,24 +79,25 @@
             format = "🎵 {}";
             max-length = 40;
             interval = 30; # Remove this if your script is endless and write in loop
-            exec = with pkgs; writeShellApplication {
-              name = "waybar_media_play_pause_toggler";
-              runtimeInputs = [ playerctl ];
-              text = ''
-                player_status=$(playerctl status 2>/dev/null)
+            exec = with pkgs;
+              writeShellApplication {
+                name = "waybar_media_play_pause_toggler";
+                runtimeInputs = [playerctl];
+                text = ''
+                  player_status=$(playerctl status 2>/dev/null)
 
-                if [ "$player_status" = "Playing" ]; then
-                  echo "$(playerctl metadata artist) - $(playerctl metadata title)"
+                  if [ "$player_status" = "Playing" ]; then
+                    echo "$(playerctl metadata artist) - $(playerctl metadata title)"
 
-                elif [ "$player_status" = "Paused" ]; then
-                  echo " $(playerctl metadata artist) - $(playerctl metadata title)"
+                  elif [ "$player_status" = "Paused" ]; then
+                    echo " $(playerctl metadata artist) - $(playerctl metadata title)"
 
-                else
-                  echo "$(playerctl status): $(playerctl metadata title)"
+                  else
+                    echo "$(playerctl status): $(playerctl metadata title)"
 
-                fi
-              '';
-            };
+                  fi
+                '';
+              };
           };
         };
       }

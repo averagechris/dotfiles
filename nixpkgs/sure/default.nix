@@ -1,9 +1,13 @@
-{ pkgs, inputs, ... }:
-
-let
-  sli = import ./sli.nix { inherit pkgs; inherit (inputs) sli-repo; };
-in
 {
+  pkgs,
+  inputs,
+  ...
+}: let
+  sli = import ./sli.nix {
+    inherit pkgs;
+    inherit (inputs) sli-repo;
+  };
+in {
   imports = [
     ./aws.nix
   ];

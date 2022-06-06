@@ -2,11 +2,8 @@
 # skhd is a macos hotkey daemon
 # https://github.com/koekeishiya/skhd
 #####################################
-
-{ pkgs, ... }:
-
-{
-  home.packages = [ pkgs.skhd ];
+{pkgs, ...}: {
+  home.packages = [pkgs.skhd];
 
   xdg.configFile."skhd/skhdrc".text = ''
     #############################################################

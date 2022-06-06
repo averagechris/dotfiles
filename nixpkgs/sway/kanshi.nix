@@ -1,6 +1,9 @@
-{ config, pkgs, lib, ... }:
-
-let
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}: let
   scrnXps13 = {
     criteria = "eDP-1";
     status = "enable";
@@ -21,9 +24,7 @@ let
     position = "0,0";
     transform = "270";
   };
-
-in
-{
+in {
   config.services.kanshi = {
     enable = true;
     profiles = {
@@ -37,7 +38,7 @@ in
           "${pkgs.sway}/bin/swaymsg workspace 1, move workspace to ${scrnXps13.criteria}"
         ];
         outputs = [
-          (scrnXps13 // { status = "disable"; })
+          (scrnXps13 // {status = "disable";})
           scrnDell43
           scrnDell27
         ];
@@ -47,8 +48,8 @@ in
           # TODO: is full res not supported via HDMI for some reason?
           # Dell27's max res available is only 1080 wide, so we have to adjust the position
           # of Dell43 to match
-          (scrnDell43 // { position = "1080,0"; })
-          (scrnDell27 // { mode = "1920x1080@60.000Hz"; })
+          (scrnDell43 // {position = "1080,0";})
+          (scrnDell27 // {mode = "1920x1080@60.000Hz";})
         ];
       };
     };

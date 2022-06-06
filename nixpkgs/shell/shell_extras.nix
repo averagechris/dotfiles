@@ -1,7 +1,8 @@
-{ pkgs }: with pkgs; rec {
+{pkgs}:
+with pkgs; rec {
   video_compress = writeShellApplication {
     name = "video_compress";
-    runtimeInputs = [ handbrake ];
+    runtimeInputs = [handbrake];
     text = ''
       handbrake -i "$1" -o "$2" \
         -e x264 \
@@ -23,7 +24,7 @@
 
   extract = writeShellApplication {
     name = "extract";
-    runtimeInputs = [ gnutar bzip2 unrar unzip p7zip gzip ];
+    runtimeInputs = [gnutar bzip2 unrar unzip p7zip gzip];
     text = ''
       if [ -f "$1" ] ; then
           case $1 in
@@ -48,7 +49,7 @@
 
   rwhich = writeShellApplication {
     name = "rwhich";
-    runtimeInputs = [ which ];
+    runtimeInputs = [which];
     text = ''readlink -f "$(which "$1")"'';
   };
 
@@ -57,7 +58,7 @@
     runtimeInputs = [
       gnugrep
       fzf
-      (callPackage ../passhole/passhole.nix { })
+      (callPackage ../passhole/passhole.nix {})
     ];
     text = ''
       ph show --field password "$(ph grep -i . | fzf)"
@@ -66,7 +67,7 @@
 
   trim = writeShellApplication {
     name = "trim";
-    runtimeInputs = [ gnused ];
+    runtimeInputs = [gnused];
     text = ''
       sed '/^$/d' \
         | sed -e 's/^ *//' \
@@ -76,7 +77,7 @@
 
   list_systemd_services = writeShellApplication rec {
     name = "list_systemd_services";
-    runtimeInputs = [ bemenu fzf gawk ];
+    runtimeInputs = [bemenu fzf gawk];
     text = ''
       USER_OR_SYSTEM="user"
       FUZZY_FINDER="fzf --multi --exact --reverse --tiebreak=index"
@@ -126,13 +127,13 @@
 
   bemenu_list_systemd_services = writeShellApplication {
     name = "bemenu_list_systemd_services";
-    runtimeInputs = [ list_systemd_services ];
+    runtimeInputs = [list_systemd_services];
     text = "list_systemd_services --fuzzy-finder bemenu --ignorecase --center --margin 10 --list 10";
   };
 
   try_restart_systemd_user_services = writeShellApplication {
     name = "try_restart_systemd_user_services";
-    runtimeInputs = [ list_systemd_services ];
+    runtimeInputs = [list_systemd_services];
     text = ''
       CHOICES="$(list_systemd_services "$@")"
       if [ -n "$CHOICES" ]; then
@@ -143,8 +144,7 @@
 
   bemenu_try_restart_systemd_user_services = writeShellApplication {
     name = "bemenu_try_restart_systemd_user_services";
-    runtimeInputs = [ try_restart_systemd_user_services ];
+    runtimeInputs = [try_restart_systemd_user_services];
     text = "try_restart_systemd_user_services --fuzzy-finder bemenu --ignorecase --center --margin 10 --list 10";
   };
-
 }

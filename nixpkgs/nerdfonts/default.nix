@@ -1,5 +1,4 @@
-{ pkgs, ... }:
-{
+{pkgs, ...}: {
   config.xdg.dataFile.".fonts/nerdfonts" = {
     source = pkgs.nerdfonts.override {
       fonts = [

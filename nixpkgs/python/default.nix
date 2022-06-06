@@ -1,21 +1,20 @@
-{ pkgs, ... }:
-
-let
+{pkgs, ...}: let
   utils = import ../utils pkgs;
   pythonPackagesForLinux =
-    if pkgs.stdenv.hostPlatform.isLinux then with pkgs.python39Packages; [
-      ipython
-      python
-    ] else [ ];
+    if pkgs.stdenv.hostPlatform.isLinux
+    then
+      with pkgs.python39Packages; [
+        ipython
+        python
+      ]
+    else [];
 
   flake8GlobalConfig = {
     flake8 = {
       max-line-length = 120;
     };
   };
-
-in
-{
+in {
   home.packages = pythonPackagesForLinux;
 
   xdg.configFile.flake8.text = ''

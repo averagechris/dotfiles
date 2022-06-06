@@ -1,6 +1,8 @@
-{ pkgs, config, ... }:
-
-let
+{
+  pkgs,
+  config,
+  ...
+}: let
   inherit (pkgs.stdenv.hostPlatform) isLinux;
   pkgs-markdownMode = with pkgs; [
     mdl
@@ -22,15 +24,13 @@ let
   ];
 
   pkgs-misc = with pkgs; [
-    (aspellWithDicts (dicts: with dicts; [ en en-computers en-science ]))
+    (aspellWithDicts (dicts: with dicts; [en en-computers en-science]))
     fd
     ripgrep
     sqlite
     wordnet
   ];
-
-in
-{
+in {
   config.home.packages = pkgs-markdownMode ++ pkgs-pythonMode ++ pkgs-shellMode ++ pkgs-misc;
 
   config.programs.direnv = {
@@ -49,7 +49,7 @@ in
           message-sendmail-extra-arguments '("--read-envelope-from")
           message-send-mail-function 'message-send-mail-with-sendmail)
     '';
-    extraPackages = [ emacs-all-the-icons-fonts pkgs.mu ];
+    extraPackages = [emacs-all-the-icons-fonts pkgs.mu];
     emacsPackage = emacsPgtkNativeComp;
   };
 

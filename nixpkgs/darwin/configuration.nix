@@ -1,8 +1,10 @@
-{ config, pkgs, ... }:
-let
-  pii = import ./pii.nix;
-in
 {
+  config,
+  pkgs,
+  ...
+}: let
+  pii = import ./pii.nix;
+in {
   imports = [
     <home-manager/nix-darwin>
 
@@ -28,8 +30,8 @@ in
 
   home-manager.useUserPackages = true;
   home-manager.useGlobalPkgs = true;
-  home-manager.users."${pii.userName}" = { pkgs, ... }: {
-    imports = [ ../home.nix ];
+  home-manager.users."${pii.userName}" = {pkgs, ...}: {
+    imports = [../home.nix];
   };
 
   # makes nix-darwin put handling in /etc/static/zsh* files so that NIX_PATH correctly
@@ -43,10 +45,12 @@ in
 
   # enable launchd daemon for mbsync to sync and index emails if emails are configured in home-manager config
   launchd.user.agents.mbsync =
-    if config.home-manager.users."${pii.userName}".accounts.email.accounts != { } then {
+    if config.home-manager.users."${pii.userName}".accounts.email.accounts != {}
+    then {
       command = "${pkgs.isync}/bin/mbsync -a && mu ${pkgs.mu}/bin/mu index";
       serviceConfig.StartInterval = 60 * 5;
-    } else { };
+    }
+    else {};
 
   services.lorri.enable = true;
 }

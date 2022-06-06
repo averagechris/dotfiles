@@ -1,0 +1,20 @@
+name: "Nix Flake Check"
+on:
+  push:
+    branches-ignore:
+      - main
+jobs:
+  tests:
+    strategy:
+      matrix:
+        # os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v3
+    - uses: cachix/install-nix-action@v17
+    - uses: cachix/cachix-action@v10
+      with:
+        name: averagechris-dotfiles
+        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+    - run: nix flake check --extra-access-tokens github.com='${{ secrets.REPO_TOKEN }}'

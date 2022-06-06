@@ -1,6 +1,8 @@
-{ config, pkgs, ... }:
-
 {
+  config,
+  pkgs,
+  ...
+}: {
   config.services.skhd = {
     enable = true;
     # package = pkgs.skhd;

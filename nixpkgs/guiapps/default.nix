@@ -1,17 +1,18 @@
-{ config, pkgs, ... }:
-
-let
+{
+  config,
+  pkgs,
+  ...
+}: let
   inherit (pkgs.stdenv.hostPlatform) isLinux;
   zoom-us = pkgs.zoom-us.overrideAttrs (old: {
-    postFixup = old.postFixup + ''
-      wrapProgram $out/bin/zoom-us --unset XDG_SESSION_TYPE
-      wrapProgram $out/bin/zoom --unset XDG_SESSION_TYPE
-    '';
+    postFixup =
+      old.postFixup
+      + ''
+        wrapProgram $out/bin/zoom-us --unset XDG_SESSION_TYPE
+        wrapProgram $out/bin/zoom --unset XDG_SESSION_TYPE
+      '';
   });
-
-in
-{
-
+in {
   xdg.configFile."zoomus.conf".text = ''
     [General]
     GeoLocale=system
@@ -66,11 +67,13 @@ in
   '';
 
   home.packages =
-    if isLinux then
+    if isLinux
+    then
       with pkgs; [
         keepass
         signal-desktop
         write_stylus
         zoom-us
-      ] else [ ];
+      ]
+    else [];
 }

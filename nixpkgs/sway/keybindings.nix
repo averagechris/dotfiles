@@ -1,8 +1,11 @@
-{ config, pkgs, ... }:
-let
+{
+  config,
+  pkgs,
+  ...
+}: let
   cfg = config.wayland.windowManager.sway.config;
-  nwg-drawer = (pkgs.callPackage ./tmp_nwg-drawer.nix { });
-  nwg-bar = (pkgs.callPackage ./nwg-bar.nix { });
+  nwg-drawer = pkgs.callPackage ./tmp_nwg-drawer.nix {};
+  nwg-bar = pkgs.callPackage ./nwg-bar.nix {};
   pactl = "${pkgs.pulseaudio}/bin/pactl";
   execNwgBar = "exec ${nwg-bar}/bin/nwg-bar";
   execPlayerctl = "exec ${pkgs.playerctl}/bin/playerctl";
@@ -18,63 +21,71 @@ let
     "Return" = "mode default";
   };
   setVolume = "exec ${pactl} set-sink-volume $(${pactl} list short sinks | grep RUNNING | cut -f 1)";
-
-in
-{
+in {
   config.wayland.windowManager.sway.config.modes = {
     disabled_mode = {
       # a mode for ignoring all keybindings until the compose mode keys are
       # repeated.
       "Shift+space" = "mode default";
     };
-    compose_mode = {
-      # a mode for entering other modes, or inserting commands based on
-      # sequential key presses
-      # e.g. Shift+space -> k -> s  == bemenu_try_restart_systemd_user_services
-      f = "fullscreen toggle; mode default;";
-      k = "mode kill_mode";
-      r = "mode resize_mode";
-      t = ''exec swaymsg [app_id="scratch_terminal"] scratchpad show; mode default;'';
-      v = "mode volume_mode";
-      "Shift+space" = "mode disabled_mode";
-    } // leaveModeKeys;
-    kill_mode = {
-      "Shift+q" = "exec swaymsg exit";
-      q = "${execNwgBar}";
-      r = "exec systemctl reboot -i";
-      s = "exec bemenu_try_restart_systemd_user_services; mode default;";
-      w = "kill; mode default;";
-    } // leaveModeKeys;
-    resize_mode = {
-      "${cfg.up}" = "resize shrink width 15 px";
-      "${cfg.down}" = "resize grow height 15 px";
-      "${cfg.left}" = "resize shrink height 15 px";
-      "${cfg.right}" = "resize grow width 15 px";
-      "Shift+${cfg.up}" = "resize shrink width 45 px";
-      "Shift+${cfg.down}" = "resize grow height 45 px";
-      "Shift+${cfg.left}" = "resize shrink height 45 px";
-      "Shift+${cfg.right}" = "resize grow width 45 px";
-    } // leaveModeKeys;
-    volume_mode = {
-      "${cfg.up}" = "${setVolume} +1%";
-      "Shift+${cfg.up}" = "${setVolume} +10%";
-      "${cfg.down}" = "${setVolume} -1%";
-      "Shift+${cfg.down}" = "${setVolume} -10%";
-    } // leaveModeKeys;
-    workspace_mode = {
-      "0" = "workspace 0";
-      "1" = "workspace 1";
-      "2" = "workspace 2";
-      "3" = "workspace 3";
-      "4" = "workspace 4";
-      "5" = "workspace 5";
-      "6" = "workspace 6";
-      "7" = "workspace 7";
-      "8" = "workspace 8";
-      "9" = "workspace 9";
-      "${cfg.right}" = "workspace next";
-      "${cfg.left}" = "workspace prev";
-    } // leaveModeKeys;
+    compose_mode =
+      {
+        # a mode for entering other modes, or inserting commands based on
+        # sequential key presses
+        # e.g. Shift+space -> k -> s  == bemenu_try_restart_systemd_user_services
+        f = "fullscreen toggle; mode default;";
+        k = "mode kill_mode";
+        r = "mode resize_mode";
+        t = ''exec swaymsg [app_id="scratch_terminal"] scratchpad show; mode default;'';
+        v = "mode volume_mode";
+        "Shift+space" = "mode disabled_mode";
+      }
+      // leaveModeKeys;
+    kill_mode =
+      {
+        "Shift+q" = "exec swaymsg exit";
+        q = "${execNwgBar}";
+        r = "exec systemctl reboot -i";
+        s = "exec bemenu_try_restart_systemd_user_services; mode default;";
+        w = "kill; mode default;";
+      }
+      // leaveModeKeys;
+    resize_mode =
+      {
+        "${cfg.up}" = "resize shrink width 15 px";
+        "${cfg.down}" = "resize grow height 15 px";
+        "${cfg.left}" = "resize shrink height 15 px";
+        "${cfg.right}" = "resize grow width 15 px";
+        "Shift+${cfg.up}" = "resize shrink width 45 px";
+        "Shift+${cfg.down}" = "resize grow height 45 px";
+        "Shift+${cfg.left}" = "resize shrink height 45 px";
+        "Shift+${cfg.right}" = "resize grow width 45 px";
+      }
+      // leaveModeKeys;
+    volume_mode =
+      {
+        "${cfg.up}" = "${setVolume} +1%";
+        "Shift+${cfg.up}" = "${setVolume} +10%";
+        "${cfg.down}" = "${setVolume} -1%";
+        "Shift+${cfg.down}" = "${setVolume} -10%";
+      }
+      // leaveModeKeys;
+    workspace_mode =
+      {
+        "0" = "workspace 0";
+        "1" = "workspace 1";
+        "2" = "workspace 2";
+        "3" = "workspace 3";
+        "4" = "workspace 4";
+        "5" = "workspace 5";
+        "6" = "workspace 6";
+        "7" = "workspace 7";
+        "8" = "workspace 8";
+        "9" = "workspace 9";
+        "${cfg.right}" = "workspace next";
+        "${cfg.left}" = "workspace prev";
+      }
+      // leaveModeKeys;
   };
 
   config.wayland.windowManager.sway.config.keybindings = {

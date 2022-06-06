@@ -1,13 +1,13 @@
-{ lib
-, buildGoModule
-, fetchFromGitHub
-, pkg-config
-, cairo
-, gobject-introspection
-, gtk3
-, gtk-layer-shell
+{
+  lib,
+  buildGoModule,
+  fetchFromGitHub,
+  pkg-config,
+  cairo,
+  gobject-introspection,
+  gtk3,
+  gtk-layer-shell,
 }:
-
 buildGoModule rec {
   pname = "nwg-bar";
   version = "0.0.1";
@@ -21,9 +21,9 @@ buildGoModule rec {
 
   vendorSha256 = "sha256-HyrjquJ91ddkyS8JijHd9HjtfwSQykXCufa2wzl8RNk=";
 
-  nativeBuildInputs = [ pkg-config ];
+  nativeBuildInputs = [pkg-config];
 
-  buildInputs = [ cairo gobject-introspection gtk3 gtk-layer-shell ];
+  buildInputs = [cairo gobject-introspection gtk3 gtk-layer-shell];
 
   meta = with lib; {
     description = "GTK3-based button bar for sway and other wlroots-based compositors";

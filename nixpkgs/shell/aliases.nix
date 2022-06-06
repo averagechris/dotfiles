@@ -1,9 +1,7 @@
-{ pkgs }:
-with pkgs;
-let
+{pkgs}:
+with pkgs; let
   inherit (stdenv.hostPlatform) isLinux;
-in
-{
+in {
   # warning, verbose
   cp = "cp -iv";
 
@@ -15,16 +13,14 @@ in
 
   # replecate pbcopy and pbpaste from macos everywhere 😎👍
   pbcopy =
-    if isLinux then
-      "${wl-clipboard}/bin/wl-copy"
-    else
-      "pbcopy";
+    if isLinux
+    then "${wl-clipboard}/bin/wl-copy"
+    else "pbcopy";
 
   pbpaste =
-    if isLinux then
-      "${wl-clipboard}/bin/wl-paste"
-    else
-      "pbpaste";
+    if isLinux
+    then "${wl-clipboard}/bin/wl-paste"
+    else "pbpaste";
 
   nixos-switch = "nixos-rebuild switch --use-remote-sudo";
 

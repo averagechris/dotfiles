@@ -1,14 +1,16 @@
-{ config, pkgs, ... }:
-
 {
-  environment.systemPackages = [ pkgs.tailscale ];
+  config,
+  pkgs,
+  ...
+}: {
+  environment.systemPackages = [pkgs.tailscale];
   services.tailscale.enable = true;
 
   networking.firewall = {
     enable = true;
-    trustedInterfaces = [ "tailscale0" ];
-    allowedUDPPorts = [ config.services.tailscale.port ];
-    allowedTCPPorts = [ 22 ];
+    trustedInterfaces = ["tailscale0"];
+    allowedUDPPorts = [config.services.tailscale.port];
+    allowedTCPPorts = [22];
   };
 
   networking.nameservers = [
@@ -22,9 +24,9 @@
     description = "Automatic connection to Tailscale";
 
     # make sure tailscale is running before trying to connect to tailscale
-    after = [ "network-pre.target" "tailscale.service" ];
-    wants = [ "network-pre.target" "tailscale.service" ];
-    wantedBy = [ "multi-user.target" ];
+    after = ["network-pre.target" "tailscale.service"];
+    wants = ["network-pre.target" "tailscale.service"];
+    wantedBy = ["multi-user.target"];
 
     # set this service as a oneshot job
     serviceConfig.Type = "oneshot";
@@ -44,5 +46,4 @@
       ${tailscale}/bin/tailscale up -authkey tskey-PASTE-ONE-SHOT-KEY
     '';
   };
-
 }

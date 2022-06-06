@@ -1,5 +1,9 @@
-{ config, pkgs, lib, ... }:
 {
+  config,
+  pkgs,
+  lib,
+  ...
+}: {
   networking.networkmanager.enable = true;
 
   # The global useDHCP flag is deprecated, therefore explicitly set to false here.

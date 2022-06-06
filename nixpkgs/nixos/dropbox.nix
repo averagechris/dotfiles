@@ -1,17 +1,16 @@
-{ pkgs, ... }:
-{
+{pkgs, ...}: {
   environment.systemPackages = with pkgs; [
     dropbox-cli
   ];
 
   networking.firewall = {
-    allowedTCPPorts = [ 17500 ];
-    allowedUDPPorts = [ 17500 ];
+    allowedTCPPorts = [17500];
+    allowedUDPPorts = [17500];
   };
 
   systemd.user.services.dropbox = {
     description = "Dropbox";
-    wantedBy = [ "graphical-session.target" ];
+    wantedBy = ["graphical-session.target"];
     environment = {
       QT_PLUGIN_PATH = "/run/current-system/sw/" + pkgs.qt5.qtbase.qtPluginPrefix;
       QML2_IMPORT_PATH = "/run/current-system/sw/" + pkgs.qt5.qtbase.qtQmlPrefix;
