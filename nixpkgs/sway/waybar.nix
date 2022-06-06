@@ -80,7 +80,24 @@
             format = "🎵 {}";
             max-length = 40;
             interval = 30; # Remove this if your script is endless and write in loop
-            exec = pkgs.writeShellScript "mediaplayer" (builtins.readFile ./playerctl.sh);
+            exec = with pkgs; writeShellApplication {
+              name = "waybar_media_play_pause_toggler";
+              runtimeInputs = [ playerctl ];
+              text = ''
+                player_status=$(playerctl status 2>/dev/null)
+
+                if [ "$player_status" = "Playing" ]; then
+                  echo "$(playerctl metadata artist) - $(playerctl metadata title)"
+
+                elif [ "$player_status" = "Paused" ]; then
+                  echo " $(playerctl metadata artist) - $(playerctl metadata title)"
+
+                else
+                  echo "$(playerctl status): $(playerctl metadata title)"
+
+                fi
+              '';
+            };
           };
         };
       }
