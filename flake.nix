@@ -127,6 +127,7 @@
     packages.x86_64-linux.default = helloDotfiles;
 
     checks.x86_64-linux = {
+      inherit (self.outputs.nixosConfigurations) thelio-nixos xps-nixos tootsie;
       pre-commit = pre-commit-hooks.lib.x86_64-linux.run {
         src = ./.;
         hooks = {
