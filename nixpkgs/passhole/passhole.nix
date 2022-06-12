@@ -1,5 +1,5 @@
 {pkgs}:
-with pkgs.python39Packages; let
+with pkgs.python310Packages; let
   pykeepass_cache = buildPythonPackage rec {
     pname = "pykeepass-cache";
     version = "2.0.3";
