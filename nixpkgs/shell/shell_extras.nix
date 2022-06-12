@@ -147,4 +147,23 @@ with pkgs; rec {
     runtimeInputs = [try_restart_systemd_user_services];
     text = "try_restart_systemd_user_services --fuzzy-finder bemenu --ignorecase --center --margin 10 --list 10";
   };
+
+  flatten_scrape_results = writeShellApplication {
+    name = "flatten_scrape_results";
+    runtimeInputs = [coreutils fd];
+    text = ''
+      fd --type directory --max-depth 1 --absolute-path | \
+        while read -r dir; do
+          pushd "$dir"
+            fd --type file --exec mv '{}' .
+            fd --type directory --exec rm -r '{}'
+            mkdir pics
+            fd --extension jpg \
+               --extension png \
+               --extension gif \
+               --exec mv '{}' "$dir/pics"
+          popd
+      done;
+    '';
+  };
 }
