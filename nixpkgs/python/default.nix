@@ -3,7 +3,7 @@
   pythonPackagesForLinux =
     if pkgs.stdenv.hostPlatform.isLinux
     then
-      with pkgs.python39Packages; [
+      with pkgs.python310Packages; [
         ipython
         python
       ]

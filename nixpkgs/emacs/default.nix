@@ -8,10 +8,10 @@
     mdl
     pandoc
     proselint
-    python39Packages.grip
+    python310Packages.grip
   ];
 
-  pkgs-pythonMode = with pkgs.python39Packages; [
+  pkgs-pythonMode = with pkgs.python310Packages; [
     black
     isort
     pkgs.poetry
