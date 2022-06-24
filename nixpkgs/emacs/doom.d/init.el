@@ -91,8 +91,7 @@
        nix
        org
        (python +lsp
-               +pyright
-               +poetry)
+               +pyright)
        rest
        (rust +lsp)
        sh

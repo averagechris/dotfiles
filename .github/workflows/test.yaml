@@ -13,8 +13,15 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - uses: cachix/install-nix-action@v17
+      with:
+        extra_nix_config: |
+          access-tokens = github.com=${{ secrets.REPO_TOKEN }}
     - uses: cachix/cachix-action@v10
       with:
         name: averagechris-dotfiles
         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-    - run: nix flake check --extra-access-tokens github.com='${{ secrets.REPO_TOKEN }}'
+        extraPullNames: nix-community, nixpkgs-wayland
+    - run: nix build .#nixosConfigurations.thelio-nixos.config.system.build.toplevel
+    - run: nix build .#nixosConfigurations.xps-nixos.config.system.build.toplevel
+    - run: nix build .#nixosConfigurations.tootsie.config.system.build.toplevel
+    - run: nix flake check
