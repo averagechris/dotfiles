@@ -8,10 +8,6 @@
 (after! treemacs (setq +treemacs-git-mode 'deferred))
 
 
-(add-hook! python-mode
-  (setq poetry-tracking-strategy 'projectile))
-
-
 ;; ;;;;;;;;;;;;;
 ;; KEYBINDINGS
 ;; ;;;;;;;;;;;;;
@@ -22,7 +18,6 @@
 
 ;; while in python mode
 (map! :leader :localleader :mode python-mode
-      :desc "Start poetry transient buffer" :nv "p" #'poetry
       :desc "Insert breakpoint with context" :n "b" #'(lambda ()
                                                         (interactive)
                                                         (progn

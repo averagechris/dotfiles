@@ -14,7 +14,6 @@
   pkgs-pythonMode = with pkgs.python310Packages; [
     black
     isort
-    pkgs.poetry
     pyflakes
     pkgs.nodePackages.pyright
   ];
