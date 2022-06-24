@@ -18,3 +18,6 @@ jobs:
         name: averagechris-dotfiles
         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
     - run: nix flake check --extra-access-tokens github.com='${{ secrets.REPO_TOKEN }}'
+    - run: nix build .#nixosConfigurations.thelio-nixos.config.system.build.toplevel --extra-access-tokens github.com='${{ secrets.REPO_TOKEN }}'
+    - run: nix build .#nixosConfigurations.xps-nixos.config.system.build.toplevel --extra-access-tokens github.com='${{ secrets.REPO_TOKEN }}'
+    - run: nix build .#nixosConfigurations.tootsie.config.system.build.toplevel --extra-access-tokens github.com='${{ secrets.REPO_TOKEN }}'

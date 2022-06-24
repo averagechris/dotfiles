@@ -52,6 +52,70 @@
         echo have a nice day 😎
       '';
     };
+
+    thelio-nixos = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      specialArgs = {inherit inputs overlays;};
+      modules = [
+        ./nixpkgs/nixos/thelio
+        nixos-hardware.nixosModules.system76
+        ./nixpkgs/nixos/common.nix
+        ./nixpkgs/nixos/desktop_common.nix
+        ./nixpkgs/nixos/graphical.nix
+        ./nixpkgs/nixos/greetd.nix
+        ./nixpkgs/nixos/networking.nix
+        ./nixpkgs/nixos/docker.nix
+        ./nixpkgs/nixos/sound.nix
+        ./nixpkgs/nixos/tailscale.nix
+        ./nixpkgs/nixos/users/chris.nix
+        ./nixpkgs/nixos/users/chris-focus.nix
+        home-manager.nixosModules.home-manager
+        {
+          home-manager.useGlobalPkgs = true;
+          home-manager.useUserPackages = true;
+        }
+      ];
+    };
+
+    xps-nixos = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      specialArgs = {inherit inputs overlays;};
+      modules = [
+        ./nixpkgs/nixos/xps
+        nixos-hardware.nixosModules.system76
+        ./nixpkgs/nixos/common.nix
+        ./nixpkgs/nixos/desktop_common.nix
+        ./nixpkgs/nixos/docker.nix
+        ./nixpkgs/nixos/graphical.nix
+        ./nixpkgs/nixos/greetd.nix
+        ./nixpkgs/nixos/networking.nix
+        ./nixpkgs/nixos/sound.nix
+        ./nixpkgs/nixos/tailscale.nix
+        ./nixpkgs/nixos/users/chris-focus.nix
+        ./nixpkgs/nixos/users/chris.nix
+        home-manager.nixosModules.home-manager
+        {
+          home-manager.useGlobalPkgs = true;
+          home-manager.useUserPackages = true;
+        }
+      ];
+    };
+
+    tootsie = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      specialArgs = {inherit inputs overlays;};
+      modules = [
+        ./nixpkgs/nixos/tootsie
+        ./nixpkgs/nixos/common.nix
+        ./nixpkgs/nixos/tailscale.nix
+        ./nixpkgs/nixos/users/chris-minimal.nix
+        home-manager.nixosModules.home-manager
+        {
+          home-manager.useGlobalPkgs = true;
+          home-manager.useUserPackages = true;
+        }
+      ];
+    };
   in {
     overlays = {
       emacs = emacs-overlay.overlay;
@@ -59,69 +123,7 @@
     };
 
     nixosConfigurations = {
-      thelio-nixos = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
-        specialArgs = {inherit inputs overlays;};
-        modules = [
-          ./nixpkgs/nixos/thelio
-          nixos-hardware.nixosModules.system76
-          ./nixpkgs/nixos/common.nix
-          ./nixpkgs/nixos/desktop_common.nix
-          ./nixpkgs/nixos/graphical.nix
-          ./nixpkgs/nixos/greetd.nix
-          ./nixpkgs/nixos/networking.nix
-          ./nixpkgs/nixos/docker.nix
-          ./nixpkgs/nixos/sound.nix
-          ./nixpkgs/nixos/tailscale.nix
-          ./nixpkgs/nixos/users/chris.nix
-          ./nixpkgs/nixos/users/chris-focus.nix
-          home-manager.nixosModules.home-manager
-          {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-          }
-        ];
-      };
-
-      xps-nixos = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
-        specialArgs = {inherit inputs overlays;};
-        modules = [
-          ./nixpkgs/nixos/xps
-          nixos-hardware.nixosModules.system76
-          ./nixpkgs/nixos/common.nix
-          ./nixpkgs/nixos/desktop_common.nix
-          ./nixpkgs/nixos/docker.nix
-          ./nixpkgs/nixos/graphical.nix
-          ./nixpkgs/nixos/greetd.nix
-          ./nixpkgs/nixos/networking.nix
-          ./nixpkgs/nixos/sound.nix
-          ./nixpkgs/nixos/tailscale.nix
-          ./nixpkgs/nixos/users/chris-focus.nix
-          ./nixpkgs/nixos/users/chris.nix
-          home-manager.nixosModules.home-manager
-          {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-          }
-        ];
-      };
-
-      tootsie = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
-        specialArgs = {inherit inputs overlays;};
-        modules = [
-          ./nixpkgs/nixos/tootsie
-          ./nixpkgs/nixos/common.nix
-          ./nixpkgs/nixos/tailscale.nix
-          ./nixpkgs/nixos/users/chris-minimal.nix
-          home-manager.nixosModules.home-manager
-          {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-          }
-        ];
-      };
+      inherit thelio-nixos xps-nixos tootsie;
     };
 
     packages.x86_64-linux.default = helloDotfiles;
