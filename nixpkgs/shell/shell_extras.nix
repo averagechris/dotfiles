@@ -173,9 +173,9 @@ with pkgs; rec {
     text = ''
       USER="$(whoami)" \
       loginctl kill-session \
-        $(loginctl list-sessions \
+        "$(loginctl list-sessions \
                    | grep "$USER" \
-                   | awk '{ print $1 }')
+                   | awk '{ print $1 }')"
     '';
   };
 }
