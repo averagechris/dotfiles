@@ -4,7 +4,7 @@ with pkgs; rec {
     name = "video_compress";
     runtimeInputs = [handbrake];
     text = ''
-      handbrake -i "$1" -o "$2" \
+      HandBrakeCLI -i "$1" -o "$2" \
         -e x264 \
         -q 18 \
         -a 1,1 \
