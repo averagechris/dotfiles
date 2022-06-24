@@ -166,4 +166,16 @@ with pkgs; rec {
       done;
     '';
   };
+
+  logout = writeShellApplication {
+    name = "logout";
+    runtimeInputs = [coreutils gawk gnugrep];
+    text = ''
+      USER="$(whoami)" \
+      loginctl kill-session \
+        $(loginctl list-sessions \
+                   | grep "$USER" \
+                   | awk '{ print $1 }')
+    '';
+  };
 }

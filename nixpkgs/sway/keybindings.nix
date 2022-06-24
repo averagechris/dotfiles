@@ -43,22 +43,21 @@ in {
       // leaveModeKeys;
     kill_mode =
       {
-        "Shift+q" = "exec swaymsg exit";
+        "Shift+q" = "exec logout";
         q = "${execNwgBar}";
         r = "exec systemctl reboot -i";
         s = "exec bemenu_try_restart_systemd_user_services; mode default;";
-        w = "kill; mode default;";
       }
       // leaveModeKeys;
     resize_mode =
       {
-        "${cfg.up}" = "resize shrink width 15 px";
-        "${cfg.down}" = "resize grow height 15 px";
-        "${cfg.left}" = "resize shrink height 15 px";
+        "${cfg.up}" = "resize grow height 15 px";
+        "${cfg.down}" = "resize shrink height 15 px";
+        "${cfg.left}" = "resize shrink width 15 px";
         "${cfg.right}" = "resize grow width 15 px";
-        "Shift+${cfg.up}" = "resize shrink width 45 px";
-        "Shift+${cfg.down}" = "resize grow height 45 px";
-        "Shift+${cfg.left}" = "resize shrink height 45 px";
+        "Shift+${cfg.up}" = "resize grow height 45 px";
+        "Shift+${cfg.down}" = "resize shrink height 45 px";
+        "Shift+${cfg.left}" = "resize shrink width 45 px";
         "Shift+${cfg.right}" = "resize grow width 45 px";
       }
       // leaveModeKeys;
@@ -155,7 +154,7 @@ in {
     # NOTE: to remove a window from scratch pad toggle floating
     # https://i3wm.org/docs/userguide.html#_scratchpad
 
-    "Shift+space" = "mode compose_mode";
+    "${cfg.modifier}+alt+space" = "mode compose_mode";
   };
 
   config.home.packages = [
