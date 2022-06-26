@@ -10,6 +10,7 @@
     settings.substituters = [
       "https://cache.nixos.org/"
       "https://nix-community.cachix.org"
+      "https://averagechris-dotfiles.cachix.org"
       "https://nixpkgs-wayland.cachix.org"
     ];
     settings.trusted-public-keys = [

@@ -30,6 +30,7 @@ in {
   # then aws eks update-config -name once-for-each-name-above --alias preferred-alias --profile once-for-each-profile
 
   config.home.packages = with pkgs; [
+    gnumake
     kubectl
     k9s
     slack

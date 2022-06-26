@@ -47,9 +47,12 @@
     pkgs = nixpkgs.legacyPackages.x86_64-linux;
     helloDotfiles = pkgs.writeShellApplication {
       name = "helloDotfiles";
+      runtimeInputs = [pkgs.coreutils];
       text = ''
+        printf "\n\n"
         echo 👋👋 hello from github:averagechris/dotfiles
         echo have a nice day 😎
+        printf "\n\n"
       '';
     };
 
@@ -116,6 +119,23 @@
         }
       ];
     };
+
+    taz = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      specialArgs = {inherit inputs overlays;};
+      modules = [
+        ./nixpkgs/nixos/taz
+        ./nixpkgs/nixos/common.nix
+        ./nixpkgs/nixos/searx.nix
+        ./nixpkgs/nixos/tailscale.nix
+        ./nixpkgs/nixos/users/chris-minimal.nix
+        home-manager.nixosModules.home-manager
+        {
+          home-manager.useGlobalPkgs = true;
+          home-manager.useUserPackages = true;
+        }
+      ];
+    };
   in {
     overlays = {
       emacs = emacs-overlay.overlay;
@@ -129,6 +149,11 @@
     packages.x86_64-linux.default = helloDotfiles;
 
     checks.x86_64-linux = {
+      thelio-nixos = thelio-nixos.config.system.build.toplevel;
+      xps-nixos = xps-nixos.config.system.build.toplevel;
+      tootsie = tootsie.config.system.build.toplevel;
+      taz = taz.config.system.build.toplevel;
+
       pre-commit = pre-commit-hooks.lib.x86_64-linux.run {
         src = ./.;
         hooks = {
@@ -157,7 +182,11 @@
 
     devShells = {
       x86_64-linux.default = pkgs.mkShell {
-        inherit (self.checks.x86_64-linux.pre-commit) shellHook;
+        shellHook =
+          self.checks.x86_64-linux.pre-commit.shellHook
+          + ''
+            helloDotfiles
+          '';
         buildInputs = with pkgs; [
           alejandra
           cachix

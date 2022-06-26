@@ -4,7 +4,7 @@ with pkgs; rec {
     name = "video_compress";
     runtimeInputs = [handbrake];
     text = ''
-      handbrake -i "$1" -o "$2" \
+      HandBrakeCLI -i "$1" -o "$2" \
         -e x264 \
         -q 18 \
         -a 1,1 \
@@ -167,15 +167,21 @@ with pkgs; rec {
     '';
   };
 
-  logout = writeShellApplication {
-    name = "logout";
+  sdlogout = writeShellApplication {
+    name = "sdlogout";
     runtimeInputs = [coreutils gawk gnugrep];
     text = ''
+      # logout the current session with loginctl
       USER="$(whoami)" \
       loginctl kill-session \
         "$(loginctl list-sessions \
                    | grep "$USER" \
                    | awk '{ print $1 }')"
+
+      if command -v ph &> /dev/null
+      then
+        ph kill
+      fi
     '';
   };
 }

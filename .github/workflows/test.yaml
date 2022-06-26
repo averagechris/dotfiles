@@ -21,7 +21,4 @@ jobs:
         name: averagechris-dotfiles
         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
         extraPullNames: nix-community, nixpkgs-wayland
-    - run: nix build .#nixosConfigurations.thelio-nixos.config.system.build.toplevel
-    - run: nix build .#nixosConfigurations.xps-nixos.config.system.build.toplevel
-    - run: nix build .#nixosConfigurations.tootsie.config.system.build.toplevel
     - run: nix flake check
