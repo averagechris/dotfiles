@@ -10,8 +10,9 @@
     firewall.checkReversePath = "loose";
     hostName = "taz";
     useDHCP = false;
+    firewall.allowedTCPPorts = [80 443];
     defaultGateway = {
-      address = "66.175.212.76";
+      address = "173.255.229.137";
       interface = "eth0";
     };
     usePredictableInterfaceNames = false;
@@ -19,7 +20,7 @@
       useDHCP = true;
       ipv4.addresses = [
         {
-          address = "66.175.212.76";
+          address = "173.255.229.137";
           prefixLength = 24;
         }
       ];
@@ -37,9 +38,9 @@
     sysstat
   ];
 
-  system.stateVersion = "21.11";
+  system.stateVersion = "22.05";
   home-manager.users.chris = {pkgs, ...}: {
-    home.stateVersion = "21.11";
+    home.stateVersion = "22.05";
   };
 
   time.timeZone = "UTC";
