@@ -1,4 +1,8 @@
-{pkgs, ...}: {
+{
+  pkgs,
+  config,
+  ...
+}: {
   imports = [
     ./hardware-configuration.nix
   ];
@@ -57,13 +61,22 @@
 
   services.nginx = {
     enable = true;
+    user = "searx";
+    proxyTimeout = "300s";
+    recommendedGzipSettings = true;
+    recommendedOptimisation = true;
+    recommendedProxySettings = true;
+    recommendedTlsSettings = true;
     virtualHosts = {
       "search.thesogu.com" = {
         forceSSL = true;
         enableACME = true;
         serverAliases = ["search.thesogu.com"];
         locations."/" = {
-          root = "/var/www";
+          extraConfig = ''
+            include ${config.services.nginx.package}/conf/uwsgi_params;
+            uwsgi_pass unix:/run/searx/searx.sock;
+          '';
         };
       };
     };

@@ -19,14 +19,4 @@ in {
       };
     };
   };
-  services.nginx = {
-    upstreams = {
-      "searx" = {
-        servers = {"unix://${socket}" = {};};
-        extraConfig = ''
-          include uwsgi_params;
-        '';
-      };
-    };
-  };
 }
