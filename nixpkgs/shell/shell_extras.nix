@@ -167,15 +167,21 @@ with pkgs; rec {
     '';
   };
 
-  logout = writeShellApplication {
-    name = "logout";
+  sdlogout = writeShellApplication {
+    name = "sdlogout";
     runtimeInputs = [coreutils gawk gnugrep];
     text = ''
+      # logout the current session with loginctl
       USER="$(whoami)" \
       loginctl kill-session \
         "$(loginctl list-sessions \
                    | grep "$USER" \
                    | awk '{ print $1 }')"
+
+      if command -v ph &> /dev/null
+      then
+        ph kill
+      fi
     '';
   };
 }
