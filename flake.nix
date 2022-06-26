@@ -143,7 +143,12 @@
     };
 
     nixosConfigurations = {
-      inherit thelio-nixos xps-nixos tootsie;
+      inherit
+        taz
+        thelio-nixos
+        tootsie
+        xps-nixos
+        ;
     };
 
     packages.x86_64-linux.default = helloDotfiles;
