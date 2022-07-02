@@ -3,8 +3,11 @@
   pkgs,
   lib,
   inputs,
+  overlays,
+  nixpkgs,
   ...
 }: {
+  nixpkgs.overlays = overlays;
   nix = {
     package = pkgs.nixFlakes;
     settings.substituters = [
