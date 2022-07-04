@@ -10,7 +10,10 @@
     wrapperFeatures.gtk = true;
   };
 
-  home-manager.users."chris" = {...}: {
+  programs.gnupg.agent.enable = true;
+  programs.gnupg.agent.pinentryFlavor = "curses";
+
+  home-manager.users."chris" = {config, ...}: {
     imports = [
       ../../emacs
       ../../firefox
@@ -22,5 +25,6 @@
       ../../terminal_emulator
       inputs.nix-doom-emacs.hmModule
     ];
+    config.programs.git.extraConfig.commit.gpgsign = true;
   };
 }

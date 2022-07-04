@@ -17,6 +17,8 @@
   # system76 doesn't use fwupd / fwupdmgr, they have their own cli
   environment.systemPackages = [pkgs.system76-firmware];
   programs.steam.enable = true;
+  programs.gnupg.agent.enable = true;
+  programs.gnupg.agent.pinentryFlavor = "curses";
 
   virtualisation.virtualbox.host.enable = false;
   virtualisation.virtualbox.host.enableWebService = false;
