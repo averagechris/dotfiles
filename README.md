@@ -1,7 +1,7 @@
 # How to get started on a new system
 
 A lot of this is kinda out of date since I switched to flakes.
-So take w/ a grain of salt
+So take with a grain of salt
 
 - [install nix](https://nixos.org/download.html#nix-quick-install "nixos")
 
