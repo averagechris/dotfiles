@@ -46,11 +46,18 @@ in {
         sso_account_id = "186258024085";
         sso_role_name = "non-production-backend-access";
       };
+
+    "profile core-qa" =
+      awscliConfig
+      // {
+        sso_account_id = "0609713090678";
+        sso_role_name = "non-production-backend-access";
+      };
   };
 
   config.programs.zsh = {
     sessionVariables = {
-      AWS_PROFILE = "in-qa";
+      AWS_PROFILE = "core-qa";
     };
   };
 
