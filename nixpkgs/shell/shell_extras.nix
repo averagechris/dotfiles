@@ -155,13 +155,24 @@ with pkgs; rec {
       fd --type directory --max-depth 1 --absolute-path | \
         while read -r dir; do
           pushd "$dir"
-            fd --type file --exec mv '{}' .
-            fd --type directory --exec rm -r '{}'
-            mkdir pics
-            fd --extension jpg \
-               --extension png \
-               --extension gif \
-               --exec mv '{}' "$dir/pics"
+
+          mkdir -p pics
+
+          fd --extension jpg \
+             --extension jpeg \
+             --extension png \
+             --extension gif \
+             --exec mv -fu '{}' "$dir/pics"
+
+          fd --type file \
+             --min-depth 2 \
+             --exclude pics \
+             --exec mv -fu '{}' .
+
+          fd --type directory \
+             --exclude pics \
+             --exec rm -r '{}'
+
           popd
       done;
     '';
