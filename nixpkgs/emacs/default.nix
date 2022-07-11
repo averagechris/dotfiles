@@ -48,11 +48,11 @@ in {
           message-sendmail-extra-arguments '("--read-envelope-from")
           message-send-mail-function 'message-send-mail-with-sendmail)
     '';
-    extraPackages = [emacs-all-the-icons-fonts pkgs.mu];
+    extraPackages = [emacs-all-the-icons-fonts mu];
     emacsPackage = emacsPgtkNativeComp;
   };
 
   # on macos nix-darwin handles the service configuration
   config.services.emacs.enable = isLinux;
-  config.services.lorri.enable = isLinux;
+  config.services.emacs.defaultEditor = true;
 }

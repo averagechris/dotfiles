@@ -30,6 +30,10 @@
       url = "github:sureapp/sli";
       flake = false;
     };
+    agenix = {
+      url = "github:ryantm/agenix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = {
@@ -41,6 +45,7 @@
     nix-doom-emacs,
     wayland-overlay,
     pre-commit-hooks,
+    agenix,
     ...
   } @ inputs: let
     overlays = [emacs-overlay.overlay wayland-overlay.overlay];
@@ -58,7 +63,9 @@
 
     thelio-nixos = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
-      specialArgs = {inherit inputs overlays;};
+      specialArgs = {
+        inherit inputs overlays;
+      };
       modules = [
         ./nixpkgs/nixos/thelio
         nixos-hardware.nixosModules.system76
@@ -77,6 +84,7 @@
           home-manager.useGlobalPkgs = true;
           home-manager.useUserPackages = true;
         }
+        agenix.nixosModule
       ];
     };
 
@@ -101,6 +109,7 @@
           home-manager.useGlobalPkgs = true;
           home-manager.useUserPackages = true;
         }
+        agenix.nixosModule
       ];
     };
 

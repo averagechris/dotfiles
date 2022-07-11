@@ -1,20 +1,29 @@
 {
+  config,
   pkgs,
   inputs,
   ...
 }: {
   imports = [./chris-minimal.nix];
 
-  programs.sway = {
+  config.programs.sway = {
     enable = true;
     wrapperFeatures.gtk = true;
   };
 
-  programs.gnupg.agent.enable = true;
-  programs.gnupg.agent.pinentryFlavor = "curses";
+  config.programs.gnupg.agent.enable = true;
+  config.programs.gnupg.agent.pinentryFlavor = "curses";
 
-  home-manager.users."chris" = {config, ...}: {
+  config.age.secrets.fastmail_password = {
+    file = ../../../secrets/fastmail_password.age;
+    group = "users";
+    owner = "chris";
+  };
+
+  config.home-manager.users."chris" = {...}: {
+    _module.args = {inherit (config.age) secrets;};
     imports = [
+      ../../email
       ../../emacs
       ../../firefox
       ../../guiapps
@@ -25,6 +34,6 @@
       ../../terminal_emulator
       inputs.nix-doom-emacs.hmModule
     ];
-    config.programs.git.extraConfig.commit.gpgsign = true;
+    programs.git.extraConfig.commit.gpgsign = true;
   };
 }

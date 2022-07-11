@@ -25,23 +25,9 @@
                                                           (insert "breakpoint(context=12)")
                                                           (indent-according-to-mode))))
 
-(set-email-account! "personal"
-                    '((mu4e-sent-folder . "/personal/Sent")
-                      (mu4e-drafts-folder . "/personal/Drafts")
-                      (mu4e-trash-folder . "/personal/Trash")
-                      (mu4e-refile-folder . "/personal/Archive"))
-                    t)
-
-(set-email-account! "icloud"
-                    '((mu4e-sent-folder . "/icloud/Sent Messages")
-                      (mu4e-drafts-folder . "/icloud/Drafts")
-                      (mu4e-trash-folder . "/icloud/Deleted Messages")
-                      (mu4e-refile-folder . "/icloud/Archive"))
-                    t)
-
-(set-email-account! "sure"
-                    '((mu4e-sent-folder . "/sure/[Gmail]/Sent Mail")
-                      (mu4e-drafts-folder . "/sure/[Gmail]/Drafts")
-                      (mu4e-trash-folder . "/sure/[Gmail]/Trash")
-                      (mu4e-refile-folder . "/sure/[Gmail]/All Mail"))
+(set-email-account! "chris@thesogu.com"
+                    '((mu4e-sent-folder . "/chris@thesogu.com/Sent")
+                      (mu4e-drafts-folder . "/chris@thesogu.com/Drafts")
+                      (mu4e-trash-folder . "/chris@thesogu.com/Trash")
+                      (mu4e-refile-folder . "/chris@thesogu.com/Archive"))
                     t)

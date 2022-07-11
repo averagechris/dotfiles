@@ -4,6 +4,7 @@
   ...
 }: let
   isEmacsEnabled = config.services.emacs.enable;
+  isGPGenabled = true; # 😂 FIXME: config points to home-manager here, but need nixos's config?
 in {
   # starship is the shell prompt
   programs.starship.enable = true;
@@ -58,6 +59,13 @@ in {
         if isEmacsEnabled
         then {
           VISUAL = "emacs";
+        }
+        else {}
+      )
+      // (
+        if isGPGenabled
+        then {
+          GPG_TTY = "$(tty)";
         }
         else {}
       );
