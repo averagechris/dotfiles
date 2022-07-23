@@ -48,7 +48,13 @@ in {
       msmtp.enable = true;
       imap.host = "imap.fastmail.com";
       smtp.host = "smtp.fastmail.com";
-      passwordCommand = "cat ${secrets.fastmail_password.path}";
+      passwordCommand = let
+        name = "mbsync-password-command";
+      in "${pkgs.writeShellApplication {
+        inherit name;
+        runtimeInputs = [pkgs.coreutils];
+        text = "cat ${secrets.fastmail_password.path}";
+      }}/bin/${name}";
     };
   };
 }

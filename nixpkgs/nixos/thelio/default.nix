@@ -16,10 +16,8 @@
 
   # system76 doesn't use fwupd / fwupdmgr, they have their own cli
   environment.systemPackages = [pkgs.system76-firmware];
+  hardware.system76.enableAll = true;
   programs.steam.enable = true;
-
-  virtualisation.virtualbox.host.enable = false;
-  virtualisation.virtualbox.host.enableWebService = false;
 
   system.stateVersion = "21.05";
   home-manager.users.chris = {pkgs, ...}: {

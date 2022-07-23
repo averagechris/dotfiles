@@ -10,7 +10,4 @@
   # Per-interface useDHCP will be mandatory in the future, so this generated config
   # replicates the default behaviour.
   networking.useDHCP = false;
-
-  # https://github.com/tailscale/tailscale/issues/4432
-  networking.firewall.checkReversePath = "loose";
 }

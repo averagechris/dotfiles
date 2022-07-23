@@ -75,29 +75,30 @@
             };
           };
           "custom/media" = {
-            on-click = "playerctl play-pause";
+            on-click = "${pkgs.playerctl}/bin/playerctl play-pause";
             format = "🎵 {}";
             max-length = 40;
             interval = 30; # Remove this if your script is endless and write in loop
-            exec = with pkgs;
-              writeShellApplication {
-                name = "waybar_media_play_pause_toggler";
-                runtimeInputs = [playerctl];
-                text = ''
-                  player_status=$(playerctl status 2>/dev/null)
+            exec = with pkgs; let
+              name = "waybar_media_play_pause_toggler";
+            in "${writeShellApplication {
+              inherit name;
+              runtimeInputs = [playerctl];
+              text = ''
+                player_status=$(playerctl status 2>/dev/null)
 
-                  if [ "$player_status" = "Playing" ]; then
-                    echo "$(playerctl metadata artist) - $(playerctl metadata title)"
+                if [ "$player_status" = "Playing" ]; then
+                  echo "$(playerctl metadata artist) - $(playerctl metadata title)"
 
-                  elif [ "$player_status" = "Paused" ]; then
-                    echo " $(playerctl metadata artist) - $(playerctl metadata title)"
+                elif [ "$player_status" = "Paused" ]; then
+                  echo " $(playerctl metadata artist) - $(playerctl metadata title)"
 
-                  else
-                    echo "$(playerctl status): $(playerctl metadata title)"
+                else
+                  echo "$(playerctl status): $(playerctl metadata title)"
 
-                  fi
-                '';
-              };
+                fi
+              '';
+            }}/bin/${name}";
           };
         };
       }

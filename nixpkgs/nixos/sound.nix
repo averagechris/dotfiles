@@ -60,4 +60,5 @@
   hardware.bluetooth.enable = true;
   hardware.bluetooth.hsphfpd.enable = true;
   services.blueman.enable = true;
+  systemd.user.services.telephony_client.enable = false;
 }
