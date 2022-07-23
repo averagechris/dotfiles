@@ -161,10 +161,12 @@
     packages.x86_64-linux.default = helloDotfiles;
 
     checks.x86_64-linux = {
-      thelio-nixos = thelio-nixos.config.system.build.toplevel;
-      xps-nixos = xps-nixos.config.system.build.toplevel;
-      tootsie = tootsie.config.system.build.toplevel;
-      taz = taz.config.system.build.toplevel;
+      # all of these builds here makes nix flake check take ~ 4gb memory
+      # so it can't be run in CI
+      # thelio-nixos = thelio-nixos.config.system.build.toplevel;
+      # xps-nixos = xps-nixos.config.system.build.toplevel;
+      # tootsie = tootsie.config.system.build.toplevel;
+      # taz = taz.config.system.build.toplevel;
 
       pre-commit = pre-commit-hooks.lib.x86_64-linux.run {
         src = ./.;
