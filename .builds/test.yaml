@@ -25,15 +25,25 @@ tasks:
 
   - pre-commit-checks: |
       cd ~/dotfiles
-      nix flake check
+
+      cachix watch-exec averagechris-dotfiles -- \
+          nix develop --command \
+          pre-commit run --all
 
   - nix-build-nixos-configurations: |
       cd ~/dotfiles
-      nix build .#nixosConfigurations.thelio-nixos.config.system.build.toplevel
-      nix build .#nixosConfigurations.xps-nixos.config.system.build.toplevel
-      nix build .#nixosConfigurations.tootsie.config.system.build.toplevel
-      nix build .#nixosConfigurations.taz.config.system.build.toplevel
-      nix build .
 
-  - push-cachix: |
-      nix path-info --all | cachix push averagechris-dotfiles
+      cachix watch-exec averagechris-dotiles -- \
+          nix build .#nixosConfigurations.thelio-nixos.config.system.build.toplevel
+
+      cachix watch-exec averagechris-dotiles -- \
+          nix build .#nixosConfigurations.xps-nixos.config.system.build.toplevel
+
+      cachix watch-exec averagechris-dotiles -- \
+          nix build .#nixosConfigurations.tootsie.config.system.build.toplevel
+
+      cachix watch-exec averagechris-dotiles -- \
+          nix build .#nixosConfigurations.taz.config.system.build.toplevel
+
+      cachix watch-exec averagechris-dotiles -- \
+          nix build .
