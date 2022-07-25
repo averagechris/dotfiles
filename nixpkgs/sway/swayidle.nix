@@ -5,7 +5,7 @@
 }: let
   displayOn = ''${pkgs.sway}/bin/swaymsg "output * dpms on"'';
   displayOff = ''${pkgs.sway}/bin/swaymsg "output * dpms off"'';
-  displayLock = "swaylock -f -c 000000";
+  displayLock = "${pkgs.swaylock-effects}/bin/swaylock -f -c 000000";
 in {
   config.systemd.user.services.swayidle = {
     Unit = {
@@ -23,7 +23,7 @@ in {
           resume '${displayOn}' \
           timeout 130 '${displayLock}' \
           resume 'swaymsg "${displayOn}"' \
-          timeout 300 'systemctl suspend'\
+          timeout 300 '${pkgs.systemd}/bin/systemctl suspend'\
           resume 'swaymsg "${displayOn}"' \
           before-sleep '${displayLock}'
       '';

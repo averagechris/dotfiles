@@ -25,7 +25,7 @@ in {
     bemenu_choose_passhole_entry = writeShellApplication {
       name = "bemenu_choose_passhole_entry";
       runtimeInputs = [bemenu coreutils passhole];
-      text = "ph grep -i . | bemenu --ignorecase --center --margin 10 --list 10";
+      text = "echo force_get_password_via_zenity | ph grep -i . | bemenu --ignorecase --center --margin 10 --list 10";
     };
     wlrctl_type_passhole_field_value = writeShellApplication {
       name = "wlrctl_type_passhole_field_value";
