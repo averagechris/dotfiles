@@ -39,7 +39,7 @@
     "darwin": {
       "inputs": {
         "nixpkgs": [
-          "nixpkgs-darwin"
+          "nixpkgs"
         ]
       },
       "locked": {
@@ -463,22 +463,6 @@
         "type": "github"
       }
     },
-    "nixpkgs-darwin": {
-      "locked": {
-        "lastModified": 1657815135,
-        "narHash": "sha256-+5Jby1ayRjtSgsM5IpRNeUgdcIutCKQWR6sypRtd1RE=",
-        "owner": "nixos",
-        "repo": "nixpkgs",
-        "rev": "c06d5fa9c605d143b15cafdbbb61c7c95388d76e",
-        "type": "github"
-      },
-      "original": {
-        "owner": "nixos",
-        "ref": "nixpkgs-22.05-darwin",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
     "nixpkgs-lib": {
       "locked": {
         "lastModified": 1658019594,
@@ -636,7 +620,6 @@
         "nix-doom-emacs": "nix-doom-emacs",
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs",
-        "nixpkgs-darwin": "nixpkgs-darwin",
         "pre-commit-hooks": "pre-commit-hooks",
         "sli-repo": "sli-repo",
         "wayland-overlay": "wayland-overlay"

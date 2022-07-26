@@ -32,25 +32,24 @@
       url = "github:ryantm/agenix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    nixpkgs-darwin.url = "github:nixos/nixpkgs/nixpkgs-22.05-darwin";
     darwin = {
       url = "github:lnl7/nix-darwin/master";
-      inputs.nixpkgs.follows = "nixpkgs-darwin";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
   outputs = {
     self,
-    nixpkgs,
-    emacs-overlay,
-    home-manager,
-    nixos-hardware,
-    nix-doom-emacs,
-    wayland-overlay,
-    pre-commit-hooks,
-    agenix,
-    darwin,
-    ...
+      nixpkgs,
+      emacs-overlay,
+      home-manager,
+      nixos-hardware,
+      nix-doom-emacs,
+      wayland-overlay,
+      pre-commit-hooks,
+      agenix,
+      darwin,
+      ...
   } @ inputs: let
     overlays = [emacs-overlay.overlay wayland-overlay.overlay];
     pkgs = nixpkgs.legacyPackages.x86_64-linux;
