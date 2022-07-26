@@ -33,17 +33,17 @@ tasks:
   - nix-build-nixos-configurations: |
       cd ~/dotfiles
 
-      cachix watch-exec averagechris-dotiles -- \
+      cachix watch-exec averagechris-dotfiles -- \
           nix build .#nixosConfigurations.thelio-nixos.config.system.build.toplevel
 
-      cachix watch-exec averagechris-dotiles -- \
+      cachix watch-exec averagechris-dotfiles -- \
           nix build .#nixosConfigurations.xps-nixos.config.system.build.toplevel
 
-      cachix watch-exec averagechris-dotiles -- \
+      cachix watch-exec averagechris-dotfiles -- \
           nix build .#nixosConfigurations.tootsie.config.system.build.toplevel
 
-      cachix watch-exec averagechris-dotiles -- \
+      cachix watch-exec averagechris-dotfiles -- \
           nix build .#nixosConfigurations.taz.config.system.build.toplevel
 
-      cachix watch-exec averagechris-dotiles -- \
+      cachix watch-exec averagechris-dotfiles -- \
           nix build .
