@@ -32,6 +32,11 @@
       url = "github:ryantm/agenix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    nixpkgs-darwin.url = "github:nixos/nixpkgs/nixpkgs-22.05-darwin";
+    darwin = {
+      url = "github:lnl7/nix-darwin/master";
+      inputs.nixpkgs.follows = "nixpkgs-darwin";
+    };
   };
 
   outputs = {
@@ -44,6 +49,7 @@
     wayland-overlay,
     pre-commit-hooks,
     agenix,
+    darwin,
     ...
   } @ inputs: let
     overlays = [emacs-overlay.overlay wayland-overlay.overlay];
@@ -158,6 +164,11 @@
         ;
     };
 
+    darwinConfigurations.suremac = darwin.lib.darwinSystem {
+      system = "aarch64-darwin";
+      modules = [ ./nixpkgs/darwin/suremac ];
+    };
+
     packages.x86_64-linux.default = helloDotfiles;
 
     # these checks take ~4GB of memory right now to run
@@ -216,3 +227,4 @@
     formatter.x86_64-linux = pkgs.alejandra;
   };
 }
+
