@@ -1,6 +1,8 @@
-{ config, pkgs, ...}: 
-
 {
+  config,
+  pkgs,
+  ...
+}: {
   environment.systemPackages = with pkgs; [
     git
     nix-prefetch-scripts
@@ -23,13 +25,15 @@
       "nixpkgs-wayland.cachix.org-1:3lwxaILxMRkVhehr5StQprHdEo4IrE8sRho9R9HOLYA="
       "averagechris-dotfiles.cachix.org-1:VwJkl5dG1+xGDY5x884mH/kVwwpgwBAdBKIF3BZiia4="
     ];
-    extraOptions = '' experimental-features = nix-command flakes '';
+    extraOptions = ''experimental-features = nix-command flakes '';
     gc.automatic = true;
     readOnlyStore = true;
     requireSignedBinaryCaches = true;
   };
 
-  networking = let n = "suremac"; in {
+  networking = let
+    n = "suremac";
+  in {
     computerName = n;
     hostName = n;
     localHostName = n;
@@ -43,11 +47,11 @@
   # TODO look into services.spacebar
   services.nix-daemon.enable = true;
 
-  system  =  {
+  system = {
     defaults.NSGlobalDomain = {
       AppleEnableSwipeNavigateWithScrolls = true;
       AppleFontSmoothing = 2;
-      AppleInterfaceStyle = null;  # could be "Dark" for all the time dark mode
+      AppleInterfaceStyle = null; # could be "Dark" for all the time dark mode
       AppleInterfaceStyleSwitchesAutomatically = true;
       AppleKeyboardUIMode = 3;
       AppleMeasurementUnits = "Inches";
@@ -75,10 +79,10 @@
       NSWindowResizeTime = "0.05";
       _HIHideMenuBar = false;
       "com.apple.keyboard.fnState" = false;
-      "com.apple.mouse.tapBehavior" = 1;  # tap to click
+      "com.apple.mouse.tapBehavior" = 1; # tap to click
       "com.apple.sound.beep.feedback" = 0;
       "com.apple.sound.beep.volume" = "0.4723665"; # 25%
-      "com.apple.swipescrolldirection" = true;  # natural scroll direction
+      "com.apple.swipescrolldirection" = true; # natural scroll direction
       "com.apple.trackpad.enableSecondaryClick" = true;
       "com.apple.trackpad.scaling" = "1.0";
       "com.apple.trackpad.trackpadCornerClickBehavior" = null;
@@ -110,10 +114,10 @@
       showhidden = false;
       static-only = false;
       tilesize = 48;
-      wvous-bl-corner = 1;  # disable hot corners
-      wvous-br-corner = 1;  # disable hot corners
-      wvous-tl-corner = 1;  # disable hot corners
-      wvous-tr-corner = 1;  # disable hot corners
+      wvous-bl-corner = 1; # disable hot corners
+      wvous-br-corner = 1; # disable hot corners
+      wvous-tl-corner = 1; # disable hot corners
+      wvous-tr-corner = 1; # disable hot corners
     };
     defaults.finder = {
       AppleShowAllExtensions = true;
@@ -124,7 +128,7 @@
       ShowStatusBar = true;
       _FXShowPosixPathInTitle = true;
     };
-    defaults.loginwindow =  {
+    defaults.loginwindow = {
       DisableConsoleAccess = true;
       GuestEnabled = false;
       PowerOffDisabledWhileLoggedIn = false;
@@ -164,4 +168,3 @@
 
   time.timeZone = "America/Chicago";
 }
-

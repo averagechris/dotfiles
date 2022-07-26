@@ -7,7 +7,7 @@
   nixpkgs,
   ...
 }: {
-  nixpkgs.overlays = overlays;
+  nixpkgs.overlays = lib.attrValues overlays;
   nix = {
     package = pkgs.nixFlakes;
     settings.substituters = [
