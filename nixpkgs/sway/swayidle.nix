@@ -23,7 +23,7 @@ in {
           resume '${displayOn}' \
           timeout 130 '${displayLock}' \
           resume 'swaymsg "${displayOn}"' \
-          timeout 300 '${pkgs.systemd}/bin/systemctl suspend'\
+          timeout 300 'systemctl suspend'\
           resume 'swaymsg "${displayOn}"' \
           before-sleep '${displayLock}'
       '';

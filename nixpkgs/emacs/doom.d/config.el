@@ -2,7 +2,7 @@
 (setq user-full-name "Chris Cummings"
       user-mail-address "chris@thesogu.com")
 
-(setq doom-theme 'doom-one-light)
+(setq doom-theme 'doom-one)
 (setq display-line-numbers-type nil)
 
 (after! treemacs (setq +treemacs-git-mode 'deferred))

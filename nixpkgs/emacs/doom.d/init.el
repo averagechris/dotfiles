@@ -14,9 +14,7 @@
 ;;      Alternatively, press 'gd' on a module to browse its
 ;;      directory (for easy access to its source code).
 
-(doom! :input
-
-       :completion
+(doom! :completion
        (company +childframe)
        (ivy +fuzzy
             +icons
@@ -27,8 +25,7 @@
        doom
        doom-dashboard
        doom-quit
-       (emoji +github
-              +unicode)
+       (emoji +unicode)
        hl-todo
        indent-guides
        modeline
@@ -45,11 +42,10 @@
 
        :editor
        (evil +everywhere)
-       file-templates
        fold
        (format +onsave)
        multiple-cursors
-       snippets
+       ;; snippets
        word-wrap
 
        :emacs
@@ -67,17 +63,17 @@
        (spell +everywhere)
 
        :tools
-       debugger
+       ;; debugger
        direnv
-       docker
+       (docker +lsp)
        editorconfig
        (eval +overlay)
-       gist
        (lookup +dictionary
                +offline)
        (lsp +peek)
-       (magit +forge)
+       magit
        pdf
+       tree-sitter
 
        :os
        (:if IS-MAC macos)
@@ -89,19 +85,15 @@
        json
        (markdown +grip)
        nix
-       org
        (python +lsp
-               +pyright)
-       rest
+               +pyright
+               +tree-sitter)
        (rust +lsp)
-       sh
+       (sh +lsp)
        (yaml +lsp)
 
        :email
-       (mu4e +gmail)
-
-       :app
-       everywhere
+       mu4e
 
        :config
        (default +bindings +smartparens))
