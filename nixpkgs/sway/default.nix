@@ -106,8 +106,4 @@ in {
     ]
   '';
   config.xdg.configFile."swaylock/config".source = ./swaylock.config;
-  # config.xdg.configFile."wofi/config".text = ''
-  #   term alacritty
-  #   lines 5
-  # '';
 }
