@@ -206,6 +206,7 @@
             modules = [
               ./nixpkgs/nixos/tootsie
               ./nixpkgs/nixos/common.nix
+              ./nixpkgs/nixos/networking.nix
               ./nixpkgs/nixos/tailscale.nix
               ./nixpkgs/nixos/users/chris-minimal.nix
               home-manager.nixosModules.home-manager

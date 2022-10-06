@@ -29,11 +29,18 @@
         }
       ];
     };
+    # https://discourse.nixos.org/t/nixos-on-linode/14825
+    # Linode blocks all IPv6 traffic originating from your instance
+    # except for traffic originating from your assigned address. If
+    # you have temporary addresses enabled, traffic will originate
+    # from them by default.
+    tempAddresses = "disabled";
   };
 
   services.openssh = {
     enable = true;
     permitRootLogin = "no";
+    passwordAuthentication = false;
   };
 
   environment.systemPackages = with pkgs; [

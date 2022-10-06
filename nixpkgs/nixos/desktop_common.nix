@@ -23,7 +23,11 @@
     allowReboot = true;
   };
 
-  services.openssh.enable = true;
+  services.openssh = {
+    enable = true;
+    permitRootLogin = "no";
+    passwordAuthentication = false;
+  };
 
   # Enable CUPS to print documents.
   services.printing.enable = true;
