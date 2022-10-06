@@ -16,7 +16,7 @@
     hostName = "tootsie";
     useDHCP = false;
     defaultGateway = {
-      address = "45.56.117.1";
+      address = "45.56.117.20";
       interface = "eth0";
     };
     usePredictableInterfaceNames = false;
@@ -24,7 +24,7 @@
       useDHCP = true;
       ipv4.addresses = [
         {
-          address = "45.56.117.1";
+          address = "45.56.117.20";
           prefixLength = 24;
         }
       ];

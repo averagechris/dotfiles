@@ -19,7 +19,7 @@
   networking.nameservers = [
     "100.100.100.100"
     "1.1.1.1"
-    "8.8.8.8"
+    "9.9.9.9"
   ];
 
   # create a oneshot job to authenticate to Tailscale

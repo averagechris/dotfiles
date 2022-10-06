@@ -9,7 +9,6 @@
 }: {
   nixpkgs.overlays = lib.attrValues overlays;
   nix = {
-    package = pkgs.nixFlakes;
     settings.substituters = [
       "https://cache.nixos.org/"
       "https://nix-community.cachix.org"

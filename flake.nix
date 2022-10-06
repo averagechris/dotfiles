@@ -161,7 +161,6 @@
               ./nixpkgs/nixos/sound.nix
               ./nixpkgs/nixos/tailscale.nix
               ./nixpkgs/nixos/users/chris.nix
-              ./nixpkgs/nixos/users/chris-focus.nix
               home-manager.nixosModules.home-manager
               {
                 home-manager.useGlobalPkgs = true;
@@ -188,7 +187,6 @@
               ./nixpkgs/nixos/networking.nix
               ./nixpkgs/nixos/sound.nix
               ./nixpkgs/nixos/tailscale.nix
-              ./nixpkgs/nixos/users/chris-focus.nix
               ./nixpkgs/nixos/users/chris.nix
               home-manager.nixosModules.home-manager
               {
