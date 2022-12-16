@@ -58,7 +58,7 @@
 
   # bluetooth config is related to sound right? 😀👍
   hardware.bluetooth.enable = true;
-  hardware.bluetooth.hsphfpd.enable = true;
+  hardware.bluetooth.hsphfpd.enable = false; # Using Wireplumber conflicts with hsphfpd, as it provides the same functionality.
   services.blueman.enable = true;
   systemd.user.services.telephony_client.enable = false;
 }

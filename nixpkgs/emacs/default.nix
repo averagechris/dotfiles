@@ -54,7 +54,7 @@ in {
       (after! nix-mode (setq nix-nixfmt-bin "${formatter}/bin/alejandra_doom_formatter"))
     '';
     extraPackages = [emacs-all-the-icons-fonts mu];
-    emacsPackage = emacsPgtkNativeComp;
+    emacsPackage = emacsPgtk;
   };
 
   config.services.emacs.enable = true;
