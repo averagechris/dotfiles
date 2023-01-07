@@ -1,6 +1,8 @@
 {
   pkgs,
   config,
+  lib,
+  sshKeys,
   ...
 }: {
   imports = [
@@ -50,11 +52,6 @@
   };
 
   time.timeZone = "UTC";
-
-  users.users.chris.openssh.authorizedKeys.keys = [
-    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGaGrbXoVGe5fXpOhG6+pUZw+aYANuiDPvoI82jftpPd chris@thesogu.com" # chris-thelio
-    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPflVyCskMX25z8S3pQLyGbo67zBQyC+eMbCkksRw4o/ chris@thesogu.com" # chris-xps
-  ];
 
   # TODO extract into deployable module
   security.sudo = {

@@ -25,7 +25,7 @@
       "nixpkgs-wayland.cachix.org-1:3lwxaILxMRkVhehr5StQprHdEo4IrE8sRho9R9HOLYA="
       "averagechris-dotfiles.cachix.org-1:VwJkl5dG1+xGDY5x884mH/kVwwpgwBAdBKIF3BZiia4="
     ];
-    extraOptions = ''experimental-features = nix-command flakes '';
+    extraOptions = ''experimental-features = nix-command flakes'';
     gc.automatic = true;
     readOnlyStore = true;
     settings.require-sigs = true;

@@ -16,12 +16,6 @@ in {
     cdpath = [
       "$HOME/sureapp"
     ];
-    initExtra = ''
-      refresh_poetry_auth() {
-        aws --profile registries-read sso login
-        poetry config http-basic.codeartifact aws $(aws codeartifact get-authorization-token --domain sure --query authorizationToken --output text --profile registries-read)
-      }
-    '';
   };
 
   # didn't seem worth it to nix-ify the kube config
@@ -32,8 +26,6 @@ in {
   config.home.packages = with pkgs; [
     gnumake
     kubectl
-    k9s
-    slack
     sli
   ];
 }
