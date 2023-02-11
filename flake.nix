@@ -166,7 +166,7 @@
                 home-manager.useGlobalPkgs = true;
                 home-manager.useUserPackages = true;
               }
-              agenix.nixosModule
+              agenix.nixosModules.default
             ];
           };
 
@@ -193,7 +193,7 @@
                 home-manager.useGlobalPkgs = true;
                 home-manager.useUserPackages = true;
               }
-              agenix.nixosModule
+              agenix.nixosModules.default
             ];
           };
 
