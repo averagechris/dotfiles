@@ -265,3 +265,22 @@ mount /dev/nixos-vg/root /mnt
 ## Getting my NixOs config from dotfiles and setting up Home Manager
 
 👍😎👍 TODO
+
+## work-vm
+
+install utm or use qemu
+sudo su
+make partitions
+make filesystems and swap etc
+nix --extra-experimental-features nix-command \
+--extra-experimental-features flakes \
+--extra-access-tokens github.com=TYPE_YOUR_GITHUB_TOKEN \
+build sourcehut:~averagechris/dotfiles#nixosConfigurations.work-vm.config.system.build.toplevel
+
+nixos-install --no-root-passwd --system ./result
+reboot
+
+clone dotfiles
+ln -fs ~/dotfiles/flake.nix /etc/nixos/
+rm -rf /etc/nixos/configuration.nix
+nixos-switch
