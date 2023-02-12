@@ -1,7 +1,10 @@
 {pkgs, ...}: {
   programs.waybar = {
     enable = true;
-    systemd.enable = true;
+    systemd = {
+      enable = false;
+      target = "sway-session.target";
+    };
     style = builtins.readFile ./waybar_style.css;
     settings = [
       {

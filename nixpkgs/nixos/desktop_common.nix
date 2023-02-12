@@ -6,8 +6,8 @@
   ...
 }: {
   nixpkgs.overlays = [
-    (import inputs.emacs-overlay)
-    (import inputs.wayland-overlay)
+    inputs.emacs-overlay.overlays.default
+    inputs.wayland-overlay.overlay
   ];
 
   time.timeZone = "America/Chicago";
@@ -25,8 +25,8 @@
 
   services.openssh = {
     enable = true;
-    permitRootLogin = "no";
-    passwordAuthentication = false;
+    settings.PermitRootLogin = "no";
+    settings.PasswordAuthentication = false;
   };
 
   # Enable CUPS to print documents.

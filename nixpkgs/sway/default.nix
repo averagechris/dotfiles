@@ -16,7 +16,7 @@ in {
 
   config.wayland.windowManager.sway = {
     enable = true;
-    config.bars = [];
+    config.bars = [{command = "waybar";}];
     config.floating.criteria = [
       {app_id = "pavucontrol";}
       {app_id = "zenity";}
@@ -30,7 +30,12 @@ in {
     config.input."*".natural_scroll = "enabled";
     config.input."type:touchpad".tap = "enabled";
     config.output."*".bg = "${wallpapers}/1.jpg fill";
-    config.startup = [];
+    config.startup = [
+      {
+        command = "${pkgs.kanshi}/bin/kanshi";
+        always = true;
+      }
+    ];
     config.workspaceAutoBackAndForth = true;
     wrapperFeatures.base = true;
     wrapperFeatures.gtk = true;
