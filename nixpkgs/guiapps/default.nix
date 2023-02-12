@@ -70,7 +70,9 @@ in {
     if isLinux
     then
       with pkgs; [
-        keepass
+        darktable
+        keepassxc
+        git-credential-keepassxc
         signal-desktop
         write_stylus
         zoom-us
