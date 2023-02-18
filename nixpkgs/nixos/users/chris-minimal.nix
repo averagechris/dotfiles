@@ -1,4 +1,9 @@
-{pkgs, ...}: let
+{
+  pkgs,
+  lib,
+  sshKeys,
+  ...
+}: let
   userName = "chris";
 in {
   users.users = {
@@ -9,6 +14,7 @@ in {
         "wheel"
       ];
       shell = pkgs.zsh;
+      openssh.authorizedKeys.keys = lib.attrValues sshKeys.chris;
     };
   };
 
