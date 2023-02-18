@@ -19,3 +19,4 @@ fish/fish_history
 __pycache__/
 /.direnv/
 /.pre-commit-config.yaml
+/result
