@@ -55,9 +55,17 @@
   ];
 
   system.stateVersion = "21.11";
-  home-manager.users.chris = {pkgs, ...}: {
+  home-manager.users.chris = {
+    pkgs,
+    config,
+    ...
+  }: {
     home.stateVersion = "21.11";
     imports = [../../meganz.nix];
+    home.packages = with pkgs; [ranger python311Packages.pipx];
+    programs.zsh.initExtra = ''
+      export PATH=$HOME/.local/bin:$PATH
+    '';
   };
 
   time.timeZone = "UTC";

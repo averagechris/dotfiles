@@ -15,5 +15,3 @@ function () {
         done
     done
 }
-
-eval "$(direnv hook zsh)"
