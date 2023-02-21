@@ -1,10 +1,15 @@
 {
   config,
   pkgs,
+  lib,
   ...
 }: let
   isEmacsEnabled = config.services.emacs.enable;
   isGPGenabled = true; # 😂 FIXME: config points to home-manager here, but need nixos's config?
+  EDITOR =
+    if isEmacsEnabled
+    then "emacsclient -t"
+    else "vim";
 in {
   # starship is the shell prompt
   programs.starship.enable = true;
@@ -45,30 +50,20 @@ in {
       theme = "clean";
     };
 
-    sessionVariables =
-      rec {
-        EDITOR =
-          if isEmacsEnabled
-          then "emacsclient -t"
-          else "nvim";
+    sessionVariables = lib.mkMerge [
+      {
+        inherit EDITOR;
         GIT_EDITOR = EDITOR;
         KEYTIMEOUT = "1";
         LESS = "-SRXF";
       }
-      // (
-        if isEmacsEnabled
-        then {
-          VISUAL = "emacs";
-        }
-        else {}
-      )
-      // (
-        if isGPGenabled
-        then {
-          GPG_TTY = "$(tty)";
-        }
-        else {}
-      );
+      (lib.mkIf isEmacsEnabled {
+        VISUAL = "emacs";
+      })
+      (lib.mkIf isGPGenabled {
+        GPG_TTY = "$(tty)";
+      })
+    ];
   };
 
   programs.fzf = {
