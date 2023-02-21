@@ -19,11 +19,11 @@ in {
     Service = {
       ExecStart = ''
         ${pkgs.swayidle}/bin/swayidle -w \
-          timeout 120 '${displayOff}' \
+          timeout 240 '${displayOff}' \
           resume '${displayOn}' \
-          timeout 130 '${displayLock}' \
+          timeout 180 '${displayLock}' \
           resume 'swaymsg "${displayOn}"' \
-          timeout 300 'systemctl suspend'\
+          timeout 1200 'systemctl suspend'\
           resume 'swaymsg "${displayOn}"' \
           before-sleep '${displayLock}'
       '';
