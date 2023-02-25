@@ -252,6 +252,7 @@
               inherit inputs sshKeys;
             };
             modules = [
+              nixos-hardware.nixosModules.system76
               ./nixpkgs/nixos/tom
               ./nixpkgs/nixos/common.nix
               ./nixpkgs/nixos/tailscale.nix
