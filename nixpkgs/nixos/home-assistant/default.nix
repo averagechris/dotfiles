@@ -22,7 +22,6 @@
     extraComponents = [
       "met"
       "radio_browser"
-      "roborock"
     ];
     config = {
       # Includes dependencies for a basic setup

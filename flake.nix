@@ -120,6 +120,7 @@
               xps-nixos = self.outputs.nixosConfigurations.xps-nixos.config.system.build.toplevel;
               tootsie = self.outputs.nixosConfigurations.tootsie.config.system.build.toplevel;
               taz = self.outputs.nixosConfigurations.taz.config.system.build.toplevel;
+              tom = self.outputs.nixosConfigurations.tom.config.system.build.toplevel;
             }
             else {}
           );
@@ -137,7 +138,7 @@
               self.outputs.packages.${sys}.hello
               mdl
               statix
-              python310Packages.mdformat
+              python311Packages.mdformat
             ];
           };
         };
@@ -235,6 +236,26 @@
               ./nixpkgs/nixos/common.nix
               ./nixpkgs/nixos/searx.nix
               ./nixpkgs/nixos/tailscale.nix
+              ./nixpkgs/nixos/users/chris-minimal.nix
+              home-manager.nixosModules.home-manager
+              {
+                home-manager.useGlobalPkgs = true;
+                home-manager.useUserPackages = true;
+              }
+            ];
+          };
+
+          tom = nixpkgs.lib.nixosSystem {
+            system = system.x86_64-linux;
+            specialArgs = {
+              inherit (self.outputs) overlays;
+              inherit inputs sshKeys;
+            };
+            modules = [
+              ./nixpkgs/nixos/tom
+              ./nixpkgs/nixos/common.nix
+              ./nixpkgs/nixos/tailscale.nix
+              ./nixpkgs/nixos/home-assistant
               ./nixpkgs/nixos/users/chris-minimal.nix
               home-manager.nixosModules.home-manager
               {
