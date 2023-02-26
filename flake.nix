@@ -256,13 +256,13 @@
               ./nixpkgs/nixos/tom
               ./nixpkgs/nixos/common.nix
               ./nixpkgs/nixos/tailscale.nix
-              ./nixpkgs/nixos/home-assistant
               ./nixpkgs/nixos/users/chris-minimal.nix
               home-manager.nixosModules.home-manager
               {
                 home-manager.useGlobalPkgs = true;
                 home-manager.useUserPackages = true;
               }
+              ./nixpkgs/nixos/home-assistant
             ];
           };
         };

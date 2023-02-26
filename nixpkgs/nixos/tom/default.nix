@@ -16,7 +16,11 @@
     git
     neovim
   ];
-  services.openssh.enable = true;
+  services.openssh = {
+    enable = true;
+    settings.PermitRootLogin = "no";
+    settings.PasswordAuthentication = false;
+  };
   system.stateVersion = "22.11";
   home-manager.users.chris = {pkgs, ...}: {
     home.stateVersion = "22.11";
