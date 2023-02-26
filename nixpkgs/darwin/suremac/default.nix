@@ -14,13 +14,13 @@
   nixpkgs.config.allowBroken = true;
   nix = {
     package = pkgs.nixFlakes;
-    binaryCaches = [
+    settings.substituters = [
       "https://cache.nixos.org/"
       "https://nix-community.cachix.org"
       "https://averagechris-dotfiles.cachix.org"
       "https://nixpkgs-wayland.cachix.org"
     ];
-    binaryCachePublicKeys = [
+    settings.trusted-public-keys = [
       "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
       "nixpkgs-wayland.cachix.org-1:3lwxaILxMRkVhehr5StQprHdEo4IrE8sRho9R9HOLYA="
       "averagechris-dotfiles.cachix.org-1:VwJkl5dG1+xGDY5x884mH/kVwwpgwBAdBKIF3BZiia4="
@@ -28,7 +28,7 @@
     extraOptions = ''experimental-features = nix-command flakes '';
     gc.automatic = true;
     readOnlyStore = true;
-    requireSignedBinaryCaches = true;
+    settings.require-sigs = true;
   };
 
   networking = let
@@ -76,15 +76,15 @@
       NSScrollAnimationEnabled = true;
       NSTextShowsControlCharacters = false;
       NSUseAnimatedFocusRing = true;
-      NSWindowResizeTime = "0.05";
+      NSWindowResizeTime = 0.05;
       _HIHideMenuBar = false;
       "com.apple.keyboard.fnState" = false;
       "com.apple.mouse.tapBehavior" = 1; # tap to click
       "com.apple.sound.beep.feedback" = 0;
-      "com.apple.sound.beep.volume" = "0.4723665"; # 25%
+      "com.apple.sound.beep.volume" = 0.472367; # 25%
       "com.apple.swipescrolldirection" = true; # natural scroll direction
       "com.apple.trackpad.enableSecondaryClick" = true;
-      "com.apple.trackpad.scaling" = "1.0";
+      "com.apple.trackpad.scaling" = 1.0;
       "com.apple.trackpad.trackpadCornerClickBehavior" = null;
     };
     defaults.SoftwareUpdate.AutomaticallyInstallMacOSUpdates = false;
@@ -98,10 +98,10 @@
     defaults.dock = {
       enable-spring-load-actions-on-all-items = false;
       autohide = true;
-      autohide-delay = "0.15";
-      autohide-time-modifier = "0.5";
+      autohide-delay = 0.15;
+      autohide-time-modifier = 0.5;
       dashboard-in-overlay = false;
-      expose-animation-duration = "0.75";
+      expose-animation-duration = 0.75;
       expose-group-by-app = true;
       launchanim = false;
       mineffect = "genie";
