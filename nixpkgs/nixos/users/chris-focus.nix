@@ -1,10 +1,11 @@
 {
   pkgs,
-  inputs,
+  nix-doom-emacs-module,
+  sli-repo,
   ...
 }: let
   userName = "chris-focus";
-  sure = import ../../sure {inherit pkgs inputs;};
+  sure = import ../../sure {inherit pkgs sli-repo;};
 in {
   users.users = {
     "${userName}" = {
@@ -50,7 +51,7 @@ in {
       ../../sway
       ../../terminal_emulator
       ../../tmux
-      inputs.nix-doom-emacs.hmModule
+      nix-doom-emacs-module
       sure
     ];
   };

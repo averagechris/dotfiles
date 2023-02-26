@@ -39,34 +39,48 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     flake-utils.url = "github:numtide/flake-utils";
+    deploy-rs = {
+      url = "github:serokell/deploy-rs";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = {
     self,
-    nixpkgs,
-    emacs-overlay,
-    home-manager,
-    nixos-hardware,
-    nix-doom-emacs,
-    wayland-overlay,
-    pre-commit-hooks,
     agenix,
     darwin,
+    deploy-rs,
+    emacs-overlay,
     flake-utils,
+    home-manager,
+    nix-doom-emacs,
+    nixos-hardware,
+    nixpkgs,
+    pre-commit-hooks,
+    sli-repo,
+    wayland-overlay,
     ...
-  } @ inputs: let
+  }: let
     sshKeys = {
       chris.thelio = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGaGrbXoVGe5fXpOhG6+pUZw+aYANuiDPvoI82jftpPd chris@thesogu.com";
       chris.xps = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPflVyCskMX25z8S3pQLyGbo67zBQyC+eMbCkksRw4o/ chris@thesogu.com";
       system.thelio = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDOiCjIMganzY45qiHFEO2NqkXz2mWsSEmq3zIoRJsiA root@nixos";
       system.xps = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAy30vzaxmqc08+NcYYA7LflDqoZNdRoyVXVJ2H9p2Xp root@xps-nixos";
     };
+    specialArgs = {
+      inherit sshKeys sli-repo;
+      nix-doom-emacs-module = nix-doom-emacs.hmModule;
+      overlays = {
+        emacs = emacs-overlay.overlay;
+        wayland = wayland-overlay.overlay;
+      };
+    };
   in
     with flake-utils.lib;
       eachSystem
       [system.x86_64-linux system.aarch64-linux]
       (sys: let
-        overlays = [emacs-overlay.overlay wayland-overlay.overlay];
+        overlays = builtins.attrValues overlays;
         pkgs = nixpkgs.legacyPackages.${sys};
       in {
         packages = rec {
@@ -81,6 +95,9 @@
             '';
           };
           default = hello;
+        };
+        apps = {
+          deploy = deploy-rs.apps.${sys}.deploy-rs;
         };
 
         checks =
@@ -123,7 +140,8 @@
               tom = self.outputs.nixosConfigurations.tom.config.system.build.toplevel;
             }
             else {}
-          );
+          )
+          // (builtins.mapAttrs (system: deployLib: deployLib.deployChecks self.deploy) deploy-rs.lib).${sys};
 
         devShells = {
           default = pkgs.mkShell {
@@ -146,17 +164,11 @@
         formatter = pkgs.alejandra;
       })
       // rec {
-        overlays = {
-          emacs = emacs-overlay.overlay;
-          wayland = wayland-overlay.overlay;
-        };
+        inherit (specialArgs) overlays;
         nixosConfigurations = {
           thelio-nixos = nixpkgs.lib.nixosSystem {
+            inherit specialArgs;
             system = system.x86_64-linux;
-            specialArgs = {
-              inherit (self.outputs) overlays;
-              inherit inputs sshKeys;
-            };
             modules = [
               ./nixpkgs/nixos/thelio
               nixos-hardware.nixosModules.system76
@@ -179,11 +191,8 @@
           };
 
           xps-nixos = nixpkgs.lib.nixosSystem {
+            inherit specialArgs;
             system = system.x86_64-linux;
-            specialArgs = {
-              inherit (self.outputs) overlays;
-              inherit inputs sshKeys;
-            };
             modules = [
               ./nixpkgs/nixos/xps
               nixos-hardware.nixosModules.system76
@@ -206,11 +215,8 @@
           };
 
           tootsie = nixpkgs.lib.nixosSystem {
+            inherit specialArgs;
             system = system.x86_64-linux;
-            specialArgs = {
-              inherit (self.outputs) overlays;
-              inherit inputs sshKeys;
-            };
             modules = [
               ./nixpkgs/nixos/tootsie
               ./nixpkgs/nixos/common.nix
@@ -226,11 +232,8 @@
           };
 
           taz = nixpkgs.lib.nixosSystem {
+            inherit specialArgs;
             system = system.x86_64-linux;
-            specialArgs = {
-              inherit (self.outputs) overlays;
-              inherit inputs sshKeys;
-            };
             modules = [
               ./nixpkgs/nixos/taz
               ./nixpkgs/nixos/common.nix
@@ -246,11 +249,8 @@
           };
 
           tom = nixpkgs.lib.nixosSystem {
+            inherit specialArgs;
             system = system.x86_64-linux;
-            specialArgs = {
-              inherit (self.outputs) overlays;
-              inherit inputs sshKeys;
-            };
             modules = [
               nixos-hardware.nixosModules.system76
               ./nixpkgs/nixos/tom
@@ -270,6 +270,21 @@
         darwinConfigurations.suremac = darwin.lib.darwinSystem {
           system = system.aarch64-darwin;
           modules = [./nixpkgs/darwin/suremac];
+        };
+
+        deploy.nodes = {
+          tom = {
+            hostname = "tom";
+            profiles.system = {
+              sshOpts = ["-t"];
+              user = "root";
+              path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.tom;
+              sshUser = "chris";
+              fastConnection = true;
+              magicRollback = false;
+              autoRollback = false;
+            };
+          };
         };
       };
 }

@@ -25,4 +25,9 @@
   home-manager.users.chris = {pkgs, ...}: {
     home.stateVersion = "22.11";
   };
+
+  security.sudo = {
+    wheelNeedsPassword = false;
+    execWheelOnly = true;
+  };
 }

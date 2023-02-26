@@ -2,13 +2,10 @@
   config,
   pkgs,
   lib,
-  inputs,
+  overlays,
   ...
 }: {
-  nixpkgs.overlays = [
-    inputs.emacs-overlay.overlays.default
-    inputs.wayland-overlay.overlay
-  ];
+  nixpkgs.overlays = lib.attrValues overlays;
 
   time.timeZone = "America/Chicago";
 

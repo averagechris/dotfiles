@@ -1,11 +1,11 @@
 {
   pkgs,
-  inputs,
+  sli-repo,
   ...
 }: let
   sli = import ./sli.nix {
     inherit pkgs;
-    inherit (inputs) sli-repo;
+    inherit sli-repo;
   };
 in {
   imports = [

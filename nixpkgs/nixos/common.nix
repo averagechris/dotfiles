@@ -9,6 +9,7 @@
 }: {
   nixpkgs.overlays = lib.attrValues overlays;
   nix = {
+    gc.automatic = true;
     settings.substituters = [
       "https://cache.nixos.org/"
       "https://nix-community.cachix.org"
