@@ -56,6 +56,12 @@
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPflVyCskMX25z8S3pQLyGbo67zBQyC+eMbCkksRw4o/ chris@thesogu.com" # chris-xps
   ];
 
+  # TODO extract into deployable module
+  security.sudo = {
+    wheelNeedsPassword = false;
+    execWheelOnly = true;
+  };
+
   security.acme = {
     acceptTerms = true;
     defaults.email = "green.iron4199@fastmail.com";

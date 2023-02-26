@@ -69,4 +69,10 @@
   };
 
   time.timeZone = "UTC";
+
+  # TODO extract into deployable module
+  security.sudo = {
+    wheelNeedsPassword = false;
+    execWheelOnly = true;
+  };
 }

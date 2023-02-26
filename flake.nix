@@ -285,6 +285,30 @@
               autoRollback = false;
             };
           };
+          taz = {
+            hostname = "taz";
+            profiles.system = {
+              sshOpts = ["-t"];
+              user = "root";
+              path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.taz;
+              sshUser = "chris";
+              fastConnection = true;
+              magicRollback = false;
+              autoRollback = false;
+            };
+          };
+          tootsie = {
+            hostname = "tootsie";
+            profiles.system = {
+              sshOpts = ["-t"];
+              user = "root";
+              path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.tootsie;
+              sshUser = "chris";
+              fastConnection = true;
+              magicRollback = false;
+              autoRollback = false;
+            };
+          };
         };
       };
 }

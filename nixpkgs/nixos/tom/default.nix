@@ -26,6 +26,7 @@
     home.stateVersion = "22.11";
   };
 
+  # TODO extract into deployable module
   security.sudo = {
     wheelNeedsPassword = false;
     execWheelOnly = true;
