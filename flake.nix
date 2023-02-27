@@ -76,7 +76,7 @@
         pkgs = self.inputs.nixpkgs.legacyPackages.${system};
       in {
         formatter = pkgs.alejandra;
-        apps.deploy = self.inputs.deploy-rs.apps.${sys}.deploy-rs;
+        apps.deploy = self.inputs.deploy-rs.apps.${system}.deploy-rs;
         devShells.default = pkgs.mkShell {
           inherit (self.checks.${system}.pre-commit) shellHook;
           buildInputs = with pkgs; [

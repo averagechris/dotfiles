@@ -12,7 +12,6 @@
     ../nixpkgs/nixos/tailscale.nix
     ../nixpkgs/nixos/users/chris-minimal.nix
     ./hardware-configurations/taz.nix
-    inputs.nixos-hardware.nixosModules.system76
     inputs.home-manager.nixosModules.home-manager
     {
       home-manager.useGlobalPkgs = true;

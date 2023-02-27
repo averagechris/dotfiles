@@ -15,7 +15,7 @@
     ../nixpkgs/nixos/users/chris.nix
     ./hardware-configurations/xps.nix
     inputs.agenix.nixosModules.default
-    inputs.nixos-hardware.nixosModules.system76 # TODO this is obviously wrong
+    inputs.nixos-hardware.nixosModules.dell-xps-13-9310
     inputs.home-manager.nixosModules.home-manager
     {
       home-manager.useGlobalPkgs = true;
