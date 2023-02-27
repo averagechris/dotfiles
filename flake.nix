@@ -1,6 +1,5 @@
 {
   description = "A flake containing the nixos configurations of most of my personal systems.";
-
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixos-hardware.url = "github:nixos/nixos-hardware";
@@ -17,7 +16,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-doom-emacs = {
-      url = "github:nix-community/nix-doom-emacs";
+      url = "github:nix-community/nix-doom-emacs?rev=2150fd40b2110bbd11dcb62fa5f307ec345b0fb0";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };
@@ -47,286 +46,47 @@
 
   outputs = {
     self,
-    agenix,
-    darwin,
-    deploy-rs,
-    emacs-overlay,
     flake-utils,
-    home-manager,
-    nix-doom-emacs,
-    nixos-hardware,
-    nixpkgs,
-    pre-commit-hooks,
-    sli-repo,
-    wayland-overlay,
     ...
   }: let
-    sshKeys = rec {
-      chris.thelio = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGaGrbXoVGe5fXpOhG6+pUZw+aYANuiDPvoI82jftpPd chris@thesogu.com";
-      chris.xps = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPflVyCskMX25z8S3pQLyGbo67zBQyC+eMbCkksRw4o/ chris@thesogu.com";
-      system.thelio = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDOiCjIMganzY45qiHFEO2NqkXz2mWsSEmq3zIoRJsiA root@nixos";
-      system.xps = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAy30vzaxmqc08+NcYYA7LflDqoZNdRoyVXVJ2H9p2Xp root@xps-nixos";
-      usesRemoteBuilders = {
-        inherit (system) thelio xps;
-      };
+    dotfiles.lib = import ./lib.nix {
+      inherit (self) inputs;
+      inherit (self.inputs) nixpkgs;
     };
-    specialArgs = {
-      inherit sshKeys sli-repo;
-      nix-doom-emacs-module = nix-doom-emacs.hmModule;
-      overlays = {
-        emacs = emacs-overlay.overlay;
-        wayland = wayland-overlay.overlay;
-      };
-    };
-    systemKinds = flake-utils.lib.system;
   in
-    flake-utils.lib.eachDefaultSystem (sys: let
-      overlays = builtins.attrValues overlays;
-      pkgs = nixpkgs.legacyPackages.${sys};
-    in {
-      packages = rec {
-        hello = pkgs.writeShellApplication {
-          name = "helloDotfiles";
-          runtimeInputs = [pkgs.coreutils];
-          text = ''
-            printf "\n\n"
-            echo 👋👋 hello from ~averagechris/dotfiles
-            echo have a nice day 😎
-            printf "\n\n"
-          '';
+    with dotfiles.lib;
+      {
+        inherit overlays;
+        nixosConfigurations = with flake-utils.lib.system; {
+          gnome-work-vm = mkHost aarch64-linux ./hosts/gnome-work-vm.nix;
+          taz = mkHost x86_64-linux ./hosts/taz.nix;
+          thelio-nixos = mkHost x86_64-linux ./hosts/thelio.nix;
+          tom = mkHost x86_64-linux ./hosts/tom.nix;
+          tootsie = mkHost x86_64-linux ./hosts/tootsie.nix;
+          xps-nixos = mkHost x86_64-linux ./hosts/xps.nix;
         };
-        default = hello;
-      };
-      apps = {
-        deploy = deploy-rs.apps.${sys}.deploy-rs;
-      };
-
-      checks =
-        {
-          pre-commit = pre-commit-hooks.lib.${sys}.run {
-            src = ./.;
-            hooks = {
-              alejandra.enable = true;
-              statix.enable = true;
-              shellcheck.enable = true;
-              markdown-formatter = {
-                enable = true;
-                name = "markdown-formatter";
-                types = ["markdown"];
-                language = "system";
-                pass_filenames = true;
-                entry = with pkgs.python311Packages; "${mdformat}/bin/mdformat";
-              };
-              markdown-linter = {
-                enable = true;
-                name = "markdown-linter";
-                types = ["markdown"];
-                language = "system";
-                pass_filenames = true;
-                entry = with pkgs; "${mdl}/bin/mdl -g";
-              };
-            };
-          };
-        }
-        // (
-          if sys == systemKinds.x86_64-linux
-          then {
-            # these checks take ~4GB of memory right now to run
-            # since nix flake check loads all of outputs.nixosConfigurations
-            # into memory at once 😢
-            thelio-nixos = self.outputs.nixosConfigurations.thelio-nixos.config.system.build.toplevel;
-            xps-nixos = self.outputs.nixosConfigurations.xps-nixos.config.system.build.toplevel;
-            tootsie = self.outputs.nixosConfigurations.tootsie.config.system.build.toplevel;
-            taz = self.outputs.nixosConfigurations.taz.config.system.build.toplevel;
-            tom = self.outputs.nixosConfigurations.tom.config.system.build.toplevel;
-          }
-          else {}
-        )
-        // (builtins.mapAttrs (system: deployLib: deployLib.deployChecks self.deploy) deploy-rs.lib).${sys};
-
-      devShells = {
-        default = pkgs.mkShell {
-          shellHook =
-            self.checks.${sys}.pre-commit.shellHook
-            + ''
-              helloDotfiles
-            '';
+        darwinConfigurations.suremac = mkHost flake-utils.lib.system.aarch64-darwin ./nixpkgs/darwin/suremac;
+        deploy.nodes = {
+          tom = mkDeploy self.nixosConfigurations.tom;
+          taz = mkDeploy self.nixosConfigurations.taz;
+          tootsie = mkDeploy self.nixosConfigurations.tootsie;
+        };
+      }
+      // flake-utils.lib.eachDefaultSystem (system: let
+        pkgs = self.inputs.nixpkgs.legacyPackages.${system};
+      in {
+        formatter = pkgs.alejandra;
+        apps.deploy = self.inputs.deploy-rs.apps.${sys}.deploy-rs;
+        devShells.default = pkgs.mkShell {
+          inherit (self.checks.${system}.pre-commit) shellHook;
           buildInputs = with pkgs; [
             alejandra
             cachix
-            self.outputs.packages.${sys}.hello
             mdl
             statix
             python311Packages.mdformat
           ];
         };
-      };
-
-      formatter = pkgs.alejandra;
-    })
-    // rec {
-      inherit (specialArgs) overlays;
-      nixosConfigurations = {
-        gnome-work-vm = nixpkgs.lib.nixosSystem {
-          system = systemKinds.aarrch64-linux;
-          inherit specialArgs;
-          modules = [
-            ./nixpkgs/nixos/gnome-work-vm/configuration.nix
-            ./nixpkgs/nixos/users/gnome-work-vm-chris.nix
-            ./nixpkgs/nixos/common.nix
-            ./nixpkgs/nixos/docker.nix
-            home-manager.nixosModules.home-manager
-            {
-              home-manager.useGlobalPkgs = true;
-              home-manager.useUserPackages = true;
-            }
-          ];
-        };
-        thelio-nixos = nixpkgs.lib.nixosSystem {
-          inherit specialArgs;
-          system = systemKinds.x86_64-linux;
-          modules = [
-            ./nixpkgs/nixos/thelio
-            nixos-hardware.nixosModules.system76
-            ./nixpkgs/nixos/common.nix
-            ./nixpkgs/nixos/desktop_common.nix
-            ./nixpkgs/nixos/graphical.nix
-            ./nixpkgs/nixos/greetd.nix
-            ./nixpkgs/nixos/networking.nix
-            ./nixpkgs/nixos/docker.nix
-            ./nixpkgs/nixos/sound.nix
-            ./nixpkgs/nixos/tailscale.nix
-            ./nixpkgs/nixos/users/chris.nix
-            home-manager.nixosModules.home-manager
-            {
-              home-manager.useGlobalPkgs = true;
-              home-manager.useUserPackages = true;
-            }
-            agenix.nixosModules.default
-            ./nixpkgs/nixos/use_remote_builds.nix
-          ];
-        };
-
-        xps-nixos = nixpkgs.lib.nixosSystem {
-          inherit specialArgs;
-          system = systemKinds.x86_64-linux;
-          modules = [
-            ./nixpkgs/nixos/xps
-            nixos-hardware.nixosModules.system76
-            ./nixpkgs/nixos/common.nix
-            ./nixpkgs/nixos/desktop_common.nix
-            ./nixpkgs/nixos/docker.nix
-            ./nixpkgs/nixos/graphical.nix
-            ./nixpkgs/nixos/greetd.nix
-            ./nixpkgs/nixos/networking.nix
-            ./nixpkgs/nixos/sound.nix
-            ./nixpkgs/nixos/tailscale.nix
-            ./nixpkgs/nixos/users/chris.nix
-            home-manager.nixosModules.home-manager
-            {
-              home-manager.useGlobalPkgs = true;
-              home-manager.useUserPackages = true;
-            }
-            agenix.nixosModules.default
-          ];
-        };
-
-        tootsie = nixpkgs.lib.nixosSystem {
-          inherit specialArgs;
-          system = systemKinds.x86_64-linux;
-          modules = [
-            ./nixpkgs/nixos/tootsie
-            ./nixpkgs/nixos/common.nix
-            ./nixpkgs/nixos/networking.nix
-            ./nixpkgs/nixos/tailscale.nix
-            ./nixpkgs/nixos/users/chris-minimal.nix
-            home-manager.nixosModules.home-manager
-            {
-              home-manager.useGlobalPkgs = true;
-              home-manager.useUserPackages = true;
-            }
-          ];
-        };
-
-        taz = nixpkgs.lib.nixosSystem {
-          inherit specialArgs;
-          system = systemKinds.x86_64-linux;
-          modules = [
-            ./nixpkgs/nixos/taz
-            ./nixpkgs/nixos/common.nix
-            ./nixpkgs/nixos/searx.nix
-            ./nixpkgs/nixos/tailscale.nix
-            ./nixpkgs/nixos/users/chris-minimal.nix
-            home-manager.nixosModules.home-manager
-            {
-              home-manager.useGlobalPkgs = true;
-              home-manager.useUserPackages = true;
-            }
-            ./nixpkgs/nixos/is_remote_builder.nix
-          ];
-        };
-
-        tom = nixpkgs.lib.nixosSystem {
-          inherit specialArgs;
-          system = systemKinds.x86_64-linux;
-          modules = [
-            nixos-hardware.nixosModules.system76
-            ./nixpkgs/nixos/tom
-            ./nixpkgs/nixos/common.nix
-            ./nixpkgs/nixos/tailscale.nix
-            ./nixpkgs/nixos/users/chris-minimal.nix
-            home-manager.nixosModules.home-manager
-            {
-              home-manager.useGlobalPkgs = true;
-              home-manager.useUserPackages = true;
-            }
-            ./nixpkgs/nixos/home-assistant
-          ];
-        };
-      };
-
-      darwinConfigurations.suremac = darwin.lib.darwinSystem {
-        system = systemKinds.aarch64-darwin;
-        modules = [./nixpkgs/darwin/suremac];
-      };
-
-      deploy.nodes = {
-        tom = {
-          hostname = "tom";
-          profiles.system = {
-            sshOpts = ["-t"];
-            user = "root";
-            path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.tom;
-            sshUser = "chris";
-            fastConnection = true;
-            magicRollback = false;
-            autoRollback = false;
-          };
-        };
-        taz = {
-          hostname = "taz";
-          profiles.system = {
-            sshOpts = ["-t"];
-            user = "root";
-            path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.taz;
-            sshUser = "chris";
-            fastConnection = true;
-            magicRollback = false;
-            autoRollback = false;
-          };
-        };
-        tootsie = {
-          hostname = "tootsie";
-          profiles.system = {
-            sshOpts = ["-t"];
-            user = "root";
-            path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.tootsie;
-            sshUser = "chris";
-            fastConnection = true;
-            magicRollback = false;
-            autoRollback = false;
-          };
-        };
-      };
-    };
+        checks = dotfiles.lib.mkCommitCheck system // (builtins.mapAttrs (sys: l: l.deployChecks self.deploy) self.inputs.deploy-rs.lib).${system};
+      });
 }

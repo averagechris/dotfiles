@@ -1,6 +1,27 @@
-{pkgs, ...}: {
+{
+  pkgs,
+  inputs,
+  ...
+}: {
   imports = [
-    ./hardware-configuration.nix
+    ../nixpkgs/nixos/common.nix
+    ../nixpkgs/nixos/desktop_common.nix
+    ../nixpkgs/nixos/graphical.nix
+    ../nixpkgs/nixos/greetd.nix
+    ../nixpkgs/nixos/networking.nix
+    ../nixpkgs/nixos/docker.nix
+    ../nixpkgs/nixos/sound.nix
+    ../nixpkgs/nixos/tailscale.nix
+    ../nixpkgs/nixos/users/chris.nix
+    ../nixpkgs/nixos/use_remote_builds.nix
+    ./hardware-configurations/thelio.nix
+    inputs.agenix.nixosModules.default
+    inputs.nixos-hardware.nixosModules.system76
+    inputs.home-manager.nixosModules.home-manager
+    {
+      home-manager.useGlobalPkgs = true;
+      home-manager.useUserPackages = true;
+    }
   ];
 
   boot.initrd.luks.devices.root.device = "/dev/sda2";

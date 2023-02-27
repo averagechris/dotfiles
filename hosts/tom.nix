@@ -1,10 +1,21 @@
 {
   config,
+  inputs,
   pkgs,
   ...
 }: {
   imports = [
-    ./hardware-configuration.nix
+    ./hardware-configurations/tom.nix
+    ../nixpkgs/nixos/common.nix
+    ../nixpkgs/nixos/tailscale.nix
+    ../nixpkgs/nixos/users/chris-minimal.nix
+    ../nixpkgs/nixos/home-assistant
+    inputs.nixos-hardware.nixosModules.system76
+    inputs.home-manager.nixosModules.home-manager
+    {
+      home-manager.useGlobalPkgs = true;
+      home-manager.useUserPackages = true;
+    }
   ];
 
   boot.loader.systemd-boot.enable = true;

@@ -1,7 +1,7 @@
 {
   config,
   pkgs,
-  nix-doom-emacs-module,
+  input-modules,
   ...
 }: {
   imports = [./chris-minimal.nix];
@@ -32,7 +32,7 @@
       ../../nerdfonts
       ../../sway
       ../../terminal_emulator
-      nix-doom-emacs-module
+      input-modules.doom
     ];
     programs.git.extraConfig.commit.gpgsign = true;
   };

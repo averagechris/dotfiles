@@ -1,6 +1,6 @@
 {
   pkgs,
-  nix-doom-emacs-module,
+  input-modules,
   sli-repo,
   ...
 }: let
@@ -40,7 +40,7 @@ in {
       ../../terminal_emulator
       ../../tmux
       ../../linux_desktop
-      nix-doom-emacs-module
+      input-modules.doom
       sure
     ];
 
