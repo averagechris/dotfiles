@@ -8,6 +8,8 @@
     ../nixpkgs/nixos/users/gnome-work-vm-chris.nix
     ../nixpkgs/nixos/common.nix
     ../nixpkgs/nixos/docker.nix
+    ../nixpkgs/nixos/tailscale.nix
+    ../nixpkgs/nixos/is_remote_builder.nix
     ./hardware-configurations/gnome-work-vm.nix
     inputs.home-manager.nixosModules.home-manager
     {

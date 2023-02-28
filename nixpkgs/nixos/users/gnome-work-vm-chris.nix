@@ -2,6 +2,8 @@
   pkgs,
   input-modules,
   sli-repo,
+  lib,
+  sshKeys,
   ...
 }: let
   username = "chris";
@@ -17,6 +19,7 @@ in {
         "wheel"
       ];
       shell = pkgs.zsh;
+      openssh.authorizedKeys.keys = lib.attrValues sshKeys.chris;
     };
   };
 
@@ -55,4 +58,14 @@ in {
 
   programs.gnupg.agent.enable = true;
   programs.gnupg.agent.pinentryFlavor = "gnome3";
+
+  security.sudo = {
+    wheelNeedsPassword = false;
+    execWheelOnly = true;
+  };
+  services.openssh = {
+    enable = true;
+    settings.PermitRootLogin = "no";
+    settings.PasswordAuthentication = false;
+  };
 }

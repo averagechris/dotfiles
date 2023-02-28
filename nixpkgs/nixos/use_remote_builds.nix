@@ -16,16 +16,22 @@
     distributedBuilds = true;
     buildMachines = [
       {
+        hostName = "gnome-work-vm";
+        system = "aarch64-linux";
+        maxJobs = 8;
+        supportedFeatures = [];
+      }
+      {
         hostName = "eu.nixbuild.net";
         system = "aarch64-linux";
         maxJobs = 100;
         supportedFeatures = ["benchmark" "big-parallel"];
       }
-      # {
-      #   hostName = "taz";
-      #   system = "x86_64-linux";
-      #   maxJobs = 4;
-      # }
+      {
+        hostName = "taz";
+        system = "x86_64-linux";
+        maxJobs = 4;
+      }
     ];
   };
 }
