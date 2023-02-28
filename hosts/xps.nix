@@ -13,6 +13,7 @@
     ../nixpkgs/nixos/sound.nix
     ../nixpkgs/nixos/tailscale.nix
     ../nixpkgs/nixos/users/chris.nix
+    ../nixpkgs/nixos/use_remote_builds.nix
     ./hardware-configurations/xps.nix
     inputs.agenix.nixosModules.default
     inputs.nixos-hardware.nixosModules.dell-xps-13-9310

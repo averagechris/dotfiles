@@ -14,23 +14,30 @@
 
   nix = {
     distributedBuilds = true;
+    extraOptions = ''
+      builders-use-substitutes = true
+    '';
     buildMachines = [
       {
         hostName = "gnome-work-vm";
-        system = "aarch64-linux";
         maxJobs = 8;
-        supportedFeatures = [];
+        protocol = "ssh";
+        supportedFeatures = ["kvm" "benchmark" "big-parallel"];
+        system = "aarch64-linux";
       }
       {
         hostName = "eu.nixbuild.net";
-        system = "aarch64-linux";
         maxJobs = 100;
+        protocol = "ssh-ng";
         supportedFeatures = ["benchmark" "big-parallel"];
+        system = "aarch64-linux";
       }
       {
         hostName = "taz";
-        system = "x86_64-linux";
         maxJobs = 4;
+        protocol = "ssh";
+        supportedFeatures = ["kvm" "benchmark" "big-parallel"];
+        system = "x86_64-linux";
       }
     ];
   };
