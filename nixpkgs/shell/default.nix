@@ -4,11 +4,12 @@
   lib,
   ...
 }: let
-  isEmacsEnabled = config.services.emacs.enable;
+  inherit (pkgs.stdenv.hostPlatform) isLinux;
+  isHelixEnabled = config.programs.helix.enable;
   isGPGenabled = true; # 😂 FIXME: config points to home-manager here, but need nixos's config?
   EDITOR =
-    if isEmacsEnabled
-    then "emacsclient -t"
+    if isHelixEnabled
+    then "hx"
     else "vim";
 in {
   # starship is the shell prompt
@@ -17,28 +18,12 @@ in {
   programs.zsh = {
     enable = true;
 
-    defaultKeymap = "viins";
-
     history = {
       size = 50000;
       ignoreDups = true;
     };
 
-    initExtra = with pkgs;
-      (builtins.readFile ./post-compinit.zsh)
-      + ''
-
-        eval "$(${direnv}/bin/direnv hook zsh)"
-
-        ph-widget() {
-          ph info | grep -q 'Database Version' && ph show --field password "$(ph grep -i . | fzf)" | wl-copy --trim-newline
-        }
-
-        zle -N ph-widget
-        bindkey -M emacs '^p' ph-widget
-        bindkey -M vicmd '^p' ph-widget
-        bindkey -M viins '^p' ph-widget
-      '';
+    initExtra = (builtins.readFile ./post-compinit.zsh) + ''eval "$(${pkgs.direnv}/bin/direnv hook zsh)"'';
 
     shellAliases = import ./aliases.nix {inherit pkgs;};
 
@@ -57,9 +42,6 @@ in {
         KEYTIMEOUT = "1";
         LESS = "-SRXF";
       }
-      (lib.mkIf isEmacsEnabled {
-        VISUAL = "emacs";
-      })
       (lib.mkIf isGPGenabled {
         GPG_TTY = "$(tty)";
       })
@@ -69,6 +51,13 @@ in {
   programs.fzf = {
     enable = true;
     defaultCommand = "fd --type f";
+    defaultOptions = [
+      "--color=fg:#908caa,bg:#232136,hl:#ea9a97"
+      "--color=fg+:#e0def4,bg+:#393552,hl+:#ea9a97"
+      "--color=border:#44415a,header:#3e8fb0,gutter:#232136"
+      "--color=spinner:#f6c177,info:#9ccfd8,separator:#44415a"
+      "--color=pointer:#c4a7e7,marker:#eb6f92,prompt:#908caa"
+    ];
     fileWidgetCommand = "fd --type f --hidden";
     changeDirWidgetCommand = "fd --type d";
     enableZshIntegration = true;
@@ -88,5 +77,9 @@ in {
       sshfs
       wget
     ]
-    ++ builtins.attrValues (import ./shell_extras.nix {inherit pkgs;});
+    ++ (
+      if isLinux
+      then builtins.attrValues (import ./shell_extras.nix {inherit pkgs;})
+      else []
+    );
 }

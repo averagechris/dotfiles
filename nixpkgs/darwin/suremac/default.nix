@@ -3,6 +3,7 @@
   inputs,
   ...
 }: {
+  nixpkgs.config.allowUnfree = true;
   imports = [
     inputs.home-manager.darwinModules.home-manager
     {
@@ -168,7 +169,7 @@
       enableKeyMapping = true;
       remapCapsLockToControl = false;
       remapCapsLockToEscape = true;
-      swapLeftCommandAndLeftAlt = true;
+      swapLeftCommandAndLeftAlt = false;
     };
     stateVersion = 4;
   };
@@ -183,8 +184,12 @@
       ../../helix.nix
       ../../zellij
       ../../terminal_emulator
+      ../../shell
     ];
-    programs.zsh.enable = true;
+    programs.direnv = {
+      enable = true;
+      nix-direnv.enable = true;
+    };
   };
 
   time.timeZone = "America/Chicago";
