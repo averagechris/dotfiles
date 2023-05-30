@@ -36,6 +36,10 @@
   system.stateVersion = "21.05";
   home-manager.users.chris = {pkgs, ...}: {
     home.stateVersion = "21.05";
+    imports = [
+      ../nixpkgs/helix.nix
+      ../nixpkgs/zellij
+    ];
   };
 
   boot.kernelModules = [

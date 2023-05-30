@@ -86,7 +86,7 @@
             mdl
             statix
             python311Packages.mdformat
-            nil  # nix language server
+            nil # nix language server
           ];
         };
         checks = dotfiles.lib.mkCommitCheck system // (builtins.mapAttrs (sys: l: l.deployChecks self.deploy) self.inputs.deploy-rs.lib).${system};

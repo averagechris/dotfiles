@@ -35,5 +35,15 @@
       input-modules.doom
     ];
     programs.git.extraConfig.commit.gpgsign = true;
+
+    home.pointerCursor = {
+      name = "Adwaita";
+      package = pkgs.gnome.adwaita-icon-theme;
+      size = 14;
+      x11 = {
+        enable = false;
+        defaultCursor = "Adwaita";
+      };
+    };
   };
 }
