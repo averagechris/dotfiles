@@ -36,7 +36,7 @@ keybinds {
 	bind "Alt k" { MoveFocus "Up"; }
 	bind "Alt l" { MoveFocus "Right"; }
 
-	bind "H" { PageScrollUp; }
+	bind "K" { PageScrollUp; }
 	bind "J" { PageScrollDown; }
 	bind "G" { ScrollToBottom; }
 
@@ -122,7 +122,7 @@ keybinds {
   // locked is the mode meant to be used most of the time, e.g. when actually doing work
   // TODO make my default layout start in locked mode
   locked clear-defaults=true {
-    bind "Alt n" { SwitchToMode "normal"; }
+    bind "Alt m" { SwitchToMode "normal"; }
 
 	bind "Alt q" { Detach; }
 	bind "Alt Q" { Quit; }
