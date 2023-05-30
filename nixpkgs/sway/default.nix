@@ -51,7 +51,7 @@ in {
   };
 
   # notifications daemon
-  config.programs.mako = {
+  config.services.mako = {
     enable = true;
     anchor = "top-center";
     defaultTimeout = 2750;

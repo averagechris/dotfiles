@@ -6,6 +6,7 @@
 }: let
   userName = "chris";
 in {
+  programs.zsh.enable = true;
   users.users = {
     "${userName}" = {
       isNormalUser = true;
