@@ -6,6 +6,7 @@
       # font.bold.family = "SourceCodePro";
       # font.italic.family = "SourceCodePro";
       # font.bold_italic.family = "SourceCodePro";
+      window.option_as_alt = "Both";
       font.size = 16;
       import = [
         # TODO this should map from any theme file in ./themes/
