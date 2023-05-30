@@ -1,8 +1,15 @@
 {
-  config,
   pkgs,
+  inputs,
   ...
 }: {
+  imports = [
+    inputs.home-manager.darwinModules.home-manager
+    {
+      home-manager.useGlobalPkgs = true;
+      home-manager.useUserPackages = true;
+    }
+  ];
   environment.systemPackages = with pkgs; [
     git
     nix-prefetch-scripts
@@ -164,6 +171,20 @@
       swapLeftCommandAndLeftAlt = true;
     };
     stateVersion = 4;
+  };
+
+  users.chrisnotnix = {
+    name = "chrisnotnix";
+    home = "/Users/chrisnotnix";
+  };
+  home-manager.users.chrisnotnix = {pkgs, ...}: {
+    home.stateVersion = "22.11";
+    imports = [
+      ../../helix.nix
+      ../../zellij
+      ../../terminal_emulator
+    ];
+    programs.zsh.enable = true;
   };
 
   time.timeZone = "America/Chicago";

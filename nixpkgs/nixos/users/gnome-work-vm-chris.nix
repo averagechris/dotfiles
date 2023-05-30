@@ -19,9 +19,10 @@ in {
         "wheel"
       ];
       shell = pkgs.zsh;
-      openssh.authorizedKeys.keys = lib.attrValues sshKeys.chris;
+      openssh.authorizedKeys.keys = lib.attrValues sshKeys.chris ++ ["ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ7FLKrbwo1hB9ThGrEcOP/pI05tA3vMuxaNH679BfZH chrisnotnix@suremac"];
     };
   };
+  programs.zsh.enable = true;
 
   home-manager.users."${username}" = {pkgs, ...}: {
     home = {
@@ -43,8 +44,10 @@ in {
       ../../terminal_emulator
       ../../tmux
       ../../linux_desktop
+      ../../zellij
+      ../../helix.nix
       input-modules.doom
-      sure
+      # sure
     ];
 
     programs.git.extraConfig.commit.gpgsign = false; # TODO move gpg key over and use
