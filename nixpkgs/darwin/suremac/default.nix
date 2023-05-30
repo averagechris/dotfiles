@@ -173,7 +173,7 @@
     stateVersion = 4;
   };
 
-  users.chrisnotnix = {
+  users.users.chrisnotnix = {
     name = "chrisnotnix";
     home = "/Users/chrisnotnix";
   };
