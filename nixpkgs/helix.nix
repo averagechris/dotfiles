@@ -39,9 +39,17 @@
 
         # minor-mode "file"
         space.f = {
-          f = "file_picker";
+          f = "file_picker_in_current_buffer_directory";
+          F = "file_picker";
           s = ":write";
           S = ":write!";
+        };
+
+        # minor-mode "git"
+        space.g = {
+          # TODO can we detect if we're in a zellij pane? if we're not in one this should fail
+          g = ":sh zellij run --direction up --close-on-exit --name gitui -- gitui --polling";
+          s = ":sh git add .";
         };
 
         # minor-mode "toggle"
@@ -62,6 +70,8 @@
           d = "wclose"; # space.w.q is the default binding
           v = ":vsplit";
           s = ":hsplit";
+          # pop the floating zellij panes if any
+          p = ":sh zellij action toggle-floating-panes";
         };
 
         space.q.q = ":quit";

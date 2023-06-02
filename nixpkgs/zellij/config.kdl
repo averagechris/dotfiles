@@ -2,6 +2,7 @@ theme "rose-pine-moon";
 on_force_close "detach"
 pane_frames false
 default_layout "compact"
+default_mode "locked"
 scroll_buffer_size 20000
 // copy_clipboard "primary"  // primary or system, default is system
 
@@ -29,16 +30,14 @@ keybinds {
     bind "Enter" { SwitchToMode "locked"; }
     bind "r" { SwitchToMode "resize"; }
     bind "w" { SwitchToMode "pane"; }
-    bind "t" { SwitchToMode "tab"; }
+    bind "Tab" { SwitchToMode "tab"; }
+    bind "g" { SwitchToMode "session"; }
+    bind "?" { SwitchToMode "scroll"; }
 
 	bind "Alt h" { MoveFocus "Left"; }
 	bind "Alt j" { MoveFocus "Down"; }
 	bind "Alt k" { MoveFocus "Up"; }
 	bind "Alt l" { MoveFocus "Right"; }
-
-	bind "K" { PageScrollUp; }
-	bind "J" { PageScrollDown; }
-	bind "G" { ScrollToBottom; }
 
     bind "Alt n" { NewPane; }
 	bind "Alt d" { CloseFocus; }
@@ -54,7 +53,6 @@ keybinds {
 	bind "Alt 6" { GoToTab 6; }
 	bind "Alt 7" { GoToTab 7; }
 	bind "Alt 9" { GoToTab 9; }
-
 	bind "Ctrl [" { PreviousSwapLayout; }
 	bind "Ctrl ]" { NextSwapLayout; }
   }
@@ -95,6 +93,12 @@ keybinds {
 	bind "j" { Resize "Down"; }
 	bind "k" { Resize "Up"; }
 	bind "l" { Resize "Right"; }
+	bind "H" { Resize "Decrease Left"; }
+	bind "J" { Resize "Decrease Down"; }
+	bind "K" { Resize "Decrease Up"; }
+	bind "L" { Resize "Decrease Right"; }
+    bind "+" { Resize "Increase"; }
+    bind "-" { Resize "Decrease"; }
   }
 
   tab clear-defaults=true {
@@ -116,7 +120,47 @@ keybinds {
     bind "7" { GoToTab 7; SwitchToMode "locked"; }
     bind "8" { GoToTab 8; SwitchToMode "locked"; }
     bind "9" { GoToTab 9; SwitchToMode "locked"; }
-    bind "Tab" { ToggleTab; }
+    bind "Tab" { ToggleTab; SwitchToMode "locked"; }
+  }
+  renametab clear-defaults=true {
+    bind "Esc" { UndoRenameTab; SwitchToMode "locked"; }
+  }
+
+  // I'm stealing this `session` mode for a `git` namespace
+  session clear-defaults=true {
+    bind "Esc" { SwitchToMode "locked"; }  // TODO rm when shared or shared_except works
+
+    bind "g" {
+      Run "gitui" "--polling" {
+        TogglePaneEmbedOrFloatingfloating;
+      }
+    }
+  }
+
+  scroll clear-defaults=true {
+    bind "Esc" { ScrollToBottom; SwitchToMode "locked"; }
+    bind "Alt /" { SwitchToMode "EnterSearch"; SearchInput 0; }
+
+    bind "e" { EditScrollback; SwitchToMode "Normal"; }
+    bind "j" { ScrollDown; }
+    bind "k" { ScrollUp; }
+    bind "[" { PageScrollUp; }
+    bind "]" { PageScrollDown; }
+    bind "{" { HalfPageScrollUp; }
+    bind "}" { HalfPageScrollDown; }
+  }
+  entersearch clear-defaults=true {
+    bind "Ctrl c" "Esc" { SwitchToMode "scroll"; }
+    bind "Enter" { SwitchToMode "Search"; }
+  }
+  search clear-defaults=true {
+    bind "Esc" { ScrollToBottom; SwitchToMode "locked"; }
+
+    bind "n" { Search "down"; }
+    bind "N" "p" { Search "up"; }
+    bind "C" { SearchToggleOption "CaseSensitivity"; }
+    bind "W" { SearchToggleOption "Wrap"; }
+    bind "O" { SearchToggleOption "WholeWord"; }
   }
 
   // locked is the mode meant to be used most of the time, e.g. when actually doing work
@@ -126,6 +170,9 @@ keybinds {
 
 	bind "Alt q" { Detach; }
 	bind "Alt Q" { Quit; }
+
+
+
   }
 
   // FIXME shared_except does not seem to work, I'm not sure if I'm doing something wrong.
