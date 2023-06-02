@@ -46,9 +46,8 @@
         };
 
         # minor-mode "git"
-        space.g = {
-          # TODO can we detect if we're in a zellij pane? if we're not in one this should fail
-          g = ":sh zellij run --direction up --close-on-exit --name gitui -- gitui --polling";
+        space.G = {
+          g = ":sh zellij run --direction up --close-on-exit --name gitui -- gitui --polling && zellij action toggle-fullscreen";
           s = ":sh git add .";
         };
 

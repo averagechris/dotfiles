@@ -1,10 +1,18 @@
 theme "rose-pine-moon";
 on_force_close "detach"
 pane_frames false
-default_layout "compact"
+default_layout "basic"
 default_mode "locked"
 scroll_buffer_size 20000
-// copy_clipboard "primary"  // primary or system, default is system
+copy_clipboard "primary"  // primary or system, default is system
+copy_on_select true
+
+plugins {
+    tab-bar { path "tab-bar"; }
+    status-bar { path "status-bar"; }
+    strider { path "strider"; }
+    compact-bar { path "compact-bar"; }
+}
 
 // These keybindings mostly override everything about the default keybindings in an attempt
 // to mimic the best parts of the Doom Emacs / Spacemacs keybindings style.
@@ -162,6 +170,7 @@ keybinds {
     bind "C" { SearchToggleOption "CaseSensitivity"; }
     bind "W" { SearchToggleOption "Wrap"; }
     bind "O" { SearchToggleOption "WholeWord"; }
+    bind "y" { Copy; }
   }
 
   // locked is the mode meant to be used most of the time, e.g. when actually doing work
