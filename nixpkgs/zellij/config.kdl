@@ -108,7 +108,7 @@ keybinds {
 
     bind "h" "k" "[" { GoToPreviousTab; }
     bind "l" "j" "]" { GoToNextTab; }
-    bind "n" { NewTab; SwitchToMode "locked"; }
+    bind "n" { NewTab; SwitchToMode "renametab"; TabNameInput 0; }
     bind "d" { CloseTab; SwitchToMode "locked"; }
     // bind "s" { ToggleActiveSyncTab; SwitchToMode "locked"; }
     bind "1" { GoToTab 1; SwitchToMode "locked"; }
@@ -124,6 +124,7 @@ keybinds {
   }
   renametab clear-defaults=true {
     bind "Esc" { UndoRenameTab; SwitchToMode "locked"; }
+    bind "Enter" { SwitchToMode "locked"; }
   }
 
   // I'm stealing this `session` mode for a `git` namespace
