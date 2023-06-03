@@ -41,27 +41,32 @@
         space.f = {
           f = "file_picker_in_current_buffer_directory";
           F = "file_picker";
+          p = "file_picker"; # file_picker "project"
           s = ":write";
           S = ":write!";
         };
 
         # minor-mode "git"
-        space.G = {
+        space.g = {
           g = ":sh zellij run --direction up --close-on-exit --name gitui -- gitui --polling && zellij action toggle-fullscreen";
-          s = ":sh git add .";
+          # s currenty reserved for the lsp debugger stuff TODO fix it
+          S = ":sh git add .";
+          p = ":sh zellij run --floating --name pre-commit -- pre-commit";
         };
 
         # minor-mode "toggle"
         space.t = {
           c = "toggle_comments";
           w = ":toggle-option soft-wrap.enable";
-          s = ":set-option whitespace.render all"; # TODO get toggle off
-          S = ":set-option whitespace.render none"; # TODO get toggle off
+
+          # toggling non-booleans will be massively improved with: https://github.com/helix-editor/helix/pull/4411
+          s = ":set-option whitespace.render all";
+          S = ":set-option whitespace.render none";
           i = ":toggle-option indent-guides.render";
-          n = '':set-option gutters ["diagnostics"]'';
-          N = '':set-option gutters ["diagnostics","line-numbers"]'';
-          t = ":theme rose_pine_moon";
-          T = ":theme rose_pine_dawn";
+          N = '':set-option gutters ["diagnostics","diff"]'';
+          n = '':set-option gutters ["diagnostics","diff","line-numbers"]'';
+          T = ":theme rose_pine_moon";
+          t = ":theme rose_pine_dawn";
         };
 
         # minor-mode "window"

@@ -23,6 +23,7 @@ in {
     else "pbpaste";
 
   nixos-switch = "nixos-rebuild switch --use-remote-sudo";
+  nixos-test = "nixos-rebuild test --use-remote-sudo";
 
   today = "date +%Y-%m-%d";
 }

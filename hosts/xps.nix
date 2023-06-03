@@ -1,8 +1,4 @@
-{
-  pkgs,
-  inputs,
-  ...
-}: {
+{inputs, ...}: {
   imports = [
     ../nixpkgs/nixos/common.nix
     ../nixpkgs/nixos/desktop_common.nix
@@ -39,6 +35,7 @@
     imports = [
       ../nixpkgs/helix.nix
       ../nixpkgs/zellij
+      ../nixpkgs/gitui
     ];
   };
 

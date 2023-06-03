@@ -10,7 +10,6 @@
   layouts = with builtins; map mkLayoutFile (attrNames (readDir ./layouts));
 in {
   programs.zellij.enable = true;
-  programs.gitui.enable = true;
 
   xdg.configFile =
     (merge layouts)
