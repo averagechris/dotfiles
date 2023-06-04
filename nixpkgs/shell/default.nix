@@ -1,23 +1,6 @@
-{
-  config,
-  pkgs,
-  lib,
-  ...
-}: let
-  inherit (pkgs.stdenv.hostPlatform) isLinux;
-  isHelixEnabled = config.programs.helix.enable;
-  isGPGenabled = true; # 😂 FIXME: config points to home-manager here, but need nixos's config?
-  EDITOR =
-    if isHelixEnabled
-    then "hx"
-    else "vim";
-in {
-  # starship is the shell prompt
-  programs.starship.enable = true;
-
+{pkgs, ...}: {
+  imports = [./aliases.nix];
   programs.zsh = {
-    enable = true;
-
     history = {
       size = 50000;
       ignoreDups = true;
@@ -25,13 +8,10 @@ in {
 
     initExtra = (builtins.readFile ./post-compinit.zsh) + ''eval "$(${pkgs.direnv}/bin/direnv hook zsh)"'';
 
-    shellAliases = import ./aliases.nix {inherit pkgs;};
-
     enableAutosuggestions = true;
     enableCompletion = true;
 
     oh-my-zsh = {
-      enable = true;
       theme = "clean";
       plugins = ["ssh-agent"];
       extraConfig = ''
@@ -39,21 +19,10 @@ in {
       '';
     };
 
-    sessionVariables = lib.mkMerge [
-      {
-        inherit EDITOR;
-        GIT_EDITOR = EDITOR;
-        KEYTIMEOUT = "1";
-        LESS = "-SRXF";
-      }
-      (lib.mkIf isGPGenabled {
-        GPG_TTY = "$(tty)";
-      })
-    ];
+    sessionVariables.LESS = "-SRXF";
   };
 
   programs.fzf = {
-    enable = true;
     defaultCommand = "fd --type f";
     defaultOptions = [
       "--color=fg:#908caa,bg:#232136,hl:#ea9a97"
@@ -66,24 +35,4 @@ in {
     changeDirWidgetCommand = "fd --type d";
     enableZshIntegration = true;
   };
-
-  home.packages = with pkgs;
-    [
-      curl
-      direnv
-      fd
-      htop
-      jq
-      neofetch
-      pre-commit
-      procs
-      ripgrep
-      sshfs
-      wget
-    ]
-    ++ (
-      if isLinux
-      then builtins.attrValues (import ./shell_extras.nix {inherit pkgs;})
-      else []
-    );
 }

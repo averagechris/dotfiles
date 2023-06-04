@@ -24,24 +24,23 @@
     _module.args = {inherit (config.age) secrets;};
     imports = [
       ../../email
-      ../../emacs
       ../../firefox
       ../../guiapps
       ../../linux_desktop
       ../../meganz.nix
-      ../../nerdfonts
       ../../sway
       ../../terminal_emulator
       input-modules.doom
     ];
     programs.git.extraConfig.commit.gpgsign = true;
+    dotfiles.shell.nerdfonts.enable = true;
 
     home.pointerCursor = {
       name = "Adwaita";
       package = pkgs.gnome.adwaita-icon-theme;
-      size = 14;
+      size = 12;
       x11 = {
-        enable = false;
+        enable = true;
         defaultCursor = "Adwaita";
       };
     };

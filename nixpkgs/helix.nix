@@ -1,7 +1,5 @@
 {...}: {
   programs.helix = {
-    enable = true;
-
     settings = {
       theme = "rose_pine_moon";
       editor = {

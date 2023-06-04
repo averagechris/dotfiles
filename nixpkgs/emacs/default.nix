@@ -1,5 +1,6 @@
 {
   pkgs,
+  lib,
   config,
   ...
 }: let
@@ -33,15 +34,9 @@
     nodePackages.yaml-language-server
   ];
 in {
-  config.home.packages = pkgs-markdownMode ++ pkgs-pythonMode ++ pkgs-shellMode ++ pkgs-misc;
-
-  config.programs.direnv = {
-    enable = true;
-    nix-direnv.enable = true;
-  };
+  config.home.packages = lib.mkIf config.dotfiles.shell.emacs.enable (pkgs-markdownMode ++ pkgs-pythonMode ++ pkgs-shellMode ++ pkgs-misc);
 
   config.programs.doom-emacs = with pkgs; {
-    enable = true;
     doomPrivateDir = ./doom.d;
     extraConfig = ''
       (after! mu4e (setq
@@ -56,7 +51,4 @@ in {
     extraPackages = [emacs-all-the-icons-fonts mu];
     emacsPackage = emacsPgtk;
   };
-
-  config.services.emacs.enable = true;
-  config.services.emacs.defaultEditor = true;
 }

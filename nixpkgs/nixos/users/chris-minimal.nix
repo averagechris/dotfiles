@@ -31,12 +31,10 @@ in {
     };
 
     imports = [
-      ../../git
-      ../../neovim
+      ../../../hm_modules/shell.nix
       ../../passhole
       ../../python
-      ../../shell
-      ../../tmux
     ];
+    dotfiles.shell.enable = true;
   };
 }

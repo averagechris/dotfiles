@@ -1,0 +1,120 @@
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}: let
+  inherit (pkgs.stdenv.hostPlatform) isLinux;
+
+  cfg = config.dotfiles.shell;
+  mkDefaultEnabledOption = description:
+    lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      example = false;
+      description = lib.mdDoc description;
+    };
+  extra_shell_scripts = builtins.attrValues (import ./shell_extras.nix {inherit pkgs;});
+in
+  with lib; {
+    imports = [
+      ../nixpkgs/helix.nix
+      ../nixpkgs/zellij
+      ../nixpkgs/shell
+      ../nixpkgs/gitui
+      ../nixpkgs/nerdfonts
+      ../nixpkgs/neovim
+      ../nixpkgs/git
+    ];
+
+    options.dotfiles.shell = {
+      enable = mkEnableOption "my dotfiles shell config.";
+      emacs.enable = mkEnableOption "enable my highly configured doom emacs setup.";
+      neovim.enable = mkEnableOption "enable configured neovim setup.";
+      nerdfonts.enable = mkEnableOption "install nerdfonts.";
+
+      # default enabled
+      git.enable = mkDefaultEnabledOption "enable configured git.";
+      gitui.enable = mkDefaultEnabledOption "enable gitui, configured to be integrated with zellij + helix.";
+      gpg.enable = mkEnableOption "right now this only sets up the GPG_TTY env variable, but in the future it might do more.";
+      helix.enable = mkDefaultEnabledOption "enable my highly configured helix.";
+      shell_scripts.enable = mkDefaultEnabledOption "enable the various shell scripts i've written.";
+      zellij.enable = mkDefaultEnabledOption "enable my highly configured zellij.";
+
+      # config values with good minimal defaults
+      env.editor = mkOption {
+        type = types.enum ["hx" "nvim" "vim" "emacsclient -t" "emacs"];
+        default =
+          if cfg.helix.enable
+          then "hx"
+          else "nvim";
+        example = "emacsclient -t";
+        description = "The shell command used as the EDITOR environment variable.";
+      };
+      commands = {
+        copy = mkOption {
+          type = types.str;
+          default =
+            if isLinux
+            then "${pkgs.wl-clipboard}/bin/wl-copy"
+            else "pbcopy";
+          example = "pbcopy";
+          description = ''
+             The shell command used to send data to the system clipboard
+            It can be the full path, or just the command name if it's installed
+            in your shell environment's $PATH variable.
+
+            The default value assumes you're using wayland on linux.
+          '';
+        };
+        paste = mkOption {
+          type = types.str;
+          default =
+            if isLinux
+            then "${pkgs.wl-clipboard}/bin/wl-paste"
+            else "pbpaste";
+          example = "pbpaste";
+          description = ''
+             The shell command used to send data to the system clipboard
+            It can be the full path, or just the command name if it's installed
+            in your shell environment's $PATH variable.
+
+            The default value assumes you're using wayland on linux.
+          '';
+        };
+      };
+    };
+
+    config = mkIf cfg.enable {
+      programs.direnv.enable = true;
+      programs.direnv.nix-direnv.enable = true;
+      programs.doom-emacs.enable = cfg.emacs.enable;
+      programs.fzf.enable = true;
+      programs.git.enable = cfg.git.enable;
+      programs.gitui.enable = true;
+      programs.helix.enable = cfg.helix.enable;
+      programs.neovim.enable = cfg.neovim.enable;
+      programs.starship.enable = true; # shell prompt
+      programs.zellij.enable = cfg.zellij.enable;
+      programs.zsh.enable = true;
+      programs.zsh.oh-my-zsh.enable = true;
+
+      services.emacs.enable = cfg.emacs.enable;
+
+      programs.zsh.sessionVariables.EDITOR = cfg.env.editor;
+      programs.zsh.sessionVariables.GIT_EDITOR = cfg.env.editor;
+      # programs.zsh.sessionVariables.GPG_TTY = mkIf cfg.gpg.enable "$(tty)";
+
+      home.packages = with pkgs; [
+        curl
+        direnv
+        fd
+        htop
+        jq
+        pre-commit
+        procs
+        ripgrep
+      ];
+      # ] ++ mkIf cfg.shell_scripts.enable extra_shell_scripts;
+    };
+  }
