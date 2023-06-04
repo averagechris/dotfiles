@@ -33,6 +33,10 @@ in {
     oh-my-zsh = {
       enable = true;
       theme = "clean";
+      plugins = ["ssh-agent"];
+      extraConfig = ''
+        zstyle :omz:plugins:ssh-agent identities id_ed25519
+      '';
     };
 
     sessionVariables = lib.mkMerge [
