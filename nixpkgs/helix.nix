@@ -20,12 +20,15 @@
         };
       };
       keys.normal = {
+        space.":" = "command_mode";
+
         # minor-mode "buffer"
         space.b = {
           b = "buffer_picker";
           d = ":buffer-close";
           D = ":buffer-close!";
-          f = ":format";
+          f = "file_picker_in_current_buffer_directory";
+          F = ":format";
           j = ":buffer-next";
           k = ":buffer-previous";
           n = ":buffer-next";
@@ -37,9 +40,7 @@
 
         # minor-mode "file"
         space.f = {
-          f = "file_picker_in_current_buffer_directory";
-          F = "file_picker";
-          p = "file_picker"; # file_picker "project"
+          f = "file_picker";
           s = ":write";
           S = ":write!";
         };
