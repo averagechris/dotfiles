@@ -14,7 +14,7 @@
       example = false;
       description = lib.mdDoc description;
     };
-  extra_shell_scripts = builtins.attrValues (import ./shell_extras.nix {inherit pkgs;});
+  extra_shell_scripts = builtins.attrValues (import ../nixpkgs/shell/shell_extras.nix {inherit pkgs;});
 in
   with lib; {
     imports = [
@@ -101,20 +101,31 @@ in
 
       services.emacs.enable = cfg.emacs.enable;
 
-      programs.zsh.sessionVariables.EDITOR = cfg.env.editor;
-      programs.zsh.sessionVariables.GIT_EDITOR = cfg.env.editor;
-      # programs.zsh.sessionVariables.GPG_TTY = mkIf cfg.gpg.enable "$(tty)";
-
-      home.packages = with pkgs; [
-        curl
-        direnv
-        fd
-        htop
-        jq
-        pre-commit
-        procs
-        ripgrep
+      home.sessionVariables = mkMerge [
+        {
+          EDITOR = cfg.env.editor;
+          GIT_EDITOR = cfg.env.editor;
+        }
+        (mkIf cfg.gpg.enable {
+          GPG_TTY = "$(tty)";
+        })
       ];
-      # ] ++ mkIf cfg.shell_scripts.enable extra_shell_scripts;
+
+      home.packages = with pkgs;
+        [
+          curl
+          direnv
+          fd
+          htop
+          jq
+          pre-commit
+          procs
+          ripgrep
+        ]
+        ++ (
+          if cfg.shell_scripts.enable
+          then extra_shell_scripts
+          else []
+        );
     };
   }
