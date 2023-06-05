@@ -51,6 +51,18 @@ in
         example = "emacsclient -t";
         description = "The shell command used as the EDITOR environment variable.";
       };
+
+      nerdfonts.fonts = mkOption {
+        type = with types; listOf str;
+        example = ["DroidSaansMono"];
+        default = [
+          "FiraCode"
+          "DroidSansMono"
+          "Overpass"
+        ];
+        description = "The list of fonts installed and added to ~/.config/fonts/nerdfonts";
+      };
+
       commands = {
         copy = mkOption {
           type = types.str;

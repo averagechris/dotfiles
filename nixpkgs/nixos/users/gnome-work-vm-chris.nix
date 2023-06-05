@@ -34,33 +34,23 @@ in {
       userName = "Chris Cummings";
       userEmail = "chris.cummings@sureapp.com";
     };
+    programs.git.extraConfig.commit.gpgsign = false; # TODO move gpg key over and use
 
     imports = [
-      ../../emacs
-      ../../git
-      ../../firefox
-      ../../neovim
+      ../../../hm_modules/shell.nix
       ../../shell
-      ../../terminal_emulator
-      ../../tmux
-      ../../linux_desktop
-      ../../zellij
-      ../../helix.nix
       input-modules.doom
       # sure
     ];
 
-    programs.git.extraConfig.commit.gpgsign = false; # TODO move gpg key over and use
+    dotfiles.shell.enable = true;
 
-    xdg.systemDirs.data = [
-      "/usr/share"
-      "/var/lib/flatpak/exports/share"
-      "${homeDirectory}/.local/share/flatpak/exports/share"
-    ];
+    #   xdg.systemDirs.data = [
+    #     "/usr/share"
+    #     "/var/lib/flatpak/exports/share"
+    #     "${homeDirectory}/.local/share/flatpak/exports/share"
+    #   ];
   };
-
-  programs.gnupg.agent.enable = true;
-  programs.gnupg.agent.pinentryFlavor = "gnome3";
 
   security.sudo = {
     wheelNeedsPassword = false;

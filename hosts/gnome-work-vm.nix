@@ -44,9 +44,6 @@
     layout = "us";
     xkbVariant = "";
   };
-  services.printing.enable = true;
-  sound.enable = true;
-  hardware.pulseaudio.enable = false;
   security.rtkit.enable = true;
   services.pipewire = {
     enable = true;
@@ -70,10 +67,6 @@
   systemd.services."autovt@tty1".enable = false;
   nixpkgs.config.allowUnfree = true;
   environment.systemPackages = with pkgs; [
-    git
-    vim
-    keepassxc
-    git-credential-keepassxc
     gnomeExtensions.pop-shell
     gnomeExtensions.pop-launcher-super-key
     gnome.gnome-tweaks
