@@ -1,6 +1,7 @@
 {
   pkgs,
   inputs,
+  input-modules,
   ...
 }: {
   nixpkgs.config.allowUnfree = true;
@@ -181,16 +182,30 @@
   home-manager.users.chrisnotnix = {pkgs, ...}: {
     home.stateVersion = "22.11";
     imports = [
-      ../../helix.nix
-      ../../zellij
+      ../../../hm_modules/shell.nix
       ../../terminal_emulator
-      ../../shell
+      input-modules.doom
     ];
-    programs.direnv = {
+    dotfiles.shell = {
       enable = true;
-      nix-direnv.enable = true;
+      nerdfonts.enable = true;
+      shell_scripts.enable = false;
+      gitui.enable = false;
+      helix.enable = false;
+      zellij.enable = false;
     };
   };
+
+  fonts.fontDir.enable = true;
+  fonts.fonts = with pkgs; [
+    (nerdfonts.override {
+      fonts = [
+        "FiraCode"
+        "DroidSansMono"
+        "Overpass"
+      ];
+    })
+  ];
 
   time.timeZone = "America/Chicago";
 }

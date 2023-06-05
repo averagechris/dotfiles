@@ -9,8 +9,6 @@
   merge = lib.foldl (a: b: a // b) {};
   layouts = with builtins; map mkLayoutFile (attrNames (readDir ./layouts));
 in {
-  programs.zellij.enable = true;
-
   xdg.configFile =
     (merge layouts)
     // {
