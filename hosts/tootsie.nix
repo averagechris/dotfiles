@@ -18,7 +18,6 @@
   ];
 
   boot.loader.grub.enable = true;
-  boot.loader.grub.version = 2;
 
   # forwarding required for tailscale exit-node
   # https://tailscale.com/kb/1104/enable-ip-forwarding/

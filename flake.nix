@@ -63,7 +63,6 @@
           thelio-nixos = mkHost x86_64-linux ./hosts/thelio.nix;
           tom = mkHost x86_64-linux ./hosts/tom.nix;
           tootsie = mkHost x86_64-linux ./hosts/tootsie.nix;
-          # meaningless comment
           xps-nixos = mkHost x86_64-linux ./hosts/xps.nix;
         };
         darwinConfigurations.suremac = mkHost flake-utils.lib.system.aarch64-darwin ./nixpkgs/darwin/suremac;
@@ -77,6 +76,7 @@
         pkgs = self.inputs.nixpkgs.legacyPackages.${system};
       in {
         formatter = pkgs.alejandra;
+        # deploy usage: nix run .#deploy -- .#tootsie
         apps.deploy = self.inputs.deploy-rs.apps.${system}.deploy-rs;
         devShells.default = pkgs.mkShell {
           inherit (self.checks.${system}.pre-commit) shellHook;

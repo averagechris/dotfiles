@@ -1,7 +1,6 @@
 {
   config,
   pkgs,
-  input-modules,
   ...
 }: {
   imports = [./chris-minimal.nix];
@@ -30,7 +29,6 @@
       ../../meganz.nix
       ../../sway
       ../../terminal_emulator
-      input-modules.doom
     ];
     programs.git.extraConfig.commit.gpgsign = true;
     dotfiles.shell.nerdfonts.enable = true;

@@ -2,6 +2,7 @@
   lib,
   pkgs,
   sshKeys,
+  input-modules,
   ...
 }: let
   userName = "chris";
@@ -32,6 +33,7 @@ in {
 
     imports = [
       ../../../hm_modules
+      input-modules.doom
     ];
     dotfiles.shell.enable = true;
     dotfiles.shell.python.enable = true;
