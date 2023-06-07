@@ -75,7 +75,7 @@ keybinds {
     bind "n" { NewPane; SwitchToMode "locked"; }
     bind "d" { CloseFocus; SwitchToMode "locked"; }
     bind "f" { ToggleFocusFullscreen; SwitchToMode "locked"; }
-    bind "F" { ToggleFloatingPanes; ToggleFocusFullscreen; SwitchToMode "locked"; }
+    bind "F" { TogglePaneEmbedOrFloating; ToggleFocusFullscreen; SwitchToMode "locked"; }
 
     bind "D" { NewPane "Down"; SwitchToMode "locked"; }
     bind "R" { NewPane "Right"; SwitchToMode "locked"; }
