@@ -18,6 +18,7 @@
 
     nixos-switch = "nixos-rebuild switch --use-remote-sudo";
     nixos-test = "nixos-rebuild test --use-remote-sudo";
+    nixos-build = "nixos-rebuild build";
 
     today = "date +%Y-%m-%d";
   };

@@ -31,10 +31,9 @@ in {
     };
 
     imports = [
-      ../../../hm_modules/shell.nix
-      ../../passhole
-      ../../python
+      ../../../hm_modules
     ];
     dotfiles.shell.enable = true;
+    dotfiles.shell.python.enable = true;
   };
 }

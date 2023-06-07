@@ -25,6 +25,8 @@ in
       ../nixpkgs/nerdfonts
       ../nixpkgs/neovim
       ../nixpkgs/git
+      ../nixpkgs/passhole
+      ../nixpkgs/python
     ];
 
     options.dotfiles.shell = {
@@ -32,6 +34,8 @@ in
       emacs.enable = mkEnableOption "enable my highly configured doom emacs setup.";
       neovim.enable = mkEnableOption "enable configured neovim setup.";
       nerdfonts.enable = mkEnableOption "install nerdfonts.";
+      passhole.enable = mkEnableOption "Passhole is a python cli for interacting with keepass databases. I have some utilities built up around it, but in a GUI environment, keepassxc is a better tool. But this is useful for non-gui environments.";
+      python.enable = mkEnableOption "Install a python interpreter with optional packages. Generally this is better off as a project level dependency, but it can be handy to have a python interpreter always at the ready. ipython package included by default.";
 
       # default enabled
       git.enable = mkDefaultEnabledOption "enable configured git.";
@@ -40,6 +44,9 @@ in
       helix.enable = mkDefaultEnabledOption "enable my highly configured helix.";
       shell_scripts.enable = mkDefaultEnabledOption "enable the various shell scripts i've written.";
       zellij.enable = mkDefaultEnabledOption "enable my highly configured zellij.";
+
+      # default enabled features if the primary feature is enabled (disabled by default)
+      passhole.swayIntegration.enable = mkDefaultEnabledOption "enable the wayland integration for passhole via keybindings for bemenu.";
 
       # config values with good minimal defaults
       env.editor = mkOption {
