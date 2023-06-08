@@ -157,6 +157,11 @@ in {
     "${cfg.modifier}+Shift+space" = "mode compose_mode";
   };
 
+  config.wayland.windowManager.sway.extraConfig = ''
+    bindgesture swipe:4:right workspace prev
+    bindgesture swipe:4:left workspace next
+  '';
+
   config.home.packages = [
     nwg-drawer
     nwg-bar
