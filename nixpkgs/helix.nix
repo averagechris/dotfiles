@@ -57,6 +57,7 @@
         space.t = {
           c = "toggle_comments";
           w = ":toggle-option soft-wrap.enable";
+          h = ":toggle-option lsp.display-inlay-hints";
 
           # toggling non-booleans will be massively improved with: https://github.com/helix-editor/helix/pull/4411
           s = ":set-option whitespace.render all";
