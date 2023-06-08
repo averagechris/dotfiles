@@ -1,10 +1,7 @@
 {
-  config,
   pkgs,
   lib,
-  inputs,
   overlays,
-  nixpkgs,
   ...
 }: {
   nixpkgs.overlays = lib.attrValues overlays;

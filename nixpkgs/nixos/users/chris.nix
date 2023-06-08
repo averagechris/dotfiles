@@ -32,15 +32,5 @@
     ];
     programs.git.extraConfig.commit.gpgsign = true;
     dotfiles.shell.nerdfonts.enable = true;
-
-    home.pointerCursor = {
-      name = "Adwaita";
-      package = pkgs.gnome.adwaita-icon-theme;
-      size = 12;
-      x11 = {
-        enable = true;
-        defaultCursor = "Adwaita";
-      };
-    };
   };
 }

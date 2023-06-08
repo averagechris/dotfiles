@@ -1,7 +1,6 @@
 {
   config,
   pkgs,
-  lib,
   ...
 }: let
   wallpapers = "${config.home.homeDirectory}/dotfiles/nixpkgs/sway/wallpapers";
@@ -16,13 +15,14 @@ in {
 
   config.wayland.windowManager.sway = {
     enable = true;
+    config.fonts.names = ["DejaVu Sans Mono" "FontAwesome5Free"];
     config.bars = [{command = "waybar";}];
     config.floating.criteria = [
       {app_id = "pavucontrol";}
       {app_id = "zenity";}
       {class = ".zoom";}
     ];
-    config.floating.titlebar = true;
+    config.floating.titlebar = false;
     config.focus.mouseWarping = true;
     config.gaps.inner = 3;
     config.gaps.outer = 3;
@@ -36,6 +36,7 @@ in {
         always = true;
       }
     ];
+    config.window.titlebar = false;
     config.workspaceAutoBackAndForth = true;
     wrapperFeatures.base = true;
     wrapperFeatures.gtk = true;

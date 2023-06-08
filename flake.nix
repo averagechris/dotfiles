@@ -64,6 +64,7 @@
           tom = mkHost x86_64-linux ./hosts/tom.nix;
           tootsie = mkHost x86_64-linux ./hosts/tootsie.nix;
           xps-nixos = mkHost x86_64-linux ./hosts/xps.nix;
+          trap = mkHost x86_64-linux ./hosts/trap.nix;
         };
         darwinConfigurations.suremac = mkHost flake-utils.lib.system.aarch64-darwin ./nixpkgs/darwin/suremac;
         deploy.nodes = {

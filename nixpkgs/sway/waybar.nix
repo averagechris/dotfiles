@@ -14,16 +14,14 @@
         modules-left = ["clock" "custom/media"];
         modules-center = ["sway/mode" "sway/workspaces"];
         modules-right = ["idle_inhibitor" "pulseaudio" "network" "bluetooth" "battery"];
-        modules = {
-          "sway/workspaces" = {
-            disable-scroll = true;
-            all-outputs = false;
-            format = "{icon}";
-            format-icons = {
-              urgent = "🔥";
-              focused = "";
-              default = "";
-            };
+        "sway/workspaces" = {
+          disable-scroll = true;
+          all-outputs = false;
+          format = "{icon}";
+          format-icons = {
+            urgent = "🔥";
+            focused = "";
+            default = "";
           };
 
           # "sway/mode".format = "<span style=\"italic\">{}</span>";

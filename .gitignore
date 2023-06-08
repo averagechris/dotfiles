@@ -20,3 +20,4 @@ __pycache__/
 /.direnv/
 /.pre-commit-config.yaml
 /result
+hosts/coniguration.nix.bak

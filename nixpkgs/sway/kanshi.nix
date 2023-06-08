@@ -1,13 +1,10 @@
-{
-  config,
-  pkgs,
-  lib,
-  ...
-}: let
+{pkgs, ...}: let
+  # TODO this should be in a module configuration
   scrnXps13 = {
     criteria = "eDP-1";
     status = "enable";
-    scale = 2.0;
+    scale = 1.0;
+    mode = "1920x1080 @ 144.003 Hz";
   };
 
   scrnDell43 = {
