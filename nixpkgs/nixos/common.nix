@@ -1,7 +1,8 @@
 {
-  pkgs,
+  inputs,
   lib,
   overlays,
+  pkgs,
   ...
 }: {
   nixpkgs.overlays = lib.attrValues overlays;
@@ -9,6 +10,7 @@
     gc.automatic = true;
     gc.dates = "weekly";
     gc.options = "--delete-older-than 30d";
+    registry.nixpkgs.flake = inputs.nixpkgs; # makes nix run nixpkgs#... faster
     settings.substituters = [
       "https://cache.nixos.org/"
       "https://nix-community.cachix.org"
