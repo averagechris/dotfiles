@@ -4,7 +4,7 @@
     criteria = "eDP-1";
     status = "enable";
     scale = 1.0;
-    mode = "1920x1080 @ 144.003 Hz";
+    mode = "1920x1080@144.003Hz";
   };
 
   scrnDell43 = {
