@@ -22,6 +22,15 @@
     inherit (inputs) sli-repo;
     inherit inputs overlays sshKeys;
     input-modules.doom = inputs.nix-doom-emacs.hmModule;
+    dotfiles_lib.options = with inputs.nixpkgs.legacyPackages.x86_64-linux.lib; {
+      mkDefaultEnabledOption = description:
+        mkOption {
+          type = types.bool;
+          default = true;
+          example = false;
+          description = mdDoc description;
+        };
+    };
   };
 
   mkHost = system: hostPath: let
@@ -32,7 +41,15 @@
   in
     fn {
       inherit specialArgs system;
-      modules = [hostPath];
+      modules = [
+        hostPath
+        inputs.home-manager.nixosModules.home-manager
+        {
+          home-manager.extraSpecialArgs = specialArgs;
+          home-manager.useGlobalPkgs = true;
+          home-manager.useUserPackages = true;
+        }
+      ];
     };
 
   mkDeploy = host: {

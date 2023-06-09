@@ -1,14 +1,12 @@
 {
   pkgs,
-  input-modules,
-  sli-repo,
   lib,
   sshKeys,
   ...
 }: let
   username = "chris";
   homeDirectory = "/home/${username}";
-  sure = import ../../sure {inherit pkgs sli-repo;};
+  # sure = import ../../sure {inherit pkgs sli-repo;};
 in {
   users.users = {
     "${username}" = {
@@ -37,19 +35,12 @@ in {
     programs.git.extraConfig.commit.gpgsign = false; # TODO move gpg key over and use
 
     imports = [
-      ../../../hm_modules/shell.nix
-      ../../shell
-      input-modules.doom
       # sure
     ];
 
-    dotfiles.shell.enable = true;
-
-    #   xdg.systemDirs.data = [
-    #     "/usr/share"
-    #     "/var/lib/flatpak/exports/share"
-    #     "${homeDirectory}/.local/share/flatpak/exports/share"
-    #   ];
+    dotfiles.shell.python.enable = true;
+    dotfiles.gui.enable = true;
+    dotfiles.gui.sway.enable = false;
   };
 
   security.sudo = {

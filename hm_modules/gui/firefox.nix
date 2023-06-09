@@ -1,13 +1,18 @@
-{pkgs, ...}: let
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}: let
   inherit (pkgs.stdenv.hostPlatform) isLinux;
 in {
-  programs.firefox = {
-    enable = true;
+  home.sessionVariables = lib.mkIf config.programs.firefox.enable {
+    BROSWER = "firefox";
+  };
 
+  programs.firefox = {
     package = pkgs.firefox.override {
-      cfg = {
-        enableGnomeExtensions = isLinux;
-      };
+      cfg.enableGnomeExtensions = lib.mkDefault isLinux;
     };
 
     profiles.me = {
@@ -26,6 +31,8 @@ in {
           {}
           // {
             # allows firefox to see userChrome.css etc
+            # NOTE: I always still have to _manually_ toggle this one once :(
+            # by going to about:config, copy-pasting this, then toggling it to true
             "toolkit.legacyUserProfileCustomizations.stylesheets" = true;
 
             "browser.startup.homepage" = "https://duckduckgo.com";
@@ -35,11 +42,31 @@ in {
             "browser.toolbars.bookmarks.visibility" = "never";
           };
 
-      userChrome = builtins.readFile ./userChrome.css;
       userContent = ''
         /* Hide scrollbar */
         *{scrollbar-width: none !important}
       '';
+      userChrome = ''
+        @namespace url(http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul);
+
+        /* hides firefox's default tab bar */
+        #tabbrowser-tabs {
+            visibility: collapse !important;
+        }
+
+        /* makes the treestyle tab view look cleaner */
+        #sidebar-box[sidebarcommand="treestyletab_piro_sakura_ne_jp-sidebar-action"] #sidebar-header {
+            display: none;
+        }
+      '';
     };
+  };
+
+  # this makes it so firefox uses wayland instead of xwayland
+  wayland.windowManager.sway = lib.mkIf config.wayland.windowManager.sway.enable {
+    extraSessionCommands = ''
+      export MOZ_ENABLE_WAYLAND=1
+      export MOZ_DBUS_REMOTE=1
+    '';
   };
 }

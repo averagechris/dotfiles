@@ -162,8 +162,11 @@ in {
     bindgesture swipe:4:left workspace next
   '';
 
-  config.home.packages = [
-    nwg-drawer
-    nwg-bar
-  ];
+  config.home.packages =
+    if config.wayland.windowManager.sway.enable
+    then [
+      nwg-drawer
+      nwg-bar
+    ]
+    else [];
 }

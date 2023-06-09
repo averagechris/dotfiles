@@ -22,8 +22,7 @@
     transform = "270";
   };
 in {
-  config.services.kanshi = {
-    enable = true;
+  services.kanshi = {
     profiles = {
       laptop-unplugged = {
         outputs = [

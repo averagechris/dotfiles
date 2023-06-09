@@ -1,6 +1,5 @@
 {pkgs, ...}: {
   programs.waybar = {
-    enable = true;
     systemd = {
       enable = false;
       target = "sway-session.target";

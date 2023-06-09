@@ -21,15 +21,6 @@
 
   config.home-manager.users."chris" = {...}: {
     _module.args = {inherit (config.age) secrets;};
-    imports = [
-      ../../email
-      ../../firefox
-      ../../guiapps
-      ../../linux_desktop
-      ../../meganz.nix
-      ../../sway
-      ../../terminal_emulator
-    ];
     programs.git.extraConfig.commit.gpgsign = true;
     dotfiles.shell.nerdfonts.enable = true;
   };

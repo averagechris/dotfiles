@@ -16,11 +16,6 @@
     ./hardware-configurations/trap.nix
     inputs.agenix.nixosModules.default
     inputs.nixos-hardware.nixosModules.system76
-    inputs.home-manager.nixosModules.home-manager
-    {
-      home-manager.useGlobalPkgs = true;
-      home-manager.useUserPackages = true;
-    }
   ];
 
   boot.initrd.luks.devices = {
@@ -37,6 +32,8 @@
   system.stateVersion = "23.05";
   home-manager.users.chris = {pkgs, ...}: {
     home.stateVersion = "23.05";
+    dotfiles.gui.enable = true;
+    dotfiles.shell.python.enable = true;
   };
 
   services.dbus.enable = true;

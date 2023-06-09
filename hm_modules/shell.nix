@@ -2,18 +2,12 @@
   config,
   lib,
   pkgs,
+  dotfiles_lib,
   ...
 }: let
   inherit (pkgs.stdenv.hostPlatform) isLinux;
 
   cfg = config.dotfiles.shell;
-  mkDefaultEnabledOption = description:
-    lib.mkOption {
-      type = lib.types.bool;
-      default = true;
-      example = false;
-      description = lib.mdDoc description;
-    };
   extra_shell_scripts = builtins.attrValues (import ../nixpkgs/shell/shell_extras.nix {inherit pkgs;});
 in
   with lib; {
@@ -29,8 +23,8 @@ in
       ../nixpkgs/python
     ];
 
-    options.dotfiles.shell = {
-      enable = mkEnableOption "my dotfiles shell config.";
+    options.dotfiles.shell = with dotfiles_lib.options; {
+      enable = mkDefaultEnabledOption "enables the my shell configuration.";
       emacs.enable = mkEnableOption "enable my highly configured doom emacs setup.";
       neovim.enable = mkEnableOption "enable configured neovim setup.";
       nerdfonts.enable = mkEnableOption "install nerdfonts.";

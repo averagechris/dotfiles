@@ -1,8 +1,6 @@
 {
   pkgs,
   config,
-  lib,
-  inputs,
   ...
 }: {
   imports = [
@@ -11,11 +9,6 @@
     ../nixpkgs/nixos/tailscale.nix
     ../nixpkgs/nixos/users/chris-minimal.nix
     ./hardware-configurations/taz.nix
-    inputs.home-manager.nixosModules.home-manager
-    {
-      home-manager.useGlobalPkgs = true;
-      home-manager.useUserPackages = true;
-    }
   ];
 
   boot.loader.grub.enable = true;

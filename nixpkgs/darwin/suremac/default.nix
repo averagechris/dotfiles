@@ -182,9 +182,8 @@
   home-manager.users.chrisnotnix = {pkgs, ...}: {
     home.stateVersion = "22.11";
     imports = [
-      ../../../hm_modules/shell.nix
+      ../../../hm_modules
       ../../terminal_emulator
-      input-modules.doom
     ];
     dotfiles.shell = {
       enable = true;

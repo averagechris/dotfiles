@@ -1,20 +1,10 @@
-{
-  pkgs,
-  lib,
-  inputs,
-  ...
-}: {
+{pkgs, ...}: {
   imports = [
     ../nixpkgs/nixos/common.nix
     ../nixpkgs/nixos/networking.nix
     ../nixpkgs/nixos/tailscale.nix
     ../nixpkgs/nixos/users/chris-minimal.nix
     ./hardware-configurations/tootsie.nix
-    inputs.home-manager.nixosModules.home-manager
-    {
-      home-manager.useGlobalPkgs = true;
-      home-manager.useUserPackages = true;
-    }
   ];
 
   boot.loader.grub.enable = true;
@@ -69,8 +59,8 @@
     ...
   }: {
     home.stateVersion = "21.11";
-    imports = [../nixpkgs/meganz.nix];
     home.packages = with pkgs; [ranger python311Packages.pipx];
+    programs.meganz.enable = true;
     programs.zsh.initExtra = ''
       export PATH=$HOME/.local/bin:$PATH
     '';

@@ -17,11 +17,6 @@
     ./hardware-configurations/thelio.nix
     inputs.agenix.nixosModules.default
     inputs.nixos-hardware.nixosModules.system76
-    inputs.home-manager.nixosModules.home-manager
-    {
-      home-manager.useGlobalPkgs = true;
-      home-manager.useUserPackages = true;
-    }
   ];
 
   boot.initrd.luks.devices.root.device = "/dev/sda2";
@@ -43,5 +38,6 @@
   system.stateVersion = "21.05";
   home-manager.users.chris = {pkgs, ...}: {
     home.stateVersion = "21.05";
+    dotfiles.gui.enable = true;
   };
 }

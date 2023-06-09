@@ -2,7 +2,6 @@
   lib,
   pkgs,
   sshKeys,
-  input-modules,
   ...
 }: let
   userName = "chris";
@@ -31,11 +30,6 @@ in {
       userEmail = "chris@thesogu.com";
     };
 
-    imports = [
-      ../../../hm_modules
-      input-modules.doom
-    ];
-    dotfiles.shell.enable = true;
-    dotfiles.shell.python.enable = true;
+    imports = [../../../hm_modules];
   };
 }
