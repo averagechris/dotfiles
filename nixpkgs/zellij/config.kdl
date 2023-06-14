@@ -136,8 +136,12 @@ keybinds {
 
     bind "g" {
       Run "gitui" "--polling" {
-        TogglePaneEmbedOrFloatingfloating;
-      }
+        direction "up"
+        close-on-exit true
+        name "gitui"
+      };
+      ToggleFocusFullscreen;
+      SwitchToMode "locked";
     }
   }
 
