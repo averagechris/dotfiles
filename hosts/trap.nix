@@ -34,6 +34,7 @@
     home.stateVersion = "23.05";
     dotfiles.gui.enable = true;
     dotfiles.shell.python.enable = true;
+    programs.meganz.enable = true;
   };
 
   services.dbus.enable = true;

@@ -17,7 +17,7 @@ in
       home.packages =
         [pkgs.megacmd]
         ++ (
-          if programs.meganz.gui.enable
+          if config.programs.meganz.gui.enable
           then [pkgs.megasync]
           else []
         );

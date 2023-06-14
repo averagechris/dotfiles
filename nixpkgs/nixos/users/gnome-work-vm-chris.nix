@@ -35,12 +35,18 @@ in {
     programs.git.extraConfig.commit.gpgsign = false; # TODO move gpg key over and use
 
     imports = [
+      ../../../hm_modules
       # sure
     ];
 
     dotfiles.shell.python.enable = true;
     dotfiles.gui.enable = true;
     dotfiles.gui.sway.enable = false;
+
+    programs.darktable.enable = false;
+    programs.signal.enable = false;
+    programs.write-stylus.enable = false;
+    programs.zoom.enable = false;
   };
 
   security.sudo = {
