@@ -19,7 +19,6 @@
   };
 
   specialArgs = {
-    inherit (inputs) sli-repo;
     inherit inputs overlays sshKeys;
     input-modules.doom = inputs.nix-doom-emacs.hmModule;
     dotfiles_lib.options = with inputs.nixpkgs.legacyPackages.x86_64-linux.lib; {

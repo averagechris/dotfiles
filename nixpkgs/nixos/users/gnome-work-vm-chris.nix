@@ -6,7 +6,6 @@
 }: let
   username = "chris";
   homeDirectory = "/home/${username}";
-  # sure = import ../../sure {inherit pkgs sli-repo;};
 in {
   users.users = {
     "${username}" = {
@@ -36,7 +35,7 @@ in {
 
     imports = [
       ../../../hm_modules
-      # sure
+      ../../sure
     ];
 
     dotfiles.shell.python.enable = true;

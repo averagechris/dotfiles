@@ -797,7 +797,6 @@
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs",
         "pre-commit-hooks": "pre-commit-hooks",
-        "sli-repo": "sli-repo",
         "wayland-overlay": "wayland-overlay"
       }
     },
@@ -814,22 +813,6 @@
       "original": {
         "owner": "debug-ito",
         "repo": "rotate-text.el",
-        "type": "github"
-      }
-    },
-    "sli-repo": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1682637140,
-        "narHash": "sha256-ZKjql8A7AbO4bSIv20ZKpLGAD8VBEOxdQLIND8u4sGI=",
-        "owner": "sureapp",
-        "repo": "sli",
-        "rev": "c6bfb1699e542c14d55741884ac3e821137cf6cb",
-        "type": "github"
-      },
-      "original": {
-        "owner": "sureapp",
-        "repo": "sli",
         "type": "github"
       }
     },

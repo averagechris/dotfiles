@@ -1,8 +1,4 @@
-{
-  config,
-  pkgs,
-  ...
-}: let
+{pkgs, ...}: let
   iniFormat = pkgs.formats.ini {};
   awscliConfig = {
     sso_start_url = "https://sureplatform.awsapps.com/start";
@@ -11,7 +7,7 @@
     output = "json";
   };
 in {
-  config.home.file.".aws/config".source = iniFormat.generate "awscli.config" {
+  home.file.".aws/config".source = iniFormat.generate "awscli.config" {
     "profile s" =
       awscliConfig
       // {
@@ -55,13 +51,13 @@ in {
       };
   };
 
-  config.programs.zsh = {
+  programs.zsh = {
     sessionVariables = {
       AWS_PROFILE = "core-qa";
     };
   };
 
-  config.home.packages = with pkgs; [
-    awscli2
-  ];
+  # home.packages = with pkgs; [
+  #   awscli2
+  # ];
 }

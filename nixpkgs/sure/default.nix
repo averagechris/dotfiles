@@ -1,13 +1,4 @@
-{
-  pkgs,
-  sli-repo,
-  ...
-}: let
-  sli = import ./sli.nix {
-    inherit pkgs;
-    inherit sli-repo;
-  };
-in {
+{pkgs, ...}: {
   imports = [
     ./aws.nix
   ];
@@ -16,6 +7,9 @@ in {
     cdpath = [
       "$HOME/sureapp"
     ];
+    initExtra = ''
+      export PATH=$HOME/.local/bin:$PATH
+    '';
   };
 
   # didn't seem worth it to nix-ify the kube config
@@ -24,8 +18,8 @@ in {
   # then aws eks update-config -name once-for-each-name-above --alias preferred-alias --profile once-for-each-profile
 
   config.home.packages = with pkgs; [
+    pipx
     gnumake
     kubectl
-    sli
   ];
 }
