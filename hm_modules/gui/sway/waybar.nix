@@ -12,7 +12,7 @@
         height = 24;
         modules-left = ["clock" "custom/media"];
         modules-center = ["sway/mode" "sway/workspaces"];
-        modules-right = ["idle_inhibitor" "pulseaudio" "network" "bluetooth" "battery"];
+        modules-right = ["idle_inhibitor" "pulseaudio" "network" "bluetooth" "battery" "tray"];
         "sway/workspaces" = {
           disable-scroll = true;
           all-outputs = false;
@@ -65,7 +65,7 @@
               car = "";
               default = ["" ""];
             };
-            on-click = "pavucontrol";
+            on-click = "${pkgs.pavucontrol}/bin/pavucontrol";
           };
           idle_inhibitor = {
             format = "{icon}";
@@ -99,6 +99,11 @@
                 fi
               '';
             }}/bin/${name}";
+          };
+
+          tray = {
+            icon-size = 21;
+            spacing = 10;
           };
         };
       }

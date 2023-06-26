@@ -135,7 +135,7 @@ keybinds {
     bind "Esc" { SwitchToMode "locked"; }  // TODO rm when shared or shared_except works
 
     bind "g" {
-      Run "gitui" "--polling" {
+      Run "gitui" {
         direction "up"
         close-on-exit true
         name "gitui"

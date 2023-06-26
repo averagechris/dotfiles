@@ -47,7 +47,7 @@
 
         # minor-mode "git"
         space.g = {
-          g = ":sh zellij run --direction up --close-on-exit --name gitui -- gitui --polling && zellij action toggle-fullscreen";
+          g = ":sh zellij run --direction up --close-on-exit --name gitui -- gitui && zellij action toggle-fullscreen";
           # s currenty reserved for the lsp debugger stuff TODO fix it
           S = ":sh git add .";
           p = ":sh zellij run --floating --name pre-commit -- pre-commit";

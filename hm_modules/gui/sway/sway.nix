@@ -11,6 +11,9 @@ in {
     config.floating.criteria = [
       {app_id = "pavucontrol";}
       {app_id = "zenity";}
+      {
+        app_id = "org.keepassxc.KeePassXC";
+      }
       {class = ".zoom";}
     ];
     config.floating.titlebar = false;
