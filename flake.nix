@@ -40,14 +40,14 @@
     };
   };
 
-  outputs = {
+  outputs = inputs @ {
     self,
     flake-utils,
     ...
   }: let
     dotfiles.lib = import ./lib.nix {
-      inherit (self) inputs;
-      inherit (self.inputs) nixpkgs;
+      inherit inputs;
+      inherit (inputs) nixpkgs;
     };
   in
     with dotfiles.lib;
@@ -84,6 +84,7 @@
             statix
             python311Packages.mdformat
             nil # nix language server
+            nixd
           ];
         };
         checks = dotfiles.lib.mkCommitCheck system // (builtins.mapAttrs (sys: l: l.deployChecks self.deploy) self.inputs.deploy-rs.lib).${system};

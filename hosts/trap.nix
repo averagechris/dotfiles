@@ -16,6 +16,9 @@
     ./hardware-configurations/trap.nix
     inputs.agenix.nixosModules.default
     inputs.nixos-hardware.nixosModules.system76
+    inputs.nixos-hardware.nixosModules.common-cpu-amd
+    inputs.nixos-hardware.nixosModules.common-cpu-amd-pstate
+    inputs.nixos-hardware.nixosModules.common-pc-ssd
   ];
 
   boot.initrd.luks.devices = {
@@ -26,7 +29,7 @@
 
   hardware.opengl.enable = true;
   hardware.opengl.driSupport = true;
-
+  hardware.enableRedistributableFirmware = true;
   hardware.system76.enableAll = true;
   environment.systemPackages = [pkgs.system76-firmware];
   system.stateVersion = "23.05";
