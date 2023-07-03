@@ -1,6 +1,10 @@
-{pkgs, ...}: {
+{
+  pkgs,
+  lib,
+  ...
+}: {
   programs.git = {
-    delta.enable = true;
+    delta.enable = lib.mkDefault true;
     extraConfig = {
       pull.rebase = true;
       init.defaultBranch = "main";

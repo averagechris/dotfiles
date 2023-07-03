@@ -6,7 +6,7 @@
       ignoreDups = true;
     };
 
-    initExtra = (builtins.readFile ./post-compinit.zsh) + ''eval "$(${pkgs.direnv}/bin/direnv hook zsh)"'';
+    initExtra = builtins.readFile ./post-compinit.zsh;
 
     enableAutosuggestions = true;
     enableCompletion = true;

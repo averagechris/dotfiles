@@ -107,6 +107,11 @@
             command = "alejandra";
             args = [];
           };
+          # language-server = {
+          #   command = "nixd";
+          #   args = [];
+          #   environment = {};
+          # };
         }
         {
           # lsp: https://github.com/python-lsp/python-lsp-server
