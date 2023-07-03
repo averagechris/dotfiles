@@ -4,10 +4,8 @@
   ...
 }: let
   cfg = config.wayland.windowManager.sway.config;
-  nwg-drawer = pkgs.callPackage ./tmp_nwg-drawer.nix {};
-  nwg-bar = pkgs.callPackage ./nwg-bar.nix {};
   pactl = "${pkgs.pulseaudio}/bin/pactl";
-  execNwgBar = "exec ${nwg-bar}/bin/nwg-bar";
+  execNwgBar = "exec ${pkgs.nwg-bar}/bin/nwg-bar";
   execPlayerctl = "exec ${pkgs.playerctl}/bin/playerctl";
   brightnessctl = "${pkgs.brightnessctl}/bin/brightnessctl";
   j4-dmenu-desktop = pkgs.j4-dmenu-desktop.overrideAttrs (old: {
@@ -93,7 +91,7 @@ in {
     "${cfg.modifier}+space" = ''exec ${j4-dmenu-desktop}/bin/j4-dmenu-desktop'';
     "${cfg.modifier}+Shift+q" = "${execNwgBar}";
 
-    XF86LaunchB = "exec ${nwg-drawer}/bin/nwg-drawer";
+    XF86LaunchB = "exec ${pkgs.nwg-drawer}/bin/nwg-drawer";
     XF86AudioPlay = "${execPlayerctl} play-pause";
     XF86AudioNext = "${execPlayerctl} next";
     XF86AudioPrev = "${execPlayerctl} previous";
@@ -164,9 +162,10 @@ in {
 
   config.home.packages =
     if config.wayland.windowManager.sway.enable
-    then [
-      nwg-drawer
-      nwg-bar
-    ]
+    then
+      with pkgs; [
+        nwg-drawer
+        nwg-bar
+      ]
     else [];
 }
