@@ -5,13 +5,6 @@
   ...
 }: {
   nixpkgs.config.allowUnfree = true;
-  imports = [
-    inputs.home-manager.darwinModules.home-manager
-    {
-      home-manager.useGlobalPkgs = true;
-      home-manager.useUserPackages = true;
-    }
-  ];
   environment.systemPackages = with pkgs; [
     git
     nix-prefetch-scripts
@@ -36,7 +29,6 @@
     ];
     extraOptions = ''experimental-features = nix-command flakes'';
     gc.automatic = true;
-    readOnlyStore = true;
     settings.require-sigs = true;
   };
 
@@ -183,16 +175,29 @@
     home.stateVersion = "22.11";
     imports = [
       ../../../hm_modules
-      ../../terminal_emulator
     ];
     dotfiles.shell = {
       enable = true;
       nerdfonts.enable = true;
       shell_scripts.enable = false;
-      gitui.enable = false;
-      helix.enable = false;
-      zellij.enable = false;
     };
+    programs.alacritty.enable = true;
+
+    # we want the config of ff, but we don't install it from nix cause the nix package
+    # does not support macos, we instead use nix-darwin's homebrew integration to install
+    # firefox for us
+    programs.firefox.enable = false;
+    programs.firefox.package = pkgs.hello; # hack cause we install ff w/ nix-darwin.homebrew
+  };
+
+  homebrew = {
+    enable = true;
+    casks = [
+      "firefox-developer-edition"
+    ];
+    taps = [
+      "homebrew/cask-versions"
+    ];
   };
 
   fonts.fontDir.enable = true;

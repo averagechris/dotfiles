@@ -13,13 +13,21 @@
     };
   };
 
-  overlays = {
-    emacs = inputs.emacs-overlay.overlay;
-    wayland = inputs.wayland-overlay.overlay;
-  };
+  overlays = system:
+    {
+      emacs = inputs.emacs-overlay.overlay;
+    }
+    // (
+      if inputs.nixpkgs.legacyPackages.${system}.stdenv.hostPlatform.isLinux
+      then {
+        wayland = inputs.wayland-overlay.overlay;
+      }
+      else {}
+    );
 
-  specialArgs = {
-    inherit inputs overlays sshKeys;
+  specialArgs = system: {
+    inherit inputs sshKeys;
+    overlays = overlays system;
     input-modules.doom = inputs.nix-doom-emacs.hmModule;
     dotfiles_lib.options = with inputs.nixpkgs.legacyPackages.x86_64-linux.lib; {
       mkDefaultEnabledOption = description:
@@ -37,14 +45,19 @@
       if system == "aarch64-darwin"
       then inputs.darwin.lib.darwinSystem
       else nixpkgs.lib.nixosSystem;
+    hmModule =
+      if system == "aarch64-darwin"
+      then inputs.home-manager.darwinModules.home-manager
+      else inputs.home-manager.nixosModules.home-manager;
   in
     fn {
-      inherit specialArgs system;
+      inherit system;
+      specialArgs = specialArgs system;
       modules = [
         hostPath
-        inputs.home-manager.nixosModules.home-manager
+        hmModule
         {
-          home-manager.extraSpecialArgs = specialArgs;
+          home-manager.extraSpecialArgs = specialArgs system;
           home-manager.useGlobalPkgs = true;
           home-manager.useUserPackages = true;
         }

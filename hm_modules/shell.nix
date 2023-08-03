@@ -35,7 +35,7 @@ in
       shell_scripts.enable = mkDefaultEnabledOption "enable the various shell scripts i've written.";
 
       # default enabled features if the primary feature is enabled (disabled by default)
-      passhole.swayIntegration.enable = mkDefaultEnabledOption "enable the wayland integration for passhole via keybindings for bemenu.";
+      passhole.swayIntegration.enable = mkEnableOption "enable the wayland integration for passhole via keybindings for bemenu.";
 
       # config values with good minimal defaults
       env.editor = mkOption {

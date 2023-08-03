@@ -16,7 +16,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-doom-emacs = {
-      url = "github:nix-community/nix-doom-emacs?rev=2150fd40b2110bbd11dcb62fa5f307ec345b0fb0";
+      url = "github:nix-community/nix-doom-emacs";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };

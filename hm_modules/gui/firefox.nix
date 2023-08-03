@@ -11,9 +11,9 @@ in {
   };
 
   programs.firefox = {
-    package = pkgs.firefox.override {
+    package = lib.mkDefault (pkgs.firefox-devedition.override {
       cfg.enableGnomeExtensions = lib.mkDefault isLinux;
-    };
+    });
 
     profiles.me = {
       name = "me";
