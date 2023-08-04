@@ -8,24 +8,17 @@
   };
 in {
   home.file.".aws/config".source = iniFormat.generate "awscli.config" {
-    "profile s" =
+    "profile qa" =
       awscliConfig
       // {
-        sso_account_id = "818549452766";
-        sso_role_name = "production-backend-access";
+        sso_account_id = "312107431298";
+        sso_role_name = "non-production-backend-access";
       };
 
-    "profile in-production" =
+    "profile sandbox" =
       awscliConfig
       // {
-        sso_account_id = "421705037700";
-        sso_role_name = "production-backend-access";
-      };
-
-    "profile in-qa" =
-      awscliConfig
-      // {
-        sso_account_id = "713190844401";
+        sso_account_id = "312107431298";
         sso_role_name = "non-production-backend-access";
       };
 
@@ -35,29 +28,11 @@ in {
         sso_account_id = "348777858795";
         sso_role_name = "RegistryReadAccess";
       };
-
-    "profile non-production-connect" =
-      awscliConfig
-      // {
-        sso_account_id = "186258024085";
-        sso_role_name = "non-production-backend-access";
-      };
-
-    "profile core-qa" =
-      awscliConfig
-      // {
-        sso_account_id = "0609713090678";
-        sso_role_name = "non-production-backend-access";
-      };
   };
 
   programs.zsh = {
     sessionVariables = {
-      AWS_PROFILE = "core-qa";
+      AWS_PROFILE = "qa";
     };
   };
-
-  # home.packages = with pkgs; [
-  #   awscli2
-  # ];
 }

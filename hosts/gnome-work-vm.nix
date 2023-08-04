@@ -8,6 +8,8 @@
     ./hardware-configurations/gnome-work-vm.nix
   ];
 
+  systemd.network.wait-online.enable = false; # we don't use this if we're using network manager
+  systemd.services.NetworkManager-wait-online.enable = false;
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
   boot.loader.efi.efiSysMountPoint = "/boot/efi";
