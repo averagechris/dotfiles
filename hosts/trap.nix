@@ -48,6 +48,6 @@
     extraPortals = [pkgs.xdg-desktop-portal-gtk];
   };
 
-  fonts.enableDefaultFonts = true;
-  fonts.fonts = with pkgs; [dejavu_fonts font-awesome nerdfonts];
+  fonts.enableDefaultPackages = true;
+  fonts.packages = with pkgs; [dejavu_fonts font-awesome nerdfonts];
 }

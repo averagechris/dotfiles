@@ -52,7 +52,6 @@
   in
     with dotfiles.lib;
       {
-        inherit overlays;
         nixosConfigurations = with flake-utils.lib.system; {
           gnome-work-vm = mkHost aarch64-linux ./hosts/gnome-work-vm.nix;
           taz = mkHost x86_64-linux ./hosts/taz.nix;
@@ -75,6 +74,7 @@
         formatter = pkgs.alejandra;
         # deploy usage: nix run .#deploy -- .#tootsie
         apps.deploy = self.inputs.deploy-rs.apps.${system}.deploy-rs;
+        packages.agenix = self.inputs.agenix.packages.${system}.default;
         devShells.default = pkgs.mkShell {
           inherit (self.checks.${system}.pre-commit) shellHook;
           buildInputs = with pkgs; [
@@ -85,6 +85,7 @@
             python311Packages.mdformat
             nil # nix language server
             nixd
+            self.outputs.packages.${system}.agenix
           ];
         };
         checks = dotfiles.lib.mkCommitCheck system // (builtins.mapAttrs (sys: l: l.deployChecks self.deploy) self.inputs.deploy-rs.lib).${system};
