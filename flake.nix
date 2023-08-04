@@ -86,6 +86,7 @@
             nil # nix language server
             nixd
             self.outputs.packages.${system}.agenix
+            self.inputs.deploy-rs.packages.${system}.deploy-rs
           ];
         };
         checks = dotfiles.lib.mkCommitCheck system // (builtins.mapAttrs (sys: l: l.deployChecks self.deploy) self.inputs.deploy-rs.lib).${system};
