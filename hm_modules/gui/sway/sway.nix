@@ -1,5 +1,6 @@
 {
   config,
+  lib,
   pkgs,
   ...
 }: let
@@ -22,7 +23,11 @@ in {
     config.gaps.outer = 3;
     config.gaps.smartGaps = true;
     config.input."*".natural_scroll = "enabled";
-    config.input."type:touchpad".tap = "enabled";
+    config.input."type:touchpad" = {
+      tap = lib.mkDefault "enabled";
+      tap_button_map = lib.mkDefault "lrm";
+      accel_profile = lib.mkDefault "adaptive";
+    };
     config.output."*".bg = "${wallpapers}/1.jpg fill";
     config.startup = [
       {

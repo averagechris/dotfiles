@@ -38,6 +38,10 @@
     dotfiles.gui.enable = true;
     dotfiles.shell.python.enable = true;
     programs.meganz.enable = true;
+    wayland.windowManager.sway.config.input."type:touchpad" = {
+      tap = "disabled";
+      click_method = "button_areas";
+    };
   };
 
   services.dbus.enable = true;
