@@ -11,7 +11,7 @@ in {
   };
 
   programs.firefox = {
-    package = lib.mkDefault (pkgs.firefox-devedition.override {
+    package = lib.mkDefault (pkgs.firefox-wayland.override {
       cfg.enableGnomeExtensions = lib.mkDefault isLinux;
     });
 
@@ -35,7 +35,7 @@ in {
             # by going to about:config, copy-pasting this, then toggling it to true
             "toolkit.legacyUserProfileCustomizations.stylesheets" = true;
 
-            "browser.startup.homepage" = "https://duckduckgo.com";
+            "browser.startup.homepage" = "https://kagi.com";
             "browser.search.region" = "US";
             "browser.search.isUS" = true;
             "browser.bookmarks.showMobileBookmarks" = true;
