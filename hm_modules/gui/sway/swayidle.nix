@@ -8,7 +8,7 @@
   displayOff = ''${pkgs.sway}/bin/swaymsg "output * dpms off"'';
   displayLock = "${pkgs.swaylock-effects}/bin/swaylock -f -c 000000";
 in {
-  config = lib.mkIf config.dotfiles.gui.sway.idle.enable {
+  config = lib.mkIf config.dotfiles.gui.sway.enable {
     systemd.user.services.swayidle = {
       Unit = {
         Description = "Sway Idle Manager";

@@ -19,7 +19,6 @@ in
 
     options.dotfiles.gui.sway = {
       enable = mkEnableOption "Use highly configured sway as the window manager.";
-      idle.enable = mkEnableOption "Use my configured swayidle or not.";
     };
 
     config = mkIf cfg.enable {

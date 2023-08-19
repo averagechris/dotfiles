@@ -35,6 +35,7 @@ in {
         k = "mode kill_mode";
         r = "mode resize_mode";
         t = ''exec swaymsg [app_id="scratch_terminal"] scratchpad show; mode default;'';
+        w = "mode workspace_mode";
         v = "mode volume_mode";
         "Shift+space" = "mode disabled_mode";
       }
@@ -156,8 +157,8 @@ in {
   };
 
   config.wayland.windowManager.sway.extraConfig = ''
-    bindgesture swipe:4:right workspace prev
-    bindgesture swipe:4:left workspace next
+    bindgesture swipe:3:right workspace prev
+    bindgesture swipe:3:left workspace next
   '';
 
   config.home.packages =

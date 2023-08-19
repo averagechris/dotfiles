@@ -8,8 +8,8 @@
   nixpkgs.overlays = lib.attrValues overlays;
   nix = {
     gc.automatic = true;
-    gc.dates = "weekly";
-    gc.options = "--delete-older-than 30d";
+    gc.dates = "daily";
+    gc.options = "--delete-older-than 14d";
     registry.nixpkgs.flake = inputs.nixpkgs; # makes nix run nixpkgs#... faster
     settings.substituters = [
       "https://cache.nixos.org/"

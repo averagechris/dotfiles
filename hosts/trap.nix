@@ -39,8 +39,11 @@
     dotfiles.shell.python.enable = true;
     programs.meganz.enable = true;
     wayland.windowManager.sway.config.input."type:touchpad" = {
-      tap = "disabled";
-      click_method = "button_areas";
+      tap = "enabled";
+      # click_method = "None";
+      scroll_factor = "0.4";
+      drag = "disabled";
+      dwt = "enabled";
     };
   };
 
