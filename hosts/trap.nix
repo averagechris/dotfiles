@@ -36,8 +36,11 @@
   home-manager.users.chris = {pkgs, ...}: {
     home.stateVersion = "23.05";
     dotfiles.gui.enable = true;
+    dotfiles.gui.sway.enable = false;
+    dotfiles.gui.hyprland.enable = true;
     dotfiles.shell.python.enable = true;
     programs.meganz.enable = true;
+    programs.helix.package = inputs.helix.packages.x86_64-linux.default;
     wayland.windowManager.sway.config.input."type:touchpad" = {
       tap = "enabled";
       # click_method = "None";

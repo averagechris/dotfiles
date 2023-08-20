@@ -24,7 +24,7 @@ in
     config = mkIf cfg.enable {
       wayland.windowManager.sway = {
         enable = mkDefault cfg.enable;
-        config.terminal = dotfiles_cfg.gui.terminal;
+        config.terminal = with dotfiles_cfg.gui; "${terminal}/bin/${terminal.pname}";
       };
       programs.waybar.enable = mkDefault cfg.enable;
       services.kanshi.enable = mkDefault cfg.enable;
@@ -32,8 +32,8 @@ in
       # notifications daemon
       services.mako = {
         enable = mkDefault true;
-        anchor = "top-center";
-        defaultTimeout = 2750;
+        anchor = mkDefault "top-center";
+        defaultTimeout = mkDefault 2750;
       };
 
       services.blueman-applet.enable = mkDefault true;

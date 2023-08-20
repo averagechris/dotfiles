@@ -13,13 +13,13 @@ in
       ./firefox.nix
       ./linux_desktop.nix
       ./sway
+      ./hyprland
     ];
     options.dotfiles.gui = {
       enable = mkEnableOption "Enables the GUI window manager and apps that I've cofnigured.";
       terminal = mkOption {
-        type = types.str; # TODO maybe this should be a package instead, that would be nicer.
-        default = "${config.programs.alacritty.package}/bin/alacritty";
-        example = "/path/to/some/terminal/emulator/bin";
+        type = types.package;
+        default = config.programs.alacritty.package;
         description = mdDoc "The terminal program to pass to the window manager, by default alacritty.";
       };
     };
@@ -62,8 +62,20 @@ in
           else []
         )
         ++ (
-          if config.programs.darktable.enable
-          then [signal-desktop]
+          if config.programs.signal.enable
+          then [
+            (signal-desktop.overrideAttrs (o: {
+              preFixup =
+                o.preFixup
+                + ''
+                  gappsWrapperArgs+=(
+                    --add-flags "--enable-features=UseOzonePlatform"
+                    --add-flags "--ozone-platform=wayland"
+                    --add-flags "--enable-features=WaylandWindowDecorations"
+                  )
+                '';
+            }))
+          ]
           else []
         )
         ++ (

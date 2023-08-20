@@ -1,10 +1,5 @@
-{
-  config,
-  pkgs,
-  lib,
-  ...
-}: {
-  config = lib.mkIf config.wayland.windowManager.sway.enable {
+{pkgs, ...}: {
+  config = {
     xdg.configFile."swappy/config".text = ''
       [Default]
       save_dir=$HOME/screenshots

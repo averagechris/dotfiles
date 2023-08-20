@@ -1,4 +1,4 @@
-function () {
+function {
     for functions_group in $(ls $HOME/dotfiles/nixpkgs/shell/zsh_functions)
     do
         if [[ $functions_group =~ "macos" && $(uname) != "Darwin" ]]
