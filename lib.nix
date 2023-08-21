@@ -61,6 +61,7 @@
           home-manager.extraSpecialArgs = specialArgs system;
           home-manager.useGlobalPkgs = true;
           home-manager.useUserPackages = true;
+          home-manager.backupFileExtension = "hm.bak";
         }
       ];
     };

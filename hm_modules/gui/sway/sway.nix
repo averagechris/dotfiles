@@ -1,11 +1,8 @@
 {
-  config,
   lib,
   pkgs,
   ...
-}: let
-  wallpapers = "${config.home.homeDirectory}/dotfiles/hm_modules/gui/sway/wallpapers";
-in {
+}: {
   wayland.windowManager.sway = {
     config.fonts.names = ["DejaVu Sans Mono" "FontAwesome5Free"]; # TODO don't hardcode
     config.bars = [{command = "waybar";}];
@@ -28,7 +25,7 @@ in {
       tap_button_map = lib.mkDefault "lrm";
       accel_profile = lib.mkDefault "adaptive";
     };
-    config.output."*".bg = "${wallpapers}/1.jpg fill";
+    config.output."*".bg = "${../wallpapers}/1.jpg fill";
     config.startup = [
       {
         command = "${pkgs.kanshi}/bin/kanshi";

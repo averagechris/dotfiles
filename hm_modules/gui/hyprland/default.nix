@@ -5,6 +5,22 @@
   ...
 }: let
   cfg = config.dotfiles.gui.hyprland;
+  toggleDisplayWithLid = let
+    name = "disable-builtin-display-when-lid-closed";
+    script = pkgs.writeShellApplication {
+      inherit name;
+      runtimeInputs = [pkgs.coreutils];
+      text = ''
+        if grep open /proc/acpi/button/lid/LID0/state; then
+            hyprctl keyword monitor "eDP-1,preferred,auto,auto"
+        else
+            if [[ "$(hyprctl monitors | grep -c Monitor)" != "1" ]]; then
+                hyprctl keyword monitor "eDP-1,disable"
+            fi
+        fi
+      '';
+    };
+  in "${script}/bin/${name}";
 in {
   options.dotfiles.gui.hyprland = {
     enable = lib.mkEnableOption "Enable configured hyprland.";
@@ -13,6 +29,7 @@ in {
   imports = [
     ../sway/screenshots.nix
     ../sway/swayidle.nix
+    ./windowrules.nix
   ];
 
   config = lib.mkIf cfg.enable {
@@ -27,9 +44,11 @@ in {
           "XCURSOR_SIZE,24"
         ];
         exec-once = [
-          "firefox & signal"
+          "${pkgs.firefox}/bin/firefox & ${pkgs.signal-desktop}/bin/signal-desktop"
         ];
         monitor = [
+          "DP-11,preferred,0x0,1,transform,3"
+          "DP-9,highres,auto,1"
           ",preferred,auto,auto"
         ];
         input = {
@@ -100,14 +119,81 @@ in {
           vrr = 2;
         };
         "$mainMod" = "SUPER";
+        "$dashKey" = 20; # the literal - key
+
         bind = let
           term = with config.dotfiles.gui; "${terminal}/bin/${terminal.pname}";
-        in [
-          "$mainMod, T, exec, ${term}"
-          "$mainMod, R, exec, ${pkgs.wofi}/bin/wofi --show drun"
+          withSuper = with lib.strings;
+            lst: (map (rule:
+              if (hasPrefix "+" rule)
+              then "$mainMod ${rule}"
+              else "$mainMod, ${rule}")
+            lst);
+        in
+          withSuper [
+            # primary actions
+            "T, exec, ${term}"
+            "Q, killactive,"
+            "+SHIFT, Q, exit,"
+            "+SHIFT, F, togglefloating,"
+            "F, fullscreen,"
+            # "P, pseudo,"
+            # "J, togglesplit,"
+            "P, togglefloating"
+            "P, pin"
+            "SPACE, exec, ${pkgs.wofi}/bin/wofi --show drun"
+
+            # movement between windows
+            "h, movefocus, l"
+            "j, movefocus, d"
+            "k, movefocus, u"
+            "l, movefocus, r"
+
+            # Move active window to a workspace with mainMod + SHIFT + [0-9]
+            "+SHIFT, 1, movetoworkspace, 1"
+            "+SHIFT, 2, movetoworkspace, 2"
+            "+SHIFT, 3, movetoworkspace, 3"
+            "+SHIFT, 4, movetoworkspace, 4"
+            "+SHIFT, 5, movetoworkspace, 5"
+            "+SHIFT, 6, movetoworkspace, 6"
+            "+SHIFT, 7, movetoworkspace, 7"
+            "+SHIFT, 8, movetoworkspace, 8"
+            "+SHIFT, 9, movetoworkspace, 9"
+            "+SHIFT, 0, movetoworkspace, 10"
+
+            # change to workspace by number
+            "1, workspace, 1"
+            "2, workspace, 2"
+            "3, workspace, 3"
+            "4, workspace, 4"
+            "5, workspace, 5"
+            "6, workspace, 6"
+            "7, workspace, 7"
+            "8, workspace, 8"
+            "9, workspace, 9"
+            "0, workspace, 10"
+
+            # Scroll through existing workspaces with mainMod + scroll
+            "mouse_down, workspace, e+1"
+            "mouse_up, workspace, e-1"
+
+            # Move window to scratch pad
+            "+SHIFT, $dashKey, movetoworkspacesilent, special:scratchpad"
+            "$dashKey, togglespecialworkspace, scratchpad"
+          ];
+        bindl = [
+          ",switch:Lid Switch, exec, ${toggleDisplayWithLid}"
+        ];
+        bindm = [
+          # Move/resize windows with mainMod + LMB/RMB and dragging
+          "$mainMod, mouse:272, movewindow"
+          "$mainMod, mouse:273, resizewindow"
         ];
       };
-      extraConfig = builtins.readFile ./hyprland.conf;
+      # extraConfig = ''
+      #   exec=touch ~/.config/hypr/scratch_config.conf
+      #   source=~/.config/hypr/scratch_config.conf
+      # '';
     };
 
     # programs.waybar.enable = lib.mkDefault cfg.enable;
