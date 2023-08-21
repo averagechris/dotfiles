@@ -89,6 +89,7 @@
             python311Packages.mdformat
             nil # nix language server
             nixd
+            nodePackages.bash-language-server
             self.outputs.packages.${system}.agenix
             self.inputs.deploy-rs.packages.${system}.deploy-rs
           ];

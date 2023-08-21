@@ -85,7 +85,7 @@
       hooks = {
         alejandra.enable = true;
         statix.enable = true;
-        shellcheck.enable = false; # FIXME
+        shellcheck.enable = true;
         markdown-formatter = {
           enable = true;
           name = "markdown-formatter";
