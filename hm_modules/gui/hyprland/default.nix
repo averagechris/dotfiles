@@ -149,17 +149,22 @@ in {
             "k, movefocus, u"
             "l, movefocus, r"
 
+            "+ SHIFT, h, swapwindow, l"
+            "+ SHIFT, j, swapwindow, d"
+            "+ SHIFT, k, swapwindow, u"
+            "+ SHIFT, l, swapwindow, r"
+
             # Move active window to a workspace with mainMod + SHIFT + [0-9]
-            "+SHIFT, 1, movetoworkspace, 1"
-            "+SHIFT, 2, movetoworkspace, 2"
-            "+SHIFT, 3, movetoworkspace, 3"
-            "+SHIFT, 4, movetoworkspace, 4"
-            "+SHIFT, 5, movetoworkspace, 5"
-            "+SHIFT, 6, movetoworkspace, 6"
-            "+SHIFT, 7, movetoworkspace, 7"
-            "+SHIFT, 8, movetoworkspace, 8"
-            "+SHIFT, 9, movetoworkspace, 9"
-            "+SHIFT, 0, movetoworkspace, 10"
+            "+ SHIFT, 1, movetoworkspace, 1"
+            "+ SHIFT, 2, movetoworkspace, 2"
+            "+ SHIFT, 3, movetoworkspace, 3"
+            "+ SHIFT, 4, movetoworkspace, 4"
+            "+ SHIFT, 5, movetoworkspace, 5"
+            "+ SHIFT, 6, movetoworkspace, 6"
+            "+ SHIFT, 7, movetoworkspace, 7"
+            "+ SHIFT, 8, movetoworkspace, 8"
+            "+ SHIFT, 9, movetoworkspace, 9"
+            "+ SHIFT, 0, movetoworkspace, 10"
 
             # change to workspace by number
             "1, workspace, 1"

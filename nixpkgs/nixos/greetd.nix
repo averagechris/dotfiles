@@ -6,7 +6,7 @@
   hyprlandGreetConfig = pkgs.writeText "greetd-hyprland-config" ''
     env=GDK_BACKEND,wayland
     env=XCURSOR_SIZE,24
-    exec-once="${lib.getExe pkgs.greetd.gtkgreet} -l; hyprtcl dispatch exit"
+    exec-once="sleep 2 && ${lib.getExe pkgs.greetd.gtkgreet} -l; hyprtcl dispatch exit"
     bind=SUPER+SHIFT,Q,exec,systemctl poweroff
     bind=SUPER+SHIFT,R,exec,systemctl reboot
     bind=SUPER,R,exec,${lib.getExe pkgs.greetd.gtkgreet} -l; hyprtcl dispatch exit
