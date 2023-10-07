@@ -50,8 +50,7 @@ in
       # any of the programs that we're not creating config for we
       # just add to home.packages
       home.packages = with pkgs;
-        []
-        ++ (
+        (
           if config.programs.darktable.enable
           then [darktable]
           else []

@@ -84,6 +84,45 @@
 
         # default unbinds
         "C-c" = "no_op"; # was: toggle_comments
+
+        # colemak related changes
+        m = "move_char_left";
+        n = "move_line_down";
+        e = "move_line_up";
+        i = "move_char_right";
+        j = "no_op";
+
+        g.m = "goto_line_start";
+        g.h = "no_op";
+        g.o = "goto_line_end";
+        g.l = "no_op";
+        g.j = "no_op";
+        g.k = "no_op";
+        g.G = "goto_last_line";
+
+        h.h = "match_brackets";
+        h.s = "surround_add";
+        h.r = "surround_replace";
+        h.d = "surround_delete";
+        h.a = "select_textobject_around";
+        h.i = "select_textobject_inner";
+
+        z.n = "scroll_down";
+        z.e = "scroll_up";
+        Z.n = "scroll_down";
+        Z.e = "scroll_up";
+
+        l = "insert_mode";
+        L = "insert_at_line_start";
+
+        I = "no_op";
+        N = "keep_selections";
+        E = "join_selections";
+
+        k = "search_next";
+        K = "search_prev";
+        f = "move_next_word_end";
+        F = "move_next_long_word_end";
       };
     };
     languages = {
