@@ -40,6 +40,7 @@
     dotfiles.gui.hyprland.enable = true;
     dotfiles.shell.python.enable = true;
     programs.meganz.enable = true;
+    programs.obsidian.enable = false;
     programs.helix.package = inputs.helix.packages.x86_64-linux.default;
     wayland.windowManager.sway.config.input."type:touchpad" = {
       tap = "enabled";
@@ -51,6 +52,7 @@
   };
 
   services.dbus.enable = true;
+  services.flatpak.enable = true;
   xdg.portal = {
     enable = true;
     wlr.enable = true;
