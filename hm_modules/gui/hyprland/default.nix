@@ -36,7 +36,7 @@ in {
     wayland.windowManager.hyprland = {
       inherit (cfg) enable;
       xwayland.enable = true;
-      systemdIntegration = true;
+      systemd.enable = true;
       plugins = [];
       settings = {
         env = [
@@ -144,15 +144,15 @@ in {
             "SPACE, exec, ${pkgs.wofi}/bin/wofi --show drun"
 
             # movement between windows
-            "h, movefocus, l"
-            "j, movefocus, d"
-            "k, movefocus, u"
-            "l, movefocus, r"
+            "m, movefocus, l"
+            "n, movefocus, d"
+            "e, movefocus, u"
+            "i, movefocus, r"
 
-            "+ SHIFT, h, swapwindow, l"
-            "+ SHIFT, j, swapwindow, d"
-            "+ SHIFT, k, swapwindow, u"
-            "+ SHIFT, l, swapwindow, r"
+            "+ SHIFT, m, swapwindow, l"
+            "+ SHIFT, n, swapwindow, d"
+            "+ SHIFT, e, swapwindow, u"
+            "+ SHIFT, i, swapwindow, r"
 
             # Move active window to a workspace with mainMod + SHIFT + [0-9]
             "+ SHIFT, 1, movetoworkspace, 1"

@@ -36,4 +36,12 @@
     wheelNeedsPassword = false;
     execWheelOnly = true;
   };
+
+  services.calibre-web = {
+    enable = true;
+    openFirewall = true;
+    listen.ip = "0.0.0.0";
+    options.enableBookConversion = true;
+    options.enableBookUploading = true;
+  };
 }

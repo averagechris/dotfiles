@@ -58,7 +58,7 @@
       {
         nixosConfigurations = with flake-utils.lib.system; {
           gnome-work-vm = mkHost aarch64-linux ./hosts/gnome-work-vm.nix;
-          taz = mkHost x86_64-linux ./hosts/taz.nix;
+          # taz = mkHost x86_64-linux ./hosts/taz.nix;
           thelio-nixos = mkHost x86_64-linux ./hosts/thelio.nix;
           tom = mkHost x86_64-linux ./hosts/tom.nix;
           tootsie = mkHost x86_64-linux ./hosts/tootsie.nix;
@@ -68,7 +68,7 @@
         darwinConfigurations.suremac = mkHost flake-utils.lib.system.aarch64-darwin ./nixpkgs/darwin/suremac;
         deploy.nodes = {
           tom = mkDeploy self.nixosConfigurations.tom;
-          taz = mkDeploy self.nixosConfigurations.taz;
+          # taz = mkDeploy self.nixosConfigurations.taz;
           tootsie = mkDeploy self.nixosConfigurations.tootsie;
         };
       }

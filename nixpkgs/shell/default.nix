@@ -6,8 +6,6 @@
       ignoreDups = true;
     };
 
-    initExtra = builtins.readFile ./post-compinit.zsh;
-
     enableAutosuggestions = true;
     enableCompletion = true;
 

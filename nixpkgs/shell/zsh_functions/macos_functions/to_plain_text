@@ -1,3 +1,0 @@
-#! /usr/bin/env zsh
-
-textutil -convert txt -stdin -stdout -encoding 30

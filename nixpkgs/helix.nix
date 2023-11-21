@@ -19,6 +19,25 @@
           skip-levels = 1;
         };
       };
+
+      keys.select = {
+        h = "no_op";
+        j = "no_op";
+        k = "search_next";
+        l = "insert_mode";
+        m = "extend_char_left";
+        n = "extend_visual_line_down";
+        e = "extend_visual_line_up";
+        i = "extend_char_right";
+        K = "search_prev";
+        g.m = "goto_line_start";
+        g.h = "no_op";
+        g.i = "goto_line_end";
+        g.l = "no_op";
+        g.j = "no_op";
+        g.k = "no_op";
+        g.G = "goto_last_line";
+      };
       keys.normal = {
         space.":" = "command_mode";
 
@@ -94,7 +113,7 @@
 
         g.m = "goto_line_start";
         g.h = "no_op";
-        g.o = "goto_line_end";
+        g.i = "goto_line_end";
         g.l = "no_op";
         g.j = "no_op";
         g.k = "no_op";
@@ -106,6 +125,23 @@
         h.d = "surround_delete";
         h.a = "select_textobject_around";
         h.i = "select_textobject_inner";
+
+        space.w.h = "no_op";
+        space.w.H = "no_op";
+        space.w.j = "no_op";
+        space.w.J = "no_op";
+        space.w.k = "no_op";
+        space.w.K = "no_op";
+        space.w.l = "no_op";
+        space.w.L = "no_op";
+        space.w.m = "jump_view_left";
+        space.w.n = "jump_view_down";
+        space.w.e = "jump_view_up";
+        space.w.i = "jump_view_right";
+        space.w.M = "swap_view_left";
+        space.w.N = "swap_view_down";
+        space.w.E = "swap_view_up";
+        space.w.I = "swap_view_right";
 
         z.n = "scroll_down";
         z.e = "scroll_up";

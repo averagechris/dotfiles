@@ -67,10 +67,10 @@ keybinds {
 	bind "Alt k" { MovePane "Up"; }
 	bind "Alt l" { MovePane "Right"; }
 
-	bind "h" { MoveFocus "Left"; SwitchToMode "locked"; }
-	bind "j" { MoveFocus "Down"; SwitchToMode "locked"; }
-	bind "k" { MoveFocus "Up"; SwitchToMode "locked"; }
-	bind "l" { MoveFocus "Right"; SwitchToMode "locked"; }
+	bind "m" { MoveFocus "Left"; SwitchToMode "locked"; }
+	bind "n" { MoveFocus "Down"; SwitchToMode "locked"; }
+	bind "e" { MoveFocus "Up"; SwitchToMode "locked"; }
+	bind "i" { MoveFocus "Right"; SwitchToMode "locked"; }
 
     bind "n" { NewPane; SwitchToMode "locked"; }
     bind "d" { CloseFocus; SwitchToMode "locked"; }
@@ -92,14 +92,14 @@ keybinds {
   resize clear-defaults=true {
     bind "Esc" { SwitchToMode "locked"; }  // TODO rm when shared or shared_except works
 
-	bind "h" { Resize "Left"; }
-	bind "j" { Resize "Down"; }
-	bind "k" { Resize "Up"; }
-	bind "l" { Resize "Right"; }
-	bind "H" { Resize "Decrease Left"; }
-	bind "J" { Resize "Decrease Down"; }
-	bind "K" { Resize "Decrease Up"; }
-	bind "L" { Resize "Decrease Right"; }
+	bind "m" { Resize "Left"; }
+	bind "n" { Resize "Down"; }
+	bind "e" { Resize "Up"; }
+	bind "i" { Resize "Right"; }
+	bind "M" { Resize "Decrease Left"; }
+	bind "N" { Resize "Decrease Down"; }
+	bind "E" { Resize "Decrease Up"; }
+	bind "I" { Resize "Decrease Right"; }
     bind "+" { Resize "Increase"; }
     bind "-" { Resize "Decrease"; }
   }
@@ -109,8 +109,8 @@ keybinds {
 
     bind "r" { SwitchToMode "RenameTab"; TabNameInput 0; }
 
-    bind "h" "k" "[" { GoToPreviousTab; }
-    bind "l" "j" "]" { GoToNextTab; }
+    bind "m" "e" "[" { GoToPreviousTab; }
+    bind "i" "n" "]" { GoToNextTab; }
     bind "n" { NewTab; SwitchToMode "renametab"; TabNameInput 0; }
     bind "d" { CloseTab; SwitchToMode "locked"; }
     // bind "s" { ToggleActiveSyncTab; SwitchToMode "locked"; }
@@ -150,8 +150,8 @@ keybinds {
     bind "Alt /" { SwitchToMode "EnterSearch"; SearchInput 0; }
 
     bind "e" { EditScrollback; SwitchToMode "Normal"; }
-    bind "j" { ScrollDown; }
-    bind "k" { ScrollUp; }
+    bind "n" { ScrollDown; }
+    bind "e" { ScrollUp; }
     bind "[" { PageScrollUp; }
     bind "]" { PageScrollDown; }
     bind "{" { HalfPageScrollUp; }
