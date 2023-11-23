@@ -53,6 +53,8 @@
 
   services.dbus.enable = true;
   services.flatpak.enable = true;
+  services.fwupd.enable = true;
+
   xdg.portal = {
     enable = true;
     wlr.enable = true;
