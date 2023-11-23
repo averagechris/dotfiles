@@ -62,23 +62,23 @@ keybinds {
   pane clear-defaults=true {
     bind "Esc" { SwitchToMode "locked"; }  // TODO rm when shared or shared_except works
 
-	bind "Alt h" { MovePane "Left"; }
-	bind "Alt j" { MovePane "Down"; }
-	bind "Alt k" { MovePane "Up"; }
-	bind "Alt l" { MovePane "Right"; }
+	bind "Alt m" { MovePane "Left"; }
+	bind "Alt n" { MovePane "Down"; }
+	bind "Alt e" { MovePane "Up"; }
+	bind "Alt i" { MovePane "Right"; }
 
 	bind "m" { MoveFocus "Left"; SwitchToMode "locked"; }
 	bind "n" { MoveFocus "Down"; SwitchToMode "locked"; }
 	bind "e" { MoveFocus "Up"; SwitchToMode "locked"; }
 	bind "i" { MoveFocus "Right"; SwitchToMode "locked"; }
 
-    bind "n" { NewPane; SwitchToMode "locked"; }
+    bind "h" { NewPane; SwitchToMode "locked"; }
     bind "d" { CloseFocus; SwitchToMode "locked"; }
     bind "f" { ToggleFocusFullscreen; SwitchToMode "locked"; }
     bind "F" { TogglePaneEmbedOrFloating; ToggleFocusFullscreen; SwitchToMode "locked"; }
 
-    bind "D" { NewPane "Down"; SwitchToMode "locked"; }
-    bind "R" { NewPane "Right"; SwitchToMode "locked"; }
+    bind "N" { NewPane "Down"; SwitchToMode "locked"; }
+    bind "I" { NewPane "Right"; SwitchToMode "locked"; }
 
     bind "z" { TogglePaneFrames; SwitchToMode "locked"; }
 
