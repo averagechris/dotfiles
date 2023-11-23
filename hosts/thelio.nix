@@ -52,4 +52,17 @@
     programs.obsidian.enable = false;
     programs.helix.package = inputs.helix.packages.x86_64-linux.default;
   };
+  services.dbus.enable = true;
+  services.flatpak.enable = true;
+  services.fwupd.enable = true;
+
+  xdg.portal = {
+    enable = true;
+    wlr.enable = true;
+    # gtk portal needed to make gtk apps happy
+    extraPortals = [pkgs.xdg-desktop-portal-gtk];
+  };
+
+  fonts.enableDefaultPackages = true;
+  fonts.packages = with pkgs; [dejavu_fonts font-awesome nerdfonts];
 }
