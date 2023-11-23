@@ -10,6 +10,7 @@
     bind=SUPER+SHIFT,Q,exec,systemctl poweroff
     bind=SUPER+SHIFT,R,exec,systemctl reboot
     bind=SUPER,R,exec,${lib.getExe pkgs.greetd.gtkgreet} -l; hyprtcl dispatch exit
+
     input {
       touchpad {
         clickfinger_behavior=true
@@ -26,6 +27,15 @@
       animation=workspaces, 1, 6, default
       enabled=yes
     }
+
+    device:at-translated-set-2-keyboard {
+      # toggle between qwerty and colemak_dh keyboard layouts
+      bind=SUPER+SHIFT+CTRL+ALT, SPACE, exec, hyprctl switchxkblayout at-translated-set-2-keyboard next"
+      input {
+        kb_variant = colemak_dh,
+      }
+    }
+
   '';
 in {
   # puts systemd init logs on tty1

@@ -44,7 +44,7 @@ in {
           "XCURSOR_SIZE,24"
         ];
         exec-once = [
-          "${pkgs.firefox}/bin/firefox & ${pkgs.signal-desktop}/bin/signal-desktop"
+          "${pkgs.firefox}/bin/firefox & ${pkgs.signal-desktop}/bin/signal-desktop & ${pkgs.waybar}/bin/waybar"
         ];
         monitor = [
           "DP-11,preferred,0x0,1,transform,3"
@@ -63,6 +63,13 @@ in {
             middle_button_emulation = true;
             clickfinger_behavior = true;
           };
+        };
+        "device:dygma-defy-keyboard".input = {
+          kb_layout = "us";
+          kb_variant = ",";
+        };
+        "device:at-translated-set-2-keyboard".input = {
+          kb_variant = "colemak_dh,";
         };
         general = {
           gaps_in = 3;
@@ -185,6 +192,9 @@ in {
             # Move window to scratch pad
             "+SHIFT, $dashKey, movetoworkspacesilent, special:scratchpad"
             "$dashKey, togglespecialworkspace, scratchpad"
+
+            # toggle between qwerty and colemak_dh keyboard layouts
+            "+ SHIFT + CTRL + ALT, SPACE, exec, hyprctl switchxkblayout at-translated-set-2-keyboard next"
           ];
         bindl = [
           ",switch:Lid Switch, exec, ${toggleDisplayWithLid}"
@@ -195,10 +205,8 @@ in {
           "$mainMod, mouse:273, resizewindow"
         ];
       };
-      # extraConfig = ''
-      #   exec=touch ~/.config/hypr/scratch_config.conf
-      #   source=~/.config/hypr/scratch_config.conf
-      # '';
+      extraConfig = ''
+      '';
     };
 
     # programs.waybar.enable = lib.mkDefault cfg.enable;
