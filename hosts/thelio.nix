@@ -17,6 +17,7 @@
     inputs.agenix.nixosModules.default
     inputs.nixos-hardware.nixosModules.system76
     inputs.nixos-hardware.nixosModules.common-cpu-amd
+    inputs.nixos-hardware.nixosModules.common-gpu-amd
     inputs.nixos-hardware.nixosModules.common-cpu-amd-pstate
     inputs.nixos-hardware.nixosModules.common-pc-ssd
   ];
