@@ -1,7 +1,6 @@
 {
   pkgs,
   inputs,
-  input-modules,
   ...
 }: {
   nixpkgs.config.allowUnfree = true;
@@ -14,6 +13,7 @@
 
   nixpkgs.config.allowUnsupportedSystem = true;
   nixpkgs.config.allowBroken = true;
+  nixpkgs.overlays = [inputs.nixpkgs-firefox-darwin.overlay];
   nix = {
     package = pkgs.nixFlakes;
     settings.substituters = [
@@ -167,31 +167,39 @@
     stateVersion = 4;
   };
 
-  users.users.chrisnotnix = {
-    name = "chrisnotnix";
-    home = "/Users/chrisnotnix";
+  users.users.chris = {
+    name = "chris";
+    home = "/Users/chris";
   };
-  home-manager.users.chrisnotnix = {pkgs, ...}: {
-    home.stateVersion = "22.11";
+  home-manager.users.chris = {pkgs, ...}: {
+    home.stateVersion = "23.11";
     imports = [
       ../../../hm_modules
+      ../../sure
+      inputs.mac-app-util.homeManagerModules.default
     ];
     dotfiles.shell = {
       enable = true;
       nerdfonts.enable = true;
       shell_scripts.enable = false;
     };
-    programs.alacritty.enable = true;
+    dotfiles.gui.enable = true;
+    dotfiles.gui.sway.enable = false;
+    programs.git = {
+      userName = "Chris Cummings";
+      userEmail = "chris.cummings@sureapp.com";
+      signing.signByDefault = true;
+      signing.key = null;
+    };
 
-    # we want the config of ff, but we don't install it from nix cause the nix package
-    # does not support macos, we instead use nix-darwin's homebrew integration to install
-    # firefox for us
-    programs.firefox.enable = false;
-    programs.firefox.package = pkgs.hello; # hack cause we install ff w/ nix-darwin.homebrew
+    programs.firefox.package = pkgs.firefox-devedition-bin;
+    programs.zoom.enable = false;
+    programs.darktable.enable = false;
+    programs.signal.enable = false;
   };
 
   homebrew = {
-    enable = true;
+    enable = false;
     casks = [
       "firefox-developer-edition"
     ];

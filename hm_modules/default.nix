@@ -1,12 +1,8 @@
 {
-  config,
   dotfiles_lib,
   input-modules,
-  lib,
   ...
-}: let
-  cfg = config.dotiles;
-in {
+}: {
   imports = [
     input-modules.doom
     ./gui

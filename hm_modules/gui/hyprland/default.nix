@@ -44,7 +44,9 @@ in {
           "XCURSOR_SIZE,24"
         ];
         exec-once = [
-          "${pkgs.firefox}/bin/firefox & ${pkgs.signal-desktop}/bin/signal-desktop & ${pkgs.waybar}/bin/waybar"
+          "${pkgs.waybar}/bin/waybar"
+          "${pkgs.signal-desktop}/bin/signal-desktop"
+          "${pkgs.firefox}/bin/firefox"
         ];
         monitor = [
           "DP-11,preferred,0x0,1,transform,3"
@@ -232,7 +234,6 @@ in {
       pavucontrol
       playerctl
       pulseaudio
-      ranger
       swaylock-effects
       wl-clipboard
       wofi

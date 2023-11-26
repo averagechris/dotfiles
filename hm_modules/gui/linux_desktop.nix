@@ -1,12 +1,14 @@
 {
   config,
   lib,
+  pkgs,
   ...
 }: let
   cfg = config.dotfiles.gui;
+  inherit (pkgs.stdenv.hostPlatform) isLinux;
 in
   with lib; {
-    config = mkIf cfg.enable {
+    config = mkIf (cfg.enable && isLinux) {
       pam.sessionVariables = {
         LANGUAGE = "en_US:en";
         LANG = "en_US.UTF-8";

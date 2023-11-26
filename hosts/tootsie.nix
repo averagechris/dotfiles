@@ -59,7 +59,7 @@
     ...
   }: {
     home.stateVersion = "21.11";
-    home.packages = with pkgs; [ranger python311Packages.pipx];
+    home.packages = with pkgs; [python311Packages.pipx];
     programs.meganz.enable = true;
     programs.zsh.initExtra = ''
       export PATH=$HOME/.local/bin:$PATH

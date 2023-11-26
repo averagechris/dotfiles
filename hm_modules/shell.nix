@@ -21,6 +21,7 @@ in
       ../nixpkgs/git
       ../nixpkgs/passhole
       ../nixpkgs/python
+      ./shell_modules/ranger.nix
     ];
 
     options.dotfiles.shell = with dotfiles_lib.options; {

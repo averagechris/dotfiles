@@ -44,13 +44,5 @@ in {
   # services.emacs.package = config.home-manager.users."${pii.userName}".services.emacs.package;
 
   # enable launchd daemon for mbsync to sync and index emails if emails are configured in home-manager config
-  launchd.user.agents.mbsync =
-    if config.home-manager.users."${pii.userName}".accounts.email.accounts != {}
-    then {
-      command = "${pkgs.isync}/bin/mbsync -a && mu ${pkgs.mu}/bin/mu index";
-      serviceConfig.StartInterval = 60 * 5;
-    }
-    else {};
-
   services.lorri.enable = true;
 }

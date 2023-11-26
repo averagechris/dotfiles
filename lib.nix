@@ -54,16 +54,22 @@
     fn {
       inherit system;
       specialArgs = specialArgs system;
-      modules = [
-        hostPath
-        hmModule
-        {
-          home-manager.extraSpecialArgs = specialArgs system;
-          home-manager.useGlobalPkgs = true;
-          home-manager.useUserPackages = true;
-          home-manager.backupFileExtension = "hm.bak";
-        }
-      ];
+      modules =
+        [
+          hostPath
+          hmModule
+          {
+            home-manager.extraSpecialArgs = specialArgs system;
+            home-manager.useGlobalPkgs = true;
+            home-manager.useUserPackages = true;
+            home-manager.backupFileExtension = "hm.bak";
+          }
+        ]
+        ++ (
+          if system == "aarch64-darwin"
+          then [inputs.mac-app-util.darwinModules.default]
+          else []
+        );
     };
 
   mkDeploy = host: {
