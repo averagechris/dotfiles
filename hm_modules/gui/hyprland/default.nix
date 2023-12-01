@@ -1,5 +1,6 @@
 {
   config,
+  dotfiles_lib,
   pkgs,
   lib,
   ...
@@ -24,12 +25,15 @@
 in {
   options.dotfiles.gui.hyprland = {
     enable = lib.mkEnableOption "Enable configured hyprland.";
+    waybar.enable = dotfiles_lib.options.mkDefaultEnabledOption "Enable waybar with hyprland config";
   };
 
   imports = [
     ../sway/screenshots.nix
     ../sway/swayidle.nix
     ./windowrules.nix
+    ./waybar.nix
+    ./wallpaperd.nix
   ];
 
   config = lib.mkIf cfg.enable {
@@ -44,13 +48,12 @@ in {
           "XCURSOR_SIZE,24"
         ];
         exec-once = [
-          "${pkgs.waybar}/bin/waybar"
           "${pkgs.signal-desktop}/bin/signal-desktop"
           "${pkgs.firefox}/bin/firefox"
+          # use systemd to start on hyprland-session.target instead
+          # "${pkgs.waybar}/bin/waybar"
         ];
         monitor = [
-          "DP-11,preferred,0x0,1,transform,3"
-          "DP-9,highres,auto,1"
           ",preferred,auto,auto"
         ];
         input = {
@@ -131,6 +134,9 @@ in {
         "$dashKey" = 20; # the literal - key
 
         bind = let
+          brightctl = "${pkgs.brightnessctl}/bin/brightnessctl";
+          pamixer = "${pkgs.pamixer}/bin/pamixer";
+          playerctl = "${pkgs.playerctl}/bin/playerctl";
           term = with config.dotfiles.gui; "${terminal}/bin/${terminal.pname}";
           withSuper = with lib.strings;
             lst: (map (rule:
@@ -139,7 +145,19 @@ in {
               else "$mainMod, ${rule}")
             lst);
         in
-          withSuper [
+          [
+            ",XF86AudioRaiseVolume, exec, ${pamixer} --increase 5"
+            ",XF86AudioLowerVolume, exec, ${pamixer} --decrease 5"
+            "SHIFT,XF86AudioRaiseVolume, exec, ${pamixer} --increase 5"
+            "SHIFT,XF86AudioLowerVolume, exec, ${pamixer} --decrease 5"
+            ",XF86AudioMute, exec, ${pamixer} --toggle-mute"
+            ",XF86AudioNext, exec, ${playerctl} next"
+            ",XF86AudioPrev, exec, ${playerctl} previous"
+            ",XF86AudioStop, exec, ${playerctl} play-pause"
+            ",XF86MonBrightnessUp, exec, ${brightctl} set +5%"
+            ",XF86MonBrightnessDown, exec, ${brightctl} set 5%-"
+          ]
+          ++ withSuper [
             # primary actions
             "T, exec, ${term}"
             "Q, killactive,"
@@ -206,12 +224,16 @@ in {
           "$mainMod, mouse:272, movewindow"
           "$mainMod, mouse:273, resizewindow"
         ];
+        binds.workspace_back_and_forth = true;
       };
       extraConfig = ''
       '';
     };
 
-    # programs.waybar.enable = lib.mkDefault cfg.enable;
+    programs.wallpaperd = with lib; {
+      enable = mkDefault true;
+      enableHyprlandIntegration = mkDefault true;
+    };
 
     # notifications daemon
     services.mako = {

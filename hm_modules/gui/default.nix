@@ -4,6 +4,7 @@
   pkgs,
   ...
 }: let
+  inherit (pkgs.stdenv.hostPlatform) isLinux;
   cfg = config.dotfiles.gui;
 in
   with lib; {
@@ -44,6 +45,8 @@ in
 
       # use sway by default if gui is enabled
       dotfiles.gui.sway.enable = mkDefault cfg.enable;
+
+      services.udiskie.enable = mkDefault isLinux;
 
       # this doesn't install the program but makes it so the gui app
       # is installed if the program is enabled

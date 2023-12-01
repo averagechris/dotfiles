@@ -4,7 +4,7 @@
   config,
   ...
 }: {
-  config = lib.mkIf config.dotfiles.gui.enable {
+  config = lib.mkIf config.dotfiles.gui.sway.enable {
     programs.waybar = {
       systemd = {
         enable = false;

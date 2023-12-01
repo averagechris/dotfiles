@@ -27,14 +27,7 @@
 
   networking.wireless.interfaces = ["wlp6s0"];
 
-  # dhcp and network manager are causinng issues
-  # https://github.com/NixOS/nixpkgs/issues/152288
-  networking.interfaces.enp5s0.useDHCP = true;
-  networking.interfaces.enp7s0f3u4u3u4.useDHCP = true;
-  networking.interfaces.wlp6s0.useDHCP = true;
-
-  # system76 doesn't use fwupd / fwupdmgr, they have their own cli
-  environment.systemPackages = [pkgs.system76-firmware];
+  environment.systemPackages = with pkgs; [system76-firmware];
   hardware.opengl.enable = true;
   hardware.opengl.driSupport = true;
   hardware.enableRedistributableFirmware = true;
