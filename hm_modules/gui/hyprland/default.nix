@@ -74,6 +74,7 @@ in {
           kb_variant = ",";
         };
         "device:at-translated-set-2-keyboard".input = {
+          kb_layout = "us";
           kb_variant = "colemak_dh,";
         };
         general = {
@@ -214,7 +215,8 @@ in {
             "$dashKey, togglespecialworkspace, scratchpad"
 
             # toggle between qwerty and colemak_dh keyboard layouts
-            "+ SHIFT + CTRL + ALT, SPACE, exec, hyprctl switchxkblayout at-translated-set-2-keyboard next"
+            # "+ SHIFT + CTRL + ALT, SPACE, exec, hyprctl switchxkblayout at-translated-set-2-keyboard next"
+            "+ SHIFT + CTRL + ALT, SPACE, exec, hyprctl keyword input:kb_variant colemak_dh"
           ];
         bindl = [
           ",switch:Lid Switch, exec, ${toggleDisplayWithLid}"

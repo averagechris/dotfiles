@@ -7,9 +7,9 @@
 in {
   config = lib.mkIf cfg.enable {
     programs.waybar = {
-      enable = true;
+      enable = lib.mkDefault true;
       systemd = {
-        enable = true;
+        enable = lib.mkDefault true;
         target = "hyprland-session.target";
       };
       settings = [

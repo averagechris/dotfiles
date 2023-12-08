@@ -7,7 +7,7 @@
   config = lib.mkIf config.dotfiles.gui.sway.enable {
     programs.waybar = {
       systemd = {
-        enable = false;
+        enable = lib.mkDefault true;
         target = "sway-session.target";
       };
       style = builtins.readFile ./waybar_style.css;

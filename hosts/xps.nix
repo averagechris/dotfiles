@@ -28,6 +28,8 @@
   home-manager.users.chris = {pkgs, ...}: {
     home.stateVersion = "21.05";
     dotfiles.gui.enable = true;
+    dotfiles.gui.sway.enable = false;
+    dotfiles.gui.hyprland.enable = true;
     programs.meganz.enable = true;
   };
 
