@@ -207,8 +207,8 @@ in {
             "0, workspace, 10"
 
             # Scroll through existing workspaces with mainMod + scroll
-            "mouse_down, workspace, e+1"
-            "mouse_up, workspace, e-1"
+            "mouse_right, workspace, e+1"
+            "mouse_left, workspace, e-1"
 
             # Move window to scratch pad
             "+SHIFT, $dashKey, movetoworkspacesilent, special:scratchpad"
@@ -226,7 +226,10 @@ in {
           "$mainMod, mouse:272, movewindow"
           "$mainMod, mouse:273, resizewindow"
         ];
-        binds.workspace_back_and_forth = true;
+        binds = {
+          workspace_back_and_forth = true;
+          scroll_event_delay = 100;
+        };
       };
       extraConfig = ''
       '';
