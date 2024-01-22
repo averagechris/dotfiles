@@ -46,6 +46,7 @@ in {
     programs.signal.enable = false;
     programs.write-stylus.enable = false;
     programs.zoom.enable = false;
+    programs.obsidian.enable = false;
   };
 
   security.sudo = {

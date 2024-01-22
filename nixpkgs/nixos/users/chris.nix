@@ -7,7 +7,7 @@
   };
 
   config.programs.gnupg.agent.enable = true;
-  config.programs.gnupg.agent.pinentryFlavor = "gtk2";
+  config.programs.gnupg.agent.pinentryFlavor = "qt";
 
   config.age.secrets.fastmail_password = {
     file = ../../../secrets/fastmail_password.age;
