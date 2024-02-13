@@ -7,8 +7,11 @@
   # displayOn = ''${pkgs.sway}/bin/swaymsg "output * dpms on"'';
   # displayOff = ''${pkgs.sway}/bin/swaymsg "output * dpms off"'';
   displayLock = "${pkgs.swaylock-effects}/bin/swaylock -f -c 000000";
+  cfg = config.dotfiles.gui.swayidle;
 in {
-  config = lib.mkIf (config.dotfiles.gui.sway.enable || config.dotfiles.gui.hyprland.enable) {
+  options.dotfiles.gui.swayidle.enable = lib.mkEnableOption "Enable swayidle, configured to work with hyprland or sway.";
+
+  config = lib.mkIf cfg.enable {
     systemd.user.services.swayidle = {
       Unit = {
         Description = "Sway Idle Manager";

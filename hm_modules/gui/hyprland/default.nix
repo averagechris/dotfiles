@@ -37,6 +37,7 @@ in {
   ];
 
   config = lib.mkIf cfg.enable {
+    dotfiles.gui.swayidle.enable = lib.mkDefault true;
     wayland.windowManager.hyprland = {
       inherit (cfg) enable;
       xwayland.enable = true;

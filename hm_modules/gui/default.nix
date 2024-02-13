@@ -39,7 +39,7 @@ in
       programs.darktable.enable = mkDefault cfg.enable;
       programs.firefox.enable = mkDefault cfg.enable;
       programs.keepassxc.enable = mkDefault cfg.enable;
-      programs.obsidian.enable = mkDefault cfg.enable;
+      programs.obsidian.enable = mkDefault false;
       programs.signal.enable = mkDefault cfg.enable;
       programs.zoom.enable = mkDefault cfg.enable;
 
