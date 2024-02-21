@@ -40,6 +40,8 @@
             | xargs git branch -D
         '';
       }}/bin/${name}";
+
+      ui = "!${gitui}/bin/gitui";
     };
   };
 }
