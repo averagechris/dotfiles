@@ -23,8 +23,8 @@
         text = ''
           git branch --list \
             | grep --invert-match --regexp '^* ' \
-            | fzf --exit-0 --select-1 \
-            | xargs git checkout
+            | fzf --query "''${*:-}" --exit-0 --select-1 \
+            | xargs git switch
         '';
       }}/bin/${name}";
 
@@ -36,7 +36,7 @@
         text = ''
           git branch --list \
             | grep --invert-match --regexp '^* ' \
-            | fzf --multi \
+            | fzf --query "''${*:-}" --multi \
             | xargs git branch -D
         '';
       }}/bin/${name}";
