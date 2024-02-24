@@ -24,6 +24,12 @@ in
       ./shell_modules/ranger.nix
     ];
 
+    options.programs.pijul = {
+      enable = mkEnableOption "enable the pijul package manager.";
+      enableBashIntegration = mkEnableOption "install pijul bash completions";
+      enableZshIntegration = mkEnableOption "install pijul zsh completions";
+    };
+
     options.dotfiles.shell = with dotfiles_lib.options; {
       enable = mkDefaultEnabledOption "enables the my shell configuration.";
       emacs.enable = mkEnableOption "enable my highly configured doom emacs setup.";
@@ -161,6 +167,13 @@ in
               (text "Systemd")
             ]);
       };
+      # pijul completions
+      programs.bash.initExtra = mkIf config.programs.pijul.enableBashIntegration ''
+        source ${pkgs.pijul}/share/bash-completion/completions/pijul.bash
+      '';
+      programs.zsh.initExtra = mkIf config.programs.pijul.enableZshIntegration ''
+        source ${pkgs.pijul}/share/zsh/site-functions/_pijul
+      '';
 
       services.emacs.enable = cfg.emacs.enable;
 
@@ -181,6 +194,11 @@ in
           pre-commit
           procs
         ]
+        ++ (
+          if config.programs.pijul.enable
+          then [pijul]
+          else []
+        )
         ++ (
           if cfg.shell_scripts.enable
           then extra_shell_scripts

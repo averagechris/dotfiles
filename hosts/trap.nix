@@ -42,6 +42,7 @@
     programs.meganz.enable = true;
     programs.obsidian.enable = false;
     programs.helix.package = inputs.helix.packages.x86_64-linux.default;
+    programs.pijul.enable = true;
     wayland.windowManager.sway.config.input."type:touchpad" = {
       tap = "enabled";
       # click_method = "None";
