@@ -70,14 +70,15 @@ in {
             clickfinger_behavior = true;
           };
         };
-        "device:dygma-defy-keyboard".input = {
-          kb_layout = "us";
-          kb_variant = ",";
-        };
-        "device:at-translated-set-2-keyboard".input = {
-          kb_layout = "us";
-          kb_variant = "colemak_dh,";
-        };
+        # "device:dygma-defy-keyboard".input = {
+        #   kb_layout = "us";
+        #   kb_variant = ",";
+        # };
+        # "device:at-translated-set-2-keyboard".input = {
+        #   name = "";
+        #   kb_layout = "us";
+        #   kb_variant = "colemak_dh,";
+        # };
         general = {
           gaps_in = 3;
           gaps_out = 3;
