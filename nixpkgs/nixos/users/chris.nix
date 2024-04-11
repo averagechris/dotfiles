@@ -1,4 +1,8 @@
-{config, ...}: {
+{
+  config,
+  pkgs,
+  ...
+}: {
   imports = [./chris-minimal.nix];
 
   config.programs.sway = {
@@ -7,7 +11,7 @@
   };
 
   config.programs.gnupg.agent.enable = true;
-  config.programs.gnupg.agent.pinentryFlavor = "qt";
+  config.programs.gnupg.agent.pinentryPackage = pkgs.pinentry-qt;
 
   config.age.secrets.fastmail_password = {
     file = ../../../secrets/fastmail_password.age;

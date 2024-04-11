@@ -19,7 +19,7 @@
   };
 
   # unstable uses wireplumber now: https://nixos.wiki/wiki/PipeWire
-  # services.pipewire.wireplumber.enable = true;
+  services.pipewire.wireplumber.enable = true;
   # environment.etc = {
   #   "wireplumber/bluetooth.lua.d/51-bluez-config.lua".text = ''
   #     bluez_monitor.properties = {
@@ -33,8 +33,8 @@
 
   # bluetooth config is related to sound right? 😀👍
   hardware.bluetooth.enable = true;
-  # hardware.bluetooth.hsphfpd.enable = false; # Using Wireplumber conflicts with hsphfpd, as it provides the same functionality.
-  hardware.bluetooth.hsphfpd.enable = true;
+  hardware.bluetooth.hsphfpd.enable = false; # Using Wireplumber conflicts with hsphfpd, as it provides the same functionality.
+  # hardware.bluetooth.hsphfpd.enable = true;
   services.blueman.enable = true;
   systemd.user.services.telephony_client.enable = false;
   hardware.bluetooth.powerOnBoot = true;

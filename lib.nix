@@ -14,17 +14,7 @@
     };
   };
 
-  overlays = system:
-    {
-      emacs = inputs.emacs-overlay.overlay;
-    }
-    // (
-      if inputs.nixpkgs.legacyPackages.${system}.stdenv.hostPlatform.isLinux
-      then {
-        wayland = inputs.wayland-overlay.overlay;
-      }
-      else {}
-    );
+  overlays = system: {};
 
   specialArgs = system: {
     inherit inputs sshKeys;

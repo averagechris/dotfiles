@@ -8,11 +8,10 @@
 
   utils = import ../utils pkgs;
   swayPrefix = config.wayland.windowManager.sway.config.modifier;
-  passhole = pkgs.callPackage ./passhole.nix {};
 in {
   config = lib.mkIf cfg.enable {
     home.packages =
-      [passhole]
+      [(pkgs.callPackage ./passhole.nix {})]
       ++ (
         if cfg.swayIntegration.enable
         then [pkgs.bemenu]

@@ -1,4 +1,4 @@
-{pkgs, ...}: {
+{...}: {
   imports = [./aliases.nix];
   programs.zsh = {
     history = {
@@ -6,7 +6,7 @@
       ignoreDups = true;
     };
 
-    enableAutosuggestions = true;
+    autosuggestion.enable = true;
     enableCompletion = true;
 
     oh-my-zsh = {
