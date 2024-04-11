@@ -21,5 +21,6 @@
     pipx
     gnumake
     kubectl
+    k9s
   ];
 }
