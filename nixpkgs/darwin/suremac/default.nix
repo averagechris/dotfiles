@@ -199,6 +199,7 @@
     programs.zoom.enable = false;
     programs.darktable.enable = false;
     programs.signal.enable = false;
+    programs.waybar.enable = false;
   };
 
   homebrew = {
