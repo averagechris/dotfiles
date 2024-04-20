@@ -22,6 +22,7 @@ in
       ../nixpkgs/passhole
       ../nixpkgs/python
       ./shell_modules/ranger.nix
+      ./shell_modules/pipx.nix
     ];
 
     options.programs.pijul = {

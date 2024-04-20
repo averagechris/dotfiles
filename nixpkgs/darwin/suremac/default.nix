@@ -184,6 +184,7 @@
       enable = true;
       nerdfonts.enable = true;
       shell_scripts.enable = false;
+      shell.pipx.enable = true;
     };
     dotfiles.gui.enable = true;
     dotfiles.gui.sway.enable = false;
