@@ -28,7 +28,7 @@
       "nixpkgs-wayland.cachix.org-1:3lwxaILxMRkVhehr5StQprHdEo4IrE8sRho9R9HOLYA="
       "averagechris-dotfiles.cachix.org-1:VwJkl5dG1+xGDY5x884mH/kVwwpgwBAdBKIF3BZiia4="
     ];
-    settings.trusted-users = ["@wheel"];
+    settings.trusted-users = ["@wheel" "chris"];
     extraOptions = ''experimental-features = nix-command flakes'';
     gc.automatic = true;
     settings.require-sigs = true;
@@ -49,6 +49,7 @@
 
   # TODO look into services.spacebar
   services.nix-daemon.enable = true;
+  services.karabiner-elements.enable = true;
 
   system = {
     defaults.NSGlobalDomain = {
@@ -169,6 +170,7 @@
     stateVersion = 4;
   };
 
+  users.groups.wheel.members = ["chris"];
   users.users.chris = {
     name = "chris";
     home = "/Users/chris";
@@ -179,12 +181,13 @@
       ../../../hm_modules
       ../../sure
       inputs.mac-app-util.homeManagerModules.default
+      ../karabiner-elements.nix
     ];
     dotfiles.shell = {
       enable = true;
       nerdfonts.enable = true;
       shell_scripts.enable = false;
-      shell.pipx.enable = true;
+      pipx.enable = true;
     };
     dotfiles.gui.enable = true;
     dotfiles.gui.sway.enable = false;
@@ -200,6 +203,8 @@
     programs.darktable.enable = false;
     programs.signal.enable = false;
     programs.waybar.enable = false;
+
+    home.packages = with pkgs; [raycast];
   };
 
   homebrew = {
