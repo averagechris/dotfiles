@@ -3,6 +3,9 @@
   inputs,
   ...
 }: {
+  imports = [
+    ../karabiner-elements.nix
+  ];
   nixpkgs.config.allowUnfree = true;
   environment.systemPackages = with pkgs; [
     git
@@ -47,9 +50,165 @@
     zsh.enable = true;
   };
 
+  programs.karabiner-elements = let
+    hyper = [
+      "left_shift"
+      "left_command"
+      "left_control"
+      "left_option"
+    ];
+  in {
+    enable = true;
+    hyper.enable = true;
+    # layer_escape.enable = false;
+    # mode_escape.enable = true;
+    modes = {
+      colemak_mod_dh.bind = {
+        e.to = "f";
+        r.to = "p";
+        t.to = "b";
+        y.to = "j";
+        u.to = "l";
+        i.to = "u";
+        o.to = "y";
+        p.to = "semicolon";
+        s.to = "r";
+        d.to = "s";
+        f.to = "t";
+        h.to = "m";
+        j.to = "n";
+        k.to = "e";
+        l.to = "i";
+        semicolon.to = "o";
+        z.to = "x";
+        x.to = "c";
+        c.to = "d";
+        b.to = "z";
+        n.to = "k";
+        m.to = "h";
+      };
+      #   navigation_colemak_dh = {
+      #   };
+      #   home_row_modifiers_colemak_dh = {
+      #     bind = [
+      #       {
+      #         a.if_held = "left_option";
+      #         r.if_held = "left_command";
+      #         s.if_held = "left_control";
+      #         t.if_held = "left_shift";
+      #         o.if_held = "right_option";
+      #         i.if_held = "right_command";
+      #         e.if_held = "right_control";
+      #         n.if_held = "right_shift";
+      #       }
+      #     ];
+      #   };
+    };
+    layers = {
+      space = {
+        mandatory_modifiers = ["command"];
+        unique_name = "space_namespace";
+        layer = {
+          space.open = "Raycast.app";
+          o = {
+            unique_name = "open_applications";
+            layer = {
+              t.open = "Terminal.app";
+              T.open = "TextEdit.app";
+            };
+          };
+        };
+      };
+    };
+    # layers = {
+    #   space = {
+    #     mandatory_modifiers = ["command"];
+    #     layer.bind = {
+    #       space.open = "Raycast.app";
+    #     };
+    #   };
+    # };
+    # layers = let
+    #   space_layer = {
+    #     layer.name = "space";
+    #     layer.bind = [
+    #       {
+    #         space.open = "raycast";
+    #         r.layer = {
+    #           name = "raycast";
+    #           bind = [
+    #             {
+    #               a.raycast = "extensions/raycast/raycast-ai/ai-chat";
+    #               e.raycast = "extensions/raycast/emoji-symbols/search-emoji-symbols";
+    #               p.raycast = "extensions/raycast/clipboard-history/clipboard-history";
+    #               P.raycast = "extensions/raycast/raycast/confetti";
+    #             }
+    #           ];
+    #         };
+    #         w.layer = {
+    #           name = "window";
+    #           bind = {
+    #           };
+    #         };
+    #         o.layer = {
+    #           name = "open";
+    #           bind = [
+    #             {
+    #               f.open = "Firefox Developer Edition.app";
+    #               F.open = "Finder.app";
+    #               n.open = "Notion.app";
+    #               s.open = "Slack.app";
+    #               S.open = "Settings.app";
+    #               t.open = "Alacritty.app";
+    #             }
+    #           ];
+    #         };
+    #         # TODO this should activate a transient mode instead of a layer
+    #         # s.layer = {
+    #         #   name = "system";
+    #         #   bind = [
+    #         #     {
+    #         #       n.to = "volume_increment";
+    #         #       e.to = "volume_decrement";
+    #         #     }
+    #         #   ];
+    #         # };
+    #         t.layer = {
+    #           name = "toggles";
+    #           bind = [
+    #             {
+    #               grave_accent_and_tilde.toggle_mode = "colemak_mod_dh";
+    #               t.raycast = "extensions/raycast/system/toggle-system-appearance";
+    #             }
+    #             {
+    #               grave_accent_and_tilde.toggle_mode = "home_row_modifiers_colemak_dh";
+    #               grave_accent_and_tilde.mandatory_mods = [
+    #                 "left_shift"
+    #                 "right_shift"
+    #               ];
+    #             }
+    #           ];
+    #         };
+    #       }
+    #     ];
+    #   };
+    # in {
+    #   layer.name = "global";
+    #   layer.bind = [
+    #     {
+    #       space.layer = space_layer;
+    #       space.mandatory_mods = ["left_command"];
+    #     }
+    #     {
+    #       space.layer = space_layer;
+    #       space.mandatory_mods = ["right_command"];
+    #     }
+    #   ];
+    # };
+  };
+
   # TODO look into services.spacebar
   services.nix-daemon.enable = true;
-  services.karabiner-elements.enable = true;
 
   system = {
     defaults.NSGlobalDomain = {
@@ -181,7 +340,6 @@
       ../../../hm_modules
       ../../sure
       inputs.mac-app-util.homeManagerModules.default
-      ../karabiner-elements.nix
     ];
     dotfiles.shell = {
       enable = true;

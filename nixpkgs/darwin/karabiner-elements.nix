@@ -1,393 +1,582 @@
-{lib, ...}: let
-  inherit (lib) lists;
-  inherit (lib.attrsets) mapAttrsToList removeAttrs;
+{
+  config,
+  lib,
+  ...
+}: let
+  inherit (lib) attrByPath foldl' lists mapAttrs mkEnableOption mkOption recursiveUpdate;
+  inherit (lib.attrsets) filterAttrs mapAttrsToList;
+
+  cfg = config.programs.karabiner-elements;
 
   isEmpty = lst: builtins.length lst == 0;
-
-  bind_hrm = {
-    to,
-    mod,
-    timeout_ms ? 150,
-  }: let
-    binding = {
-      type = "basic";
-      parameters = {
-        basic.to_if_alone_timeout_milliseconds = timeout_ms;
-        basic.to_if_held_down_threshold_milliseconds = timeout_ms;
-      };
-      to_if_alone = [{key_code = to;}];
-      to_if_held_down = [{key_code = mod;}];
-      from = {};
-    };
-  in [binding];
-
-  bind = {
-    to,
-    with_mods ? [],
-    with_optional_mods ? ["any"],
-    mods ? [],
-    type ? "basic",
-    ...
-  } @ kwargs: let
-    passed_through = removeAttrs kwargs [
-      "to_if_alone"
-      "to"
-      "with_mods"
-      "mods"
-      "type"
-    ];
-    to_if_alone =
-      if kwargs ? to_if_alone
-      then {
-        to_if_alone = [
-          {key_code = kwargs.to_if_alone;}
-        ];
-      }
-      else {};
-    from_modifiers =
-      {}
-      // (
-        if isEmpty with_mods
-        then {}
-        else {mandatory = with_mods;}
-      )
-      // (
-        if isEmpty with_optional_mods
-        then {}
-        else {optional = with_optional_mods;}
-      );
-
-    manipulator =
-      {
-        inherit type;
-        from = {
-          modifiers = from_modifiers;
-        };
-        to = [
-          {
-            key_code = to;
-            modifiers = mods;
-          }
-        ];
-      }
-      // passed_through
-      // to_if_alone;
-  in [manipulator];
-
-  bind_set = key: value: {
-    with_mods ? [],
-    with_optional_mods ? ["any"],
-  }: let
-    from_modifiers =
-      {}
-      // (
-        if isEmpty with_mods
-        then {}
-        else {mandatory = with_mods;}
-      )
-      // (
-        if isEmpty with_optional_mods
-        then {}
-        else {optional = with_optional_mods;}
-      );
-  in [
-    {
-      type = "basic";
-      from = {
-        modifiers = from_modifiers;
-      };
-      to = [
-        {
-          set_variable = {
-            name = key;
-            inherit value;
+  rmNulls = filterAttrs (k: v: v != null);
+  types =
+    lib.types
+    // {
+      conditions = types.listOf (types.submodule {
+        options = {
+          type = mkOption {
+            type = types.enum ["variable_if" "variable_unless"];
+            default = types.unspecified;
           };
-        }
+          name = mkOption {
+            type = types.str;
+            default = types.unspecified;
+          };
+          value = mkOption {
+            type = types.either types.str types.int;
+            default = types.unspecified;
+          };
+        };
+      });
+      kb_modifiers = types.enum [
+        "left_option"
+        "left_command"
+        "left_control"
+        "left_shift"
+        "right_option"
+        "right_command"
+        "right_control"
+        "right_shift"
+        "option"
+        "command"
+        "control"
+        "shift"
+        "any"
       ];
-    }
-  ];
+      # Meant to represent a simple mapping or a list of "to events", see the karabiner docs
+      to_keys = types.either types.str (types.listOf types.attrs); # TODO should types.str be an enum?=
+      manipulator_type = types.enum ["basic" "mouse_motion_to_scroll"];
+    };
 
-  bind_toggle = name: {
-    with_mods ? [],
-    with_optional_mods ? ["any"],
-  }: let
-    from_modifiers =
-      {}
-      // (
-        if isEmpty with_mods
-        then {}
-        else {mandatory = with_mods;}
-      )
-      // (
-        if isEmpty with_optional_mods
-        then {}
-        else {optional = with_optional_mods;}
-      );
-  in [
-    {
-      type = "basic";
-      from = {
-        modifiers = from_modifiers;
-      };
-      to = [
+  bind.options = {
+    description = {
+      type = types.str;
+      description = "The string used to describe a specific binding (manipulator) of a rule within the karabiner-elements gui.";
+      default = "";
+      example = null;
+    };
+    mandatory_modifiers = {
+      type = types.listOf types.kb_modifiers;
+      description =
+        ''Any modifiers that are required for this binding to match.\n''
+        + ''For example: if mapping left_command + e => escape, set `mandatory_modifiers = ["left_command"]`.'';
+      default = [];
+      example = ["left_command"];
+    };
+
+    optional_modifiers = {
+      type = types.listOf types.kb_modifiers;
+      description =
+        ''Any modifiers that are allowed, but not required for this binding to match.\n''
+        + ''For example: if mapping e => escape, or E => escape, set `optional_modifiers = ["left_shift" "right_shift"]`.'';
+      default = [];
+      example = ["right_shift" "left_shift"];
+    };
+    to = {
+      type = types.to_keys;
+      description =
+        ''The key that this binding results in.\n''
+        + ''For example: if binding a => b, set `to = "b"`.\n''
+        + "Leave this null to make it so a binding that only produces side effects "
+        + "without mapping it to another key.\n"
+        + ''This can also be a list of "to event" attrs for more complex mappings.\n''
+        + "See: https://karabiner-elements.pqrs.org/docs/json/complex-modifications-manipulator-definition/to/";
+      default = [];
+      example = "b";
+    };
+    if_held = {
+      type = types.to_keys;
+      description =
+        ''The key that this binding results in only if the bound key(s) are held down.\n''
+        + ''For example: if binding a => left_alt, when a is held down, set `if_held = "left_alt"`.'';
+      default = [];
+      example = "left_alt";
+    };
+    if_alone = {
+      type = types.to_keys;
+      description =
+        ''The key that this binding results in only if the bound key is unmodified.\n''
+        + ''For example: if binding a => left_alt, when a is held down, but leavining\n''
+        + ''it as a otherwise, set `{if_alone = "a"; if_held = "left_alt"; ...}`'';
+      default = [];
+      example = "a";
+    };
+    after_key_up = {
+      type = types.to_keys;
+      description =
+        "Useful for producing side effects that run after key up like reseting modes or layers.\n"
+        + "See: https://karabiner-elements.pqrs.org/docs/json/complex-modifications-manipulator-definition/to-after-key-up/";
+      default = [];
+      example = [
         {
           set_variable = {
-            inherit name;
+            name = "active_layer";
             value = 0;
           };
         }
       ];
-      conditions = [
+    };
+    delayed_action = {
+      type = types.nullOr (types.submodule {
+        options = {
+          if_invoked = mkOption {
+            type = types.to_keys;
+            default = [];
+          };
+          if_canceled = mkOption {
+            type = types.to_keys;
+            default = [];
+          };
+        };
+      });
+      description =
+        ''Send some "to" events after a timeout. Among other things, this is useful for clearing mode and layer variables.\n''
+        + "https://karabiner-elements.pqrs.org/docs/json/complex-modifications-manipulator-definition/to-delayed-action/";
+      default = null;
+      example = {
+        if_invoked = [
+          {
+            set_variable = {
+              name = "mode__my_transient_mode";
+              value = 0;
+            };
+          }
+        ];
+        if_canceled = [];
+      };
+    };
+    set_variables = {
+      type = types.listOf (types.submodule {
+        options = {
+          name = mkOption {
+            type = types.str;
+          };
+          value = mkOption {
+            type = types.nullOr (types.either types.str types.int);
+          };
+          key_up_value = mkOption {
+            type = types.nullOr (types.either types.str types.int);
+          };
+        };
+      });
+      description = "Use this to introduce optional side effects of this binding by setting variables.";
+      default = [];
+      example = [
+        {
+          name = "mode__colemak_mod_dh";
+          value = 1;
+          key_up_value = 0;
+        }
+      ];
+    };
+    conditions = {
+      type = types.conditions;
+      description = ''Used to make a binding only apply in some situations, like if a mode is active.'';
+      example = [
         {
           type = "variable_if";
-          inherit name;
+          name = "mode_active__colemak_mod_dh";
           value = 1;
         }
       ];
-    }
-    {
-      type = "basic";
-      from = {
-        modifiers = from_modifiers;
+      default = [];
+    };
+    type = {
+      type = types.manipulator_type;
+      description =
+        "See karabiner-elements docs. This should almost always be basic which is the default.\n"
+        + "https://karabiner-elements.pqrs.org/docs/json/complex-modifications-manipulator-definition/other-types/";
+      example = "basic";
+      default = "basic";
+    };
+    open = {
+      type = types.nullOr types.str;
+      description = "Makes a side effect to open an app bundle via shell command `open -a`.";
+      default = null;
+      example = "Finder.app";
+    };
+    raycast = {
+      type = types.nullOr types.str;
+      description = "Makes a side effect to open an action in raycast via deeplinks.";
+      default = null;
+      example = "extensions/raycast/raycast-ai/ai-chat";
+    };
+    toggle_modes = {
+      type = types.listOf types.str;
+      description = "Makes a side effect that toggles on or off a list modes by setting each mode's variable to 1 or 0.";
+      default = [];
+      example = ["my_mode"];
+    };
+    shell_command = {
+      type = types.nullOr types.str;
+      description =
+        "Makes a side effect that runs a shell command.\n"
+        + "see https://karabiner-elements.pqrs.org/docs/json/complex-modifications-manipulator-definition/to/shell-command/";
+      default = null;
+      example = "export LC_ALL=en_US.UTF-8; pbpaste | tr '[:upper:]' '[:lower:]' | pbcopy";
+    };
+    parameters = {
+      type = types.nullOr types.attrs;
+      description = "";
+      default = null;
+      example = {
+        basic.to_if_alone_timeout_milliseconds = 150;
+        basic.to_if_held_down_threshold_milliseconds = 150;
       };
-      to = [
-        {
-          set_variable = {
-            inherit name;
-            value = 1;
-          };
-        }
-      ];
-      conditions = [
-        {
-          type = "variable_if";
-          inherit name;
-          value = 0;
-        }
-      ];
-    }
-  ];
-
-  HYPER = [
-    "left_shift"
-    "left_command"
-    "left_control"
-    "left_option"
-  ];
-
-  bound_when = {
-    conditionals,
-    describe,
-    bindings,
-  }: {
-    inherit describe;
-    manipulators = let
-      mapped =
-        mapAttrsToList (
-          from_key_code: bindingList: let
-            mapped =
-              map (
-                binding: let
-                  fromAttrs = {from = binding.from // {key_code = from_key_code;};};
-                  conditions =
-                    if isEmpty conditionals
-                    then {}
-                    else {
-                      conditions =
-                        conditionals
-                        ++ (
-                          if binding ? "conditions"
-                          then binding.conditions
-                          else []
-                        );
-                    };
-                in
-                  binding
-                  // fromAttrs
-                  // conditions
-              )
-              bindingList;
-          in
-            # builtins.trace "result: ${builtins.toJSON mapped}"
-            mapped
-        )
-        bindings;
-    in
-      lists.flatten mapped;
+    };
   };
 
-  multi_mode = mode_names: bindings:
-    bound_when {
-      conditionals =
-        map (name: {
-          type = "variable_if";
-          inherit name;
-          value = 1;
-        })
-        mode_names;
-      describe = k: "Mode: ${k}";
-      inherit bindings;
-    };
-
-  mode = name: multi_mode [name];
-
-  layer = name: bindings: let
-    l = bound_when {
-      conditionals = [
-        {
-          type = "variable_if";
-          name = "active_layer";
-          value = name;
-        }
-      ];
-      describe = k: "Layer: ${k}";
-      inherit bindings;
-    };
-    terminate_layer = m: let
-      should_terminate = !lib.any (t: (lib.attrByPath ["set_variable" "name"] "" t) == "active_layer") m.to;
+  # str -> {from_key_code: bind.options} -> {title = str, manipulators = [...];}
+  into_rule = description: bindings: let
+    to_events_from = binding: let
+      # NOTE in this to_events_from function, access attributes of `binding` carefully cause it's reused
+      # for `to` `to_if_alone` and all of the other variants that can produce side effects
+      to_is_str = lib.isString binding.to;
+      complex_to =
+        if (!to_is_str)
+        then binding.to
+        else [];
+      simple_to = let
+        key_code =
+          if to_is_str
+          then lib.toLower binding.to
+          else "";
+      in
+        if to_is_str
+        then [
+          ({inherit key_code;}
+            // (
+              # add shift if this is an uppercase letter
+              if key_code != binding.to
+              then {modifiers = ["left_shift"];}
+              else {}
+            ))
+        ]
+        else [];
+      side_effects =
+        lists.flatten [
+          (
+            lib.optional ((attrByPath ["open"] null binding) != null) {
+              shell_command = "open -a ${binding.open}";
+            }
+          )
+          (
+            lib.optional ((attrByPath ["raycast"] null binding) != null) {
+              shell_command = "open raycast://${binding.raycast}";
+            }
+          )
+          (
+            lib.optional ((attrByPath ["shell_command"] null binding) != null) {
+              shell_command = "${binding.shell_command}";
+            }
+          )
+        ]
+        ++ (map (v: {set_variable = rmNulls v;}) (
+          if (binding ? "set_variables")
+          then binding.set_variables
+          else []
+        ));
     in
-      m
-      // (
-        if should_terminate
-        then {
-          to =
-            m.to
-            ++ [
-              {
-                set_variable = {
-                  name = "active_layer";
-                  value = 0;
-                };
-              }
-            ];
-        }
-        else {}
-      );
-  in
-    l // {manipulators = map terminate_layer l.manipulators;};
+      simple_to ++ complex_to ++ side_effects;
+  in {
+    inherit description;
+    # TODO toggle_modes requires 2 copies of the manipulator. 1 with the set var 1 to event appended + condition 0
+    # and one with the opposite
+    manipulators = mapAttrsToList (key_code: binding: (foldl' recursiveUpdate {
+        inherit (binding) type;
+        from.key_code = lib.toLower key_code;
+      } [
+        (
+          if builtins.stringLength binding.description == 0
+          then {}
+          else {inherit (binding) description;}
+        )
+        # implicitly add left shift if an uppercase letter was used to express this binding e.g. "F".to = "...";
+        (
+          if ((lib.toLower key_code) != key_code)
+          then {from.modifiers.mandatory = ["shift"];}
+          else {}
+        )
+        # # add passed in from modifiers if any, overriding the implicit modifier above
+        (
+          if (!isEmpty binding.mandatory_modifiers)
+          then {from.modifiers.mandatory = binding.mandatory_modifiers;}
+          else {}
+        )
+        (
+          if (!isEmpty binding.optional_modifiers)
+          then {from.modifiers.optional = binding.optional_modifiers;}
+          else {}
+        )
+        # # include collected to events constructed from simple mappings and side effects
+        (
+          let
+            to = to_events_from binding;
+          in
+            if (!(isEmpty to))
+            then {inherit to;}
+            else {}
+        )
+        (
+          let
+            to_if_alone = to_events_from {to = binding.if_alone;};
+          in
+            if (!isEmpty to_if_alone)
+            then {inherit to_if_alone;}
+            else {}
+        )
+        (
+          let
+            to_if_held_down = to_events_from {to = binding.if_held;};
+          in
+            if (!isEmpty to_if_held_down)
+            then {inherit to_if_held_down;}
+            else {}
+        )
+        (
+          let
+            to_after_key_up = to_events_from {to = binding.after_key_up;};
+          in
+            if (!isEmpty to_after_key_up)
+            then {inherit to_after_key_up;}
+            else {}
+        )
+        (
+          let
+            to_if_invoked = to_events_from {to = attrByPath ["delayed_action" "if_invoked"] [] binding;};
+          in
+            if (!isEmpty to_if_invoked)
+            then {to_delayed_action.to_if_invoked = to_if_invoked;}
+            else {}
+        )
+        (
+          let
+            to_if_cancelled = to_events_from {to = attrByPath ["delayed_action" "if_cancelled"] [] binding;};
+          in
+            if (!isEmpty to_if_cancelled)
+            then {to_delayed_action.to_if_cancelled = to_if_cancelled;}
+            else {}
+        )
+        (
+          if isEmpty binding.conditions
+          then {}
+          else {inherit (binding) conditions;}
+        )
+        (
+          if (attrByPath ["parameters"] null binding != null)
+          then {inherit (binding) parameters;}
+          else {}
+        )
+      ]))
+    bindings;
+  };
 
-  globals = bound_when {
-    conditionals = [];
-    describe = desc: desc;
-    bindings = {
-      # map caps_lock to hyper
-      "caps_lock" = bind {
-        to = "left_shift";
-        mods = [
-          "left_command"
-          "left_control"
-          "left_option"
-        ];
-        to_if_alone = "escape";
-      };
-      "quote" = bind_set "active_layer" "base" {with_mods = HYPER;};
-      escape = [
-        ((builtins.head (bind_set "active_layer" 0 {}))
+  mode_into_rule = name: mode: let
+    bindings = mapAttrs (k: v:
+      v
+      // {
+        conditions =
+          v.conditions
+          ++ [
+            {
+              type = "variable_if";
+              name = "mode__${name}";
+              value = 1;
+            }
+          ];
+      })
+    mode.bind;
+  in
+    into_rule "Mode ${name}" bindings;
+
+  layer_into_rule = from_key: layer: parent: let
+    # TODO FIXME with nested layers we can get a straggling manipulator with no `to` events
+    bindings =
+      if layer.layer == null
+      then layer
+      else layer.layer;
+    when_layer_active = mapAttrs (k: v:
+      v
+      // {
+        conditions =
+          v.conditions
+          ++ [
+            {
+              type = "variable_if";
+              name = "active_layer";
+              value = layer.unique_name;
+            }
+          ];
+      })
+    bindings;
+
+    with_set_active =
+      when_layer_active
+      // {
+        # add a binding, but fill in all the defaults from bind.options
+        # to keep things compatible
+        "${from_key}" =
+          (mapAttrs (k: v: v.default) bind.options)
           // {
-            conditions = [
+            # also fill in layer_submodule defaults for compatability
+            layer = null;
+            unique_name = null;
+            inherit (layer) mandatory_modifiers optional_modifiers;
+            set_variables = [
               {
                 name = "active_layer";
-                type = "variable_unless";
-                value = 0;
+                value = layer.unique_name;
               }
             ];
-          })
-      ];
-    };
-  };
-
-  modes = {
-    home_row_modifiers_colemak = multi_mode ["mode_home_row_modifiers_colemak" "mode_colemak_mod_dh"] {
-      a = bind_hrm {
-        to = "a";
-        mod = "left_option";
+            conditions =
+              if parent == null
+              then []
+              else [
+                {
+                  type = "variable_if";
+                  name = "active_layer";
+                  value = parent.unique_name;
+                }
+              ];
+          };
       };
-      r = bind_hrm {
-        to = "r";
-        mod = "left_command";
-      };
-      s = bind_hrm {
-        to = "s";
-        mod = "left_control";
-      };
-      t = bind_hrm {
-        to = "t";
-        mod = "left_shift";
-      };
-      o = bind_hrm {
-        to = "o";
-        mod = "right_option";
-      };
-      i = bind_hrm {
-        to = "i";
-        mod = "right_command";
-      };
-      e = bind_hrm {
-        to = "e";
-        mod = "right_control";
-      };
-      n = bind_hrm {
-        to = "n";
-        mod = "right_shift";
-      };
-    };
-    colemak_mod_dh = mode "mode_colemak_mod_dh" {
-      e = bind {to = "f";};
-      r = bind {to = "p";};
-      t = bind {to = "b";};
-      y = bind {to = "j";};
-      u = bind {to = "l";};
-      i = bind {to = "u";};
-      o = bind {to = "y";};
-      p = bind {to = "semicolon";};
-      s = bind {to = "r";};
-      d = bind {to = "s";};
-      f = bind {to = "t";};
-      h = bind {to = "m";};
-      j = bind {to = "n";};
-      k = bind {to = "e";};
-      l = bind {to = "i";};
-      "semicolon" = bind {to = "o";};
-      z = bind {to = "x";};
-      x = bind {to = "c";};
-      c = bind {to = "d";};
-      b = bind {to = "z";};
-      n = bind {to = "k";};
-      m = bind {to = "h";};
-    };
-  };
-
-  layers = {
-    base = layer "base" {
-      "quote" = bind_toggle "mode_colemak_mod_dh" {};
-      "semicolon" = bind_toggle "mode_home_row_modifiers_colemak" {};
-      "o" = bind_toggle "mode_home_row_modifiers_colemak" {};
-      w = bind_set "active_layer" "window" {};
-    };
-  };
-
-  modes_to_rules = mds:
-    mapAttrsToList (mode_name: bindings: {
-      description = bindings.describe mode_name;
-      inherit (bindings) manipulators;
-    })
-    mds;
-  # accumulate_manipulators = from: lists.flatten (lists.concatMap (f: mapAttrsToList (k: v: v.manipulators) f) from);
-in {
-  xdg.configFile."karabiner/assets/complex_modifications/1704067200.json".text = let
-    result = builtins.toJSON {
-      title = "My karabiner, nix home-manager rules.";
-      rules =
-        [
-          {
-            description = globals.describe "Global Keybindings";
-            inherit (globals) manipulators;
-          }
-        ]
-        ++ modes_to_rules modes
-        ++ modes_to_rules layers;
-    };
+    rule = into_rule "Layer ${layer.unique_name}" with_set_active;
+    nested_layers = filterAttrs (k: v: let
+      l = attrByPath ["layer"] null v;
+      n = attrByPath ["unique_name"] null v;
+    in
+      if (n == null && l != null)
+      then builtins.throw ''A layer must define a unique_name. e.g. `layers.a = {unique_name = "MISSING"; layer = {...}}`''
+      else l != null)
+    layer.layer;
+    nested_layer_rules = mapAttrsToList (k: l: layer_into_rule k l layer) nested_layers;
   in
-    # builtins.trace result
-    result;
+    # builtins.trace bindings
+    [rule] ++ nested_layer_rules;
+
+  optionize = opts: {
+    options = mapAttrs (k: v: (
+      if (attrByPath ["_type"] null v) == "option"
+      then v
+      else mkOption v
+    )) (foldl' recursiveUpdate {} opts);
+  };
+
+  layer_submodule = optionize [
+    bind.options
+    {
+      unique_name = {
+        type = types.nullOr types.str;
+        description = "The name of this layer. It's unique name is used to determine if this layer is active or not.";
+        default = null;
+        example = "application_launching";
+      };
+      layer = {
+        type = types.nullOr (types.attrsOf (types.submodule layer_submodule));
+        description =
+          "Any bindings that you want to apply when this layer is the `active_layer`."
+          + " There is only one active layer at a time.";
+        default = null;
+        # example = {};
+      };
+    }
+  ];
+
+  hyper_option = mkOption {
+    description = "Configures a hyper rule that creates a binding of caps_lock to hyper by default.";
+    type = types.submodule (optionize [
+      bind.options
+      {
+        enable = mkEnableOption "Enable the hyper rule.";
+        description = {
+          type = types.str;
+          description = "The hyper rule describtion in the karabiner-elements ui and config file.";
+          default = "Enable caps_lock to behave as a hyper key modifier, or escape if pressed alone.";
+        };
+        from = {
+          type = types.str;
+          description = "The key to bind to hyper.";
+          default = "caps_lock";
+          example = "caps_lock";
+        };
+        # optional_modifiers.default = ["any"];
+        to.default = [
+          {
+            set_variable = {
+              name = "hyper";
+              value = 1;
+              key_up_value = 0;
+            };
+          }
+          {
+            key_code = "left_shift";
+            modifiers = [
+              "left_command"
+              "left_control"
+              "left_option"
+            ];
+          }
+        ];
+        if_alone.default = "escape";
+      }
+    ]);
+  };
+in {
+  options = {
+    programs.karabiner-elements = {
+      enable = mkEnableOption "enables karabiner-elements with custom config.";
+      hyper = hyper_option;
+      modes = mkOption {
+        type = types.attrsOf (types.submodule {
+          options = {
+            bind = mkOption {
+              type = types.attrsOf (types.submodule (optionize [bind.options]));
+              description = "Any bindings that you want to apply when this mode is active.";
+              default = {};
+              example = {
+                e.to = "f";
+                a.if_held = "left_option";
+                t.open = "Terminal.app";
+                T.open = "TextEdit.app";
+                escape.toggle_modes = ["mode_name"];
+              };
+            };
+          };
+        });
+        description = "Modes are related sets of bindings that can be enabled or disabled together.";
+        default = {};
+        example = {
+          colemak_mod_dh.bind = {
+            e.to = "f";
+            r.to = "p";
+            t.to = "b";
+          };
+        };
+      };
+      layers = mkOption {
+        type = types.attrsOf (types.submodule layer_submodule);
+        description = "";
+        default = {};
+        example = {};
+      };
+    };
+  };
+
+  config = lib.mkIf cfg.enable {
+    services.karabiner-elements.enable = lib.mkDefault true;
+    environment.etc."karabiner/assets/complex_modifications/1704067200.json".text = let
+      result = builtins.toJSON {
+        title = "nix-darwin configured rules.";
+        rules =
+          [
+            (into_rule cfg.hyper.description {"${cfg.hyper.from}" = cfg.hyper;})
+          ]
+          ++ mapAttrsToList mode_into_rule cfg.modes
+          ++ mapAttrsToList (k: v: layer_into_rule k v null) cfg.layers;
+      };
+    in
+      builtins.trace result
+      result;
+  };
 }
