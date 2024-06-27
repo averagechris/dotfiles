@@ -279,30 +279,45 @@
         ));
     in
       simple_to ++ complex_to ++ side_effects;
+
+    # supports
+    #  - implicit shift modifier if the key_code is uppercase
+    #  - modifiers included in the key_code e.g. "p+command".to = ...
+    build_from = with builtins;
+      key_code: binding: let
+        parts = split "\\+" key_code;
+        key_code_lowered = lib.toLower (head parts);
+        implied_shift =
+          if key_code_lowered == (head parts)
+          then []
+          else ["shift"];
+        implied_mods = filter (part: isString part && types.kb_modifiers.check part) (tail parts);
+        mandatory_mods = lib.unique (implied_mods ++ implied_shift ++ binding.mandatory_modifiers);
+      in {
+        from =
+          {
+            key_code = key_code_lowered;
+          }
+          // (
+            if isEmpty mandatory_mods
+            then {}
+            else {
+              modifiers.mandatory = mandatory_mods;
+            }
+          );
+      };
   in {
     inherit description;
     # TODO toggle_modes requires 2 copies of the manipulator. 1 with the set var 1 to event appended + condition 0
     # and one with the opposite
     manipulators = mapAttrsToList (key_code: binding: (foldl' recursiveUpdate {
         inherit (binding) type;
-        from.key_code = lib.toLower key_code;
+        inherit (build_from key_code binding) from;
       } [
         (
           if builtins.stringLength binding.description == 0
           then {}
           else {inherit (binding) description;}
-        )
-        # implicitly add left shift if an uppercase letter was used to express this binding e.g. "F".to = "...";
-        (
-          if ((lib.toLower key_code) != key_code)
-          then {from.modifiers.mandatory = ["shift"];}
-          else {}
-        )
-        # # add passed in from modifiers if any, overriding the implicit modifier above
-        (
-          if (!isEmpty binding.mandatory_modifiers)
-          then {from.modifiers.mandatory = binding.mandatory_modifiers;}
-          else {}
         )
         (
           if (!isEmpty binding.optional_modifiers)
@@ -399,6 +414,17 @@
     when_layer_active = mapAttrs (k: v:
       v
       // {
+        after_key_up =
+          v.after_key_up
+          ++ [
+            {
+              set_variable = {
+                name = "active_layer";
+                value = 0;
+              };
+            }
+          ];
+
         conditions =
           v.conditions
           ++ [
@@ -411,10 +437,11 @@
       })
     bindings;
 
-    with_set_active =
+    with_implied_bindings =
       when_layer_active
       // {
-        # add a binding, but fill in all the defaults from bind.options
+        # add a binding to activate the layer
+        # fill in all the defaults from bind.options
         # to keep things compatible
         "${from_key}" =
           (mapAttrs (k: v: v.default) bind.options)
@@ -440,8 +467,34 @@
                 }
               ];
           };
-      };
-    rule = into_rule "Layer ${layer.unique_name}" with_set_active;
+      }
+      // (
+        if layer.layer_escape == null
+        then {}
+        else {
+          # add layer_escape binding
+          "${layer.layer_escape}" =
+            (mapAttrs (k: v: v.default) bind.options)
+            // {
+              layer = null;
+              unique_name = null;
+              set_variables = [
+                {
+                  name = "active_layer";
+                  value = 0;
+                }
+              ];
+              conditions = [
+                {
+                  type = "variable_if";
+                  name = "active_layer";
+                  value = layer.unique_name;
+                }
+              ];
+            };
+        }
+      );
+    rule = into_rule "Layer ${layer.unique_name}" with_implied_bindings;
     nested_layers = filterAttrs (k: v: let
       l = attrByPath ["layer"] null v;
       n = attrByPath ["unique_name"] null v;
@@ -472,6 +525,12 @@
         default = null;
         example = "application_launching";
       };
+      layer_escape = {
+        type = types.nullOr types.str;
+        description = "If non null adds an implicit binding to the layer that clears the active_layer. By default set to escape.";
+        default = "escape";
+        example = "escape";
+      };
       layer = {
         type = types.nullOr (types.attrsOf (types.submodule layer_submodule));
         description =
@@ -483,45 +542,57 @@
     }
   ];
 
-  hyper_option = mkOption {
-    description = "Configures a hyper rule that creates a binding of caps_lock to hyper by default.";
-    type = types.submodule (optionize [
-      bind.options
+  hyper_option = let
+    from = "caps_lock";
+    to = [
       {
-        enable = mkEnableOption "Enable the hyper rule.";
-        description = {
-          type = types.str;
-          description = "The hyper rule describtion in the karabiner-elements ui and config file.";
-          default = "Enable caps_lock to behave as a hyper key modifier, or escape if pressed alone.";
+        set_variable = {
+          name = "hyper";
+          value = 1;
+          key_up_value = 0;
         };
-        from = {
-          type = types.str;
-          description = "The key to bind to hyper.";
-          default = "caps_lock";
-          example = "caps_lock";
-        };
-        # optional_modifiers.default = ["any"];
-        to.default = [
-          {
-            set_variable = {
-              name = "hyper";
-              value = 1;
-              key_up_value = 0;
-            };
-          }
-          {
-            key_code = "left_shift";
-            modifiers = [
-              "left_command"
-              "left_control"
-              "left_option"
-            ];
-          }
-        ];
-        if_alone.default = "escape";
       }
-    ]);
-  };
+      {
+        key_code = "left_shift";
+        modifiers = [
+          "left_command"
+          "left_control"
+          "left_option"
+        ];
+      }
+    ];
+    if_alone = "escape";
+  in
+    mkOption {
+      description = "Enable caps_lock to behave as a hyper key modifier, or escape if pressed alone.";
+      type = types.submodule {
+        options = {
+          enable = mkEnableOption "Enable the hyper rule.";
+          description = mkOption {
+            type = types.str;
+            description = "The hyper rule describtion in the karabiner-elements ui and config file.";
+            default = "Configures a hyper rule that creates a binding of caps_lock to hyper by default.";
+          };
+          from = mkOption {
+            type = types.str;
+            description = "The key to bind to hyper.";
+            default = from;
+            example = "caps_lock";
+          };
+          bind = mkOption {
+            default = {};
+            type = types.submodule (optionize [
+              bind.options
+              {
+                # optional_modifiers.default = ["any"];
+                to.default = to;
+                if_alone.default = if_alone;
+              }
+            ]);
+          };
+        };
+      };
+    };
 in {
   options = {
     programs.karabiner-elements = {
@@ -556,9 +627,29 @@ in {
       };
       layers = mkOption {
         type = types.attrsOf (types.submodule layer_submodule);
-        description = "";
+        description =
+          "A layer is a namespace of related key bindings. "
+          + "They can be nested. "
+          + "A layer is active for one of it's bindings. Using a binding exits the layer."
+          + "Use a binding to toggle on a mode if you want bindings to persist."
+          + "The example layers below create a tree structure like the following:"
+          + "⌘ space => o => {t => open terminal, n => open notes}";
         default = {};
-        example = {};
+        example = {
+          space = {
+            mandatory_modifiers = ["command"];
+            unique_name = "space_namespace";
+            layer = {
+              o = {
+                unique_name = "open_applications";
+                layer = {
+                  t.open = "Terminal.app";
+                  n.open = "Notes.app";
+                };
+              };
+            };
+          };
+        };
       };
     };
   };
@@ -569,9 +660,8 @@ in {
       result = builtins.toJSON {
         title = "nix-darwin configured rules.";
         rules =
-          [
-            (into_rule cfg.hyper.description {"${cfg.hyper.from}" = cfg.hyper;})
-          ]
+          (lib.optional cfg.hyper.enable
+            (into_rule cfg.hyper.description {"${cfg.hyper.from}" = cfg.hyper.bind;}))
           ++ mapAttrsToList mode_into_rule cfg.modes
           ++ mapAttrsToList (k: v: layer_into_rule k v null) cfg.layers;
       };

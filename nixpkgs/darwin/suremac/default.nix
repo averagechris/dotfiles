@@ -35,6 +35,7 @@
     extraOptions = ''experimental-features = nix-command flakes'';
     gc.automatic = true;
     settings.require-sigs = true;
+    settings.extra-nix-path = "nixpkgs=flake:nixpkgs";
   };
 
   networking = let
@@ -50,18 +51,9 @@
     zsh.enable = true;
   };
 
-  programs.karabiner-elements = let
-    hyper = [
-      "left_shift"
-      "left_command"
-      "left_control"
-      "left_option"
-    ];
-  in {
+  programs.karabiner-elements = {
     enable = true;
     hyper.enable = true;
-    # layer_escape.enable = false;
-    # mode_escape.enable = true;
     modes = {
       colemak_mod_dh.bind = {
         e.to = "f";
@@ -87,34 +79,59 @@
         n.to = "k";
         m.to = "h";
       };
-      #   navigation_colemak_dh = {
+      #   navigation_colemak_dh.bind = {
       #   };
-      #   home_row_modifiers_colemak_dh = {
-      #     bind = [
-      #       {
-      #         a.if_held = "left_option";
-      #         r.if_held = "left_command";
-      #         s.if_held = "left_control";
-      #         t.if_held = "left_shift";
-      #         o.if_held = "right_option";
-      #         i.if_held = "right_command";
-      #         e.if_held = "right_control";
-      #         n.if_held = "right_shift";
-      #       }
-      #     ];
-      #   };
+      home_row_modifiers_colemak_dh.bind = {
+        a.if_held = "left_option";
+        r.if_held = "left_command";
+        s.if_held = "left_control";
+        t.if_held = "left_shift";
+        o.if_held = "right_option";
+        i.if_held = "right_command";
+        e.if_held = "right_control";
+        n.if_held = "right_shift";
+      };
     };
     layers = {
-      space = {
-        mandatory_modifiers = ["command"];
+      "space+command" = {
         unique_name = "space_namespace";
         layer = {
           space.open = "Raycast.app";
+          r = {
+            unique_name = "raycast_extensions";
+            layer = {
+              a.raycast = "extensions/raycast/raycast-ai/ai-chat";
+              A.raycast = "extensions/raycast/raycast-ai/send-to-ai-chat";
+              e.raycast = "extensions/raycast/emoji-symbols/search-emoji-symbols";
+              n.raycast = "extensions/raycast/floating-notes/toggle-floating-notes-window";
+              N.raycast = "extensions/raycast/floating-notes/toggle-floating-notes-focus";
+              p.raycast = "extensions/raycast/clipboard-history/clipboard-history";
+              c.raycast = "extensions/raycast/raycast/confetti";
+            };
+          };
           o = {
             unique_name = "open_applications";
             layer = {
-              t.open = "Terminal.app";
-              T.open = "TextEdit.app";
+              t.open = "Alacritty.app";
+              f.open = "Firefox Developer Edition.app";
+              n.open = "Notion.app";
+            };
+          };
+          w = {
+            unique_name = "window_management";
+            layer = {
+              c.raycast = "extensions/raycast/window-management/reasonable-size";
+              f.raycast = "extensions/raycast/window-management/almost-maximize";
+              F.raycast = "extensions/raycast/window-management/toggle-fullscreen";
+              m.raycast = "extensions/raycast/window-management/left-half";
+              M.raycast = "extensions/raycast/window-management/first-three-fourths";
+              i.raycast = "extensions/raycast/window-management/right-half";
+              I.raycast = "extensions/raycast/window-management/last-three-fourths";
+              "i+command".raycast = "extensions/raycast/window-management/first-fourth";
+              "m+command".raycast = "extensions/raycast/window-management/last-fourth";
+              e.raycast = "extensions/raycast/window-management/top-half";
+              n.raycast = "extensions/raycast/window-management/bottom-half";
+              # TODO window_move mode
             };
           };
         };
@@ -365,6 +382,8 @@
     home.packages = with pkgs; [raycast];
   };
 
+  fonts.packages = [pkgs.nerdfonts];
+
   homebrew = {
     enable = false;
     casks = [
@@ -374,17 +393,6 @@
       "homebrew/cask-versions"
     ];
   };
-
-  fonts.fontDir.enable = true;
-  fonts.fonts = with pkgs; [
-    (nerdfonts.override {
-      fonts = [
-        "FiraCode"
-        "DroidSansMono"
-        "Overpass"
-      ];
-    })
-  ];
 
   time.timeZone = "America/Chicago";
 }
