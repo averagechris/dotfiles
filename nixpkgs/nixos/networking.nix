@@ -1,9 +1,4 @@
-{
-  config,
-  pkgs,
-  lib,
-  ...
-}: {
+{...}: {
   networking.networkmanager.enable = true;
   systemd.network.wait-online.enable = false; # we don't use this if we're using network manager
   systemd.services.NetworkManager-wait-online.enable = false;
