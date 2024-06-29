@@ -22,7 +22,6 @@
 
   # these opengl is needed for sway to work right on intel graphics
   hardware.opengl.enable = true;
-  hardware.opengl.driSupport = true;
 
   system.stateVersion = "21.05";
   home-manager.users.chris = {pkgs, ...}: {

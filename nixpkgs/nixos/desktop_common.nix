@@ -12,7 +12,6 @@
   hardware.opengl = {
     enable = true;
     extraPackages = with pkgs; [amdvlk rocm-opencl-icd];
-    driSupport = true;
   };
 
   system.autoUpgrade = {

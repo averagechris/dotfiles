@@ -85,7 +85,7 @@ in {
           border_size = 1;
           "col.active_border" = "rgba(33ccffee) rgba(00ff99ee) 45deg";
           "col.inactive_border" = "rgba(595959aa)";
-          cursor_inactive_timeout = 5;
+          # cursor_inactive_timeout = 5;
           resize_on_border = true;
           layout = "dwindle";
         };
@@ -122,9 +122,9 @@ in {
           pseudotile = "yes";
           preserve_split = "yes";
         };
-        master = {
-          new_is_master = true;
-        };
+        # master = {
+        #   new_is_master = true;
+        # };
         gestures = {
           workspace_swipe = "on";
         };

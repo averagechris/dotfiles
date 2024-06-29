@@ -28,7 +28,6 @@
   networking.hostName = "trap";
 
   hardware.opengl.enable = true;
-  hardware.opengl.driSupport = true;
   hardware.enableRedistributableFirmware = true;
   hardware.system76.enableAll = true;
   environment.systemPackages = [pkgs.system76-firmware];

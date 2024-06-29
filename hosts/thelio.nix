@@ -29,7 +29,6 @@
 
   environment.systemPackages = with pkgs; [system76-firmware];
   hardware.opengl.enable = true;
-  hardware.opengl.driSupport = true;
   hardware.enableRedistributableFirmware = true;
   hardware.system76.enableAll = true;
   programs.steam.enable = true;
