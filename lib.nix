@@ -17,7 +17,7 @@
   overlays = system: {};
 
   specialArgs = system: {
-    inherit inputs sshKeys;
+    inherit inputs sshKeys system;
     overlays = overlays system;
     input-modules.doom = inputs.nix-doom-emacs.hmModule;
     dotfiles_lib.options = with inputs.nixpkgs.legacyPackages.x86_64-linux.lib; {

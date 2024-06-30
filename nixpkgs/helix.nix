@@ -1,5 +1,10 @@
-{...}: {
+{
+  inputs,
+  system,
+  ...
+}: {
   programs.helix = {
+    package = inputs.helix.packages.${system}.default;
     settings = {
       theme = "rose_pine_moon";
       editor = {
@@ -162,6 +167,10 @@
       };
     };
     languages = {
+      language-server.ruff = {
+        command = "ruff";
+        args = ["server" "--preview"];
+      };
       language = [
         {
           # lsp: https://github.com/rust-lang/rust-analyzer
@@ -192,9 +201,10 @@
           # lsp: https://github.com/python-lsp/python-lsp-server
           name = "python";
           formatter = {
-            command = "black";
-            args = [];
+            command = "ruff";
+            args = ["format"];
           };
+          language-servers = ["pylsp" "ruff"];
         }
         # {
         #   # lsp: https://github.com/bash-lsp/bash-language-server
