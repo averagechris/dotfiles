@@ -8,20 +8,42 @@
     settings = {
       theme = "rose_pine_moon";
       editor = {
-        auto-save = true;
-        completion-replace = true;
-        completion-trigger-len = 1;
-        gutters = ["diagnostics" "diff"];
-        line-number = "relative";
-        lsp.display-messages = true;
+        auto-save = {
+          focus-lost = true;
+          after-delay.enable = true;
+          after-delay.timeout = 20000;
+        };
         cursor-shape = {
           normal = "block";
           insert = "bar";
           select = "block";
         };
+        file-picker = {
+          hidden = false;
+          follow-symlinks = true;
+          deduplicate-links = true;
+          parents = true;
+          ignore = true;
+          git-ignore = true;
+          git-global = true;
+          git-exclude = true;
+        };
+        gutters = ["diagnostics" "diff"];
         indent-guides = {
           character = "┊";
           skip-levels = 1;
+        };
+        line-number = "relative";
+        lsp = {
+          enable = true;
+          auto-signature-help = true;
+          display-messages = false;
+          display-signature-help-docs = true;
+          goto-reference-include-declaration = true;
+        };
+        smart-tab = {
+          enable = true;
+          supersede-menu = true;
         };
       };
 
@@ -167,6 +189,14 @@
       };
     };
     languages = {
+      language-server.pylsp = {
+        command = "pylsp";
+        config = {
+          pylsp.plugins = {
+            rope_autoimport.enabled = true;
+          };
+        };
+      };
       language-server.ruff = {
         command = "ruff";
         args = ["server" "--preview"];
@@ -189,7 +219,7 @@
           name = "nix";
           formatter = {
             command = "alejandra";
-            args = [];
+            args = ["-"];
           };
           # language-server = {
           #   command = "nixd";
@@ -202,7 +232,7 @@
           name = "python";
           formatter = {
             command = "ruff";
-            args = ["format"];
+            args = ["format" "--quiet" "-"];
           };
           language-servers = ["pylsp" "ruff"];
         }
