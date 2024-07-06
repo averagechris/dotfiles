@@ -32,8 +32,8 @@ plugins {
 
 // it would be super cool to define custom modes, maybe i could make an attempt at that
 // https://github.com/zellij-org/zellij/issues/248
-keybinds {
-  normal clear-defaults=true {
+keybinds clear-defaults=true {
+  normal {
     bind "Esc" { SwitchToMode "locked"; }  // TODO rm when shared or shared_except works
     bind "Enter" { SwitchToMode "locked"; }
     bind "r" { SwitchToMode "resize"; }
@@ -59,7 +59,7 @@ keybinds {
 	bind "Ctrl ]" { NextSwapLayout; }
   }
 
-  pane clear-defaults=true {
+  pane {
     bind "Esc" { SwitchToMode "locked"; }  // TODO rm when shared or shared_except works
 
 	bind "Alt m" { MovePane "Left"; }
@@ -77,8 +77,8 @@ keybinds {
     bind "f" { ToggleFocusFullscreen; SwitchToMode "locked"; }
     bind "F" { TogglePaneEmbedOrFloating; ToggleFocusFullscreen; SwitchToMode "locked"; }
 
-    bind "N" { NewPane "Down"; SwitchToMode "locked"; }
-    bind "I" { NewPane "Right"; SwitchToMode "locked"; }
+    bind "s" { NewPane "Down"; SwitchToMode "locked"; }
+    bind "v" { NewPane "Right"; SwitchToMode "locked"; }
 
     bind "z" { TogglePaneFrames; SwitchToMode "locked"; }
 
@@ -89,7 +89,7 @@ keybinds {
     // bind "c" { SwitchToMode "RenamePane"; PaneNameInput 0;}
   }
 
-  resize clear-defaults=true {
+  resize {
     bind "Esc" { SwitchToMode "locked"; }  // TODO rm when shared or shared_except works
 
 	bind "m" { Resize "Left"; }
@@ -104,7 +104,7 @@ keybinds {
     bind "-" { Resize "Decrease"; }
   }
 
-  tab clear-defaults=true {
+  tab {
     bind "Esc" { SwitchToMode "locked"; }  // TODO rm when shared or shared_except works
 
     bind "r" { SwitchToMode "RenameTab"; TabNameInput 0; }
@@ -125,13 +125,13 @@ keybinds {
     bind "9" { GoToTab 9; SwitchToMode "locked"; }
     bind "Tab" { ToggleTab; SwitchToMode "locked"; }
   }
-  renametab clear-defaults=true {
+  renametab {
     bind "Esc" { UndoRenameTab; SwitchToMode "locked"; }
     bind "Enter" { SwitchToMode "locked"; }
   }
 
   // I'm stealing this `session` mode for a `git` namespace
-  session clear-defaults=true {
+  session {
     bind "Esc" { SwitchToMode "locked"; }  // TODO rm when shared or shared_except works
 
     bind "g" {
@@ -145,7 +145,7 @@ keybinds {
     }
   }
 
-  scroll clear-defaults=true {
+  scroll {
     bind "Esc" { ScrollToBottom; SwitchToMode "locked"; }
     bind "Alt /" { SwitchToMode "EnterSearch"; SearchInput 0; }
 
@@ -157,11 +157,11 @@ keybinds {
     bind "{" { HalfPageScrollUp; }
     bind "}" { HalfPageScrollDown; }
   }
-  entersearch clear-defaults=true {
+  entersearch {
     bind "Ctrl c" "Esc" { SwitchToMode "scroll"; }
     bind "Enter" { SwitchToMode "Search"; }
   }
-  search clear-defaults=true {
+  search {
     bind "Esc" { ScrollToBottom; SwitchToMode "locked"; }
 
     bind "n" { Search "down"; }
@@ -174,14 +174,11 @@ keybinds {
 
   // locked is the mode meant to be used most of the time, e.g. when actually doing work
   // TODO make my default layout start in locked mode
-  locked clear-defaults=true {
+  locked {
     bind "Alt m" { SwitchToMode "normal"; }
 
 	bind "Alt q" { Detach; }
 	bind "Alt Q" { Quit; }
-
-
-
   }
 
   // FIXME shared_except does not seem to work, I'm not sure if I'm doing something wrong.

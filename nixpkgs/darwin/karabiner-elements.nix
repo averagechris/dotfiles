@@ -666,7 +666,7 @@ in {
           ++ mapAttrsToList (k: v: layer_into_rule k v null) cfg.layers;
       };
     in
-      builtins.trace result
+      # builtins.trace result
       result;
   };
 }
