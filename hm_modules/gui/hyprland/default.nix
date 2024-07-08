@@ -140,7 +140,7 @@ in {
           brightctl = "${pkgs.brightnessctl}/bin/brightnessctl";
           pamixer = "${pkgs.pamixer}/bin/pamixer";
           playerctl = "${pkgs.playerctl}/bin/playerctl";
-          term = with config.dotfiles.gui; "${terminal}/bin/${terminal.pname}";
+          term = config.dotfiles.gui.terminal.binPath;
           withSuper = with lib.strings;
             lst: (map (rule:
               if (hasPrefix "+" rule)

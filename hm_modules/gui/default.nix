@@ -15,13 +15,33 @@ in
       ./linux_desktop.nix
       ./sway
       ./hyprland
+      ./kitty.nix
     ];
     options.dotfiles.gui = {
       enable = mkEnableOption "Enables the GUI window manager and apps that I've cofnigured.";
       terminal = mkOption {
-        type = types.package;
-        default = config.programs.alacritty.package;
-        description = mdDoc "The terminal program to pass to the window manager, by default alacritty.";
+        type = types.submodule {
+          options = {
+            package = mkOption {
+              type = types.package;
+              description = mdDoc "The terminal program to pass to the window manager, by default kitty.";
+            };
+            args = mkOption {
+              type = types.listOf types.str;
+              description = mdDoc "The args passed to the invocation of the terminal program used by the window manager.";
+            };
+            binPath = mkOption {
+              type = types.str;
+              description = mdDoc "The invocation of the terminal program used by the window manager.";
+            };
+          };
+        };
+        default = {
+          inherit (config.programs.kitty) package;
+          args = ["--single-instance" "--instance-group=0" "--listen-on=unix:/tmp/main-kitty-socket"];
+          binPath = let inherit (config.dotfiles.gui.terminal) package args; in ''${package}/bin/${package.pname} ${builtins.concatStringsSep " " args}'';
+        };
+        description = mdDoc "A submodule describing the terminal program passed to the window manager, by default kitty.";
       };
     };
     options.programs = {
@@ -36,6 +56,7 @@ in
       # these programs we enable by default if gui.enable
       # but not all of the programs are (like write-stylus)
       programs.alacritty.enable = mkDefault cfg.enable;
+      programs.kitty.enable = mkDefault cfg.enable;
       programs.darktable.enable = mkDefault cfg.enable;
       programs.firefox.enable = mkDefault cfg.enable;
       programs.keepassxc.enable = mkDefault cfg.enable;
