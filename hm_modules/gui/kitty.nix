@@ -1,12 +1,14 @@
 {
   config,
   lib,
+  pkgs,
   ...
 }: let
+  inherit (pkgs.stdenv.hostPlatform) isDarwin isLinux;
   nested = prefix: bindings: with lib.attrsets; mapAttrs' (k: v: nameValuePair "${prefix}>${k}" v) bindings;
-  prefixed = nested "alt+space";
-  tabp = nested "alt+space>t";
-  windowp = nested "alt+space>w";
+  prefixed = nested "shift+space";
+  tabp = nested "shift+space>t";
+  windowp = nested "shift+space>w";
 in {
   programs.kitty = {
     keybindings =
@@ -14,6 +16,21 @@ in {
         "ctrl+shift+c" = "copy_to_clipboard";
         "ctrl+shift+v" = "paste_from_clipboard";
       }
+      // (
+        if isDarwin
+        then {
+          "cmd+plus" = "change_font_size current +2.0";
+          "cmd+minus" = "change_font_size current -2.0";
+          "cmd+0" = "change_font_size current 0";
+        }
+        else if isLinux
+        then {
+          "ctrl+shift+plus" = "change_font_size current +2.0";
+          "ctrl+shift+minus" = "change_font_size current -2.0";
+          "ctrl+shift+0" = "change_font_size current 0";
+        }
+        else {}
+      )
       // (prefixed {
         c = "copy_to_clipboard";
         l = "load_config_file";
@@ -58,7 +75,7 @@ in {
     settings = {
       clear_all_shortcuts = true;
       allow_remote_control = "socket-only";
-      listen_on = "/tmp/main-kitty-socket";
+      listen_on = "unix:/tmp/main-kitty-socket";
       macos_option_as_alt = true;
       macos_quit_when_last_window_closed = true;
       scrollback_pager =

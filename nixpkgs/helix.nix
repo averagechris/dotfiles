@@ -7,6 +7,7 @@
 }: let
   gutters = ["diagnostics" "spacer" "diff"];
   statusline.center = [];
+  launch_gitui_overlay = ":sh kitten @ launch --type=overlay --cwd=current gitui";
 in {
   programs.helix = {
     package = inputs.helix.packages.${system}.default;
@@ -372,7 +373,7 @@ in {
             // (
               if config.programs.kitty.enable
               then {
-                g = ":sh kitten @ launch --type=os-window --cwd=current gitui";
+                g = launch_gitui_overlay;
               }
               else {}
             );
@@ -407,7 +408,7 @@ in {
             // (
               if config.programs.kitty.enable
               then {
-                g = ":sh kitten @ launch --type=os-window --cwd=current gitui";
+                g = launch_gitui_overlay;
                 t = ":sh kitten @ launch --type=window --cwd=current";
                 tab = ":sh kitten @ launch --type=tab --cwd=current";
               }
