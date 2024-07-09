@@ -26,7 +26,7 @@ with pkgs;
       mv $sourceRoot/lastpass-authenticator-export.py $sourceRoot/lastpass_authenticator_export.py
     '';
 
-    propagatedBuildInputs = with python39Packages; [
+    propagatedBuildInputs = with python312Packages; [
       requests
       pycryptodome
       qrcode

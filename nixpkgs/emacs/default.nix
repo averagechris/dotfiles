@@ -15,7 +15,7 @@
     proselint
     python310Packages.grip
   ];
-  pkgs-pythonMode = with pkgs.python310Packages; [
+  pkgs-pythonMode = with pkgs.python312Packages; [
     black
     isort
     pyflakes

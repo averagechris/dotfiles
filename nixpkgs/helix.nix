@@ -2,12 +2,14 @@
   config,
   inputs,
   lib,
+  pkgs,
   system,
   ...
 }: let
   gutters = ["diagnostics" "spacer" "diff"];
   statusline.center = [];
   launch_gitui_overlay = ":sh kitten @ launch --type=overlay --cwd=current gitui";
+  title_case = import ./shell/scripts/title_case.nix {inherit pkgs;};
 in {
   programs.helix = {
     package = inputs.helix.packages.${system}.default;
@@ -328,6 +330,7 @@ in {
             l = "switch_to_lowercase";
             s = ["split_selection_on_newline" ":sort" "collapse_selection" "keep_primary_selection"];
             u = "switch_to_uppercase";
+            U = ":pipe ${title_case}/bin/title-case.py";
             S = ["split_selection_on_newline" ":rsort" "collapse_selection" "keep_primary_selection"];
             n = "add_newline_below";
             e = "add_newline_above";
@@ -410,6 +413,7 @@ in {
               then {
                 g = launch_gitui_overlay;
                 t = ":sh kitten @ launch --type=window --cwd=current";
+                T = ":sh kitten @ launch --type=os-window --cwd=current";
                 tab = ":sh kitten @ launch --type=tab --cwd=current";
               }
               else {}
@@ -487,6 +491,16 @@ in {
             p = ":sh zellij action toggle-floating-panes"; # pop the floating zellij panes if any
             s = ":hsplit";
             v = ":vsplit";
+          };
+
+          # "kitty" mode
+          space.k = lib.mkIf config.programs.kitty.enable {
+            # toggle between stack layout to emulate "full" screen
+            f = ":sh kitten @ last-used-layout";
+            n = ":sh kitten @ focus-window --match neighbor:bottom";
+            e = ":sh kitten @ focus-window --match neighbor:top";
+            m = ":sh kitten @ focus-window --match neighbor:left";
+            i = ":sh kitten @ focus-window --match neighbor:right";
           };
         };
       in {

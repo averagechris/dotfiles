@@ -82,7 +82,7 @@
             cachix
             mdl
             statix
-            python311Packages.mdformat
+            python312Packages.mdformat
             nil # nix language server
             nixd
             nodePackages.bash-language-server

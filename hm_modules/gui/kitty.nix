@@ -25,7 +25,7 @@ in {
         }
         else if isLinux
         then {
-          "ctrl+shift+plus" = "change_font_size current +2.0";
+          "ctrl+shift+=" = "change_font_size current +2.0";
           "ctrl+shift+minus" = "change_font_size current -2.0";
           "ctrl+shift+0" = "change_font_size current 0";
         }

@@ -8,7 +8,7 @@
   utils = import ../utils pkgs;
 in {
   config = lib.mkIf cfg.enable {
-    home.packages = with pkgs.python311Packages; [
+    home.packages = with pkgs.python312Packages; [
       ipython
       python
     ];
