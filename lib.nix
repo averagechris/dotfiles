@@ -14,7 +14,11 @@
     };
   };
 
-  overlays = system: {};
+  overlays = system: {
+    dotfiles = final: prev: {
+      titlecase = inputs.titlecase.packages.${system}.default;
+    };
+  };
 
   specialArgs = system: {
     inherit inputs sshKeys system;

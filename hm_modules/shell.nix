@@ -194,6 +194,7 @@ in
           fd
           pre-commit
           procs
+          titlecase
         ]
         ++ (
           if config.programs.pijul.enable

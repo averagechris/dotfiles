@@ -38,6 +38,10 @@
     nixpkgs-firefox-darwin = {
       url = "github:bandithedoge/nixpkgs-firefox-darwin";
     };
+    titlecase = {
+      url = "sourcehut:~averagechris/titlecase";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = inputs @ {

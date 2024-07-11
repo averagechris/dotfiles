@@ -9,7 +9,6 @@
   gutters = ["diagnostics" "spacer" "diff"];
   statusline.center = [];
   launch_gitui_overlay = ":sh kitten @ launch --type=overlay --cwd=current gitui";
-  title_case = import ./shell/scripts/title_case.nix {inherit pkgs;};
 in {
   programs.helix = {
     package = inputs.helix.packages.${system}.default;
@@ -330,7 +329,7 @@ in {
             l = "switch_to_lowercase";
             s = ["split_selection_on_newline" ":sort" "collapse_selection" "keep_primary_selection"];
             u = "switch_to_uppercase";
-            U = ":pipe ${title_case}/bin/title-case.py";
+            U = ":pipe ${pkgs.titlecase}/bin/titlecase";
             S = ["split_selection_on_newline" ":rsort" "collapse_selection" "keep_primary_selection"];
             n = "add_newline_below";
             e = "add_newline_above";
