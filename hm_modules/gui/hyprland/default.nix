@@ -70,15 +70,6 @@ in {
             clickfinger_behavior = true;
           };
         };
-        # "device:dygma-defy-keyboard".input = {
-        #   kb_layout = "us";
-        #   kb_variant = ",";
-        # };
-        # "device:at-translated-set-2-keyboard".input = {
-        #   name = "";
-        #   kb_layout = "us";
-        #   kb_variant = "colemak_dh,";
-        # };
         general = {
           gaps_in = 3;
           gaps_out = 3;
@@ -217,8 +208,7 @@ in {
             "$dashKey, togglespecialworkspace, scratchpad"
 
             # toggle between qwerty and colemak_dh keyboard layouts
-            # "+ SHIFT + CTRL + ALT, SPACE, exec, hyprctl switchxkblayout at-translated-set-2-keyboard next"
-            "+ SHIFT + CTRL + ALT, SPACE, exec, hyprctl keyword input:kb_variant colemak_dh"
+            "+ SHIFT + CTRL + ALT, SPACE, exec, hyprctl switchxkblayout at-translated-set-2-keyboard next"
           ];
         bindl = [
           ",switch:Lid Switch, exec, ${toggleDisplayWithLid}"
@@ -234,6 +224,11 @@ in {
         };
       };
       extraConfig = ''
+        device {
+          name = at-translated-set-2-keyboard
+          kb_layout = us, us
+          kb_variant = colemak_dh, basic
+        }
       '';
     };
 

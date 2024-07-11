@@ -28,14 +28,13 @@
       enabled=yes
     }
 
-    device:at-translated-set-2-keyboard {
+    device {
+      name = at-translated-set-2-keyboard
+      kb_layout = us, us
+      kb_variant = colemak_dh, basic
       # toggle between qwerty and colemak_dh keyboard layouts
       bind=SUPER+SHIFT+CTRL+ALT, SPACE, exec, hyprctl switchxkblayout at-translated-set-2-keyboard next"
-      input {
-        kb_variant = colemak_dh,
-      }
     }
-
   '';
 in {
   # puts systemd init logs on tty1
