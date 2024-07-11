@@ -6,10 +6,11 @@
   hyprlandGreetConfig = pkgs.writeText "greetd-hyprland-config" ''
     env=GDK_BACKEND,wayland
     env=XCURSOR_SIZE,24
-    exec-once="sleep 2 && ${lib.getExe pkgs.greetd.gtkgreet} -l; hyprtcl dispatch exit"
+    exec=${lib.getExe pkgs.greetd.gtkgreet} -l; hyprtcl dispatch exit
     bind=SUPER+SHIFT,Q,exec,systemctl poweroff
     bind=SUPER+SHIFT,R,exec,systemctl reboot
     bind=SUPER,R,exec,${lib.getExe pkgs.greetd.gtkgreet} -l; hyprtcl dispatch exit
+    bind=SUPER + SHIFT + CTRL + ALT, SPACE, exec, hyprctl switchxkblayout at-translated-set-2-keyboard next
 
     input {
       touchpad {
@@ -32,8 +33,7 @@
       name = at-translated-set-2-keyboard
       kb_layout = us, us
       kb_variant = colemak_dh, basic
-      # toggle between qwerty and colemak_dh keyboard layouts
-      bind=SUPER+SHIFT+CTRL+ALT, SPACE, exec, hyprctl switchxkblayout at-translated-set-2-keyboard next"
+      resolve_binds_by_sym = 1
     }
   '';
 in {

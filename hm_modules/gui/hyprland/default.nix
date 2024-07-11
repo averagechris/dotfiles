@@ -58,7 +58,8 @@ in {
           ",preferred,auto,auto"
         ];
         input = {
-          kb_layout = "us";
+          kb_layout = "us, us";
+          kb_variant = "colemak_dh, basic";
           follow_mouse = 1;
           natural_scroll = "yes";
           sensitivity = 0.0;
@@ -228,6 +229,7 @@ in {
           name = at-translated-set-2-keyboard
           kb_layout = us, us
           kb_variant = colemak_dh, basic
+          resolve_binds_by_sym = 1
         }
       '';
     };
