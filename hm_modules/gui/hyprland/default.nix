@@ -51,8 +51,6 @@ in {
         exec-once = [
           "${pkgs.signal-desktop}/bin/signal-desktop"
           "${pkgs.firefox}/bin/firefox"
-          # use systemd to start on hyprland-session.target instead
-          # "${pkgs.waybar}/bin/waybar"
         ];
         monitor = [
           ",preferred,auto,auto"
@@ -199,6 +197,8 @@ in {
             "8, workspace, 8"
             "9, workspace, 9"
             "0, workspace, 10"
+            "+SHIFT, i, workspace, e+1"
+            "+SHIFT, m, workspace, e-1"
 
             # Scroll through existing workspaces with mainMod + scroll
             "mouse_right, workspace, e+1"
@@ -229,6 +229,13 @@ in {
           name = at-translated-set-2-keyboard
           kb_layout = us, us
           kb_variant = colemak_dh, basic
+          resolve_binds_by_sym = 1
+        }
+
+        device {
+          name = dygma-defy-keyboard
+          kb_layout = us
+          kb_variant = basic
           resolve_binds_by_sym = 1
         }
       '';

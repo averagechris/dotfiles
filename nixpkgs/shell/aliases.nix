@@ -1,8 +1,4 @@
-{
-  pkgs,
-  config,
-  ...
-}: {
+{config, ...}: {
   programs.zsh.shellAliases = {
     # warning, verbose
     cp = "cp -iv";

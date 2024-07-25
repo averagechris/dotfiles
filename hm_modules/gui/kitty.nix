@@ -58,7 +58,8 @@ in {
         i = "next_tab";
         m = "prev_tab";
         r = "set_tab_title";
-        n = "combine : new_tab : goto_tab -1";
+        n = "new_tab";
+        N = "combine : new_tab : goto_tab -1";
         t = "select_tab";
         d = "close_tab";
         "shift+d" = "detach_tab";

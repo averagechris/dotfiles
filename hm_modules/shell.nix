@@ -192,6 +192,7 @@ in
         [
           curl
           fd
+          just
           pre-commit
           procs
           titlecase

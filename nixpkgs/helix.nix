@@ -9,6 +9,7 @@
   gutters = ["diagnostics" "spacer" "diff"];
   statusline.center = [];
   launch_gitui_overlay = ":sh kitten @ launch --type=overlay --cwd=current gitui";
+  just = cmd: ":sh ${pkgs.just}/bin/just --justfile .chris.just ${cmd} || true";
 in {
   programs.helix = {
     package = inputs.helix.packages.${system}.default;
@@ -333,6 +334,7 @@ in {
             S = ["split_selection_on_newline" ":rsort" "collapse_selection" "keep_primary_selection"];
             n = "add_newline_below";
             e = "add_newline_above";
+            r = ":reflow";
           };
 
           # "buffer" minor mode
@@ -417,6 +419,21 @@ in {
               }
               else {}
             );
+
+          space.r = {
+            b = just "build";
+            B = just "--show build";
+            c = just "check";
+            C = just "--show check";
+            f = just "format";
+            F = just "--show format";
+            j = just "--list";
+            J = [":sh touch .chris.just" ":open .chris.just"];
+            l = just "lint";
+            L = just "--show lint";
+            t = just "test";
+            T = just "--show test";
+          };
 
           # "selections" minor mode for advanced selection stuff
           space.s = {
@@ -525,6 +542,7 @@ in {
             w = "extend_next_word_start";
             tab = "extend_parent_node_end";
             S-tab = "extend_parent_node_start";
+            space.r.t = [":pipe-to echo $(cat) > /tmp/helix-just.txt" (just "test-args")];
           };
         insert =
           with_unbound [

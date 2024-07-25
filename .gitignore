@@ -21,3 +21,4 @@ __pycache__/
 /.pre-commit-config.yaml
 /result
 hosts/coniguration.nix.bak
+.chris.just
