@@ -1,6 +1,8 @@
 {
   pkgs,
   inputs,
+  lib,
+  overlays,
   ...
 }: {
   imports = [
@@ -16,7 +18,7 @@
 
   nixpkgs.config.allowUnsupportedSystem = true;
   nixpkgs.config.allowBroken = true;
-  nixpkgs.overlays = [inputs.nixpkgs-firefox-darwin.overlay];
+  nixpkgs.overlays = [inputs.nixpkgs-firefox-darwin.overlay] ++ lib.attrValues overlays;
   nix = {
     package = pkgs.nixFlakes;
     settings.substituters = [
