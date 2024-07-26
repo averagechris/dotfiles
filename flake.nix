@@ -32,7 +32,8 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     helix = {
-      url = "github:helix-editor/helix";
+      # https://github.com/helix-editor/helix/issues/11291
+      url = "github:helix-editor/helix?rev=0d62656c987ec32f44d19ad7ab02c120c6344470";
     };
     mac-app-util.url = "github:hraban/mac-app-util";
     nixpkgs-firefox-darwin = {
