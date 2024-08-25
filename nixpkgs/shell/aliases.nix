@@ -17,5 +17,9 @@
     nixos-build = "nixos-rebuild build";
 
     today = "date +%Y-%m-%d";
+
+    tailscale-set-exit-node = ''
+      tailscale set --exit-node="$(tailscale exit-node list | tr -s ' ' | cut -d ' ' -f 3 | fzf)"
+    '';
   };
 }
