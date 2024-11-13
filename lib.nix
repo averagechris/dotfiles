@@ -23,7 +23,6 @@
   specialArgs = system: {
     inherit inputs sshKeys system;
     overlays = overlays system;
-    input-modules.doom = inputs.nix-doom-emacs.hmModule;
     dotfiles_lib.options = with inputs.nixpkgs.legacyPackages.x86_64-linux.lib; {
       mkDefaultEnabledOption = description:
         mkOption {
@@ -87,20 +86,20 @@
         statix.enable = true;
         shellcheck.enable = true;
         markdown-formatter = {
-          enable = true;
+          enable = false;
           name = "markdown-formatter";
           types = ["markdown"];
           language = "system";
           pass_filenames = true;
-          entry = with inputs.nixpkgs.legacyPackages.${system}.python311Packages; "${mdformat}/bin/mdformat";
+          # entry = with inputs.nixpkgs.legacyPackages.${system}.python311Packages; "${mdformat}/bin/mdformat";
         };
         markdown-linter = {
-          enable = true;
+          enable = false;
           name = "markdown-linter";
           types = ["markdown"];
           language = "system";
           pass_filenames = true;
-          entry = with inputs.nixpkgs.legacyPackages.${system}; "${mdl}/bin/mdl -g";
+          # entry = with inputs.nixpkgs.legacyPackages.${system}; "${mdl}/bin/mdl -g";
         };
       };
     };

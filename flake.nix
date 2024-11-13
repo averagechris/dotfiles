@@ -6,13 +6,13 @@
   };
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
-    nixos-hardware.url = "github:nixos/nixos-hardware";
+    nixos-hardware = {
+      url = "github:nixos/nixos-hardware";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     home-manager = {
       url = "github:nix-community/home-manager/release-24.05";
       inputs.nixpkgs.follows = "nixpkgs";
-    };
-    nix-doom-emacs = {
-      url = "github:nix-community/nix-doom-emacs";
     };
     pre-commit-hooks = {
       url = "github:cachix/pre-commit-hooks.nix";
@@ -22,22 +22,28 @@
       url = "github:ryantm/agenix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # FIXME https://github.com/NixOS/nixpkgs/issues/355377
+    nixpkgs-ghostscript-pin.url = "github:nixos/nixpkgs/aecd17c0dbd112d6df343827d9324f071ef9c502";
     darwin = {
       url = "github:lnl7/nix-darwin/master";
+      inputs.nixpkgs.follows = "nixpkgs-ghostscript-pin";
+    };
+    flake-utils = {
+      url = "github:numtide/flake-utils";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    flake-utils.url = "github:numtide/flake-utils";
     deploy-rs = {
       url = "github:serokell/deploy-rs";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     helix = {
-      # https://github.com/helix-editor/helix/issues/11291
-      url = "github:helix-editor/helix?rev=0d62656c987ec32f44d19ad7ab02c120c6344470";
+      url = "github:helix-editor/helix";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
     mac-app-util.url = "github:hraban/mac-app-util";
     nixpkgs-firefox-darwin = {
       url = "github:bandithedoge/nixpkgs-firefox-darwin";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
     titlecase = {
       url = "sourcehut:~averagechris/titlecase";
@@ -87,7 +93,6 @@
             cachix
             mdl
             statix
-            python312Packages.mdformat
             nil # nix language server
             nixd
             nodePackages.bash-language-server

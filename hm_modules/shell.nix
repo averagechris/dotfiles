@@ -33,7 +33,6 @@ in
 
     options.dotfiles.shell = with dotfiles_lib.options; {
       enable = mkDefaultEnabledOption "enables the my shell configuration.";
-      emacs.enable = mkEnableOption "enable my highly configured doom emacs setup.";
       nerdfonts.enable = mkEnableOption "install nerdfonts.";
       passhole.enable = mkEnableOption "Passhole is a python cli for interacting with keepass databases. I have some utilities built up around it, but in a GUI environment, keepassxc is a better tool. But this is useful for non-gui environments.";
       python.enable = mkEnableOption "Install a python interpreter with optional packages. Generally this is better off as a project level dependency, but it can be handy to have a python interpreter always at the ready. ipython package included by default.";
@@ -47,12 +46,12 @@ in
 
       # config values with good minimal defaults
       env.editor = mkOption {
-        type = types.enum ["hx" "nvim" "vim" "emacsclient -t" "emacs"];
+        type = types.enum ["hx" "nvim" "vim"];
         default =
           if config.programs.helix.enable
           then "hx"
           else "nvim";
-        example = "emacsclient -t";
+        example = "hx";
         description = "The shell command used as the EDITOR environment variable.";
       };
 
@@ -102,7 +101,6 @@ in
     };
 
     config = mkIf cfg.enable {
-      programs.doom-emacs.enable = cfg.emacs.enable;
       programs.fzf.enable = lib.mkDefault true;
       programs.git.enable = lib.mkDefault true;
       programs.gitui.enable = lib.mkDefault true;
@@ -175,8 +173,6 @@ in
       programs.zsh.initExtra = mkIf config.programs.pijul.enableZshIntegration ''
         source ${pkgs.pijul}/share/zsh/site-functions/_pijul
       '';
-
-      services.emacs.enable = cfg.emacs.enable;
 
       home.sessionVariables = mkMerge [
         {

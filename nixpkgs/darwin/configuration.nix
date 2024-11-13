@@ -39,10 +39,6 @@ in {
   # does not conflict with home-manager.programs.zsh
   programs.zsh.enable = true;
 
-  # services.emacs.enable = true;
-  # TODO FIXME not sure how to pass the doom-emacs package to this variable
-  # services.emacs.package = config.home-manager.users."${pii.userName}".services.emacs.package;
-
   # enable launchd daemon for mbsync to sync and index emails if emails are configured in home-manager config
   services.lorri.enable = true;
 }

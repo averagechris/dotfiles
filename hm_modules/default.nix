@@ -1,10 +1,5 @@
-{
-  dotfiles_lib,
-  input-modules,
-  ...
-}: {
+{dotfiles_lib, ...}: {
   imports = [
-    input-modules.doom
     ./gui
     ./meganz.nix
     ./shell.nix
