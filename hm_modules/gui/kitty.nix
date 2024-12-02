@@ -87,7 +87,7 @@ in {
       strip_trailing_spaces = "smart";
       tab_bar_style = "powerline";
     };
-    theme = "Rosé Pine Moon";
+    themeFile = "rose-pine-moon";
     extraConfig = ''
       include extra.kitty.conf
     '';

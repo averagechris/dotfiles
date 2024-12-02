@@ -5,13 +5,10 @@
     extra-substituters = "https://nix-community.cachix.org https://nixpkgs-wayland.cachix.org https://devenv.cachix.org https://averagechris-dotfiles.cachix.org";
   };
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
-    nixos-hardware = {
-      url = "github:nixos/nixos-hardware";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
+    nixos-hardware.url = "github:nixos/nixos-hardware";
     home-manager = {
-      url = "github:nix-community/home-manager/release-24.05";
+      url = "github:nix-community/home-manager/release-24.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     pre-commit-hooks = {
@@ -22,16 +19,11 @@
       url = "github:ryantm/agenix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    # FIXME https://github.com/NixOS/nixpkgs/issues/355377
-    nixpkgs-ghostscript-pin.url = "github:nixos/nixpkgs/aecd17c0dbd112d6df343827d9324f071ef9c502";
     darwin = {
       url = "github:lnl7/nix-darwin/master";
-      inputs.nixpkgs.follows = "nixpkgs-ghostscript-pin";
-    };
-    flake-utils = {
-      url = "github:numtide/flake-utils";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    flake-utils.url = "github:numtide/flake-utils";
     deploy-rs = {
       url = "github:serokell/deploy-rs";
       inputs.nixpkgs.follows = "nixpkgs";

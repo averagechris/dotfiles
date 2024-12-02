@@ -8,6 +8,8 @@
 in {
   home.sessionVariables = lib.mkIf config.programs.firefox.enable {
     BROSWER = "firefox";
+    MOZ_LEGACY_PROFILES = 1;
+    MOZ_ALLOW_DOWNGRADE = 1;
   };
 
   programs.firefox = {

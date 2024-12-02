@@ -20,7 +20,7 @@
   nixpkgs.config.allowBroken = true;
   nixpkgs.overlays = [inputs.nixpkgs-firefox-darwin.overlay] ++ lib.attrValues overlays;
   nix = {
-    package = pkgs.nixFlakes;
+    package = pkgs.nixVersions.stable;
     settings.substituters = [
       "https://cache.nixos.org/"
       "https://nix-community.cachix.org"
@@ -284,7 +284,7 @@
       autohide-time-modifier = 0.5;
       dashboard-in-overlay = false;
       expose-animation-duration = 0.75;
-      expose-group-by-app = true;
+      expose-group-apps = true;
       launchanim = false;
       mineffect = "genie";
       minimize-to-application = true;
@@ -375,13 +375,28 @@
       signing.key = null;
     };
 
-    programs.firefox.package = pkgs.firefox-devedition-bin;
+    programs.firefox.package = pkgs.firefox-devedition-bin.overrideAttrs (prevAttrs: {
+      postInstall = ''
+        folder="$out/Applications/Firefox.app/Contents/Resources/distribution"
+        mkdir -p "$folder"
+        echo '{
+          "policies": {
+            "AppAutoUpdate": false,
+            "DisableAppUpdate": true
+          }
+        }' > "$folder/policies.json"
+      '';
+    });
     programs.zoom.enable = false;
     programs.darktable.enable = false;
     programs.signal.enable = false;
     programs.waybar.enable = false;
 
     home.packages = with pkgs; [raycast];
+  };
+  launchd.envVariables = {
+    MOZ_LEGACY_PROFILES = "1";
+    MOZ_ALLOW_DOWNGRADE = "1";
   };
 
   fonts.packages = [pkgs.nerdfonts];
