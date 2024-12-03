@@ -27,6 +27,6 @@ in
       pykeepass_cache
       pynput
       pyotp
-      pkgs.gnome.zenity
+      pkgs.zenity
     ];
   }

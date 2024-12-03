@@ -21,7 +21,7 @@
   networking.interfaces.wlp0s20f3.useDHCP = true;
 
   # these opengl is needed for sway to work right on intel graphics
-  hardware.opengl.enable = true;
+  hardware.graphics.enable = true;
 
   system.stateVersion = "21.05";
   home-manager.users.chris = {pkgs, ...}: {

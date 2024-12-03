@@ -28,7 +28,7 @@
   networking.wireless.interfaces = ["wlp6s0"];
 
   environment.systemPackages = with pkgs; [system76-firmware];
-  hardware.opengl.enable = true;
+  hardware.graphics.enable = true;
   hardware.enableRedistributableFirmware = true;
   hardware.system76.enableAll = true;
   programs.steam.enable = true;

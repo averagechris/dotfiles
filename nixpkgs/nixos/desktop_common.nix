@@ -9,9 +9,9 @@
 
   time.timeZone = "America/Chicago";
 
-  hardware.opengl = {
+  hardware.graphics = {
     enable = true;
-    extraPackages = with pkgs; [amdvlk rocm-opencl-icd];
+    extraPackages = with pkgs; [amdvlk];
   };
 
   system.autoUpgrade = {

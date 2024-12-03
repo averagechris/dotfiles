@@ -27,7 +27,7 @@
   };
   networking.hostName = "trap";
 
-  hardware.opengl.enable = true;
+  hardware.graphics.enable = true;
   hardware.enableRedistributableFirmware = true;
   hardware.system76.enableAll = true;
   environment.systemPackages = [pkgs.system76-firmware];

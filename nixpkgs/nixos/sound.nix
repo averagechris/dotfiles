@@ -6,13 +6,13 @@
   # these are disabled in favor of PipeWire
   # https://nixos.wiki/wiki/PipeWire
   # #######################################
-  sound.enable = true;
-  hardware.pulseaudio.enable = true;
+  # sound.enable = true;
+  # hardware.pulseaudio.enable = true;
   # #######################################
 
   security.rtkit.enable = true; # rtkit is optional but recommended
   services.pipewire = {
-    enable = false;
+    enable = true;
     alsa.enable = true;
     alsa.support32Bit = true;
     pulse.enable = true;

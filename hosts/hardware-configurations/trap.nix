@@ -13,8 +13,9 @@
 
   boot.initrd.availableKernelModules = ["nvme" "xhci_pci" "usb_storage" "sd_mod"];
   boot.initrd.kernelModules = ["dm-snapshot"];
-  boot.kernelModules = ["kvm-amd"];
+  boot.kernelModules = ["kvm-amd" "amdgpu"];
   boot.extraModulePackages = [];
+  hardware.amdgpu.opencl.enable = true;
 
   fileSystems."/" = {
     device = "/dev/disk/by-uuid/e53e3d88-75a5-4c76-a3d9-46aa9a2857cc";
