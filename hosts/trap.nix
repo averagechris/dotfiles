@@ -42,6 +42,7 @@
     programs.meganz.enable = true;
     programs.obsidian.enable = false;
     programs.pijul.enable = true;
+    programs.zed-editor.enable = true;
     wayland.windowManager.sway.config.input."type:touchpad" = {
       tap = "enabled";
       # click_method = "None";
