@@ -1,9 +1,10 @@
 {
+  config,
   pkgs,
   lib,
   ...
 }: {
-  programs.git = {
+  config.programs.git = {
     delta.enable = lib.mkDefault true;
     extraConfig = {
       pull.rebase = true;
@@ -41,7 +42,7 @@
         '';
       }}/bin/${name}";
 
-      ui = "!${gitui}/bin/gitui";
+      ui = "!${config.programs.lazygit.package}/bin/lazygit";
     };
   };
 }

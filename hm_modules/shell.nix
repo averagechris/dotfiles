@@ -23,6 +23,7 @@ in
       ../nixpkgs/python
       ./shell_modules/ranger.nix
       ./shell_modules/pipx.nix
+      ./shell_modules/lazygit.nix
     ];
 
     options.programs.pijul = {
@@ -105,6 +106,7 @@ in
       programs.git.enable = lib.mkDefault true;
       programs.gitui.enable = lib.mkDefault true;
       programs.helix.enable = lib.mkDefault true;
+      programs.lazygit.enable = lib.mkDefault true;
       programs.starship.enable = lib.mkDefault true;
       programs.zellij.enable = lib.mkDefault true;
       programs.zsh.enable = lib.mkDefault true;

@@ -8,7 +8,7 @@
 }: let
   gutters = ["diagnostics" "spacer" "diff"];
   statusline.center = [];
-  launch_gitui_overlay = ":sh kitten @ launch --type=overlay --cwd=current gitui";
+  launch_gitui_overlay = ":sh kitten @ launch --type=overlay --cwd=current git ui";
   just = cmd: ":sh ${pkgs.just}/bin/just --justfile .chris.just ${cmd} || true";
 in {
   programs.helix = {
