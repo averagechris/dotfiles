@@ -22,3 +22,4 @@ __pycache__/
 /result
 hosts/coniguration.nix.bak
 .chris.just
+*.qcow2
