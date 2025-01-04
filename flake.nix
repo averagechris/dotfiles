@@ -43,6 +43,10 @@
       url = "sourcehut:~averagechris/titlecase";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    nixos-cosmic = {
+      url = "github:lilyinstarlight/nixos-cosmic";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = inputs @ {
@@ -59,10 +63,10 @@
       {
         nixosConfigurations = with flake-utils.lib.system; {
           # taz = mkHost x86_64-linux ./hosts/taz.nix;
-          thelio-nixos = mkHost x86_64-linux ./hosts/thelio.nix;
+          thorny = mkHost x86_64-linux ./hosts/thelio.nix;
           tom = mkHost x86_64-linux ./hosts/tom.nix;
           tootsie = mkHost x86_64-linux ./hosts/tootsie.nix;
-          xps-nixos = mkHost x86_64-linux ./hosts/xps.nix;
+          cruber = mkHost x86_64-linux ./hosts/xps.nix;
           trap = mkHost x86_64-linux ./hosts/trap.nix;
         };
         darwinConfigurations.suremac = mkHost flake-utils.lib.system.aarch64-darwin ./nixpkgs/darwin/suremac;
@@ -70,6 +74,7 @@
           tom = mkDeploy self.nixosConfigurations.tom;
           # taz = mkDeploy self.nixosConfigurations.taz;
           tootsie = mkDeploy self.nixosConfigurations.tootsie;
+          cruber = mkDeploy' self.nixosConfigurations.cruber;
         };
       }
       // flake-utils.lib.eachDefaultSystem (system: let

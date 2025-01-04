@@ -78,6 +78,20 @@
     };
   };
 
+  mkDeploy' = host: {
+    hostname = "xps-nixos";
+    profiles.system = {
+      sshOpts = ["-t"];
+      user = "root";
+      path = inputs.deploy-rs.lib.x86_64-linux.activate.nixos host;
+      sshUser = "chris";
+      fastConnection = true;
+      magicRollback = false;
+      autoRollback = false;
+      interactiveSudo = true;
+    };
+  };
+
   mkCommitCheck = system: {
     pre-commit = inputs.pre-commit-hooks.lib.${system}.run {
       src = ./.;

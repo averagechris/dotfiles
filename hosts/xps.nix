@@ -7,8 +7,8 @@
     ../nixpkgs/nixos/common.nix
     ../nixpkgs/nixos/desktop_common.nix
     ../nixpkgs/nixos/docker.nix
-    ../nixpkgs/nixos/graphical.nix
-    ../nixpkgs/nixos/greetd.nix
+    # ../nixpkgs/nixos/graphical.nix
+    # ../nixpkgs/nixos/greetd.nix
     ../nixpkgs/nixos/networking.nix
     ../nixpkgs/nixos/sound.nix
     ../nixpkgs/nixos/tailscale.nix
@@ -17,10 +17,16 @@
     ./hardware-configurations/xps.nix
     inputs.agenix.nixosModules.default
     inputs.nixos-hardware.nixosModules.dell-xps-13-9310
+    inputs.nixos-hardware.nixosModules.common-cpu-intel
+    inputs.nixos-hardware.nixosModules.common-pc-ssd
+    inputs.nixos-cosmic.nixosModules.default
   ];
+  services.desktopManager.cosmic.enable = true;
+  services.displayManager.cosmic-greeter.enable = true;
+  environment.sessionVariables.COSMIC_DATA_CONTROL_ENABLED = 1;
 
   boot.initrd.luks.devices.root.device = "/dev/nvme0n1p2";
-  networking.hostName = "xps-nixos";
+  networking.hostName = "cruber";
 
   networking.wireless.interfaces = ["wlp0s20f3"];
   networking.interfaces.wlp0s20f3.useDHCP = true;
@@ -28,29 +34,19 @@
   hardware.graphics.enable = true;
   hardware.enableRedistributableFirmware = true;
   system.stateVersion = "24.11";
-  home-manager.users.chris = {pkgs, ...}: {
+  home-manager.users.chris = {...}: {
     home.stateVersion = "24.11";
     dotfiles.gui.enable = true;
     dotfiles.gui.sway.enable = false;
-    dotfiles.gui.hyprland.enable = true;
+    dotfiles.gui.hyprland.enable = false;
     dotfiles.shell.python.enable = true;
-    dotfiles.shell.pipx.enable = true;
+    dotfiles.shell.pipx.enable = false;
     programs.obsidian.enable = false;
   };
 
   services.dbus.enable = true;
   services.flatpak.enable = true;
   services.fwupd.enable = true;
-
-  xdg.portal = {
-    enable = true;
-    wlr.enable = true;
-    # gtk portal needed to make gtk apps happy
-    extraPortals = [pkgs.xdg-desktop-portal-gtk];
-  };
-
-  fonts.enableDefaultPackages = true;
-  fonts.packages = with pkgs; [dejavu_fonts font-awesome nerdfonts];
 
   users.users.chris.extraGroups = ["docker"];
 
