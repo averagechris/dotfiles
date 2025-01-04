@@ -14,6 +14,7 @@
     ../nixpkgs/nixos/tailscale.nix
     ../nixpkgs/nixos/virtualization.nix
     ../nixpkgs/nixos/users/chris.nix
+    ../nixpkgs/nixos/users/christiana.nix
     ./hardware-configurations/xps.nix
     inputs.agenix.nixosModules.default
     inputs.nixos-hardware.nixosModules.dell-xps-13-9310
@@ -34,6 +35,9 @@
   hardware.graphics.enable = true;
   hardware.enableRedistributableFirmware = true;
   system.stateVersion = "24.11";
+  home-manager.users.christiana = {...}: {
+    home.stateVersion = "24.11";
+  };
   home-manager.users.chris = {...}: {
     home.stateVersion = "24.11";
     dotfiles.gui.enable = true;

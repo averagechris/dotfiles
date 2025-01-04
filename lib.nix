@@ -79,7 +79,7 @@
   };
 
   mkDeploy' = host: {
-    hostname = "xps-nixos";
+    hostname = host.config.networking.hostName;
     profiles.system = {
       sshOpts = ["-t"];
       user = "root";
