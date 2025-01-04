@@ -16,12 +16,6 @@
     distributedBuilds = true;
     buildMachines = [
       {
-        hostName = "gnome-work-vm";
-        system = "aarch64-linux";
-        maxJobs = 8;
-        supportedFeatures = [];
-      }
-      {
         hostName = "eu.nixbuild.net";
         system = "aarch64-linux";
         maxJobs = 100;

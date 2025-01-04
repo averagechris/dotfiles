@@ -1,6 +1,7 @@
 {
   inputs,
   pkgs,
+  system,
   ...
 }: {
   imports = [
@@ -17,17 +18,13 @@
   networking.hostName = "tom";
   networking.networkmanager.enable = false;
   time.timeZone = "America/Chicago";
-  environment.systemPackages = with pkgs; [
-    git
-    neovim
-  ];
   services.openssh = {
     enable = true;
     settings.PermitRootLogin = "no";
     settings.PasswordAuthentication = false;
   };
   system.stateVersion = "22.11";
-  home-manager.users.chris = {pkgs, ...}: {
+  home-manager.users.chris = {...}: {
     home.stateVersion = "22.11";
   };
 
@@ -39,6 +36,8 @@
 
   services.calibre-web = {
     enable = true;
+    package = inputs.calibre-web-fix.legacyPackages.${system}.calibre-web;
+
     openFirewall = true;
     listen.ip = "0.0.0.0";
     options.enableBookConversion = true;

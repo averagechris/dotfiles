@@ -7,6 +7,7 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
     unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
+    calibre-web-fix.url = "github:getchoo-contrib/nixpkgs/pkgs/calibre-web/0.6.24";
     nixos-hardware.url = "github:nixos/nixos-hardware";
     home-manager = {
       url = "github:nix-community/home-manager/release-24.11";
@@ -57,7 +58,6 @@
     with dotfiles.lib;
       {
         nixosConfigurations = with flake-utils.lib.system; {
-          gnome-work-vm = mkHost aarch64-linux ./hosts/gnome-work-vm.nix;
           # taz = mkHost x86_64-linux ./hosts/taz.nix;
           thelio-nixos = mkHost x86_64-linux ./hosts/thelio.nix;
           tom = mkHost x86_64-linux ./hosts/tom.nix;

@@ -39,6 +39,22 @@
         "type": "github"
       }
     },
+    "calibre-web-fix": {
+      "locked": {
+        "lastModified": 1731920275,
+        "narHash": "sha256-YmhlCepNa7MoOnhPD5KSctkbBxBy/D6TEj1EL/sLRD4=",
+        "owner": "getchoo-contrib",
+        "repo": "nixpkgs",
+        "rev": "979404af29968e5e91c99b4279945d04f6ece67d",
+        "type": "github"
+      },
+      "original": {
+        "owner": "getchoo-contrib",
+        "ref": "pkgs/calibre-web/0.6.24",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "cl-nix-lite": {
       "locked": {
         "lastModified": 1728174978,
@@ -502,6 +518,7 @@
     "root": {
       "inputs": {
         "agenix": "agenix",
+        "calibre-web-fix": "calibre-web-fix",
         "darwin": "darwin_2",
         "deploy-rs": "deploy-rs",
         "flake-utils": "flake-utils",
