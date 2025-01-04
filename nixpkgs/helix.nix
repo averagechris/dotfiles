@@ -12,7 +12,7 @@
   just = cmd: ":sh ${pkgs.just}/bin/just --justfile .chris.just ${cmd} || true";
 in {
   programs.helix = {
-    package = inputs.helix.packages.${system}.default;
+    package = lib.mkDefault inputs.helix.packages.${system}.default;
     settings = {
       theme = "rose_pine_moon";
       editor = {

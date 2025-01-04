@@ -45,8 +45,6 @@
     dotfiles.shell.python.enable = true;
     dotfiles.shell.pipx.enable = true;
     programs.obsidian.enable = false;
-    programs.helix.package = inputs.helix.packages.x86_64-linux.default;
-
     home.packages = [pkgs.trayscale];
   };
   services.dbus.enable = true;
