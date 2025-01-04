@@ -12,6 +12,7 @@
     ../nixpkgs/nixos/networking.nix
     ../nixpkgs/nixos/sound.nix
     ../nixpkgs/nixos/tailscale.nix
+    ../nixpkgs/nixos/virtualization.nix
     ../nixpkgs/nixos/users/chris.nix
     ./hardware-configurations/trap.nix
     inputs.agenix.nixosModules.default
