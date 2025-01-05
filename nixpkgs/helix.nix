@@ -23,6 +23,8 @@ in {
         completion-replace = false;
         cursorcolumn = false;
         cursorline = false;
+        end-of-line-diagnostics = "hint";
+        inline-diagnostics.cursor-line = "error";
         line-number = "relative";
         middle-click-paste = true;
         mouse = true;
