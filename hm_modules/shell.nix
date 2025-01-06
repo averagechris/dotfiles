@@ -21,6 +21,7 @@ in
       ../nixpkgs/git
       ../nixpkgs/passhole
       ../nixpkgs/python
+      ./shell_modules/less.nix
       ./shell_modules/ranger.nix
       ./shell_modules/pipx.nix
       ./shell_modules/lazygit.nix
