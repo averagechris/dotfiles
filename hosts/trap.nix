@@ -8,7 +8,7 @@
     ../nixpkgs/nixos/desktop_common.nix
     ../nixpkgs/nixos/docker.nix
     ../nixpkgs/nixos/graphical.nix
-    ../nixpkgs/nixos/greetd.nix
+    # ../nixpkgs/nixos/greetd.nix
     ../nixpkgs/nixos/networking.nix
     ../nixpkgs/nixos/sound.nix
     ../nixpkgs/nixos/tailscale.nix
@@ -20,7 +20,13 @@
     inputs.nixos-hardware.nixosModules.common-cpu-amd
     inputs.nixos-hardware.nixosModules.common-cpu-amd-pstate
     inputs.nixos-hardware.nixosModules.common-pc-ssd
+    inputs.nixos-cosmic.nixosModules.default
+    inputs.nixos-cosmic.nixosModules.default
   ];
+
+  services.desktopManager.cosmic.enable = true;
+  services.displayManager.cosmic-greeter.enable = true;
+  environment.sessionVariables.COSMIC_DATA_CONTROL_ENABLED = 1;
 
   boot.initrd.luks.devices = {
     root.device = "/dev/nvme1n1p2";
@@ -33,16 +39,16 @@
   hardware.system76.enableAll = true;
   environment.systemPackages = [pkgs.system76-firmware];
   system.stateVersion = "23.05";
-  home-manager.users.chris = {pkgs, ...}: {
+  home-manager.users.chris = {...}: {
     home.stateVersion = "23.05";
     dotfiles.gui.enable = true;
     dotfiles.gui.sway.enable = false;
     dotfiles.gui.hyprland.enable = true;
+    dotfiles.gui.swayidle.enable = false;
     dotfiles.shell.python.enable = true;
     dotfiles.shell.pipx.enable = true;
     programs.meganz.enable = true;
     programs.obsidian.enable = false;
-    programs.pijul.enable = true;
     wayland.windowManager.sway.config.input."type:touchpad" = {
       tap = "enabled";
       # click_method = "None";
