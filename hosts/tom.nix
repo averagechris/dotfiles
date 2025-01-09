@@ -1,6 +1,5 @@
 {
   inputs,
-  pkgs,
   system,
   ...
 }: {
@@ -24,6 +23,7 @@
     settings.PasswordAuthentication = false;
   };
   system.stateVersion = "22.11";
+  users.users.chris.extraGroups = ["calibre-web"];
   home-manager.users.chris = {...}: {
     home.stateVersion = "22.11";
   };
