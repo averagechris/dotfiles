@@ -53,11 +53,7 @@
   ];
 
   system.stateVersion = "21.11";
-  home-manager.users.chris = {
-    pkgs,
-    config,
-    ...
-  }: {
+  home-manager.users.chris = {...}: {
     home.stateVersion = "21.11";
     programs.meganz.enable = true;
   };

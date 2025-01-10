@@ -26,6 +26,7 @@
   services.desktopManager.cosmic.enable = true;
   services.displayManager.cosmic-greeter.enable = true;
   environment.sessionVariables.COSMIC_DATA_CONTROL_ENABLED = 1;
+  services.gnome.gnome-keyring.enable = false;
 
   boot.initrd.luks.devices.root.device = "/dev/sda2";
   networking.hostName = "thorny";

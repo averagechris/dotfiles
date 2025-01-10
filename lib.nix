@@ -23,7 +23,7 @@
   specialArgs = system: {
     inherit inputs sshKeys system;
     overlays = overlays system;
-    dotfiles_lib.options = with inputs.nixpkgs.legacyPackages.x86_64-linux.lib; {
+    dotfiles_lib.options = with inputs.nixpkgs.legacyPackages.${system}.lib; {
       mkDefaultEnabledOption = description:
         mkOption {
           type = types.bool;
