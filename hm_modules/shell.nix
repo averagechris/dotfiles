@@ -25,6 +25,7 @@ in
       ./shell_modules/ranger.nix
       ./shell_modules/pipx.nix
       ./shell_modules/lazygit.nix
+      ./shell_modules/calibre-utils.nix
     ];
 
     options.programs.pijul = {
