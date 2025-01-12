@@ -24,7 +24,7 @@
     from tabulate import tabulate
 
 
-    @dataclass
+    @dataclass(slots=True)
     class Track:
         num: int
         start: int
@@ -32,6 +32,7 @@
         title: str
         bitrate: int
         timebase: str = "1/1000"
+        combining: list[str] | None = None
 
         def as_txt(self) -> str:
             return (
@@ -41,18 +42,37 @@
                 "\n"
             )
 
-        def as_row(self) -> tuple[int, str, str]:
-            return (self.num, self.title, f"{int(self.bitrate / 1000)}k")  # noqa: E501
-
-        def __iadd__(self, other: "Track") -> None:
-            self.title = (
-                self.title
-                if len(self.title) < len(other.title)
-                else other.title
+        def as_row(self) -> tuple[int, str, str, str]:
+            return (
+                self.num,
+                self.title,
+                f"{int(self.bitrate / 1000)}k",
+                ",".join(self.combining or "")
             )
+
+        def __iadd__(self, other: "Track") -> "Track":
+            if self.combining is None:
+                self.combining = [self.title, other.title]
+            else:
+                self.combining.append(other.title)
+
+            if self.title != other.title:
+                new_title_parts = []
+                for self_part, other_part in zip(
+                    self.title.split(" "),
+                    other.title.split(" "),
+                ):
+                    if self_part == other_part:
+                        new_title_parts.append(self_part)
+                else:
+                    if new_title_parts:
+                        self.title = " ".join(new_title_parts)
+
             self.start = min((self.start, other.start))
             self.end = max((self.end, other.end))
-            return None
+            self.bitrate = max(self.bitrate, other.bitrate)
+
+            return self
 
 
     cli = typer.Typer()
@@ -152,7 +172,7 @@
         print(
             tabulate(
                 (track.as_row() for track in sorted(tracks.values(), key=lambda t: t.num)),  # noqa: E501
-                headers=["#", "Title", "Bitrate"],
+                headers=["#", "Title", "Bitrate", "Combining Tracks"],
                 tablefmt="simple",
             )
         )
