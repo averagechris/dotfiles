@@ -13,6 +13,7 @@
     import statistics
     import shutil
     import subprocess
+    import sys
     import tempfile
     from dataclasses import dataclass
     from datetime import datetime
@@ -108,6 +109,82 @@
         except Exception:
             print(f"[red]Unexpected output from ffprobe:[/red]\n{result.stdout}\n")
             return None
+
+
+    @audio.command()
+    def reencode(
+        in_file: Path = typer.Argument(
+            help="Path to the audiobook file you wish to reencode",
+            exists=True,
+            file_okay=True,
+            dir_okay=False,
+        ),
+        out_file: Path = typer.Argument(
+            help=(
+                "The destination path, defaults to the same directory "
+                "as the input file but with a timestamp suffix."
+            ),
+            exists=False,
+        ),
+        target_bitrate: int = typer.Option(
+            64,
+            help="Given 24, the target bitrate will be 24k, etc",
+        ),
+    ) -> None:
+        """
+        Reencode the m4b file with a specific target bitrate, and strip
+        any non-audio data from the file.
+        Preserves chapter metadata.
+        """
+        if target_bitrate > 320:
+            print(
+                "[red]target_bitrate too high, must be 24-320[/red]",
+                file=sys.stderr,
+            )
+            raise typer.Exit(1)
+        if target_bitrate < 24:
+            print(
+                "[red]target_bitrate too low, must be 24-320[/red]",
+                file=sys.stderr,
+            )
+            raise typer.Exit(1)
+
+        if out_file is None:
+            now_ts = int(datetime.now().timestamp())
+            out_file = in_file.parent / f"{now_ts}_{in_file.name}"
+
+        ffmpg_cmd = [
+            "${pkgs.ffmpeg}/bin/ffmpeg",  # noqa: E501
+            "-i",
+            in_file.absolute().as_posix(),
+            "-map",
+            "0:a",
+            "-c:a",
+            "aac",
+            "-b:a",
+            f"{target_bitrate}k",
+            "-map_metadata",
+            "0",
+            "-map_chapters",
+            "0",
+            out_file.absolute().as_posix(),
+        ]
+        try:
+            result = subprocess.run(
+                ffmpg_cmd,
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+        except subprocess.CalledProcessError as e:
+            print(f"[red]ffmpg error:\n{e}[/red]")
+            print(f"[red]{result.stderr.strip()}[/red]")
+            typer.Exit(4)
+        print(
+            f"[green]✓[/green] Reencoding into "
+            f"[cyan]{out_file.name}[/cyan] "
+            f"at [green]{target_bitrate}kbps[/green] successfully!"
+        )
 
 
     @audio.command()
