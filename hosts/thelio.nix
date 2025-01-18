@@ -48,6 +48,7 @@
     dotfiles.gui.sway.enable = false;
     dotfiles.gui.hyprland.enable = false;
     dotfiles.gui.swayidle.enable = false;
+    dotfiles.shell.calibre-utils.enable = true;
     dotfiles.shell.python.enable = true;
     dotfiles.shell.pipx.enable = true;
     programs.obsidian.enable = false;
