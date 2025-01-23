@@ -27,6 +27,18 @@
   services.desktopManager.cosmic.enable = true;
   services.displayManager.cosmic-greeter.enable = true;
   environment.sessionVariables.COSMIC_DATA_CONTROL_ENABLED = 1;
+  environment.systemPackages = with pkgs; [
+    cosmic-ext-applet-clipboard-manager
+    cosmic-ext-applet-emoji-selector
+    cosmic-ext-applet-external-monitor-brightness
+    cosmic-ext-calculator
+    cosmic-ext-ctl
+    cosmic-ext-examine
+    cosmic-ext-forecast
+    cosmic-ext-tasks
+    cosmic-ext-tweaks
+    system76-firmware
+  ];
 
   boot.initrd.luks.devices = {
     root.device = "/dev/nvme1n1p2";
@@ -37,7 +49,6 @@
   hardware.graphics.enable = true;
   hardware.enableRedistributableFirmware = true;
   hardware.system76.enableAll = true;
-  environment.systemPackages = [pkgs.system76-firmware];
   system.stateVersion = "23.05";
   home-manager.users.chris = {...}: {
     home.stateVersion = "23.05";
