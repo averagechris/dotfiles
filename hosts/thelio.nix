@@ -37,7 +37,9 @@
   hardware.graphics.enable = true;
   hardware.enableRedistributableFirmware = true;
   hardware.system76.enableAll = true;
+
   programs.steam.enable = true;
+  hardware.xone.enable = true;
 
   system.stateVersion = "24.11";
   home-manager.users.chris = {...}: {
