@@ -333,7 +333,7 @@ in {
             s = ["split_selection_on_newline" ":sort" "collapse_selection" "keep_primary_selection"];
             u = "switch_to_uppercase";
             U = ":pipe ${pkgs.titlecase}/bin/titlecase";
-            S = ["split_selection_on_newline" ":rsort" "collapse_selection" "keep_primary_selection"];
+            S = ["split_selection_on_newline" ":sort --reverse" "collapse_selection" "keep_primary_selection"];
             n = "add_newline_below";
             e = "add_newline_above";
             r = ":reflow";
