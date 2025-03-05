@@ -59,6 +59,7 @@
     dotfiles.shell.calibre-utils.enable = true;
     dotfiles.shell.python.enable = true;
     dotfiles.shell.pipx.enable = true;
+    home.packages = [pkgs.claude-code];
     programs.meganz.enable = true;
     programs.obsidian.enable = false;
     wayland.windowManager.sway.config.input."type:touchpad" = {

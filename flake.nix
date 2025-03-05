@@ -97,6 +97,11 @@
             nodePackages.bash-language-server
             self.outputs.packages.${system}.agenix
             self.inputs.deploy-rs.packages.${system}.deploy-rs
+
+            ruff
+            python3Packages.python-lsp-server
+            python3Packages.python-lsp-ruff
+            python3Packages.pylsp-rope
           ];
         };
         checks = dotfiles.lib.mkCommitCheck system // (builtins.mapAttrs (sys: l: l.deployChecks self.deploy) self.inputs.deploy-rs.lib).${system};

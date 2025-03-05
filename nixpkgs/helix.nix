@@ -325,18 +325,30 @@ in {
           z.e = "scroll_up";
           Z.e = "scroll_up";
 
-          # text "actions" minor mode
-          space.a = {
-            a = "align_selections"; # aligns text in columns
-            c = "toggle_comments";
-            l = "switch_to_lowercase";
-            s = ["split_selection_on_newline" ":sort" "collapse_selection" "keep_primary_selection"];
-            u = "switch_to_uppercase";
-            U = ":pipe ${pkgs.titlecase}/bin/titlecase";
-            S = ["split_selection_on_newline" ":sort --reverse" "collapse_selection" "keep_primary_selection"];
-            n = "add_newline_below";
-            e = "add_newline_above";
-            r = ":reflow";
+          # "claude" minor mode - dedicated to Claude AI integration
+          # NOTE: prefer :pipe-to, since :pipe will replace the selected buffer contents with stdout of the command
+          # we don't want that since claude is communicating with us in a separate window
+          space.c = {
+            # This keybinding requests that Claude implement TODOs or refactor code
+            c = [":write" ":pipe-to kitty-claude --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --column=\"%{cursor_column}\" --type=\"selection\" --saved --header=\"ACTION REQUIRED: Please implement any TODO/FIXME comments in this code. If none are found, please suggest refactoring improvements:\""];
+            # Same as above but without saving first
+            C = [":pipe-to kitty-claude --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --column=\"%{cursor_column}\" --type=\"selection\" --header=\"ACTION REQUIRED: Please implement any TODO/FIXME comments in this code. If none are found, please suggest refactoring improvements, noting that this buffer may be unsaved:\""];
+            # Send selection with metadata to claude, memnonic is "explain"
+            e = [":write" ":pipe-to kitty-claude --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --column=\"%{cursor_column}\" --type=\"selection\" --saved --header=\"Explain this selection from saved file:\""];
+            # Send without saving - useful when you can't save
+            E = ":pipe-to kitty-claude --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --column=\"%{cursor_column}\" --type=\"selection\" --header=\"Explain this selection from unsaved editor buffer:\"";
+            # Send current function to Claude
+            f = ["goto_next_function" "select_textobject_inner" ":pipe-to kitty-claude --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --type=\"function\" --header=\"Function from my editor:\""];
+            # Generate tests for the current function
+            t = ["goto_next_function" "select_textobject_inner" ":pipe-to kitty-claude --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --type=\"function\" --header=\"ACTION REQUIRED: Generate comprehensive tests for this function:\""];
+            # Document the current function (add docstrings, comments)
+            d = ["goto_next_function" "select_textobject_inner" ":pipe-to kitty-claude --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --type=\"function\" --header=\"ACTION REQUIRED: Add or improve documentation for this function with appropriate docstrings and comments:\""];
+            # Process errors/diagnostics from the current selection
+            x = [":write" ":pipe-to kitty-claude --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --column=\"%{cursor_column}\" --type=\"error\" --saved --header=\"ACTION REQUIRED: Help me fix these errors/diagnostics:\""];
+            # Get usage examples for the current function/object
+            u = ["select_textobject_inner" ":pipe-to kitty-claude --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --type=\"selection\" --header=\"ACTION REQUIRED: Provide usage examples for this code:\""];
+            # Optimize the current selection
+            o = [":write" ":pipe-to kitty-claude --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --column=\"%{cursor_column}\" --type=\"selection\" --saved --header=\"ACTION REQUIRED: Optimize this code for performance and readability:\""];
           };
 
           # "buffer" minor mode
@@ -415,7 +427,12 @@ in {
               if config.programs.kitty.enable
               then {
                 g = launch_gitui_overlay;
-                t = ":sh kitten @ launch --type=window --cwd=current";
+                # Horizontal split (window below)
+                h = ":sh kitten @ launch --location=after --cwd=current";
+                # Vertical split (window to the right)
+                v = ":sh kitten @ launch --location=vsplit --cwd=current";
+                # Legacy keybindings with more explicit names
+                t = ":sh kitten @ launch --location=hsplit --cwd=current";
                 T = ":sh kitten @ launch --type=os-window --cwd=current";
                 tab = ":sh kitten @ launch --type=tab --cwd=current";
               }

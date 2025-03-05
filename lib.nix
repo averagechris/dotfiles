@@ -14,8 +14,15 @@
     };
   };
 
-  overlays = system: {
+  overlays = system: let
+    unstable = import inputs.unstable {
+      inherit system;
+      config.allowUnfree = true;
+    };
+  in {
     dotfiles = final: prev: {
+      # Add claude-code from unstable
+      inherit (unstable) claude-code ruff;
       titlecase = inputs.titlecase.packages.${system}.default;
     };
   };
@@ -35,6 +42,10 @@
   };
 
   mkHost = system: hostPath: let
+    pkgs = import nixpkgs {
+      inherit system;
+      config.allowUnfree = true;
+    };
     fn =
       if system == "aarch64-darwin"
       then inputs.darwin.lib.darwinSystem
@@ -45,7 +56,7 @@
       else inputs.home-manager.nixosModules.home-manager;
   in
     fn {
-      inherit system;
+      inherit pkgs system;
       specialArgs = specialArgs system;
       modules =
         [
