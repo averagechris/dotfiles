@@ -1,24 +1,5 @@
 {pkgs}:
 with pkgs; rec {
-  # Enhanced Claude integration for Kitty terminal
-  # Written in Python for better handling of combined arguments and stdin input
-  # Uses structured JSON format to clearly distinguish tool-generated content
-  kitty-claude = pkgs.writers.writePython3Bin "kitty-claude" {
-    libraries = with pkgs; [
-      # Include claude-code directly
-      claude-code
-      # For file type detection and syntax highlighting
-      python3Packages.pygments
-    ];
-    flakeIgnore = [
-      "E501" # Line too long
-      "W293" # Blank line contains whitespace
-      "E127" # Continuation line over-indented for visual indent
-      "E128" # Continuation line under-indented for visual indent
-      "E302" # Expected 2 blank lines
-      "E305" # Expected 2 blank lines after class or function definition
-    ];
-  } (builtins.readFile ../scripts/kitty-claude.py);
   video_compress = writeShellApplication {
     name = "video_compress";
     runtimeInputs = [handbrake];

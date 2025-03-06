@@ -17,6 +17,7 @@ in
       ./hyprland
       ./kitty.nix
       ./zed.nix
+      ./windsurf.nix
     ];
     options.dotfiles.gui = {
       enable = mkEnableOption "Enables the GUI window manager and apps that I've cofnigured.";

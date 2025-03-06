@@ -10,6 +10,7 @@
   statusline.center = [];
   launch_gitui_overlay = ":sh kitten @ launch --type=overlay --cwd=current git ui";
   just = cmd: ":sh ${pkgs.just}/bin/just --justfile .chris.just ${cmd} || true";
+  kc = "${pkgs.dotfiles-kitty-claude}/bin/kitty-claude";
 in {
   programs.helix = {
     package = lib.mkDefault inputs.helix.packages.${system}.default;
@@ -330,25 +331,25 @@ in {
           # we don't want that since claude is communicating with us in a separate window
           space.c = {
             # This keybinding requests that Claude implement TODOs or refactor code
-            c = [":write" ":pipe-to kitty-claude --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --column=\"%{cursor_column}\" --type=\"selection\" --saved --header=\"ACTION REQUIRED: Please implement any TODO/FIXME comments in this code. If none are found, please suggest refactoring improvements:\""];
+            c = [":write" ":pipe-to ${kc} --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --column=\"%{cursor_column}\" --type=\"selection\" --saved --header=\"ACTION REQUIRED: Please implement any TODO/FIXME comments in this code. If none are found, please suggest refactoring improvements:\""];
             # Same as above but without saving first
-            C = [":pipe-to kitty-claude --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --column=\"%{cursor_column}\" --type=\"selection\" --header=\"ACTION REQUIRED: Please implement any TODO/FIXME comments in this code. If none are found, please suggest refactoring improvements, noting that this buffer may be unsaved:\""];
+            C = [":pipe-to ${kc} --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --column=\"%{cursor_column}\" --type=\"selection\" --header=\"ACTION REQUIRED: Please implement any TODO/FIXME comments in this code. If none are found, please suggest refactoring improvements, noting that this buffer may be unsaved:\""];
             # Send selection with metadata to claude, memnonic is "explain"
-            e = [":write" ":pipe-to kitty-claude --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --column=\"%{cursor_column}\" --type=\"selection\" --saved --header=\"Explain this selection from saved file:\""];
+            e = [":write" ":pipe-to ${kc} --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --column=\"%{cursor_column}\" --type=\"selection\" --saved --header=\"Explain this selection from saved file:\""];
             # Send without saving - useful when you can't save
-            E = ":pipe-to kitty-claude --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --column=\"%{cursor_column}\" --type=\"selection\" --header=\"Explain this selection from unsaved editor buffer:\"";
+            E = ":pipe-to ${kc} --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --column=\"%{cursor_column}\" --type=\"selection\" --header=\"Explain this selection from unsaved editor buffer:\"";
             # Send current function to Claude
-            f = ["goto_next_function" "select_textobject_inner" ":pipe-to kitty-claude --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --type=\"function\" --header=\"Function from my editor:\""];
+            f = ["goto_next_function" "select_textobject_inner" ":pipe-to ${kc} --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --type=\"function\" --header=\"Function from my editor:\""];
             # Generate tests for the current function
-            t = ["goto_next_function" "select_textobject_inner" ":pipe-to kitty-claude --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --type=\"function\" --header=\"ACTION REQUIRED: Generate comprehensive tests for this function:\""];
+            t = ["goto_next_function" "select_textobject_inner" ":pipe-to ${kc} --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --type=\"function\" --header=\"ACTION REQUIRED: Generate comprehensive tests for this function:\""];
             # Document the current function (add docstrings, comments)
-            d = ["goto_next_function" "select_textobject_inner" ":pipe-to kitty-claude --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --type=\"function\" --header=\"ACTION REQUIRED: Add or improve documentation for this function with appropriate docstrings and comments:\""];
+            d = ["goto_next_function" "select_textobject_inner" ":pipe-to ${kc} --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --type=\"function\" --header=\"ACTION REQUIRED: Add or improve documentation for this function with appropriate docstrings and comments:\""];
             # Process errors/diagnostics from the current selection
-            x = [":write" ":pipe-to kitty-claude --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --column=\"%{cursor_column}\" --type=\"error\" --saved --header=\"ACTION REQUIRED: Help me fix these errors/diagnostics:\""];
+            x = [":write" ":pipe-to ${kc} --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --column=\"%{cursor_column}\" --type=\"error\" --saved --header=\"ACTION REQUIRED: Help me fix these errors/diagnostics:\""];
             # Get usage examples for the current function/object
-            u = ["select_textobject_inner" ":pipe-to kitty-claude --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --type=\"selection\" --header=\"ACTION REQUIRED: Provide usage examples for this code:\""];
+            u = ["select_textobject_inner" ":pipe-to ${kc} --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --type=\"selection\" --header=\"ACTION REQUIRED: Provide usage examples for this code:\""];
             # Optimize the current selection
-            o = [":write" ":pipe-to kitty-claude --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --column=\"%{cursor_column}\" --type=\"selection\" --saved --header=\"ACTION REQUIRED: Optimize this code for performance and readability:\""];
+            o = [":write" ":pipe-to ${kc} --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --column=\"%{cursor_column}\" --type=\"selection\" --saved --header=\"ACTION REQUIRED: Optimize this code for performance and readability:\""];
           };
 
           # "buffer" minor mode
@@ -384,7 +385,10 @@ in {
           # "git" minor mode
           space.g =
             {
-              b = ":sh git branch";
+              # show git blame in status line
+              b = ":echo %sh{git blame %{buffer_name} -L %{cursor_line},%{cursor_line}}";
+              # show git blame in popover window
+              B = ":sh git blame %{buffer_name} -L %{cursor_line},%{cursor_line}";
               s = ":sh git status";
               p = ":sh pre-commit";
             }

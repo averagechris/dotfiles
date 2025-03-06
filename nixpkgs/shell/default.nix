@@ -11,10 +11,10 @@
 
     oh-my-zsh = {
       theme = "clean";
-      plugins = ["ssh-agent"];
-      extraConfig = ''
-        zstyle :omz:plugins:ssh-agent identities id_ed25519
-      '';
+      # plugins = ["ssh-agent"];
+      # extraConfig = ''
+      #   zstyle :omz:plugins:ssh-agent identities id_ed25519
+      # '';
     };
 
     sessionVariables.LESS = "-SRXF";

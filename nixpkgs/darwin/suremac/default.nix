@@ -54,7 +54,7 @@
   };
 
   programs.karabiner-elements = {
-    enable = true;
+    enable = false;
     hyper.enable = true;
     modes = {
       colemak_mod_dh.bind = {
@@ -375,28 +375,14 @@
       signing.key = null;
     };
 
-    programs.firefox.package = pkgs.firefox-devedition-bin.overrideAttrs (prevAttrs: {
-      postInstall = ''
-        folder="$out/Applications/Firefox.app/Contents/Resources/distribution"
-        mkdir -p "$folder"
-        echo '{
-          "policies": {
-            "AppAutoUpdate": false,
-            "DisableAppUpdate": true
-          }
-        }' > "$folder/policies.json"
-      '';
-    });
+    programs.firefox.package = pkgs.firefox-devedition-bin;
     programs.zoom.enable = false;
     programs.darktable.enable = false;
     programs.signal.enable = false;
     programs.waybar.enable = false;
+    programs.windsurf.enable = true; # this is overlayed into windsurf
 
-    home.packages = with pkgs; [raycast];
-  };
-  launchd.envVariables = {
-    MOZ_LEGACY_PROFILES = "1";
-    MOZ_ALLOW_DOWNGRADE = "1";
+    home.packages = with pkgs; [claude-code dotfiles-kitty-claude raycast postman];
   };
 
   fonts.packages = [pkgs.nerdfonts];

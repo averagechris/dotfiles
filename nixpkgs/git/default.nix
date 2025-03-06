@@ -35,10 +35,19 @@
         inherit name;
         runtimeInputs = [git findutils fzf];
         text = ''
-          git branch --list \
-            | grep --invert-match --regexp '^* ' \
-            | fzf --query "''${*:-}" --multi \
-            | xargs git branch -D
+          BRANCHES="$(
+            git branch --list \
+              | grep --invert-match --regexp '^* ' \
+              | fzf --multi
+          )"
+
+          for branch in $BRANCHES; do
+              git branch -D "$branch"
+          done
+
+          if [[ "$1" == "-r" || "$1" == "--remote" ]]; then
+              git push origin --delete "$BRANCHES"
+          fi
         '';
       }}/bin/${name}";
 

@@ -14,18 +14,7 @@
     };
   };
 
-  overlays = system: let
-    unstable = import inputs.unstable {
-      inherit system;
-      config.allowUnfree = true;
-    };
-  in {
-    dotfiles = final: prev: {
-      # Add claude-code from unstable
-      inherit (unstable) claude-code ruff;
-      titlecase = inputs.titlecase.packages.${system}.default;
-    };
-  };
+  overlays = system: {};
 
   specialArgs = system: {
     inherit inputs sshKeys system;
@@ -42,9 +31,46 @@
   };
 
   mkHost = system: hostPath: let
-    pkgs = import nixpkgs {
+    isMacos = system == inputs.flake-utils.lib.system.aarch64-darwin;
+    unstable = import inputs.unstable {
       inherit system;
       config.allowUnfree = true;
+    };
+    pkgs = import nixpkgs {
+      inherit system;
+      config = {
+        allowUnfree = true;
+        allowUnsupportedSystem = isMacos;
+        allowBroken = isMacos;
+      };
+      overlays = [
+        (final: prev: {
+          # Add claude-code from unstable
+          inherit (unstable) claude-code ruff windsurf;
+          titlecase = inputs.titlecase.packages.${system}.default;
+          dotfiles-kitty-claude = pkgs.writers.writePython3Bin "kitty-claude" {
+            libraries = [
+              # Include claude-code directly
+              unstable.claude-code
+              # For file type detection and syntax highlighting
+              prev.python3Packages.pygments
+            ];
+            flakeIgnore = [
+              "E501" # Line too long
+              "W293" # Blank line contains whitespace
+              "E127" # Continuation line over-indented for visual indent
+              "E128" # Continuation line under-indented for visual indent
+              "E302" # Expected 2 blank lines
+              "E305" # Expected 2 blank lines after class or function definition
+            ];
+          } (builtins.readFile ./nixpkgs/scripts/kitty-claude.py);
+        })
+        (
+          if isMacos
+          then inputs.nixpkgs-firefox-darwin.overlay
+          else (final: prev: {})
+        )
+      ];
     };
     fn =
       if system == "aarch64-darwin"
