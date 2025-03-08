@@ -326,6 +326,20 @@ in {
           z.e = "scroll_up";
           Z.e = "scroll_up";
 
+          # text "actions" minor mode
+          space.a = {
+            a = "align_selections"; # aligns text in columns
+            c = "toggle_comments";
+            l = "switch_to_lowercase";
+            s = ["split_selection_on_newline" ":sort" "collapse_selection" "keep_primary_selection"];
+            u = "switch_to_uppercase";
+            U = ":pipe ${pkgs.titlecase}/bin/titlecase";
+            S = ["split_selection_on_newline" ":sort --reverse" "collapse_selection" "keep_primary_selection"];
+            n = "add_newline_below";
+            e = "add_newline_above";
+            r = ":reflow";
+          };
+
           # "claude" minor mode - dedicated to Claude AI integration
           # NOTE: prefer :pipe-to, since :pipe will replace the selected buffer contents with stdout of the command
           # we don't want that since claude is communicating with us in a separate window
