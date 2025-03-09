@@ -32,7 +32,7 @@
     };
     helix = {
       url = "github:helix-editor/helix";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nixpkgs.follows = "unstable";
     };
     mac-app-util.url = "github:hraban/mac-app-util";
     nixpkgs-firefox-darwin = {
