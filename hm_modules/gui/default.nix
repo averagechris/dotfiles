@@ -18,6 +18,7 @@ in
       ./kitty.nix
       ./zed.nix
       ./windsurf.nix
+      ./wezterm
     ];
     options.dotfiles.gui = {
       enable = mkEnableOption "Enables the GUI window manager and apps that I've cofnigured.";
@@ -59,6 +60,7 @@ in
       # but not all of the programs are (like write-stylus)
       programs.alacritty.enable = mkDefault cfg.enable;
       programs.kitty.enable = mkDefault cfg.enable;
+      dotfiles.wezterm.enable = mkDefault cfg.enable;
       programs.darktable.enable = mkDefault cfg.enable;
       programs.firefox.enable = mkDefault cfg.enable;
       programs.keepassxc.enable = mkDefault cfg.enable;

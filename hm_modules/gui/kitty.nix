@@ -6,8 +6,18 @@
 }: let
   inherit (pkgs.stdenv.hostPlatform) isDarwin isLinux;
   nested = prefix: bindings: with lib.attrsets; mapAttrs' (k: v: nameValuePair "${prefix}>${k}" v) bindings;
+
+  # all of the key bindings i have for my terminal emulator i put after a leader key chord of
+  # shift+space
+  # NOTE: strongly prefer memonic style key bindings
   prefixed = nested "shift+space";
+
+  # tab prefix nests tab commands under `shift+space` as leaders
+  # then `t`, so to make a new tab, i press `shift+space` then `t` then `n`
   tabp = nested "shift+space>t";
+
+  # window prefix nests window commands under `shift+space` as leaders
+  # then `w`, so to make a vertical split, i press `shift+space` then `w` then `v`
   windowp = nested "shift+space>w";
 
   # Shell application for displaying kitty session information
