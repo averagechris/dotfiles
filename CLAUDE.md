@@ -1,5 +1,11 @@
 # CLAUDE.md for NixOS Dotfiles
 
+## Important Git Practices
+
+- NEVER add Claude as a co-author in commits
+- Commit messages should be concise and descriptive
+- Follow conventional commit format (feat:, fix:, docs:, etc.)
+
 ## System Structure
 
 - Projects directory: Located at `~/projects/`
