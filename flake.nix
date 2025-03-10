@@ -98,6 +98,15 @@
             self.outputs.packages.${system}.agenix
             self.inputs.deploy-rs.packages.${system}.deploy-rs
 
+            # Rust development
+            cargo
+            rustc
+            rustfmt
+            clippy
+            rust-analyzer
+            pkg-config
+            openssl.dev
+
             ruff
             python3Packages.python-lsp-server
             python3Packages.python-lsp-ruff

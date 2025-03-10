@@ -516,8 +516,8 @@ in {
             m = ":toggle mouse";
             G = ":set statusline.center ${builtins.toJSON statusline.center}";
             g = let i = statusline.center ++ ["version-control"]; in ":set statusline.center ${builtins.toJSON i}";
-            f.h = ":toggle file-picker.hidden";
-            f.g = ":toggle file-picker.ignore";
+            F.h = ":toggle file-picker.hidden";
+            F.g = ":toggle file-picker.ignore";
           };
 
           # "quit" minor mode

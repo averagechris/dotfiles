@@ -122,3 +122,25 @@
   - Search with / and ? (like vim)
   - F/F to navigate search results (since n/N used for navigation)
   - Tab operations with simple keys (t=new, C-n/C-e=next/prev, C-w=close)
+
+## Helix-Yazi Integration
+
+- Module location: `hm_modules/helix-yazi-integration`
+- Open file picker from Helix with `space.t.f`
+- Toggle the picker on/off with the same keybinding
+- Yazi stays open when opening files in Helix (unlike native file picker)
+- Launch command via Rust with `:pipe-to` to avoid output in Helix
+- Environment variable handling:
+  - Set env vars on Command object to be inherited by child process
+  - Pass `HELIX_PANE_ID` to track original editor pane
+  - Set `YAZI_CONFIG_HOME` to use custom config with opener
+- Custom Yazi configuration:
+  - Inherits all settings from main Yazi config
+  - Uses tomlFormat to generate TOML from Nix attrsets
+  - Overrides file opener to use integration
+  - Prioritizes custom quit binding for proper pane cleanup
+- WezTerm pane management:
+  - Uses WezTerm CLI for creating/activating/closing panes
+  - Directly run command in pane with proper args handling
+  - Panes automatically close when Yazi exits
+- Handles special characters and spaces in file paths

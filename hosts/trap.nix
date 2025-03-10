@@ -59,6 +59,14 @@
     dotfiles.shell.calibre-utils.enable = true;
     dotfiles.shell.python.enable = true;
     dotfiles.shell.pipx.enable = true;
+    dotfiles.shell.yazi.enable = true;
+    dotfiles.wezterm.enable = true;
+    dotfiles.helix-yazi-integration = {
+      enable = true;
+      pickerWidth = 30;
+      pickerSide = "left";
+      helixKeybinding = "space.t.f"; # Toggle file picker
+    };
     home.packages = [pkgs.claude-code];
     programs.meganz.enable = true;
     programs.obsidian.enable = false;
