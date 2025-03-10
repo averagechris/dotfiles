@@ -26,6 +26,7 @@ in
       ./shell_modules/pipx.nix
       ./shell_modules/lazygit.nix
       ./shell_modules/calibre-utils.nix
+      ./shell_modules/yazi.nix
     ];
 
     options.programs.pijul = {
@@ -39,6 +40,7 @@ in
       nerdfonts.enable = mkEnableOption "install nerdfonts.";
       passhole.enable = mkEnableOption "Passhole is a python cli for interacting with keepass databases. I have some utilities built up around it, but in a GUI environment, keepassxc is a better tool. But this is useful for non-gui environments.";
       python.enable = mkEnableOption "Install a python interpreter with optional packages. Generally this is better off as a project level dependency, but it can be handy to have a python interpreter always at the ready. ipython package included by default.";
+      yazi.enable = mkEnableOption "Yazi is a terminal file manager with vim-like keybindings and customized for Colemak keyboard layout.";
 
       # default enabled
       gpg.enable = mkEnableOption "right now this only sets up the GPG_TTY env variable, but in the future it might do more.";
@@ -114,6 +116,7 @@ in
       programs.zsh.enable = lib.mkDefault true;
       programs.zsh.oh-my-zsh.enable = lib.mkDefault true;
       programs.jq.enable = lib.mkDefault true;
+      dotfiles.yazi.enable = lib.mkDefault true;
 
       programs.ripgrep = {
         enable = lib.mkDefault true;

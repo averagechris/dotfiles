@@ -1,5 +1,16 @@
 # CLAUDE.md for NixOS Dotfiles
 
+## System Structure
+
+- Projects directory: Located at `~/projects/`
+  - Contains source code for important projects/dependencies
+  - Used for referencing documentation and code when needed
+  - Specific project repos:
+    - home-manager: `~/projects/home-manager/` - Source for Home Manager
+    - wezterm: `~/projects/wezterm/` - Source for WezTerm terminal emulator
+    - kitty: `~/projects/kitty/` - Source for Kitty terminal emulator
+    - helix: `~/projects/helix/` - Source for Helix editor
+
 ## Build/Update Commands
 
 - Initial setup: `nixos-rebuild switch --use-remote-sudo --flake .#SYSTEM_NAME`
@@ -70,10 +81,12 @@
 ## WezTerm Configuration Notes
 
 - Module structure:
-  - `init.lua` - Core helper functions
+  - `default.nix` - Home Manager module that ties everything together
+  - `init.lua` - Core helper functions (loaded as `wezterm_helpers`)
   - `keys.lua` - Keybinding definitions
   - `appearance.lua` - Visual settings
-  - `wezterm.lua` - Main loader with fallbacks for missing modules
+  - `prototyping.lua.example` - Template for ad-hoc configuration testing
+  - `README.md` - Documentation and usage guidance
 - Important configurations:
   - Rose Pine Moon color theme
   - Key tables for modal operation (leader, window_management, tab_management, resize_mode, layout_mode)
@@ -82,4 +95,24 @@
   - Unbound keys in leader mode pass through to terminal and exit the mode
   - Window resize mode stays active until explicitly exited
   - Leader key (shift+space) completely replaces current key table to avoid conflicts
-- Event handlers ensure key tables are properly cleared on config reloads
+- Platform-specific settings are centralized in `helper.apply_platform_settings()`
+- Ad-hoc configuration testing with prototyping.lua:
+  - Copy prototyping.lua.example to ~/.config/wezterm/prototyping.lua
+  - Edit to quickly test experimental settings
+  - Settings here override all others
+  - Reload with SHIFT+Space, l
+
+## Yazi File Manager Configuration
+
+- Module location: `hm_modules/shell_modules/yazi.nix`
+- Launch command: `yy` (shell wrapper that changes directory on exit)
+- Key binding philosophy:
+  - HJKL keys are unbound in favor of Colemak MNEI navigation
+  - Space as leader key for most operations
+  - Arrow keys as fallback navigation
+  - File operations under Space key (y=copy, d=cut, p=paste, x=trash)
+  - Filtering under Space+f (Space+fh to toggle hidden files)
+  - Sorting under Space+s (n=natural, s=size, m=time, e=extension)
+  - Search with / and ? (like vim)
+  - F/F to navigate search results (since n/N used for navigation)
+  - Tab operations with simple keys (t=new, C-n/C-e=next/prev, C-w=close)
