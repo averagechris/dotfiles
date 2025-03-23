@@ -36,7 +36,6 @@
 
   services.calibre-web = {
     enable = true;
-    package = inputs.calibre-web-fix.legacyPackages.${system}.calibre-web;
 
     openFirewall = true;
     listen.ip = "0.0.0.0";

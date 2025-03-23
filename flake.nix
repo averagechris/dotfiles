@@ -7,7 +7,6 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
     unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
-    calibre-web-fix.url = "github:getchoo-contrib/nixpkgs/pkgs/calibre-web/0.6.24";
     nixos-hardware.url = "github:nixos/nixos-hardware";
     home-manager = {
       url = "github:nix-community/home-manager/release-24.11";

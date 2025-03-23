@@ -8,7 +8,19 @@
 }: let
   gutters = ["diagnostics" "spacer" "diff"];
   statusline.center = [];
-  launch_gitui_overlay = ":sh kitten @ launch --type=overlay --cwd=current git ui";
+
+  # Terminal flavor detection
+  terminalFlavor =
+    if config.programs.helix.terminal.flavor == "wezterm"
+    then "wezterm"
+    else "kitty";
+
+  # Terminal-specific commands
+  launch_gitui_overlay =
+    if terminalFlavor == "wezterm"
+    then ":sh wezterm cli split-pane --top git ui"
+    else ":sh kitten @ launch --type=overlay --cwd=current git ui";
+
   just = cmd: ":sh ${pkgs.just}/bin/just --justfile .chris.just ${cmd} || true";
   kc = "${pkgs.dotfiles-kitty-claude}/bin/kitty-claude";
 in {
@@ -341,9 +353,9 @@ in {
           };
 
           # "claude" minor mode - dedicated to Claude AI integration
-          # NOTE: prefer :pipe-to, since :pipe will replace the selected buffer contents with stdout of the command
-          # we don't want that since claude is communicating with us in a separate window
-          space.c = {
+          # NOTE: this is only used if the new helix-terminal-tools integration is not enabled
+          #       otherwise these bindings are provided by that module
+          space.c = lib.mkIf (!config.dotfiles.helix-terminal-tools.claude.enable or true) {
             # This keybinding requests that Claude implement TODOs or refactor code
             c = [":write" ":pipe-to ${kc} --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --column=\"%{cursor_column}\" --type=\"selection\" --saved --header=\"ACTION REQUIRED: Please implement any TODO/FIXME comments in this code. If none are found, please suggest refactoring improvements:\""];
             # Same as above but without saving first
@@ -397,22 +409,16 @@ in {
           space.f.s = ":write";
 
           # "git" minor mode
-          space.g =
-            {
-              # show git blame in status line
-              b = ":echo %sh{git blame %{buffer_name} -L %{cursor_line},%{cursor_line}}";
-              # show git blame in popover window
-              B = ":sh git blame %{buffer_name} -L %{cursor_line},%{cursor_line}";
-              s = ":sh git status";
-              p = ":sh pre-commit";
-            }
-            // (
-              if config.programs.kitty.enable
-              then {
-                g = launch_gitui_overlay;
-              }
-              else {}
-            );
+          space.g = {
+            # show git blame in status line
+            b = ":echo %sh{git blame %{buffer_name} -L %{cursor_line},%{cursor_line}}";
+            # show git blame in popover window
+            B = ":sh git blame %{buffer_name} -L %{cursor_line},%{cursor_line}";
+            s = ":sh git status";
+            p = ":sh pre-commit";
+            # Add git UI overlay based on terminal flavor if not using the terminal tools
+            g = lib.mkIf (!config.dotfiles.helix-terminal-tools.enable or true) launch_gitui_overlay;
+          };
 
           # "jumplist" minor mode
           space.j = {
@@ -438,11 +444,23 @@ in {
             w = ":lsp-workspace-command";
           };
 
-          # "open" minor mode
+          # "open" minor mode - only used if not using terminal tools
           space.o =
-            {}
-            // (
-              if config.programs.kitty.enable
+            lib.mkIf (!config.dotfiles.helix-terminal-tools.enable or true)
+            (
+              if terminalFlavor == "wezterm"
+              then {
+                g = launch_gitui_overlay;
+                # Horizontal split (window below)
+                h = ":sh wezterm cli split-pane --bottom";
+                # Vertical split (window to the right)
+                v = ":sh wezterm cli split-pane --right";
+                # Legacy keybindings with more explicit names
+                t = ":sh wezterm cli split-pane --bottom";
+                T = ":sh wezterm cli spawn --new-window";
+                tab = ":sh wezterm cli spawn --new-tab";
+              }
+              else if terminalFlavor == "kitty"
               then {
                 g = launch_gitui_overlay;
                 # Horizontal split (window below)
@@ -458,18 +476,18 @@ in {
             );
 
           space.r = {
-            b = just "build";
-            B = just "--show build";
-            c = just "check";
-            C = just "--show check";
-            f = just "format";
-            F = just "--show format";
+            b = just "build %{buffer_name}";
+            B = just "--show build %{buffer_name}";
+            c = just "check %{buffer_name}";
+            C = just "--show check %{buffer_name}";
+            f = just "format %{buffer_name}";
+            F = just "--show format %{buffer_name}";
             j = just "--list";
             J = [":sh touch .chris.just" ":open .chris.just"];
-            l = just "lint";
-            L = just "--show lint";
-            t = just "test";
-            T = just "--show test";
+            l = just "lint %{buffer_name}";
+            L = just "--show lint %{buffer_name}";
+            t = just "test %{buffer_name}";
+            T = just "--show test %{buffer_name}";
           };
 
           # "selections" minor mode for advanced selection stuff
@@ -546,15 +564,31 @@ in {
             v = ":vsplit";
           };
 
-          # "kitty" mode
-          space.k = lib.mkIf config.programs.kitty.enable {
-            # toggle between stack layout to emulate "full" screen
-            f = ":sh kitten @ last-used-layout";
-            n = ":sh kitten @ focus-window --match neighbor:bottom";
-            e = ":sh kitten @ focus-window --match neighbor:top";
-            m = ":sh kitten @ focus-window --match neighbor:left";
-            i = ":sh kitten @ focus-window --match neighbor:right";
-          };
+          # Terminal control minor mode (k for kitty/terminal)
+          # Only used if the terminal-tools integration is not enabled
+          space.k =
+            lib.mkIf (!config.dotfiles.helix-terminal-tools.enable or true)
+            (
+              if terminalFlavor == "kitty"
+              then {
+                # toggle between stack layout to emulate "full" screen
+                f = ":sh kitten @ last-used-layout";
+                n = ":sh kitten @ focus-window --match neighbor:bottom";
+                e = ":sh kitten @ focus-window --match neighbor:top";
+                m = ":sh kitten @ focus-window --match neighbor:left";
+                i = ":sh kitten @ focus-window --match neighbor:right";
+              }
+              else if terminalFlavor == "wezterm"
+              then {
+                # WezTerm pane navigation
+                f = ":sh wezterm cli toggle-pane-zoom";
+                n = ":sh wezterm cli activate-pane-direction down";
+                e = ":sh wezterm cli activate-pane-direction up";
+                m = ":sh wezterm cli activate-pane-direction left";
+                i = ":sh wezterm cli activate-pane-direction right";
+              }
+              else {}
+            );
         };
       in {
         inherit normal;
@@ -579,7 +613,6 @@ in {
             w = "extend_next_word_start";
             tab = "extend_parent_node_end";
             S-tab = "extend_parent_node_start";
-            space.r.t = [":pipe-to echo $(cat) > /tmp/helix-just.txt" (just "test-args")];
           };
         insert =
           with_unbound [

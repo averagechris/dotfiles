@@ -24,3 +24,4 @@ hosts/coniguration.nix.bak
 .chris.just
 *.qcow2
 .ropeproject
+hm_modules/helix-terminal-tools/target

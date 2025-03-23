@@ -61,11 +61,20 @@
     dotfiles.shell.pipx.enable = true;
     dotfiles.shell.yazi.enable = true;
     dotfiles.wezterm.enable = true;
-    dotfiles.helix-yazi-integration = {
+    programs.helix.terminal.flavor = "wezterm";
+    dotfiles.helix-terminal-tools = {
       enable = true;
-      pickerWidth = 30;
-      pickerSide = "left";
-      helixKeybinding = "space.t.f"; # Toggle file picker
+
+      yazi = {
+        enable = true;
+        pickerWidth = 30;
+        pickerSide = "left";
+        helixKeybinding = "space.t.f"; # Toggle file picker
+      };
+
+      claude = {
+        enable = true;
+      };
     };
     home.packages = [pkgs.claude-code];
     programs.meganz.enable = true;

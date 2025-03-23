@@ -4,7 +4,8 @@
     ./meganz.nix
     ./shell.nix
     ./email.nix
-    ./helix-yazi-integration
+    ./helix.nix
+    ./helix-terminal-tools
   ];
   options.dotfiles = with dotfiles_lib.options; {
     enable = mkDefaultEnabledOption "enables the dotfiles home manager module.";

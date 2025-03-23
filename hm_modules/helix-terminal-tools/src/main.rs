@@ -6,9 +6,6 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::collections::HashMap;
 use which::which;
-use chrono;
-use hostname;
-use mime_guess;
 
 /// Integration tools for Helix with terminal applications (Yazi file manager, Claude AI)
 #[derive(Parser)]
@@ -778,48 +775,48 @@ fn create_structured_message(
         return content.to_string();
     }
 
-    // Basic metadata always included
+    // Use HashMap<String, String> to avoid reference lifetime issues
     let mut metadata = HashMap::new();
-    metadata.insert("source", "editor_integration");
-    metadata.insert("tool", "helix-terminal-tools");
-    metadata.insert("timestamp", chrono::Local::now().to_rfc3339());
-    metadata.insert("system", std::env::consts::OS);
-    metadata.insert("hostname", hostname::get().unwrap_or_default().to_string_lossy().to_string());
-    metadata.insert("editor", "helix");
+    metadata.insert("source".to_string(), "editor_integration".to_string());
+    metadata.insert("tool".to_string(), "helix-terminal-tools".to_string());
+    metadata.insert("timestamp".to_string(), chrono::Local::now().to_rfc3339());
+    metadata.insert("system".to_string(), std::env::consts::OS.to_string());
+    metadata.insert("hostname".to_string(), hostname::get().unwrap_or_default().to_string_lossy().to_string());
+    metadata.insert("editor".to_string(), "helix".to_string());
 
     // Add optional metadata if provided
     if let Some(f) = file {
-        metadata.insert("file", f.to_string());
+        metadata.insert("file".to_string(), f.to_string());
         
         // Add file type information
         if let Some(file_info) = detect_file_type(Some(f)) {
             let file_info_json = serde_json::to_string(&file_info).unwrap_or_default();
-            metadata.insert("file_info", file_info_json);
+            metadata.insert("file_info".to_string(), file_info_json);
         }
     }
 
     if let Some(l) = line {
-        metadata.insert("line", l.to_string());
+        metadata.insert("line".to_string(), l.to_string());
     }
     
     if let Some(c) = column {
-        metadata.insert("column", c.to_string());
+        metadata.insert("column".to_string(), c.to_string());
     }
     
     if let Some(t) = content_type {
-        metadata.insert("content_type", t.to_string());
+        metadata.insert("content_type".to_string(), t.to_string());
     }
     
     if saved {
-        metadata.insert("saved", "true".to_string());
+        metadata.insert("saved".to_string(), "true".to_string());
     }
     
     if let Some(s) = syntax {
-        metadata.insert("syntax", s.to_string());
+        metadata.insert("syntax".to_string(), s.to_string());
     }
     
     if snippet {
-        metadata.insert("snippet", "true".to_string());
+        metadata.insert("snippet".to_string(), "true".to_string());
     }
 
     // Create a standard header
