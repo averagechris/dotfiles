@@ -6,8 +6,6 @@
   imports = [
     ../nixpkgs/nixos/common.nix
     ../nixpkgs/nixos/desktop_common.nix
-    # ../nixpkgs/nixos/graphical.nix
-    # ../nixpkgs/nixos/greetd.nix
     ../nixpkgs/nixos/networking.nix
     ../nixpkgs/nixos/docker.nix
     ../nixpkgs/nixos/sound.nix
@@ -33,7 +31,13 @@
 
   networking.wireless.interfaces = ["wlp6s0"];
 
-  environment.systemPackages = with pkgs; [system76-firmware];
+  environment.systemPackages = with pkgs; [
+    system76-firmware
+    mesa
+    cosmic-ext-tweaks
+    cosmic-ext-ctl
+    cosmic-ext-applet-emoji-selector
+  ];
   hardware.graphics.enable = true;
   hardware.enableRedistributableFirmware = true;
   hardware.system76.enableAll = true;
@@ -54,7 +58,26 @@
     dotfiles.shell.python.enable = true;
     dotfiles.shell.pipx.enable = true;
     programs.obsidian.enable = false;
+    dotfiles.shell.yazi.enable = true;
+    dotfiles.wezterm.enable = true;
+    programs.helix.terminal.flavor = "wezterm";
+    dotfiles.helix-terminal-tools = {
+      enable = true;
+
+      yazi = {
+        enable = true;
+        pickerWidth = 30;
+        pickerSide = "left";
+        helixKeybinding = "space.t.f"; # Toggle file picker
+      };
+
+      claude = {
+        enable = true;
+      };
+    };
+    home.packages = [pkgs.claude-code];
   };
+
   services.dbus.enable = true;
   services.flatpak.enable = true;
   services.fwupd.enable = true;
