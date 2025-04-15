@@ -37,6 +37,12 @@
     cosmic-ext-tweaks
     cosmic-ext-ctl
     cosmic-ext-applet-emoji-selector
+    cosmic-ext-applet-emoji-selector
+    cosmic-ext-applet-external-monitor-brightness
+    cosmic-ext-ctl
+    examine
+    cosmic-ext-tweaks
+    system76-firmware
   ];
   hardware.graphics.enable = true;
   hardware.enableRedistributableFirmware = true;
@@ -63,14 +69,12 @@
     programs.helix.terminal.flavor = "wezterm";
     dotfiles.helix-terminal-tools = {
       enable = true;
-
       yazi = {
         enable = true;
         pickerWidth = 30;
         pickerSide = "left";
         helixKeybinding = "space.t.f"; # Toggle file picker
       };
-
       claude = {
         enable = true;
       };

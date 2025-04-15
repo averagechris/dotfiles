@@ -8,7 +8,6 @@
     ../nixpkgs/nixos/desktop_common.nix
     ../nixpkgs/nixos/docker.nix
     ../nixpkgs/nixos/graphical.nix
-    # ../nixpkgs/nixos/greetd.nix
     ../nixpkgs/nixos/networking.nix
     ../nixpkgs/nixos/sound.nix
     ../nixpkgs/nixos/tailscale.nix
@@ -28,14 +27,10 @@
   services.displayManager.cosmic-greeter.enable = true;
   environment.sessionVariables.COSMIC_DATA_CONTROL_ENABLED = 1;
   environment.systemPackages = with pkgs; [
-    cosmic-ext-applet-clipboard-manager
     cosmic-ext-applet-emoji-selector
     cosmic-ext-applet-external-monitor-brightness
-    cosmic-ext-calculator
     cosmic-ext-ctl
     examine
-    forecast
-    tasks
     cosmic-ext-tweaks
     system76-firmware
   ];
