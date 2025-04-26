@@ -181,6 +181,14 @@ in
         source ${pkgs.pijul}/share/zsh/site-functions/_pijul
       '';
 
+      programs.jujutsu = {
+        enable = true;
+        settings.user = {
+          name = "chris";
+          email = "chris@thesogu.com";
+        };
+      };
+
       home.sessionVariables = mkMerge [
         {
           EDITOR = cfg.env.editor;

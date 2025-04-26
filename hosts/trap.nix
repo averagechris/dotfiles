@@ -72,6 +72,7 @@
       };
     };
     home.packages = [pkgs.claude-code];
+    programs.jujutsu.enable = true;
     programs.meganz.enable = true;
     programs.obsidian.enable = false;
     wayland.windowManager.sway.config.input."type:touchpad" = {

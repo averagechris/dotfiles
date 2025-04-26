@@ -45,8 +45,7 @@
       };
       overlays = [
         (final: prev: {
-          # Add claude-code from unstable
-          inherit (unstable) claude-code ruff windsurf;
+          inherit (unstable) claude-code jujutsu ruff;
           titlecase = inputs.titlecase.packages.${system}.default;
           dotfiles-kitty-claude = pkgs.writers.writePython3Bin "kitty-claude" {
             libraries = [
