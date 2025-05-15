@@ -6,7 +6,7 @@
 }: {
   nixpkgs.overlays = lib.attrValues overlays;
 
-  time.timeZone = "America/Chicago";
+  time.timeZone = "America/New_York";
 
   hardware.graphics = {
     enable = true;

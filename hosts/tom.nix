@@ -16,7 +16,7 @@
   boot.loader.efi.canTouchEfiVariables = true;
   networking.hostName = "tom";
   networking.networkmanager.enable = false;
-  time.timeZone = "America/Chicago";
+  time.timeZone = "America/New_York";
   services.openssh = {
     enable = true;
     settings.PermitRootLogin = "no";
