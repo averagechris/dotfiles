@@ -13,14 +13,7 @@ in
 
     config = mkIf cfg.enable {
       home.packages = [
-        (pkgs.zoom-us.overrideAttrs (old: {
-          postFixup =
-            old.postFixup
-            + ''
-              wrapProgram $out/bin/zoom-us --unset XDG_SESSION_TYPE --set XDG_CURRENT_DESKTOP "GNOME"
-              wrapProgram $out/bin/zoom --unset XDG_SESSION_TYPE --set XDG_CURRENT_DESKTOP "GNOME"
-            '';
-        }))
+        pkgs.zoom
       ];
 
       xdg.configFile."zoomus.conf".text = ''

@@ -16,10 +16,8 @@ in
       ../nixpkgs/zellij
       ../nixpkgs/shell
       ../nixpkgs/gitui
-      ../nixpkgs/nerdfonts
       ../nixpkgs/neovim
       ../nixpkgs/git
-      ../nixpkgs/passhole
       ../nixpkgs/python
       ./shell_modules/less.nix
       ./shell_modules/ranger.nix
@@ -29,25 +27,14 @@ in
       ./shell_modules/yazi.nix
     ];
 
-    options.programs.pijul = {
-      enable = mkEnableOption "enable the pijul package manager.";
-      enableBashIntegration = mkEnableOption "install pijul bash completions";
-      enableZshIntegration = mkEnableOption "install pijul zsh completions";
-    };
-
     options.dotfiles.shell = with dotfiles_lib.options; {
       enable = mkDefaultEnabledOption "enables the my shell configuration.";
-      nerdfonts.enable = mkEnableOption "install nerdfonts.";
-      passhole.enable = mkEnableOption "Passhole is a python cli for interacting with keepass databases. I have some utilities built up around it, but in a GUI environment, keepassxc is a better tool. But this is useful for non-gui environments.";
       python.enable = mkEnableOption "Install a python interpreter with optional packages. Generally this is better off as a project level dependency, but it can be handy to have a python interpreter always at the ready. ipython package included by default.";
       yazi.enable = mkEnableOption "Yazi is a terminal file manager with vim-like keybindings and customized for Colemak keyboard layout.";
 
       # default enabled
       gpg.enable = mkEnableOption "right now this only sets up the GPG_TTY env variable, but in the future it might do more.";
       shell_scripts.enable = mkDefaultEnabledOption "enable the various shell scripts i've written.";
-
-      # default enabled features if the primary feature is enabled (disabled by default)
-      passhole.swayIntegration.enable = mkEnableOption "enable the wayland integration for passhole via keybindings for bemenu.";
 
       # config values with good minimal defaults
       env.editor = mkOption {
@@ -58,17 +45,6 @@ in
           else "nvim";
         example = "hx";
         description = "The shell command used as the EDITOR environment variable.";
-      };
-
-      nerdfonts.fonts = mkOption {
-        type = with types; listOf str;
-        example = ["DroidSaansMono"];
-        default = [
-          "FiraCode"
-          "DroidSansMono"
-          "Overpass"
-        ];
-        description = "The list of fonts installed and added to ~/.config/fonts/nerdfonts";
       };
 
       commands = {
@@ -173,13 +149,6 @@ in
               (text "Systemd")
             ]);
       };
-      # pijul completions
-      programs.bash.initExtra = mkIf config.programs.pijul.enableBashIntegration ''
-        source ${pkgs.pijul}/share/bash-completion/completions/pijul.bash
-      '';
-      programs.zsh.initExtra = mkIf config.programs.pijul.enableZshIntegration ''
-        source ${pkgs.pijul}/share/zsh/site-functions/_pijul
-      '';
 
       programs.jujutsu = {
         enable = true;
@@ -208,11 +177,6 @@ in
           procs
           titlecase
         ]
-        ++ (
-          if config.programs.pijul.enable
-          then [pijul]
-          else []
-        )
         ++ (
           if cfg.shell_scripts.enable
           then extra_shell_scripts

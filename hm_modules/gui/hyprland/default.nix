@@ -249,8 +249,8 @@ in {
     # notifications daemon
     services.mako = {
       enable = lib.mkDefault true;
-      anchor = lib.mkDefault "top-center";
-      defaultTimeout = lib.mkDefault 2750;
+      settings.anchor = lib.mkDefault "top-center";
+      settings.defaultTimeout = lib.mkDefault 2750;
     };
 
     services.blueman-applet.enable = lib.mkDefault true;

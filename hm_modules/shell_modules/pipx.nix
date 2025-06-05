@@ -15,7 +15,7 @@ in {
   config = lib.mkIf cfg.enable {
     home.packages = [pkgs.pipx];
     programs.zsh = lib.mkIf cfg.zsh.enable {
-      initExtra = ''
+      initContent = ''
         export PATH=$HOME/.local/bin:$PATH
       '';
     };

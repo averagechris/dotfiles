@@ -362,7 +362,6 @@
     ];
     dotfiles.shell = {
       enable = true;
-      nerdfonts.enable = true;
       shell_scripts.enable = false;
       pipx.enable = true;
     };
@@ -385,7 +384,7 @@
     home.packages = with pkgs; [claude-code dotfiles-kitty-claude raycast postman];
   };
 
-  fonts.packages = [pkgs.nerdfonts];
+  fonts.packages = [pkgs.nerdfonts.droid-sans-mono];
 
   homebrew = {
     enable = false;

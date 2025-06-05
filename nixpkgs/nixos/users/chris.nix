@@ -22,7 +22,6 @@
   config.home-manager.users."chris" = {...}: {
     _module.args = {inherit (config.age) secrets;};
     programs.git.extraConfig.commit.gpgsign = true;
-    dotfiles.shell.nerdfonts.enable = true;
     programs.nushell.enable = true;
   };
 }

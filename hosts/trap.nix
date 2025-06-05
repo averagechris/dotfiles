@@ -96,7 +96,7 @@
   };
 
   fonts.enableDefaultPackages = true;
-  fonts.packages = with pkgs; [dejavu_fonts font-awesome nerdfonts];
+  fonts.packages = with pkgs; [dejavu_fonts font-awesome nerd-fonts.droid-sans-mono nerd-fonts.fira-code];
 
   users.users.chris.extraGroups = ["docker"];
 }

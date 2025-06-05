@@ -53,18 +53,6 @@ with pkgs; rec {
     text = ''readlink -f "$(which "$1")"'';
   };
 
-  ph_find = writeShellApplication {
-    name = "ph_find";
-    runtimeInputs = [
-      gnugrep
-      fzf
-      (callPackage ../passhole/passhole.nix {})
-    ];
-    text = ''
-      ph show --field password "$(ph grep -i . | fzf)"
-    '';
-  };
-
   trim = writeShellApplication {
     name = "trim";
     runtimeInputs = [gnused];

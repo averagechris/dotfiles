@@ -8,9 +8,13 @@
   utils = import ../utils pkgs;
 in {
   config = lib.mkIf cfg.enable {
-    home.packages = with pkgs.python312Packages; [
+    home.packages = with pkgs.python313Packages; [
+      httpx
       ipython
+      msgspec
+      pydantic
       python
+      ruff
     ];
 
     xdg.configFile.flake8.text = ''

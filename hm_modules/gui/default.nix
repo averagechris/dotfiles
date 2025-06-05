@@ -49,7 +49,6 @@ in
     };
     options.programs = {
       darktable.enable = mkEnableOption "Installs darktable.";
-      keepassxc.enable = mkEnableOption "Installs keepassxc.";
       obsidian.enable = mkEnableOption "Installs the obsidian note taking app.";
       signal.enable = mkEnableOption "Installs signal (the messaging app).";
       write-stylus.enable = mkEnableOption "Installs write_stylus.";
@@ -87,7 +86,7 @@ in
         )
         ++ (
           if config.programs.keepassxc.enable
-          then [keepassxc git-credential-keepassxc]
+          then [git-credential-keepassxc]
           else []
         )
         ++ (
@@ -98,17 +97,7 @@ in
         ++ (
           if config.programs.signal.enable
           then [
-            (signal-desktop.overrideAttrs (o: {
-              preFixup =
-                o.preFixup
-                + ''
-                  gappsWrapperArgs+=(
-                    --add-flags "--enable-features=UseOzonePlatform"
-                    --add-flags "--ozone-platform=wayland"
-                    --add-flags "--enable-features=WaylandWindowDecorations"
-                  )
-                '';
-            }))
+            signal-desktop
           ]
           else []
         )
