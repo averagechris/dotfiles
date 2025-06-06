@@ -64,11 +64,6 @@
             ];
           } (builtins.readFile ./nixpkgs/scripts/kitty-claude.py);
         })
-        (
-          if isMacos
-          then inputs.nixpkgs-firefox-darwin.overlay
-          else (final: prev: {})
-        )
       ];
     };
     fn =

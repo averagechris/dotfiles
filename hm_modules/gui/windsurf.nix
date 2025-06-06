@@ -14,13 +14,13 @@ in {
   config = mkIf cfg.enable {
     programs.vscode = {
       enable = true;
-      extensions = with pkgs.vscode-extensions; [
+      profiles.defualt.extensions = with pkgs.vscode-extensions; [
         rust-lang.rust-analyzer
         ms-python.python
         jnoortheen.nix-ide
         mkhl.direnv
       ];
-      userSettings = {
+      profiles.default.userSettings = {
         "keyboard.dispatch" = "keyCode";
         "editor.cursorSurroundingLines" = 5;
 

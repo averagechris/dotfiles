@@ -34,10 +34,6 @@
       inputs.nixpkgs.follows = "unstable";
     };
     mac-app-util.url = "github:hraban/mac-app-util";
-    nixpkgs-firefox-darwin = {
-      url = "github:bandithedoge/nixpkgs-firefox-darwin";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     titlecase = {
       url = "sourcehut:~averagechris/titlecase";
       inputs.nixpkgs.follows = "nixpkgs";

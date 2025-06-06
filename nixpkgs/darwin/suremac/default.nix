@@ -18,7 +18,7 @@
 
   nixpkgs.config.allowUnsupportedSystem = true;
   nixpkgs.config.allowBroken = true;
-  nixpkgs.overlays = [inputs.nixpkgs-firefox-darwin.overlay] ++ lib.attrValues overlays;
+  nixpkgs.overlays = lib.attrValues overlays;
   nix = {
     package = pkgs.nixVersions.stable;
     settings.substituters = [
@@ -115,7 +115,7 @@
             unique_name = "open_applications";
             layer = {
               t.open = "Alacritty.app";
-              f.open = "Firefox Developer Edition.app";
+              # f.open = "Firefox Developer Edition.app";
               n.open = "Notion.app";
             };
           };
@@ -227,8 +227,6 @@
   };
 
   # TODO look into services.spacebar
-  services.nix-daemon.enable = true;
-
   system = {
     defaults.NSGlobalDomain = {
       AppleEnableSwipeNavigateWithScrolls = true;
@@ -345,6 +343,7 @@
       remapCapsLockToEscape = true;
       swapLeftCommandAndLeftAlt = false;
     };
+    primaryUser = "chris";
     stateVersion = 4;
   };
 
@@ -374,17 +373,17 @@
       signing.key = null;
     };
 
-    programs.firefox.package = pkgs.firefox-devedition-bin;
+    # programs.firefox.package = pkgs.firefox-devedition-bin;
     programs.zoom.enable = false;
     programs.darktable.enable = false;
     programs.signal.enable = false;
     programs.waybar.enable = false;
-    programs.windsurf.enable = true; # this is overlayed into windsurf
+    programs.windsurf.enable = false; # this is overlayed into windsurf
 
     home.packages = with pkgs; [claude-code dotfiles-kitty-claude raycast postman];
   };
 
-  fonts.packages = [pkgs.nerdfonts.droid-sans-mono];
+  fonts.packages = [pkgs.nerd-fonts.droid-sans-mono];
 
   homebrew = {
     enable = false;
