@@ -49,7 +49,7 @@
     home.stateVersion = "23.05";
     dotfiles.gui.enable = true;
     dotfiles.gui.sway.enable = false;
-    dotfiles.gui.hyprland.enable = true;
+    dotfiles.gui.hyprland.enable = false;
     dotfiles.gui.swayidle.enable = false;
     dotfiles.shell.calibre-utils.enable = true;
     dotfiles.shell.python.enable = true;
@@ -75,13 +75,6 @@
     programs.jujutsu.enable = true;
     programs.meganz.enable = true;
     programs.obsidian.enable = false;
-    wayland.windowManager.sway.config.input."type:touchpad" = {
-      tap = "enabled";
-      # click_method = "None";
-      scroll_factor = "0.4";
-      drag = "disabled";
-      dwt = "enabled";
-    };
   };
 
   services.dbus.enable = true;
