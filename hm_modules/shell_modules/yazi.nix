@@ -23,7 +23,7 @@ in {
       # General settings for appearance and behavior
       settings = {
         # File manager panel configuration
-        manager = {
+        mgr = {
           show_hidden = false; # Don't show hidden files by default (toggle with H)
           sort_by = "natural"; # Natural sort order (1.txt, 2.txt, 10.txt)
           sort_dir_first = true; # Show directories before files
