@@ -364,6 +364,7 @@
       enable = true;
       shell_scripts.enable = false;
       pipx.enable = false;
+      gpg.enable = true;
     };
     dotfiles.gui.enable = true;
     dotfiles.gui.sway.enable = false;
@@ -385,6 +386,7 @@
   };
 
   fonts.packages = [pkgs.nerd-fonts.droid-sans-mono];
+  programs.gnupg.agent.enable = true;
 
   homebrew = {
     enable = false;
