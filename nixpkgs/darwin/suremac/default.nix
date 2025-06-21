@@ -20,6 +20,7 @@
   nixpkgs.config.allowBroken = true;
   nixpkgs.overlays = lib.attrValues overlays;
   nix = {
+    enable = false; # must be false with determinate nix trying that out :shrug:
     package = pkgs.nixVersions.stable;
     settings.substituters = [
       "https://cache.nixos.org/"
@@ -35,7 +36,7 @@
     ];
     settings.trusted-users = ["@wheel" "chris"];
     extraOptions = ''experimental-features = nix-command flakes'';
-    gc.automatic = true;
+    gc.automatic = false;
     settings.require-sigs = true;
     settings.extra-nix-path = "nixpkgs=flake:nixpkgs";
   };
@@ -334,7 +335,7 @@
       Dragging = false;
       FirstClickThreshold = 1;
       SecondClickThreshold = 1;
-      TrackpadRightClick = false;
+      TrackpadRightClick = true;
       TrackpadThreeFingerDrag = true;
     };
     keyboard = {
@@ -353,7 +354,7 @@
     home = "/Users/chris";
   };
   home-manager.users.chris = {pkgs, ...}: {
-    home.stateVersion = "24.05";
+    home.stateVersion = "25.05";
     imports = [
       ../../../hm_modules
       ../../sure
@@ -362,7 +363,7 @@
     dotfiles.shell = {
       enable = true;
       shell_scripts.enable = false;
-      pipx.enable = true;
+      pipx.enable = false;
     };
     dotfiles.gui.enable = true;
     dotfiles.gui.sway.enable = false;
@@ -380,7 +381,7 @@
     programs.waybar.enable = false;
     programs.windsurf.enable = false; # this is overlayed into windsurf
 
-    home.packages = with pkgs; [claude-code dotfiles-kitty-claude raycast postman];
+    home.packages = with pkgs; [raycast postman];
   };
 
   fonts.packages = [pkgs.nerd-fonts.droid-sans-mono];
