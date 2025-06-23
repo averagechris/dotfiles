@@ -22,7 +22,7 @@
 
   config.programs.git.includes = [
     {
-      condition = "gitdir:~/sureapp";
+      condition = "gitdir:~/sureapp/";
       contents.user = {
         name = "Chris Cummings";
         email = "chris.cummings@sureapp.com";
