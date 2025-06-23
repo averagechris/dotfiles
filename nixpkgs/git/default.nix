@@ -4,6 +4,7 @@
   lib,
   ...
 }: {
+  config.home.packages = [pkgs.gnupg];
   config.programs.git = {
     delta.enable = lib.mkDefault true;
     extraConfig = {
@@ -11,6 +12,8 @@
       init.defaultBranch = "main";
     };
     ignores = [".DS_Store"];
+    signing.key = "E026151F78807B8E6012590F623745A83D6C9C02"; # personal GPG Key ID as default
+
     # these are be defined in the nixos user definition
     # userName
     # userEmail

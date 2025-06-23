@@ -19,4 +19,15 @@
     kubectl
     k9s
   ];
+
+  config.programs.git.includes = [
+    {
+      condition = "gitdir:~/sureapp";
+      contents.user = {
+        name = "Chris Cummings";
+        email = "chris.cummings@sureapp.com";
+        signingkey = "6304B355257051A4E8DF61362C35DD58F54BC52F";
+      };
+    }
+  ];
 }

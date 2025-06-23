@@ -372,7 +372,6 @@
       userName = "Chris Cummings";
       userEmail = "chris.cummings@sureapp.com";
       signing.signByDefault = true;
-      signing.key = null;
     };
 
     # programs.firefox.package = pkgs.firefox-devedition-bin;
