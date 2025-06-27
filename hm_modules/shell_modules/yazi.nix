@@ -17,8 +17,8 @@ in {
   config = mkIf cfg.enable {
     programs.yazi = {
       enable = true;
-      enableZshIntegration = true;
-      enableBashIntegration = true;
+      enableZshIntegration = lib.mkDefault config.programs.zsh.enable;
+      enableBashIntegration = lib.mkDefault config.programs.bash.enable;
 
       # General settings for appearance and behavior
       settings = {
