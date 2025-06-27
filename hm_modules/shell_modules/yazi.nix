@@ -53,7 +53,7 @@ in {
       # - Theme: Custom Rose Pine Moon theme for a cohesive visual experience
       keymap = {
         # Main file manager keybindings
-        manager = {
+        mgr = {
           keymap = [
             # Unbind hjkl
             {

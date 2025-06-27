@@ -45,7 +45,6 @@
     dotfiles.gui.hyprland.enable = false;
     dotfiles.shell.python.enable = true;
     dotfiles.shell.pipx.enable = false;
-    programs.obsidian.enable = false;
   };
 
   services.dbus.enable = true;

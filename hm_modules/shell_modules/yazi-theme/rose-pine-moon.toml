@@ -1,7 +1,7 @@
 # Rose Pine Moon theme for Yazi
 # Based on https://rosepinetheme.com/palette/ingredients/
 
-[manager]
+[mgr]
 # UI elements
 cwd = { fg = "#e0def4", bold = true }
 search_results = { fg = "#ea9a97" }

@@ -198,10 +198,10 @@ in {
           modifiedKeymap =
             baseKeymap
             // {
-              manager =
-                baseKeymap.manager
+              mgr =
+                baseKeymap.mgr
                 // {
-                  keymap = [quitBinding] ++ baseKeymap.manager.keymap;
+                  keymap = [quitBinding] ++ baseKeymap.mgr.keymap;
                 };
             };
         in

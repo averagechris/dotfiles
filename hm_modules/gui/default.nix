@@ -49,7 +49,6 @@ in
     };
     options.programs = {
       darktable.enable = mkEnableOption "Installs darktable.";
-      obsidian.enable = mkEnableOption "Installs the obsidian note taking app.";
       signal.enable = mkEnableOption "Installs signal (the messaging app).";
       write-stylus.enable = mkEnableOption "Installs write_stylus.";
     };
@@ -63,7 +62,6 @@ in
       programs.darktable.enable = mkDefault cfg.enable;
       programs.firefox.enable = mkDefault cfg.enable;
       programs.keepassxc.enable = mkDefault cfg.enable;
-      programs.obsidian.enable = mkDefault false;
       programs.signal.enable = mkDefault cfg.enable;
       programs.zoom.enable = mkDefault cfg.enable;
 
@@ -87,11 +85,6 @@ in
         ++ (
           if config.programs.keepassxc.enable
           then [git-credential-keepassxc]
-          else []
-        )
-        ++ (
-          if config.programs.obsidian.enable
-          then [obsidian]
           else []
         )
         ++ (

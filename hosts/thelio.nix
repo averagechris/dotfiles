@@ -63,7 +63,6 @@
     dotfiles.shell.calibre-utils.enable = true;
     dotfiles.shell.python.enable = true;
     dotfiles.shell.pipx.enable = true;
-    programs.obsidian.enable = false;
     dotfiles.shell.yazi.enable = true;
     dotfiles.wezterm.enable = true;
     programs.helix.terminal.flavor = "wezterm";

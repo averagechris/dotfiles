@@ -74,7 +74,6 @@
     home.packages = [pkgs.claude-code];
     programs.jujutsu.enable = true;
     programs.meganz.enable = true;
-    programs.obsidian.enable = false;
     programs.waybar.enable = false;
   };
 
