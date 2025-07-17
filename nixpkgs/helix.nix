@@ -403,7 +403,7 @@ in {
 
           # for muscle memory
           space.f.f = "file_picker";
-          space.f.F = "file_picker_in_current_directory";
+          space.f.F = "file_explorer";
           space.f.b = "file_picker_in_current_buffer_directory";
           space.f.c = "changed_file_picker";
           space.f.s = ":write";
