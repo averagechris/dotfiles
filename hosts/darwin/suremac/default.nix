@@ -357,7 +357,7 @@
     home.stateVersion = "25.05";
     imports = [
       ../../../hm_modules
-      ../../sure
+      ../../../nixpkgs/sure
       inputs.mac-app-util.homeManagerModules.default
     ];
     dotfiles.shell = {

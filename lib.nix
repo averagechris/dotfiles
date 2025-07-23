@@ -42,6 +42,11 @@
         allowUnfree = true;
         allowUnsupportedSystem = isMacos;
         allowBroken = isMacos;
+        # Required for home-assistant on tom.nix which needs legacy OpenSSL
+        permittedInsecurePackages =
+          if hostPath == ./hosts/tom.nix
+          then ["openssl-1.1.1w"]
+          else [];
       };
       overlays = [
         (final: prev: {

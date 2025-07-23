@@ -1,7 +1,4 @@
 {pkgs, ...}: {
-  # allow openssl 1.1 because home-assistant requires it :(
-  # https://github.com/NixOS/nixpkgs/issues/269713
-  nixpkgs.config.permittedInsecurePackages = ["openssl-1.1.1w"];
   services.home-assistant = let
     package =
       (pkgs.home-assistant.override {

@@ -64,7 +64,7 @@
           cruber = mkHost x86_64-linux ./hosts/xps.nix;
           trap = mkHost x86_64-linux ./hosts/trap.nix;
         };
-        darwinConfigurations.suremac = mkHost flake-utils.lib.system.aarch64-darwin ./nixpkgs/darwin/suremac;
+        darwinConfigurations.suremac = mkHost flake-utils.lib.system.aarch64-darwin ./hosts/darwin/suremac;
         deploy.nodes = {
           tom = mkDeploy self.nixosConfigurations.tom;
           # taz = mkDeploy self.nixosConfigurations.taz;

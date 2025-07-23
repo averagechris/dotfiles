@@ -1,8 +1,4 @@
-{
-  dotfiles_lib,
-  lib,
-  ...
-}: {
+{lib, ...}: {
   options.programs.helix.terminal = {
     flavor = lib.mkOption {
       type = lib.types.enum ["kitty" "wezterm"];
