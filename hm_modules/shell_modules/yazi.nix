@@ -5,6 +5,7 @@
 {
   config,
   lib,
+  pkgs,
   ...
 }:
 with lib; let
@@ -519,5 +520,6 @@ in {
       # Custom theme using Rose Pine Moon colors
       theme = builtins.fromTOML (builtins.readFile ./yazi-theme/rose-pine-moon.toml);
     };
+    home.packages = with pkgs; [imv mpv];
   };
 }
