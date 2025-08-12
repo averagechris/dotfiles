@@ -19,19 +19,15 @@
     inputs.nixos-hardware.nixosModules.common-cpu-amd
     inputs.nixos-hardware.nixosModules.common-cpu-amd-pstate
     inputs.nixos-hardware.nixosModules.common-pc-ssd
-    inputs.nixos-cosmic.nixosModules.default
-    inputs.nixos-cosmic.nixosModules.default
   ];
 
   services.desktopManager.cosmic.enable = true;
   services.displayManager.cosmic-greeter.enable = true;
   environment.sessionVariables.COSMIC_DATA_CONTROL_ENABLED = 1;
   environment.systemPackages = with pkgs; [
-    cosmic-ext-applet-emoji-selector
-    cosmic-ext-applet-external-monitor-brightness
     cosmic-ext-ctl
-    examine
     cosmic-ext-tweaks
+    examine
     system76-firmware
   ];
 

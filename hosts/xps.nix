@@ -1,8 +1,4 @@
-{
-  inputs,
-  pkgs,
-  ...
-}: {
+{inputs, ...}: {
   imports = [
     ../nixpkgs/nixos/common.nix
     ../nixpkgs/nixos/desktop_common.nix
@@ -20,7 +16,6 @@
     inputs.nixos-hardware.nixosModules.dell-xps-13-9310
     inputs.nixos-hardware.nixosModules.common-cpu-intel
     inputs.nixos-hardware.nixosModules.common-pc-ssd
-    inputs.nixos-cosmic.nixosModules.default
   ];
   services.desktopManager.cosmic.enable = true;
   services.displayManager.cosmic-greeter.enable = true;

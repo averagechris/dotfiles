@@ -18,7 +18,6 @@
     inputs.nixos-hardware.nixosModules.common-gpu-amd
     inputs.nixos-hardware.nixosModules.common-cpu-amd-pstate
     inputs.nixos-hardware.nixosModules.common-pc-ssd
-    inputs.nixos-cosmic.nixosModules.default
   ];
 
   services.desktopManager.cosmic.enable = true;
@@ -32,16 +31,10 @@
   networking.wireless.interfaces = ["wlp6s0"];
 
   environment.systemPackages = with pkgs; [
-    system76-firmware
-    mesa
+    cosmic-ext-ctl
     cosmic-ext-tweaks
-    cosmic-ext-ctl
-    cosmic-ext-applet-emoji-selector
-    cosmic-ext-applet-emoji-selector
-    cosmic-ext-applet-external-monitor-brightness
-    cosmic-ext-ctl
     examine
-    cosmic-ext-tweaks
+    mesa
     system76-firmware
   ];
   hardware.graphics.enable = true;
