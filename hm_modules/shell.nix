@@ -12,7 +12,6 @@
 in
   with lib; {
     imports = [
-      ../nixpkgs/helix.nix
       ../nixpkgs/zellij
       ../nixpkgs/gitui
       ../nixpkgs/neovim
