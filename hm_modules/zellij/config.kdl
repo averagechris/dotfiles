@@ -14,24 +14,6 @@ plugins {
     compact-bar { path "compact-bar"; }
 }
 
-// These keybindings mostly override everything about the default keybindings in an attempt
-// to mimic the best parts of the Doom Emacs / Spacemacs keybindings style.
-// 
-// The keybindings are meant to be mnemonic as possible.
-// 
-// I'm referring to "panes" as "windows".
-// For most of these modes I'm thinking of them as mnemonic key namespaces that take you to
-// an action. For example, to move one pane to the left: `prefix` -> `w` -> `h`
-// where `prefix` is the keybinding to get from "locked" mode into "normal" mode
-// `w` takes you from "normal" mode into "pane" mode, then `h` moves panes and terminates the action.
-// Once in "pane" mode ther are some non-terminating actions available, and I'm thinking of those as
-// "transient" states that allow you to do a bunch of repeated actions in a row before exciting with `Esc`.
-// I was introduced to this concept in Spacemacs.
-// That's the overall strategy with these keybindings. This strategy is super easy to remember for me, and 
-// does seem to reduce wrist strain (the dreaded RSI :scream:)
-
-// it would be super cool to define custom modes, maybe i could make an attempt at that
-// https://github.com/zellij-org/zellij/issues/248
 keybinds clear-defaults=true {
   normal {
     bind "Esc" { SwitchToMode "locked"; }  // TODO rm when shared or shared_except works
@@ -82,11 +64,9 @@ keybinds clear-defaults=true {
 
     bind "z" { TogglePaneFrames; SwitchToMode "locked"; }
 
-    // for pop and popping out a tiled window into a floating window
     bind "p" { ToggleFloatingPanes; SwitchToMode "locked"; }
     bind "P" { TogglePaneEmbedOrFloating; SwitchToMode "locked"; }
 
-    // bind "c" { SwitchToMode "RenamePane"; PaneNameInput 0;}
   }
 
   resize {
@@ -113,7 +93,6 @@ keybinds clear-defaults=true {
     bind "i" "n" "]" { GoToNextTab; }
     bind "n" { NewTab; SwitchToMode "renametab"; TabNameInput 0; }
     bind "d" { CloseTab; SwitchToMode "locked"; }
-    // bind "s" { ToggleActiveSyncTab; SwitchToMode "locked"; }
     bind "1" { GoToTab 1; SwitchToMode "locked"; }
     bind "2" { GoToTab 2; SwitchToMode "locked"; }
     bind "3" { GoToTab 3; SwitchToMode "locked"; }
@@ -125,12 +104,12 @@ keybinds clear-defaults=true {
     bind "9" { GoToTab 9; SwitchToMode "locked"; }
     bind "Tab" { ToggleTab; SwitchToMode "locked"; }
   }
+
   renametab {
     bind "Esc" { UndoRenameTab; SwitchToMode "locked"; }
     bind "Enter" { SwitchToMode "locked"; }
   }
 
-  // I'm stealing this `session` mode for a `git` namespace
   session {
     bind "Esc" { SwitchToMode "locked"; }  // TODO rm when shared or shared_except works
 
@@ -157,23 +136,7 @@ keybinds clear-defaults=true {
     bind "{" { HalfPageScrollUp; }
     bind "}" { HalfPageScrollDown; }
   }
-  entersearch {
-    bind "Ctrl c" "Esc" { SwitchToMode "scroll"; }
-    bind "Enter" { SwitchToMode "Search"; }
-  }
-  search {
-    bind "Esc" { ScrollToBottom; SwitchToMode "locked"; }
 
-    bind "n" { Search "down"; }
-    bind "N" "p" { Search "up"; }
-    bind "C" { SearchToggleOption "CaseSensitivity"; }
-    bind "W" { SearchToggleOption "Wrap"; }
-    bind "O" { SearchToggleOption "WholeWord"; }
-    bind "y" { Copy; }
-  }
-
-  // locked is the mode meant to be used most of the time, e.g. when actually doing work
-  // TODO make my default layout start in locked mode
   locked {
     bind "Alt m" { SwitchToMode "normal"; }
 
@@ -181,8 +144,4 @@ keybinds clear-defaults=true {
 	bind "Alt Q" { Quit; }
   }
 
-  // FIXME shared_except does not seem to work, I'm not sure if I'm doing something wrong.
-  // shared_except "locked" {
-  //   bind "Esc" { SwitchToMode "locked"; }
-  // }
 }

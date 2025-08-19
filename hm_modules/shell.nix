@@ -12,18 +12,18 @@
 in
   with lib; {
     imports = [
-      ../nixpkgs/zellij
+      ../hm_modules/zellij
+      ../nixpkgs/git
       ../nixpkgs/gitui
       ../nixpkgs/neovim
-      ../nixpkgs/git
       ../nixpkgs/python
-      ./shell_modules/less.nix
-      ./shell_modules/ranger.nix
-      ./shell_modules/pipx.nix
-      ./shell_modules/lazygit.nix
       ./shell_modules/calibre-utils.nix
-      ./shell_modules/yazi.nix
       ./shell_modules/fzf.nix
+      ./shell_modules/lazygit.nix
+      ./shell_modules/less.nix
+      ./shell_modules/pipx.nix
+      ./shell_modules/ranger.nix
+      ./shell_modules/yazi.nix
       ./shell_modules/zsh.nix
     ];
 
