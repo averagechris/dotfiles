@@ -34,3 +34,8 @@
 - Modes auto-exit after actions (except resize/continuous modes)
 - Use Colemak Mod-DH navigation keys (mnei) instead of arrow keys
 - Always provide explicit Escape key to exit any mode
+
+## Agent VCS and Git Usage Reminder
+- Agents MUST NOT run any git commands unless the user explicitly requests git operations.
+- The repository is managed with the `jj` VCS (colocated); use `jj` or follow user instructions for VCS actions.
+- If unsure, ask the user before performing any version-control operations.

@@ -1,4 +1,4 @@
-{pkgs}:
+{pkgs, ...}:
 with pkgs; rec {
   video_compress = writeShellApplication {
     name = "video_compress";

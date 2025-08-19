@@ -8,13 +8,12 @@
   inherit (pkgs.stdenv.hostPlatform) isLinux;
 
   cfg = config.dotfiles.shell;
-  extra_shell_scripts = builtins.attrValues (import ../nixpkgs/shell/shell_extras.nix {inherit pkgs;});
+  extra_shell_scripts = builtins.attrValues (import ./shell_modules/shell_extras.nix {inherit pkgs;});
 in
   with lib; {
     imports = [
       ../nixpkgs/helix.nix
       ../nixpkgs/zellij
-      ../nixpkgs/shell
       ../nixpkgs/gitui
       ../nixpkgs/neovim
       ../nixpkgs/git
@@ -25,6 +24,8 @@ in
       ./shell_modules/lazygit.nix
       ./shell_modules/calibre-utils.nix
       ./shell_modules/yazi.nix
+      ./shell_modules/fzf.nix
+      ./shell_modules/zsh.nix
     ];
 
     options.dotfiles.shell = with dotfiles_lib.options; {
