@@ -13,9 +13,9 @@ in
   with lib; {
     imports = [
       ../hm_modules/zellij
-      ../nixpkgs/git
-      ../nixpkgs/gitui
-      ../nixpkgs/neovim
+      ./git
+      ./gitui
+      ./neovim
       ../nixpkgs/python
       ./shell_modules/calibre-utils.nix
       ./shell_modules/fzf.nix

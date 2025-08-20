@@ -12,13 +12,4 @@
         else toString value;
     in "${key} = ${v}";
   };
-
-  stringify = {
-    mkKey ? (k: "${k}"),
-    mkValue ? pkgs.lib.generators.mkValueStringDefault,
-  }: attrs: (pkgs.lib.strings.concatStringsSep
-    "\n"
-    (pkgs.lib.attrsets.mapAttrsToList
-      (key: value: "${mkKey key} ${mkValue value}")
-      attrs));
 }

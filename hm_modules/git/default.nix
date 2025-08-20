@@ -12,11 +12,7 @@
       init.defaultBranch = "main";
     };
     ignores = [".DS_Store"];
-    signing.key = "E026151F78807B8E6012590F623745A83D6C9C02"; # personal GPG Key ID as default
-
-    # these are be defined in the nixos user definition
-    # userName
-    # userEmail
+    signing.key = "E026151F78807B8E6012590F623745A83D6C9C02";
 
     aliases = with pkgs; {
       ch = let
@@ -38,7 +34,7 @@
         inherit name;
         runtimeInputs = [git findutils fzf];
         text = ''
-          BRANCHES="$(
+          BRANCHES="$$(
             git branch --list \
               | grep --invert-match --regexp '^* ' \
               | fzf --multi
