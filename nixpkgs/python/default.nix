@@ -14,7 +14,6 @@ in {
       msgspec
       pydantic
       python
-      ruff
     ];
 
     xdg.configFile.flake8.text = ''
