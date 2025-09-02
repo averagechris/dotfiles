@@ -9,6 +9,7 @@
   ...
 }:
 with lib; let
+  inherit (pkgs.stdenv.hostPlatform) isLinux;
   cfg = config.dotfiles.yazi;
 in {
   options.dotfiles.yazi = {
@@ -520,6 +521,12 @@ in {
       # Custom theme using Rose Pine Moon colors
       theme = builtins.fromTOML (builtins.readFile ./yazi-theme/rose-pine-moon.toml);
     };
-    home.packages = with pkgs; [imv mpv];
+    home.packages = with pkgs;
+      if isLinux
+      then [
+        imv
+        mpv
+      ]
+      else [];
   };
 }
