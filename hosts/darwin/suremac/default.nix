@@ -36,7 +36,14 @@
     ];
     settings.trusted-users = ["@wheel" "chris"];
     extraOptions = ''experimental-features = nix-command flakes'';
-    gc.automatic = false;
+    gc = {
+      automatic = true;
+      interval = {
+        Hour = 12; # Run daily at noon
+        Minute = 0;
+      };
+      options = "--delete-older-than 14d";
+    };
     settings.require-sigs = true;
     settings.extra-nix-path = "nixpkgs=flake:nixpkgs";
   };
