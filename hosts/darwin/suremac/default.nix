@@ -36,14 +36,7 @@
     ];
     settings.trusted-users = ["@wheel" "chris"];
     extraOptions = ''experimental-features = nix-command flakes'';
-    gc = {
-      automatic = true;
-      interval = {
-        Hour = 12; # Run daily at noon
-        Minute = 0;
-      };
-      options = "--delete-older-than 14d";
-    };
+    gc.automatic = false;
     settings.require-sigs = true;
     settings.extra-nix-path = "nixpkgs=flake:nixpkgs";
   };
@@ -393,6 +386,45 @@
 
   fonts.packages = [pkgs.nerd-fonts.droid-sans-mono];
   programs.gnupg.agent.enable = true;
+
+  launchd.user.agents.nix-gc = {
+    serviceConfig = {
+      ProgramArguments = [
+        "/bin/sh"
+        "-c"
+        "/nix/var/nix/profiles/default/bin/nix-collect-garbage --delete-older-than 14d"
+      ];
+      StartCalendarInterval = [
+        {
+          Weekday = 1; # Monday
+          Hour = 12;
+          Minute = 0;
+        }
+        {
+          Weekday = 2; # Tuesday
+          Hour = 12;
+          Minute = 0;
+        }
+        {
+          Weekday = 3; # Wednesday
+          Hour = 12;
+          Minute = 0;
+        }
+        {
+          Weekday = 4; # Thursday
+          Hour = 12;
+          Minute = 0;
+        }
+        {
+          Weekday = 5; # Friday
+          Hour = 12;
+          Minute = 0;
+        }
+      ];
+      StandardOutPath = "/tmp/nix-gc.log";
+      StandardErrorPath = "/tmp/nix-gc.log";
+    };
+  };
 
   homebrew = {
     enable = false;
