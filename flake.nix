@@ -38,6 +38,10 @@
       url = "sourcehut:~averagechris/titlecase";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    starship-jj = {
+      url = "sourcehut:~averagechris/starship-jj";
+      inputs.nixpkgs.follows = "unstable";
+    };
   };
 
   outputs = inputs @ {

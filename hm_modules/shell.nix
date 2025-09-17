@@ -2,6 +2,7 @@
   config,
   lib,
   pkgs,
+  inputs,
   dotfiles_lib,
   ...
 }: let
@@ -93,6 +94,62 @@ in
       programs.zsh.oh-my-zsh.enable = lib.mkDefault true;
       programs.jq.enable = lib.mkDefault true;
       dotfiles.yazi.enable = lib.mkDefault true;
+
+      # Starship prompt: prefer jj (Jujutsu) when available, fall back to git.
+      # Use programs.starship.settings instead of writing a file.
+      programs.starship.settings = lib.mkDefault (let
+        starshipJj = inputs.starship-jj.packages.${pkgs.system}.default;
+      in {
+        "$schema" = "https://starship.rs/config-schema.json";
+        format = "$directory\${custom.jj}\${custom.env} $all";
+        git_branch = {disabled = true;};
+        git_commit = {disabled = true;};
+        git_state = {disabled = true;};
+        git_status = {disabled = true;};
+        git_metrics = {disabled = true;};
+        vcsh = {disabled = true;};
+        command_timeout = 1200;
+        aws = {disabled = true;}; # hide AWS module
+        nix_shell = {disabled = true;};
+        custom = {
+          jj = {
+            description = "jj via starship-jj plugin";
+            format = "$output ";
+            ignore_timeout = true;
+            when = true;
+            use_stdin = false;
+            # call the flake-provided binary via inputs
+            shell = [
+              "${starshipJj}/bin/starship-jj"
+              "--ignore-working-copy"
+              "starship"
+            ];
+            command = "prompt";
+          };
+
+          env = {
+            description = "Show activated dev envs (direnv/mise/nix)";
+            when = "[ -n \"$DIRENV_DIR\" ] || [ -n \"$MISE_ACTIVE\" ] || [ -n \"$NIX_ENVIRONMENT\" ] || [ -n \"$IN_NIX_SHELL\" ]";
+            use_stdin = false;
+            shell = ["sh" "-lc"];
+            command = ''
+              out=""
+              if [ -n "''${DIRENV_DIR-}" ]; then out="$out direnv"; fi
+              if [ -n "''${MISE_ACTIVE-}" ]; then out="$out mise"; fi
+              if [ -n "''${NIX_SHELL_NAME-}" ]; then
+                out="$out nix:''${NIX_SHELL_NAME}"
+              elif [ -n "''${NIX_ENVIRONMENT-}" ]; then
+                out="$out nix:''${NIX_ENVIRONMENT}"
+              elif [ -n "''${IN_NIX_SHELL-}" ]; then
+                out="$out nix"
+              fi
+              # Trim leading space then print
+              printf '%s' "''${out# }"
+            '';
+            format = "[on $output](bold blue) ";
+          };
+        };
+      });
 
       programs.ripgrep = {
         enable = lib.mkDefault true;
