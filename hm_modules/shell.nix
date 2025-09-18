@@ -111,6 +111,14 @@ in
         command_timeout = 1200;
         aws = {disabled = true;}; # hide AWS module
         nix_shell = {disabled = true;};
+        package = {
+          format = "[$symbol$version]($style) ";
+          symbol = "📦";
+        };
+        rust = {
+          format = "[$symbol$version]($style) ";
+          symbol = "🦀";
+        };
         custom = {
           jj = {
             description = "jj via starship-jj plugin";
@@ -133,20 +141,41 @@ in
             use_stdin = false;
             shell = ["sh" "-lc"];
             command = ''
+              direnv=""
+              mise=""
               out=""
-              if [ -n "''${DIRENV_DIR-}" ]; then out="$out direnv"; fi
-              if [ -n "''${MISE_ACTIVE-}" ]; then out="$out mise"; fi
+              if [ -n "''${DIRENV_DIR-}" ]; then direnv="direnv"; fi
+              if [ -n "''${MISE_ACTIVE-}" ]; then mise="mise"; fi
+
+              nix=""
               if [ -n "''${NIX_SHELL_NAME-}" ]; then
-                out="$out nix:''${NIX_SHELL_NAME}"
+                nix="nix:''${NIX_SHELL_NAME}"
               elif [ -n "''${NIX_ENVIRONMENT-}" ]; then
-                out="$out nix:''${NIX_ENVIRONMENT}"
+                nix="nix:''${NIX_ENVIRONMENT}"
               elif [ -n "''${IN_NIX_SHELL-}" ]; then
-                out="$out nix"
+                nix="nix"
               fi
-              # Trim leading space then print
-              printf '%s' "''${out# }"
+
+              if [ -n "$nix" ]; then
+                if [ -n "$direnv" ]; then
+                  direnv="$direnv($nix)"
+                elif [ -n "$mise" ]; then
+                  mise="$mise($nix)"
+                else
+                  out="$nix"
+                fi
+              fi
+
+              if [ -n "$direnv" ]; then
+                out="$direnv"
+              fi
+              if [ -n "$mise" ]; then
+                if [ -n "$out" ]; then out="$out $mise"; else out="$mise"; fi
+              fi
+
+              printf '%s' "$out"
             '';
-            format = "[on $output](bold blue) ";
+            format = "[$output](bold blue) ";
           };
         };
       });
