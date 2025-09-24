@@ -26,6 +26,7 @@ in
       ./shell_modules/ranger.nix
       ./shell_modules/yazi.nix
       ./shell_modules/zsh.nix
+      ./jujutsu
     ];
 
     options.dotfiles.shell = with dotfiles_lib.options; {
@@ -95,91 +96,6 @@ in
       programs.jq.enable = lib.mkDefault true;
       dotfiles.yazi.enable = lib.mkDefault true;
 
-      # Starship prompt: prefer jj (Jujutsu) when available, fall back to git.
-      # Use programs.starship.settings instead of writing a file.
-      programs.starship.settings = lib.mkDefault (let
-        starshipJj = inputs.starship-jj.packages.${pkgs.system}.default;
-      in {
-        "$schema" = "https://starship.rs/config-schema.json";
-        format = "$directory\${custom.jj}\${custom.env} $all";
-        git_branch = {disabled = true;};
-        git_commit = {disabled = true;};
-        git_state = {disabled = true;};
-        git_status = {disabled = true;};
-        git_metrics = {disabled = true;};
-        vcsh = {disabled = true;};
-        command_timeout = 1200;
-        aws = {disabled = true;}; # hide AWS module
-        nix_shell = {disabled = true;};
-        package = {
-          format = "[$symbol$version]($style) ";
-          symbol = "📦";
-        };
-        rust = {
-          format = "[$symbol$version]($style) ";
-          symbol = "🦀";
-        };
-        custom = {
-          jj = {
-            description = "jj via starship-jj plugin";
-            format = "$output ";
-            ignore_timeout = true;
-            when = true;
-            use_stdin = false;
-            # call the flake-provided binary via inputs
-            shell = [
-              "${starshipJj}/bin/starship-jj"
-              "--ignore-working-copy"
-              "starship"
-            ];
-            command = "prompt";
-          };
-
-          env = {
-            description = "Show activated dev envs (direnv/mise/nix)";
-            when = "[ -n \"$DIRENV_DIR\" ] || [ -n \"$MISE_ACTIVE\" ] || [ -n \"$NIX_ENVIRONMENT\" ] || [ -n \"$IN_NIX_SHELL\" ]";
-            use_stdin = false;
-            shell = ["sh" "-lc"];
-            command = ''
-              direnv=""
-              mise=""
-              out=""
-              if [ -n "''${DIRENV_DIR-}" ]; then direnv="direnv"; fi
-              if [ -n "''${MISE_ACTIVE-}" ]; then mise="mise"; fi
-
-              nix=""
-              if [ -n "''${NIX_SHELL_NAME-}" ]; then
-                nix="nix:''${NIX_SHELL_NAME}"
-              elif [ -n "''${NIX_ENVIRONMENT-}" ]; then
-                nix="nix:''${NIX_ENVIRONMENT}"
-              elif [ -n "''${IN_NIX_SHELL-}" ]; then
-                nix="nix"
-              fi
-
-              if [ -n "$nix" ]; then
-                if [ -n "$direnv" ]; then
-                  direnv="$direnv($nix)"
-                elif [ -n "$mise" ]; then
-                  mise="$mise($nix)"
-                else
-                  out="$nix"
-                fi
-              fi
-
-              if [ -n "$direnv" ]; then
-                out="$direnv"
-              fi
-              if [ -n "$mise" ]; then
-                if [ -n "$out" ]; then out="$out $mise"; else out="$mise"; fi
-              fi
-
-              printf '%s' "$out"
-            '';
-            format = "[$output](bold blue) ";
-          };
-        };
-      });
-
       programs.ripgrep = {
         enable = lib.mkDefault true;
         arguments = [
@@ -236,13 +152,7 @@ in
             ]);
       };
 
-      programs.jujutsu = {
-        enable = true;
-        settings.user = {
-          name = "chris";
-          email = "chris@thesogu.com";
-        };
-      };
+      programs.jujutsu.enable = true;
 
       home.sessionVariables = mkMerge [
         {

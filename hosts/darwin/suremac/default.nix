@@ -373,6 +373,15 @@
       userEmail = "chris.cummings@sureapp.com";
       signing.signByDefault = true;
     };
+    programs.jujutsu.settings.scope = [
+      {
+        paths = ["~/sureapp/**"];
+        user = {
+          name = "Chris Cummings";
+          email = "chris.cummings@sureapp.com";
+        };
+      }
+    ];
 
     # programs.firefox.package = pkgs.firefox-devedition-bin;
     programs.zoom.enable = false;

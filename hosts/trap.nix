@@ -68,7 +68,6 @@
       };
     };
     home.packages = [pkgs.claude-code];
-    programs.jujutsu.enable = true;
     programs.meganz.enable = true;
     programs.waybar.enable = false;
   };
