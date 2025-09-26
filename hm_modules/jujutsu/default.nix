@@ -122,9 +122,9 @@ in {
         }
       ];
       signing = {
+        inherit (config.programs.git.signing) key;
         behavior = "own";
         backend = "gpg";
-        key = config.programs.git.signing.key;
       };
     };
   };
