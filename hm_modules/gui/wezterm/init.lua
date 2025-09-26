@@ -73,7 +73,11 @@ function module.apply_platform_settings(config)
   elseif platform.linux then
     -- Linux-specific settings
     config.enable_wayland = true
-    config.window_decorations = "RESIZE"
+    -- Prefer integrated buttons (Wayland CSD) to avoid a separate system titlebar
+    config.window_decorations = "INTEGRATED_BUTTONS|RESIZE"
+    -- Integrate window buttons into the tab bar (Gnome style)
+    config.integrated_title_button_style = "Gnome"
+    config.integrated_title_buttons = { 'Hide', 'Maximize', 'Close' }
     -- Ensure tab bar works correctly with tiling window managers
     config.adjust_window_size_when_changing_font_size = false
   end
