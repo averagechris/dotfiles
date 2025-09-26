@@ -47,6 +47,12 @@
     computerName = n;
     hostName = n;
     localHostName = n;
+    applicationFirewall = {
+      enable = true;
+      allowSigned = true;
+      allowSignedApp = true;
+      enableStealthMode = true;
+    };
   };
 
   programs = {
@@ -269,13 +275,6 @@
       "com.apple.trackpad.trackpadCornerClickBehavior" = null;
     };
     defaults.SoftwareUpdate.AutomaticallyInstallMacOSUpdates = false;
-    defaults.alf = {
-      allowdownloadsignedenabled = 0;
-      allowsignedenabled = 0;
-      globalstate = 1;
-      loggingenabled = 0;
-      stealthenabled = 1;
-    };
     defaults.dock = {
       enable-spring-load-actions-on-all-items = false;
       autohide = true;
