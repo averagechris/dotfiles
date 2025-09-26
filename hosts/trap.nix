@@ -67,6 +67,7 @@
         enable = true;
       };
     };
+    programs.opencode.enable = true;
     home.packages = [pkgs.claude-code];
     programs.meganz.enable = true;
     programs.waybar.enable = false;

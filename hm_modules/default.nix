@@ -3,6 +3,7 @@
     ./gui
     ./meganz.nix
     ./shell.nix
+    ./opencode.nix
     ./email.nix
     ./helix.nix
     ./helix-terminal-tools

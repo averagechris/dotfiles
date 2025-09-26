@@ -71,6 +71,7 @@
         enable = true;
       };
     };
+    programs.opencode.enable = true;
     home.packages = [pkgs.claude-code];
   };
 
