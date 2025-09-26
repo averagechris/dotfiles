@@ -382,6 +382,7 @@
         };
       }
     ];
+    programs.opencode.enable = true;
 
     # programs.firefox.package = pkgs.firefox-devedition-bin;
     programs.zoom.enable = false;
