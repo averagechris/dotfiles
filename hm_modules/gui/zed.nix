@@ -1,11 +1,5 @@
-{
-  inputs,
-  lib,
-  system,
-  ...
-}: {
+{...}: {
   programs.zed-editor = {
-    package = lib.mkDefault inputs.unstable.legacyPackages.${system}.zed-editor;
     # list of extension names
     extensions = [
       "Nix"

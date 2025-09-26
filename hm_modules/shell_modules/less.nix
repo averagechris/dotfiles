@@ -1,7 +1,7 @@
 {...}: {
   programs.less = {
     enable = true;
-    keys = ''
+    config = ''
       n forw-line
       e back-line
       i right-scroll

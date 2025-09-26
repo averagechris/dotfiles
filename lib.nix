@@ -32,10 +32,6 @@
 
   mkHost = system: hostPath: let
     isMacos = system == inputs.flake-utils.lib.system.aarch64-darwin;
-    unstable = import inputs.unstable {
-      inherit system;
-      config.allowUnfree = true;
-    };
     pkgs = import nixpkgs {
       inherit system;
       config = {
@@ -50,12 +46,11 @@
       };
       overlays = [
         (final: prev: {
-          inherit (unstable) claude-code jujutsu ruff tailscale;
           titlecase = inputs.titlecase.packages.${system}.default;
           dotfiles-kitty-claude = pkgs.writers.writePython3Bin "kitty-claude" {
             libraries = [
               # Include claude-code directly
-              unstable.claude-code
+              pkgs.claude-code
               # For file type detection and syntax highlighting
               prev.python3Packages.pygments
             ];
