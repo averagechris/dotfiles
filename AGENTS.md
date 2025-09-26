@@ -39,3 +39,10 @@
 - Agents MUST NOT run any git commands unless the user explicitly requests git operations.
 - The repository is managed with the `jj` VCS (colocated); use `jj` or follow user instructions for VCS actions.
 - If unsure, ask the user before performing any version-control operations.
+
+## Changelog Policy
+- **Canonical source**: For this repository the canonical changelog entries are the `jj` changes — the message passed to `jj describe` is used as the changelog entry.
+- **Format**: Keep changelog entries concise; sparing Markdown is allowed (short sentences, optional one-line emphasis or inline code). Aim for a single clear line per change where possible.
+- **Splitting changes**: Prefer breaking disparate changes into their own changes using `jj split`, `jj squash`, or similar, so each `jj describe` maps to a focused changelog entry.
+- **Agent consumption**: The changelog agent (configured in `hm_modules/opencode.nix`) will read this policy from `AGENTS.md` and treat the `jj describe` message as the canonical changelog content.
+- **Author guidance**: When composing `jj describe` messages, a short type/scope prefix can help (for example `feat(opencode): add changelog policy`), but avoid long multi-paragraph descriptions — those belong in change details or PR descriptions.
