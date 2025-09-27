@@ -459,7 +459,12 @@ else
   config.use_fancy_tab_bar = false
   config.enable_tab_bar = true
   config.hide_tab_bar_if_only_one_tab = true
-  config.tab_bar_at_bottom = true
+  -- On Linux use the top tab bar; keep bottom for other platforms
+  if helper.is_linux() then
+    config.tab_bar_at_bottom = false
+  else
+    config.tab_bar_at_bottom = true
+  end
   config.tab_and_split_indices_are_zero_based = true
   config.show_tab_index_in_tab_bar = false
   config.switch_to_last_active_tab_when_closing_tab = true

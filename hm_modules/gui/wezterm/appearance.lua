@@ -31,7 +31,15 @@ function module.apply(config)
   config.use_fancy_tab_bar = false
   config.enable_tab_bar = true
   config.hide_tab_bar_if_only_one_tab = true
-  config.tab_bar_at_bottom = true
+  -- Place tab bar on top when running on Linux, keep bottom elsewhere
+  if helpers.is_linux() then
+    config.tab_bar_at_bottom = false
+    -- Ensure padding is applied at the top so the tab bar is visible under tiling WMs
+    config.window_padding.top = 3
+    config.window_padding.bottom = 0
+  else
+    config.tab_bar_at_bottom = true
+  end
   config.tab_and_split_indices_are_zero_based = true
   config.show_tab_index_in_tab_bar = false
   config.switch_to_last_active_tab_when_closing_tab = true

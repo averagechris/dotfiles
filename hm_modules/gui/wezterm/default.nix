@@ -138,6 +138,9 @@
           end
         end
 
+        -- Force WezTerm to use X11/XWayland (disable native Wayland frontend)
+        config.enable_wayland = false
+
         return config
       '';
 
