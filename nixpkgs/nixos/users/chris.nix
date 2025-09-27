@@ -10,8 +10,14 @@
     wrapperFeatures.gtk = true;
   };
 
-  config.programs.gnupg.agent.enable = true;
-  config.programs.gnupg.agent.pinentryPackage = pkgs.pinentry-qt;
+  config.programs.gnupg.agent = {
+    enable = true;
+    pinentryPackage = pkgs.pinentry-qt;
+    settings = {
+      "default-cache-ttl" = 604800;
+      "max-cache-ttl" = 31536000;
+    };
+  };
 
   config.age.secrets.fastmail_password = {
     file = ../../../secrets/fastmail_password.age;
