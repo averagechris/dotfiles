@@ -5,6 +5,7 @@
   pkgs,
   ...
 }: {
+  imports = [./openssh-client.nix];
   nixpkgs.overlays = lib.attrValues overlays;
   nix = {
     gc.automatic = true;
