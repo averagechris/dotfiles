@@ -52,6 +52,7 @@
     dotfiles.shell.pipx.enable = true;
     dotfiles.shell.yazi.enable = true;
     dotfiles.wezterm.enable = true;
+    dotfiles.ghostty.enable = true;
     programs.helix.terminal.flavor = "wezterm";
     dotfiles.helix-terminal-tools = {
       enable = true;

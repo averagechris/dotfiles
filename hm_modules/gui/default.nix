@@ -19,6 +19,7 @@ in
       ./zed.nix
       ./windsurf.nix
       ./wezterm
+      ./ghostty
     ];
     options.dotfiles.gui = {
       enable = mkEnableOption "Enables the GUI window manager and apps that I've cofnigured.";
