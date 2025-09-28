@@ -20,8 +20,8 @@ in {
 
   config = mkIf cfg.enable {
     # Provide a minimal, safe ssh_config that includes only /etc drop-ins.
-    # mkDefault so hosts can override if they need custom settings.
-    environment.etc."ssh/ssh_config".text = mkDefault ''
+    # Use mkForce to ensure no vendor includes slip in via other modules.
+    environment.etc."ssh/ssh_config".text = lib.mkForce ''
       Include /etc/ssh/ssh_config.d/*.conf
 
       Host *
@@ -37,5 +37,10 @@ in {
       ++ lib.optionals cfg.copySystemdProxyDropin [
         "C! /etc/ssh/ssh_config.d/20-systemd-ssh-proxy.conf 0644 root root - ${pkgs.systemd}/lib/systemd/ssh_config.d/20-systemd-ssh-proxy.conf"
       ];
+
+    # Explicitly disable any vendor-provided symlink in /etc pointing to /nix/store
+    # to avoid OpenSSH strict-mode errors. If the feature is desired, we copy
+    # the file into /etc via tmpfiles (C! rule) above instead of using a symlink.
+    environment.etc."ssh/ssh_config.d/20-systemd-ssh-proxy.conf".enable = lib.mkForce false;
   };
 }

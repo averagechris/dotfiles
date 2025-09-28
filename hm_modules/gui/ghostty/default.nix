@@ -8,6 +8,9 @@
 in {
   options.dotfiles.ghostty = {
     enable = lib.mkEnableOption "Ghostty terminal emulator configuration";
+    service = {
+      enable = lib.mkEnableOption "Start ghostty at login with a systemd user service";
+    };
   };
 
   config = lib.mkIf cfg.enable (let
@@ -558,6 +561,25 @@ in {
     # Deploy a readable cheatsheet generated from the bindings
     xdg.configFile = {
       "ghostty/cheatsheet.md".text = cheatsheetText;
+    };
+
+    # Optional: Start ghostty at login via systemd user service
+    systemd.user.services."com.mitchellh.ghostty" = lib.mkIf cfg.service.enable {
+      Unit = {
+        Description = "Ghostty terminal emulator";
+        PartOf = ["graphical-session.target"];
+      };
+
+      Install = {WantedBy = ["graphical-session.target"];};
+
+      Service = {
+        Type = "simple";
+        ExecStart = "${pkgs.ghostty}/bin/ghostty";
+        Restart = "on-failure";
+        RestartSec = 5;
+        PrivateTmp = true;
+        # tell systemd this unit will claim the DBus name so activation works
+      };
     };
   });
 }
