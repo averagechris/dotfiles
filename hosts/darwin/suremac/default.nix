@@ -394,6 +394,7 @@
     programs.opencode.enable = true;
 
     # programs.firefox.package = pkgs.firefox-devedition-bin;
+    programs.firefox.enable = false;
     programs.zoom.enable = false;
     programs.darktable.enable = false;
     programs.signal.enable = false;

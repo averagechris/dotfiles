@@ -86,7 +86,7 @@ in
     config = mkIf cfg.enable {
       programs.fzf.enable = lib.mkDefault true;
       programs.git.enable = lib.mkDefault true;
-      programs.gitui.enable = lib.mkDefault true;
+      programs.gitui.enable = lib.mkDefault false;
       programs.helix.enable = lib.mkDefault true;
       programs.lazygit.enable = lib.mkDefault true;
       programs.starship.enable = lib.mkDefault true;
