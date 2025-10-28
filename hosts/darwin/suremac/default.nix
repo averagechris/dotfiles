@@ -377,11 +377,11 @@
     };
     dotfiles.gui.enable = true;
     dotfiles.gui.sway.enable = false;
-    programs.git = {
-      userName = "Chris Cummings";
-      userEmail = "chris.cummings@sureapp.com";
-      signing.signByDefault = true;
+    programs.git.settings = {
+      user.name = "Chris Cummings";
+      user.email = "chris.cummings@sureapp.com";
     };
+    programs.git.signing.signByDefault = true;
     programs.jujutsu.settings.scope = [
       {
         paths = ["~/sureapp/**"];

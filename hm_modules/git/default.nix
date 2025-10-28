@@ -6,15 +6,14 @@
 }: {
   config.home.packages = [pkgs.gnupg];
   config.programs.git = {
-    delta.enable = lib.mkDefault true;
-    extraConfig = {
+    settings = {
       pull.rebase = true;
       init.defaultBranch = "main";
     };
     ignores = [".DS_Store"];
     signing.key = "E026151F78807B8E6012590F623745A83D6C9C02";
 
-    aliases = with pkgs; {
+    settings.alias = with pkgs; {
       ch = let
         name = "git_alias_chbranch";
       in "!${writeShellApplication {
@@ -52,5 +51,9 @@
 
       ui = "!${config.programs.lazygit.package}/bin/lazygit";
     };
+  };
+  config.programs.delta = {
+    enable = true;
+    enableGitIntegration = true;
   };
 }

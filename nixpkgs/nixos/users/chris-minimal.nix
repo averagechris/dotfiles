@@ -25,9 +25,9 @@ in {
       homeDirectory = "/home/${userName}";
     };
 
-    programs.git = {
-      userName = "Chris Cummings";
-      userEmail = "chris@thesogu.com";
+    programs.git.settings = {
+      user.name = "Chris Cummings";
+      user.email = "chris@thesogu.com";
     };
 
     imports = [../../../hm_modules];
