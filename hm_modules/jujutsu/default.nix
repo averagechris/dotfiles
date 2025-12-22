@@ -129,7 +129,7 @@ in {
     };
   };
   config.programs.starship.settings = lib.mkIf cfg.enable (let
-    starshipJj = inputs.starship-jj.packages.${pkgs.system}.default;
+    starshipJj = inputs.starship-jj.packages.${pkgs.stdenv.hostPlatform.system}.default;
   in {
     "$schema" = "https://starship.rs/config-schema.json";
     format = "$directory\${custom.jj}\${custom.env} $all";
