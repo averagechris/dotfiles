@@ -13,7 +13,7 @@ in {
   };
 
   programs.firefox = {
-    package = lib.mkDefault (pkgs.firefox-wayland.override {
+    package = lib.mkDefault (pkgs.firefox.override {
       cfg.enableGnomeExtensions = lib.mkDefault isLinux;
     });
 

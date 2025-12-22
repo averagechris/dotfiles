@@ -1,7 +1,6 @@
 {
   inputs,
   pkgs,
-  lib,
   ...
 }: {
   imports = [
@@ -62,20 +61,14 @@
     programs.helix.terminal.flavor = "wezterm";
     dotfiles.helix-terminal-tools = {
       enable = true;
-
       yazi = {
         enable = true;
         pickerWidth = 30;
         pickerSide = "left";
         helixKeybinding = "space.t.f"; # Toggle file picker
       };
-
-      claude = {
-        enable = true;
-      };
     };
     programs.opencode.enable = true;
-    home.packages = [pkgs.claude-code];
     programs.meganz.enable = true;
     programs.waybar.enable = false;
 
