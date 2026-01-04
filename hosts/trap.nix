@@ -39,6 +39,10 @@
     root.device = "/dev/nvme1n1p2";
     root.preLVM = true;
   };
+
+  # a regression around 25.11 broke this, i should be able to remove in the near future
+  boot.kernel.sysctl."kernel.unprivileged_userns_clone" = 0;
+
   networking.hostName = "trap";
 
   hardware.graphics.enable = true;

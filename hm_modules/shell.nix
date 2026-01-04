@@ -2,7 +2,6 @@
   config,
   lib,
   pkgs,
-  inputs,
   dotfiles_lib,
   ...
 }: let
