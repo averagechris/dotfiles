@@ -25,3 +25,5 @@ hosts/coniguration.nix.bak
 *.qcow2
 .ropeproject
 hm_modules/helix-terminal-tools/target
+flakes/hm-modules/modules/gui/wallpapers/*.png
+flakes/hm-modules/modules/gui/wallpapers/*.jpg

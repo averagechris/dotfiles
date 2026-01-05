@@ -1,0 +1,62 @@
+Ghostty Modal Keybindings (Leader = Shift+Space)
+
+Tabs (t)
+  t n  new tab
+  t d  close tab
+  t t  toggle tab overview
+  t r  set tab title (prompt)
+  t 1..9  goto tab N
+  t m  previous tab
+  t i  next tab
+  t M  first tab
+  t I  last tab
+
+Windows/Splits (w)
+  w d  close split (surface)
+  w f  toggle split zoom
+  w m/n/e/i  goto split left/down/up/right
+  w s  new split down (stacked)
+  w v  new split right (vertical)
+  w r m/n/e/i  resize split left/down/up/right
+  w l r  equalize splits
+  w 0  reset window size
+  w u  toggle maximize
+  w y  toggle fullscreen
+  w x  toggle window decorations
+  w o  toggle float on top
+  w g  GTK inspector
+  w k  on-screen keyboard
+  w h  toggle visibility
+
+Font (f)
+  f i  increase font size
+  f n  decrease font size
+  f r  reset font size
+  f 1  set font size 11
+  f 2  set font size 12
+  f 3  set font size 13
+
+Scroll (s)
+  s e  page up
+  s n  page down
+  s i  to top
+  s m  to bottom
+  s g  to selection
+
+Clipboard (c)
+  c a  select all
+  c u  copy URL to clipboard
+  c t  copy title to clipboard
+  c s  paste from selection
+
+Prompt/Palette
+  j     jump to prompt
+  p     command palette
+
+Config/Util
+  l o   open config
+  i s   toggle secure input
+
+Cheatsheet
+  h s   open split (optional)
+  h k   show this cheatsheet

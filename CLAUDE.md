@@ -1,22 +1,3 @@
-# CLAUDE.md for NixOS Dotfiles
-
-## Important Git Practices
-
-- NEVER add Claude as a co-author in commits
-- Commit messages should be concise and descriptive
-- Follow conventional commit format (feat:, fix:, docs:, etc.)
-
-## System Structure
-
-- Projects directory: Located at `~/projects/`
-  - Contains source code for important projects/dependencies
-  - Used for referencing documentation and code when needed
-  - Specific project repos:
-    - home-manager: `~/projects/home-manager/` - Source for Home Manager
-    - wezterm: `~/projects/wezterm/` - Source for WezTerm terminal emulator
-    - kitty: `~/projects/kitty/` - Source for Kitty terminal emulator
-    - helix: `~/projects/helix/` - Source for Helix editor
-
 ## Build/Update Commands
 
 - Initial setup: `nixos-rebuild switch --use-remote-sudo --flake .#SYSTEM_NAME`
@@ -26,25 +7,6 @@
   - `nixos-test` - Build and activate temporarily
 - Deploy to remote: `nix run .#deploy -- .#hostname` (tom, tootsie, trap, cruber)
 - Dev environment: `nix develop`
-
-## Claude-Kitty Integration
-
-- Location: `nixpkgs/scripts/kitty-claude.py` - Python script
-- Configuration: `nixpkgs/shell/shell_extras.nix` - Nix packaging
-- Helix keybindings: `nixpkgs/helix.nix` - Under `space.c` namespace
-
-### Helix Keybindings for Claude
-
-- `space.c.e` - Explain selection (save first)
-- `space.c.E` - Explain selection (no save)
-- `space.c.f` - Send function for explanation
-- `space.c.c` - Implement TODOs/refactor (save first)
-- `space.c.C` - Implement TODOs/refactor (no save)
-- `space.c.t` - Generate tests for function
-- `space.c.d` - Add/improve function documentation
-- `space.c.x` - Fix errors/diagnostics
-- `space.c.u` - Get usage examples
-- `space.c.o` - Optimize code
 
 ## Formatting & Linting
 

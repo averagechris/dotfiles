@@ -2,13 +2,11 @@
 #
 # This module provides integration between Helix editor and terminal tools:
 # 1. Yazi file manager integration for file browsing
-# 2. Claude AI integration for code assistance
 #
 # Implementation notes:
 # - Uses the same Rust binary with multiple subcommands
 # - Both integrations use WezTerm for terminal pane management
 # - Maintains existing Yazi functionality but generalizes the codebase
-# - Claude AI integration replaces the Python kitty-claude script
 {
   config,
   lib,
@@ -24,7 +22,7 @@ with lib; let
   toTOML = config: tomlFormat.generate "config.toml" config;
 in {
   options.dotfiles.helix-terminal-tools = {
-    enable = mkEnableOption "Helix terminal tools integration (Yazi file manager, Claude AI)";
+    enable = mkEnableOption "Helix terminal tools integration (Yazi file manager)";
 
     package = mkOption {
       type = types.package;
@@ -47,7 +45,7 @@ in {
         ];
 
         meta = {
-          description = "Integration tools for Helix with terminal applications (Yazi, Claude AI)";
+          description = "Integration tools for Helix with terminal applications (Yazi)";
           license = licenses.mit;
         };
       };
@@ -58,12 +56,6 @@ in {
       type = types.package;
       default = pkgs.wezterm;
       description = "WezTerm package to use for integration";
-    };
-
-    claudePackage = mkOption {
-      type = types.package;
-      default = pkgs.claude-code;
-      description = "Claude CLI package to use for integration";
     };
 
     yazi = {
@@ -96,9 +88,6 @@ in {
       };
     };
 
-    claude = {
-      enable = mkEnableOption "Claude AI integration";
-    };
   };
 
   config = mkIf cfg.enable {
@@ -107,7 +96,7 @@ in {
       cfg.package
     ];
 
-    # Configure Helix settings with merged configurations for Yazi and Claude
+    # Configure Helix settings with merged configurations for Yazi and
     programs.helix.settings = mkMerge [
       # Yazi integration settings
       (mkIf (config.programs.helix.enable && cfg.yazi.enable) {
@@ -138,31 +127,6 @@ in {
         };
       })
 
-      # Claude AI integration settings
-      (mkIf (config.programs.helix.enable && cfg.claude.enable) {
-        keys.normal.space.c = {
-          # This keybinding requests that Claude implement TODOs or refactor code
-          c = [":write" ":pipe-to ${cfg.package}/bin/helix-terminal-tools send-to-claude-ai --wezterm-path ${cfg.wezterm}/bin/wezterm --claude-path ${cfg.claudePackage}/bin/claude-code --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --column=\"%{cursor_column}\" --content-type=\"selection\" --saved --header=\"ACTION REQUIRED: Please implement any TODO/FIXME comments in this code. If none are found, please suggest refactoring improvements:\""];
-          # Same as above but without saving first
-          C = [":pipe-to ${cfg.package}/bin/helix-terminal-tools send-to-claude-ai --wezterm-path ${cfg.wezterm}/bin/wezterm --claude-path ${cfg.claudePackage}/bin/claude-code --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --column=\"%{cursor_column}\" --content-type=\"selection\" --header=\"ACTION REQUIRED: Please implement any TODO/FIXME comments in this code. If none are found, please suggest refactoring improvements, noting that this buffer may be unsaved:\""];
-          # Send selection with metadata to claude, memnonic is "explain"
-          e = [":write" ":pipe-to ${cfg.package}/bin/helix-terminal-tools send-to-claude-ai --wezterm-path ${cfg.wezterm}/bin/wezterm --claude-path ${cfg.claudePackage}/bin/claude-code --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --column=\"%{cursor_column}\" --content-type=\"selection\" --saved --header=\"Explain this selection from saved file:\""];
-          # Send without saving - useful when you can't save
-          E = ":pipe-to ${cfg.package}/bin/helix-terminal-tools send-to-claude-ai --wezterm-path ${cfg.wezterm}/bin/wezterm --claude-path ${cfg.claudePackage}/bin/claude-code --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --column=\"%{cursor_column}\" --content-type=\"selection\" --header=\"Explain this selection from unsaved editor buffer:\"";
-          # Send current function to Claude
-          f = ["goto_next_function" "select_textobject_inner" ":pipe-to ${cfg.package}/bin/helix-terminal-tools send-to-claude-ai --wezterm-path ${cfg.wezterm}/bin/wezterm --claude-path ${cfg.claudePackage}/bin/claude-code --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --content-type=\"function\" --header=\"Function from my editor:\""];
-          # Generate tests for the current function
-          t = ["goto_next_function" "select_textobject_inner" ":pipe-to ${cfg.package}/bin/helix-terminal-tools send-to-claude-ai --wezterm-path ${cfg.wezterm}/bin/wezterm --claude-path ${cfg.claudePackage}/bin/claude-code --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --content-type=\"function\" --header=\"ACTION REQUIRED: Generate comprehensive tests for this function:\""];
-          # Document the current function (add docstrings, comments)
-          d = ["goto_next_function" "select_textobject_inner" ":pipe-to ${cfg.package}/bin/helix-terminal-tools send-to-claude-ai --wezterm-path ${cfg.wezterm}/bin/wezterm --claude-path ${cfg.claudePackage}/bin/claude-code --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --content-type=\"function\" --header=\"ACTION REQUIRED: Add or improve documentation for this function with appropriate docstrings and comments:\""];
-          # Process errors/diagnostics from the current selection
-          x = [":write" ":pipe-to ${cfg.package}/bin/helix-terminal-tools send-to-claude-ai --wezterm-path ${cfg.wezterm}/bin/wezterm --claude-path ${cfg.claudePackage}/bin/claude-code --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --column=\"%{cursor_column}\" --content-type=\"error\" --saved --header=\"ACTION REQUIRED: Help me fix these errors/diagnostics:\""];
-          # Get usage examples for the current function/object
-          u = ["select_textobject_inner" ":pipe-to ${cfg.package}/bin/helix-terminal-tools send-to-claude-ai --wezterm-path ${cfg.wezterm}/bin/wezterm --claude-path ${cfg.claudePackage}/bin/claude-code --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --content-type=\"selection\" --header=\"ACTION REQUIRED: Provide usage examples for this code:\""];
-          # Optimize the current selection
-          o = [":write" ":pipe-to ${cfg.package}/bin/helix-terminal-tools send-to-claude-ai --wezterm-path ${cfg.wezterm}/bin/wezterm --claude-path ${cfg.claudePackage}/bin/claude-code --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --column=\"%{cursor_column}\" --content-type=\"selection\" --saved --header=\"ACTION REQUIRED: Optimize this code for performance and readability:\""];
-        };
-      })
     ];
 
     # Create a custom Yazi configuration directory for the integration

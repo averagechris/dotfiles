@@ -1,118 +1,127 @@
 {
-  description = "A flake containing the nixos configurations of most of my personal systems.";
+  description = "Top-level aggregator flake for all dotfiles host configurations";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    nixos-hardware.url = "github:nixos/nixos-hardware";
-    home-manager = {
-      url = "github:nix-community/home-manager/master";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    pre-commit-hooks = {
-      url = "github:cachix/pre-commit-hooks.nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    agenix = {
-      url = "github:ryantm/agenix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    darwin = {
-      url = "github:nix-darwin/nix-darwin/master";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    flake-utils.url = "github:numtide/flake-utils";
-    deploy-rs = {
-      url = "github:serokell/deploy-rs";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    helix = {
-      url = "github:helix-editor/helix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    mac-app-util.url = "github:hraban/mac-app-util";
-    titlecase = {
-      url = "sourcehut:~averagechris/titlecase";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    starship-jj = {
-      url = "sourcehut:~averagechris/starship-jj";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    # Host flakes
+    suremac.url = "path:./flakes/hosts/suremac";
+    trap.url = "path:./flakes/hosts/trap";
+    thorny.url = "path:./flakes/hosts/thorny";
+    tom.url = "path:./flakes/hosts/tom";
+    cruber.url = "path:./flakes/hosts/cruber";
+    taz.url = "path:./flakes/hosts/taz";
+    tootsie.url = "path:./flakes/hosts/tootsie";
+
+    # Development dependencies
+    base-lib.url = "path:./flakes/base-lib";
+    nixos-modules.url = "path:./flakes/nixos-modules";
+    hm-modules.url = "path:./flakes/hm-modules";
+    darwin-modules.url = "path:./flakes/darwin-modules";
+
+    # Shared dependencies
+    nixpkgs.follows = "base-lib/nixpkgs";
+    flake-utils.follows = "base-lib/flake-utils";
+    deploy-rs.follows = "base-lib/deploy-rs";
+    pre-commit-hooks.follows = "base-lib/pre-commit-hooks";
   };
 
   outputs = inputs @ {
     self,
+    suremac,
+    trap,
+    thorny,
+    tom,
+    cruber,
+    taz,
+    tootsie,
+    base-lib,
     flake-utils,
+    deploy-rs,
+    pre-commit-hooks,
     ...
   }: let
-    dotfiles.lib = import ./lib.nix {
-      inherit inputs;
-      inherit (inputs) nixpkgs;
-    };
+    inherit (base-lib) lib;
   in
-    with dotfiles.lib;
-      {
-        nixosConfigurations = with flake-utils.lib.system; {
-          # taz = mkHost x86_64-linux ./hosts/taz.nix;
-          thorny = mkHost x86_64-linux ./hosts/thelio.nix;
-          tom = mkHost x86_64-linux ./hosts/tom.nix;
-          tootsie = mkHost x86_64-linux ./hosts/tootsie.nix;
-          cruber = mkHost x86_64-linux ./hosts/xps.nix;
-          trap = mkHost x86_64-linux ./hosts/trap.nix;
-        };
-        darwinConfigurations.suremac = mkHost flake-utils.lib.system.aarch64-darwin ./hosts/darwin/suremac;
-        deploy.nodes = {
-          tom = mkDeploy self.nixosConfigurations.tom;
-          # taz = mkDeploy self.nixosConfigurations.taz;
-          tootsie = mkDeploy self.nixosConfigurations.tootsie;
-          trap = mkDeploy' self.nixosConfigurations.trap;
-          cruber = mkDeploy' self.nixosConfigurations.cruber;
-        };
-      }
-      // flake-utils.lib.eachDefaultSystem (system: let
-        pkgs = self.inputs.nixpkgs.legacyPackages.${system};
-      in {
-        formatter = pkgs.alejandra;
-        # deploy usage: nix run .#deploy -- .#tootsie
-        apps.deploy = self.inputs.deploy-rs.apps.${system}.deploy-rs;
-        # usage: nix run .#setup-darwin-determinate-substituters
-        packages.setup-darwin-determinate-substituters = pkgs.writeShellApplication {
-          name = "setup-darwin-determinate-substituters";
-          text = builtins.readFile ./nixpkgs/scripts/setup-darwin-determinate-nix.sh;
-        };
-        apps.setup-darwin-determinate-substituters = {
-          type = "app";
-          program = "${self.packages.${system}.setup-darwin-determinate-substituters}/bin/setup-darwin-determinate-substituters";
-        };
-        packages.agenix = self.inputs.agenix.packages.${system}.default;
-        devShells.default = pkgs.mkShell {
-          inherit (self.checks.${system}.pre-commit) shellHook;
-          buildInputs = with pkgs; [
-            alejandra
-            cachix
-            mdl
-            statix
-            nil # nix language server
-            nixd
-            nodePackages.bash-language-server
-            self.outputs.packages.${system}.agenix
-            self.inputs.deploy-rs.packages.${system}.deploy-rs
+    {
+      # Re-export all NixOS configurations
+      nixosConfigurations = {
+        inherit (trap.nixosConfigurations) trap;
+        inherit (thorny.nixosConfigurations) thorny;
+        inherit (tom.nixosConfigurations) tom;
+        inherit (cruber.nixosConfigurations) cruber;
+        inherit (taz.nixosConfigurations) taz;
+        inherit (tootsie.nixosConfigurations) tootsie;
+      };
 
-            # Rust development
-            cargo
-            rustc
-            rustfmt
-            clippy
-            rust-analyzer
-            pkg-config
-            openssl.dev
+      # Re-export all Darwin configurations
+      darwinConfigurations = {
+        inherit (suremac.darwinConfigurations) suremac;
+      };
 
-            ruff
-            python3Packages.python-lsp-server
-            python3Packages.python-lsp-ruff
-            python3Packages.pylsp-rope
-          ];
-        };
-        checks = dotfiles.lib.mkCommitCheck system // (builtins.mapAttrs (sys: l: l.deployChecks self.deploy) self.inputs.deploy-rs.lib).${system};
-      });
+      # Re-export all deploy nodes
+      deploy.nodes = {
+        inherit (trap.deploy.nodes) trap;
+        inherit (thorny.deploy.nodes) thorny;
+        inherit (tom.deploy.nodes) tom;
+        inherit (cruber.deploy.nodes) cruber;
+        inherit (taz.deploy.nodes) taz;
+        inherit (tootsie.deploy.nodes) tootsie;
+        inherit (suremac.deploy.nodes) suremac;
+      };
+    }
+    // flake-utils.lib.eachDefaultSystem (system: let
+      pkgs = inputs.nixpkgs.legacyPackages.${system};
+    in {
+      formatter = pkgs.alejandra;
+
+      # deploy usage: nix run .#deploy -- .#hostname
+      apps.deploy = deploy-rs.apps.${system}.deploy-rs;
+
+      # Setup script for Darwin
+      packages.setup-darwin-determinate-substituters = pkgs.writeShellApplication {
+        name = "setup-darwin-determinate-substituters";
+        text = builtins.readFile ./nixpkgs/scripts/setup-darwin-determinate-nix.sh;
+      };
+
+      apps.setup-darwin-determinate-substituters = {
+        type = "app";
+        program = "${self.packages.${system}.setup-darwin-determinate-substituters}/bin/setup-darwin-determinate-substituters";
+      };
+
+      # agenix package
+      packages.agenix = base-lib.inputs.agenix.packages.${system}.default;
+
+      # Development shell
+      devShells.default = pkgs.mkShell {
+        inherit (self.checks.${system}.pre-commit) shellHook;
+        buildInputs = with pkgs; [
+          alejandra
+          cachix
+          mdl
+          statix
+          nil # nix language server
+          nixd
+          nodePackages.bash-language-server
+          self.outputs.packages.${system}.agenix
+          deploy-rs.packages.${system}.deploy-rs
+
+          # Rust development
+          cargo
+          rustc
+          rustfmt
+          clippy
+          rust-analyzer
+          pkg-config
+          openssl.dev
+
+          # Python development
+          ruff
+          python3Packages.python-lsp-server
+          python3Packages.python-lsp-ruff
+          python3Packages.pylsp-rope
+        ];
+      };
+
+      # Checks
+      checks = lib.mkCommitCheck system;
+    });
 }

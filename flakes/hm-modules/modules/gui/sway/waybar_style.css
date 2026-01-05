@@ -1,0 +1,103 @@
+* {
+    border: none;
+    border-radius: 0;
+    font-family: "FiraCode";
+    font-size: 13px;
+    min-height: 0;
+}
+
+window#waybar {
+    background: darkslategrey;
+    color: white;
+    opacity: 0.7;
+}
+
+#window {
+    font-weight: bold;
+}
+
+#workspaces {
+    padding: 0 5px;
+}
+
+#workspaces button {
+    padding: 0 5px;
+    background: transparent;
+    color: white;
+    border-top: 2px solid transparent;
+}
+
+#workspaces button.focused {
+    color: orchid;
+    border-top: 2px solid orchid;
+}
+
+#mode {
+    background: slategray;
+    border-bottom: 3px solid white;
+}
+
+#clock, #battery, #cpu, #memory, #network, #pulseaudio, #custom-spotify, #tray, #mode {
+    padding: 0 3px;
+    margin: 0 2px;
+}
+
+#clock {
+    font-weight: bold;
+}
+
+#battery {
+}
+
+#battery icon {
+    color: orchid;
+}
+
+#battery.charging {
+}
+
+@keyframes blink {
+    to {
+        background-color: orchid;
+        color: white;
+    }
+}
+
+#battery.warning:not(.charging) {
+    color: orchid;
+}
+
+#battery.critical:not(.charging) {
+    color: orchid;
+    animation-name: blink;
+    animation-duration: 1s;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+}
+
+#cpu {
+}
+
+#memory {
+}
+
+#network {
+}
+
+#network.disconnected {
+    background: orchid;
+}
+
+#pulseaudio {
+}
+
+#pulseaudio.muted {
+}
+
+#custom-media {
+    color: orchid
+}
+
+#tray {
+}

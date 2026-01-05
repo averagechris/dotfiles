@@ -47,22 +47,6 @@
       overlays = [
         (final: prev: {
           titlecase = inputs.titlecase.packages.${system}.default;
-          dotfiles-kitty-claude = pkgs.writers.writePython3Bin "kitty-claude" {
-            libraries = [
-              # Include claude-code directly
-              pkgs.claude-code
-              # For file type detection and syntax highlighting
-              prev.python3Packages.pygments
-            ];
-            flakeIgnore = [
-              "E501" # Line too long
-              "W293" # Blank line contains whitespace
-              "E127" # Continuation line over-indented for visual indent
-              "E128" # Continuation line under-indented for visual indent
-              "E302" # Expected 2 blank lines
-              "E305" # Expected 2 blank lines after class or function definition
-            ];
-          } (builtins.readFile ./nixpkgs/scripts/kitty-claude.py);
         })
       ];
     };

@@ -1,0 +1,36 @@
+window {
+    background: black;
+    color: white;
+    opacity: 0.9;
+}
+
+/* search entry */
+entry {
+    background: black;
+}
+
+button, image {
+    background: none;
+    border: none
+}
+
+button:hover {
+    background: white;
+    opacity: 0.1;
+}
+
+/* in case you wanted to give category buttons a different look */
+#category-button {
+    margin: 0 10px 0 10px
+}
+
+#pinned-box {
+    padding-bottom: 5px;
+    border-bottom: 1px dotted gray
+}
+
+#files-box {
+    padding: 5px;
+    border: 1px dotted gray;
+    border-radius: 15px
+}
