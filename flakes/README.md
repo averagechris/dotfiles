@@ -160,330 +160,53 @@ home-manager.follows = "base-lib/home-manager";
 
 This ensures consistency across all hosts and modules.
 
-## How to Add a New Host
+## Adding Modules
 
-### Step 1: Create Host Directory
-
-```bash
-mkdir -p flakes/hosts/HOSTNAME
-cd flakes/hosts/HOSTNAME
-```
-
-### Step 2: Create `flake.nix`
+Create module in appropriate location, export from flake, import in host config:
 
 ```nix
-{
-  description = "HOSTNAME system configuration";
-
-  inputs = {
-    base-lib.url = "path:../../base-lib";
-    nixos-modules.url = "path:../../nixos-modules";
-    hm-modules.url = "path:../../hm-modules";
-    
-    nixpkgs.follows = "base-lib/nixpkgs";
-    home-manager.follows = "base-lib/home-manager";
-    flake-utils.follows = "base-lib/flake-utils";
-    deploy-rs.follows = "base-lib/deploy-rs";
-    agenix.follows = "base-lib/agenix";
-    
-    # Add host-specific inputs here if needed
-    nixos-hardware.url = "github:NixOS/nixos-hardware/master";
-  };
-
-  outputs = inputs @ {
-    self,
-    base-lib,
-    nixpkgs,
-    home-manager,
-    flake-utils,
-    deploy-rs,
-    ...
-  }: let
-    inherit (base-lib.lib) mkHost mkDeploy;
-  in {
-    nixosConfigurations.HOSTNAME = mkHost "x86_64-linux" ./configuration.nix;
-    
-    deploy.nodes.HOSTNAME = mkDeploy self.nixosConfigurations.HOSTNAME;
-  };
-}
-```
-
-### Step 3: Create `configuration.nix`
-
-```nix
-{ config, pkgs, inputs, ... }:
-
-{
-  imports = [
-    # Hardware configuration
-    ./hardware-configuration.nix
-    
-    # Shared modules
-    inputs.nixos-modules.nixosModules.common
-  ];
-
-  networking.hostName = "HOSTNAME";
-  
-  # Your configuration here
-}
-```
-
-### Step 4: Add to Root `flake.nix`
-
-```nix
-{
-  inputs = {
-    # ... existing inputs
-    HOSTNAME.url = "path:./flakes/hosts/HOSTNAME";
-  };
-
-  outputs = inputs @ {
-    # ... existing outputs
-    HOSTNAME,
-    ...
-  }: {
-    nixosConfigurations = {
-      # ... existing configs
-      inherit (HOSTNAME.nixosConfigurations) HOSTNAME;
-    };
-    
-    deploy.nodes = {
-      # ... existing nodes
-      inherit (HOSTNAME.deploy.nodes) HOSTNAME;
-    };
-  };
-}
-```
-
-### Step 5: Test
-
-```bash
-# Check the flake
-nix flake check
-
-# Build the configuration
-nix build .#nixosConfigurations.HOSTNAME.config.system.build.toplevel
-
-# Or use nixos-rebuild
-nixos-rebuild build --flake .#HOSTNAME
-```
-
-## How to Modify Modules
-
-### Adding a New NixOS Module
-
-1. Create the module in `flakes/nixos-modules/modules/`:
-
-```nix
-# flakes/nixos-modules/modules/mymodule/default.nix
+# flakes/nixos-modules/modules/mymodule/default.nix (or hm-modules, darwin-modules)
 { config, lib, pkgs, ... }:
-
 with lib;
-
 {
-  options.dotfiles.mymodule = {
-    enable = mkDefaultEnabledOption "My module";
-  };
-
+  options.dotfiles.mymodule.enable = mkDefaultEnabledOption "My module";
   config = mkIf config.dotfiles.mymodule.enable {
     # Configuration here
   };
 }
 ```
 
-2. Export it from `flakes/nixos-modules/flake.nix`:
+Export from flake and use in host:
 
 ```nix
-{
-  outputs = { ... }: {
-    nixosModules.mymodule = import ./modules/mymodule;
-  };
-}
+# In host configuration.nix
+imports = [ inputs.nixos-modules.nixosModules.mymodule ];
+dotfiles.mymodule.enable = true;
 ```
 
-3. Use it in a host configuration:
-
-```nix
-{
-  imports = [
-    inputs.nixos-modules.nixosModules.mymodule
-  ];
-  
-  dotfiles.mymodule.enable = true;
-}
-```
-
-### Adding a New Home-Manager Module
-
-Follow the same pattern in `flakes/hm-modules/`:
-
-```nix
-# flakes/hm-modules/modules/mymodule/default.nix
-{ config, lib, pkgs, ... }:
-
-with lib;
-
-{
-  options.dotfiles.mymodule = {
-    enable = mkDefaultEnabledOption "My module";
-  };
-
-  config = mkIf config.dotfiles.mymodule.enable {
-    # Configuration here
-  };
-}
-```
-
-### Modifying Shared Code
-
-Changes to `base-lib` are automatically available to all hosts:
-
-1. Edit `flakes/base-lib/lib/default.nix` or related files
-2. Run `nix flake update` in the root directory
-3. All hosts will use the updated library on next build
-
-## Testing Guidelines
-
-### Test Individual Flakes
+## Common Commands
 
 ```bash
-# Test base-lib
-nix flake check ./flakes/base-lib
+# Testing
+nix flake check                              # all flakes
+nix flake check ./flakes/hosts/HOSTNAME      # single host
 
-# Test a specific host
-nix flake check ./flakes/hosts/HOSTNAME
-
-# Test modules
-nix flake check ./flakes/nixos-modules
-```
-
-### Test Root Flake
-
-```bash
-# Check all outputs
-nix flake check
-
-# Show all outputs
-nix flake show
-```
-
-### Build Configurations
-
-```bash
-# Build a NixOS configuration
+# Building
 nix build .#nixosConfigurations.HOSTNAME.config.system.build.toplevel
-
-# Build a Darwin configuration
 nix build .#darwinConfigurations.HOSTNAME.system
 
-# Build home-manager configuration
-nix build .#nixosConfigurations.HOSTNAME.config.home-manager.users.USERNAME.home.activationPackage
-```
+# Updating
+nix flake update                             # all inputs
+nix flake update nixpkgs                     # specific input
 
-### Test Deployment
-
-```bash
-# Dry-run deployment
-nix run .#deploy -- --dry-activate .#HOSTNAME
-
-# Actual deployment
-nix run .#deploy -- .#HOSTNAME
-```
-
-### Pre-Commit Checks
-
-```bash
-# Run all checks
-nix flake check
-
-# Run specific checks
-nix run .#checks.x86_64-linux.alejandra
-nix run .#checks.x86_64-linux.statix
-```
-
-## Common Tasks
-
-### Update All Dependencies
-
-```bash
-nix flake update
-```
-
-### Update Specific Input
-
-```bash
-nix flake update nixpkgs
-```
-
-### Lock Specific Version
-
-Edit `flake.nix` and run:
-
-```bash
-nix flake lock --update-input INPUT_NAME
-```
-
-### View Flake Metadata
-
-```bash
-nix flake metadata .
-nix flake metadata ./flakes/base-lib
-```
-
-### Debug Flake Evaluation
-
-```bash
-# Show all outputs
+# Debugging
 nix flake show
-
-# Show specific output
-nix eval .#nixosConfigurations.HOSTNAME --apply 'x: x.config.networking.hostName'
+nix eval .#nixosConfigurations.HOSTNAME.config --apply 'x: x.networking.hostName'
 ```
 
 ## Best Practices
 
-1. **Keep base-lib stable**: Changes to base-lib affect all hosts
-2. **Use specialArgs**: Pass data through specialArgs rather than modifying modules
-3. **Organize modules**: Group related modules in subdirectories
-4. **Document modules**: Add comments explaining module purpose and options
-5. **Test before committing**: Run `nix flake check` before pushing changes
-6. **Use follows**: Always use `follows` for shared dependencies to ensure consistency
-7. **Keep flakes focused**: Each flake should have a single, clear responsibility
-8. **Version lock**: Use `flake.lock` to ensure reproducible builds
-
-## Troubleshooting
-
-### Flake Lock Issues
-
-```bash
-# Regenerate lock file
-nix flake lock --update-input '*'
-
-# Or for specific input
-nix flake lock --update-input nixpkgs
-```
-
-### Circular Dependencies
-
-Check that inputs don't create cycles:
-
-```bash
-nix flake metadata . --json | jq '.locks'
-```
-
-### Module Not Found
-
-Ensure the module is:
-1. Exported from the flake's `flake.nix`
-2. Imported with the correct path
-3. The flake is in the inputs
-
-### Build Failures
-
-```bash
-# Get more verbose output
-nix build .#nixosConfigurations.HOSTNAME -v
-
-# Check configuration
-nix eval .#nixosConfigurations.HOSTNAME.config --apply 'x: x.networking.hostName'
-```
+- **Keep base-lib stable** — changes affect all hosts
+- **Use `follows`** — ensures consistent dependency versions
+- **Test before committing** — run `nix flake check`
+- **Use `flake.lock`** — commit for reproducible builds

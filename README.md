@@ -62,19 +62,19 @@ See [flakes/README.md](flakes/README.md) for detailed architecture documentation
 
 ## Available Hosts
 
-| Host | Type | Purpose | Notes |
-|------|------|---------|-------|
-| **suremac** | macOS (Darwin) | Personal MacBook | Uses `darwin-rebuild` |
-| **trap** | NixOS | Remote server | SSH deployable |
-| **thorny** | NixOS | Development machine | SSH deployable |
-| **tom** | NixOS | Home server | Requires `openssl-1.1.1w` |
-| **cruber** | NixOS | Build machine | SSH deployable |
-| **taz** | NixOS | Testing machine | SSH deployable |
-| **tootsie** | NixOS | Utility machine | SSH deployable |
-
-See [flakes/hosts/README.md](flakes/hosts/README.md) for detailed host information.
+| Host | System | Purpose | Notes |
+|------|--------|---------|-------|
+| **suremac** | aarch64-darwin | Personal MacBook | Uses `darwin-rebuild` |
+| **trap** | x86_64-linux | COSMIC desktop, System76 | SSH deployable |
+| **thorny** | x86_64-linux | COSMIC desktop, System76 Thelio | SSH deployable |
+| **tom** | x86_64-linux | Home server (home-assistant) | Requires `openssl-1.1.1w` |
+| **cruber** | x86_64-linux | COSMIC desktop, Dell XPS | SSH deployable |
+| **taz** | x86_64-linux | Linode VM, Searx | Inactive |
+| **tootsie** | x86_64-linux | Linode VM, Tailscale exit node | Inactive |
 
 ## Development
+
+This repository uses `jj` (Jujutsu) for version control, colocated with git.
 
 ### Setting Up Development Environment
 
@@ -103,41 +103,16 @@ nix flake show
 ### Adding a New Host
 
 1. Create a new directory in `flakes/hosts/HOSTNAME/`
-2. Create `flake.nix` and `configuration.nix` (see [flakes/hosts/README.md](flakes/hosts/README.md))
-3. Add the host to the root `flake.nix` inputs and outputs
-4. Test with `nix flake check`
-
-See [flakes/README.md](flakes/README.md) for detailed instructions.
-
-## Migration from Old Structure
-
-If you're familiar with the previous single-flake structure, here are the key changes:
-
-### Before (Single Flake)
-- All configurations in one `flake.nix`
-- Shared code duplicated across hosts
-- Difficult to test individual hosts
-
-### After (Multi-Flake)
-- Each host is a separate flake with its own `flake.nix`
-- Shared code in `base-lib`, `nixos-modules`, `hm-modules`, `darwin-modules`
-- Root `flake.nix` aggregates all hosts
-- Each host can be tested independently
-- Cleaner dependency management
-
-### Key Improvements
-- **Modularity**: Each host is self-contained and can be developed independently
-- **Reusability**: Shared modules and functions are centralized
-- **Maintainability**: Changes to shared code are automatically available to all hosts
-- **Testing**: Individual flakes can be checked without building all hosts
-- **Scalability**: Easy to add new hosts or modules
+2. Create `flake.nix`, `configuration.nix`, and `hardware.nix` (NixOS only)
+3. Use existing host as template (trap for NixOS, suremac for Darwin)
+4. Add the host to the root `flake.nix` inputs and outputs
+5. Test with `nix flake check`
 
 ## Documentation
 
 - [flakes/README.md](flakes/README.md) - Multi-flake architecture overview
 - [flakes/base-lib/README.md](flakes/base-lib/README.md) - Library API and utilities
-- [flakes/hosts/README.md](flakes/hosts/README.md) - Host configurations and deployment
-- [docs/nixos.md](docs/nixos.md) - NixOS-specific documentation
+- [docs/nixos.md](docs/nixos.md) - NixOS installation guide
 
 ## License
 

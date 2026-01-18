@@ -22,7 +22,7 @@ dotfiles/
 │       ├── cruber/              # NixOS host
 │       ├── taz/                 # NixOS host (inactive)
 │       └── tootsie/             # NixOS host (inactive)
-├── hm_modules/                  # Home-manager modules (referenced by flakes)
+├── hm_modules/                  # Legacy (modules now in flakes/hm-modules/)
 ├── secrets/                     # Encrypted secrets (agenix)
 └── scripts/                     # Utility scripts
 ```
@@ -78,10 +78,18 @@ darwin-rebuild switch --flake .#suremac
 - **Darwin modules**: `flakes/darwin-modules/modules/`
 - **Library functions**: `flakes/base-lib/lib/`
 
+## Module Placement
+
+| Type | Location | Use for |
+|------|----------|---------|
+| nixos-modules | `flakes/nixos-modules/modules/` | System services, daemons, NixOS-specific config |
+| hm-modules | `flakes/hm-modules/modules/` | User dotfiles, CLI tools, per-user GUI apps |
+| darwin-modules | `flakes/darwin-modules/modules/` | macOS-specific (skhd, karabiner, Homebrew) |
+
 ## Adding a New Host
 
 1. Create directory: `flakes/hosts/<hostname>/`
-2. Create files: `flake.nix`, `configuration.nix`, `hardware.nix`
+2. Create files: `flake.nix`, `configuration.nix`, `hardware.nix` (NixOS only)
 3. Use existing host as template (trap for NixOS, suremac for Darwin)
 4. Add inputs: base-lib, nixos-modules (or darwin-modules), hm-modules
 5. Update top-level `flake.nix` to import the new host

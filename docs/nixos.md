@@ -262,25 +262,12 @@ mount /dev/nixos-vg/root /mnt
 > into the usb live media and using [nixos-enter](https://nixos.wiki/wiki/Change_root).
 > Then use the `passwd` command to reset the root password.
 
-## Getting my NixOs config from dotfiles and setting up Home Manager
+## Applying Dotfiles Configuration
 
-👍😎👍 TODO
+After installation, clone the dotfiles repo and apply:
 
-## work-vm
-
-install utm or use qemu
-sudo su
-make partitions
-make filesystems and swap etc
-nix --extra-experimental-features nix-command \
---extra-experimental-features flakes \
---extra-access-tokens github.com=TYPE_YOUR_GITHUB_TOKEN \
-build sourcehut:~averagechris/dotfiles#nixosConfigurations.work-vm.config.system.build.toplevel
-
-nixos-install --no-root-passwd --system ./result
-reboot
-
-clone dotfiles
-ln -fs ~/dotfiles/flake.nix /etc/nixos/
-rm -rf /etc/nixos/configuration.nix
-nixos-switch
+```bash
+git clone https://git.sr.ht/~averagechris/dotfiles ~/dotfiles
+cd ~/dotfiles
+nixos-rebuild switch --use-remote-sudo --flake .#HOSTNAME
+```
