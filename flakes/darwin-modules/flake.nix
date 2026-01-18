@@ -19,10 +19,8 @@
   };
 
   outputs = {...}: {
-    darwinModules = {
-      configuration = ./modules/configuration.nix;
-      desktop = ./modules/desktop.nix;
-      skhd = ./modules/skhd.nix;
-    };
+    # Note: Legacy modules archived in ./archive/
+    # See archive/README.md for restoration instructions
+    darwinModules = {};
   };
 }
