@@ -20,6 +20,8 @@ __pycache__/
 /.direnv/
 /.pre-commit-config.yaml
 /result
+/result-*
+flakes/hosts/*/result
 hosts/coniguration.nix.bak
 .chris.just
 *.qcow2
