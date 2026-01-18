@@ -1,0 +1,7 @@
+# Statix linter configuration
+# See: https://github.com/nerdypepper/statix
+
+disabled = [
+  "empty_pattern",   # Allow empty patterns in let bindings
+  "repeated_keys",   # Allow repeated keys (used intentionally in some modules)
+]
