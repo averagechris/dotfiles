@@ -1,35 +1,99 @@
+# Main CI pipeline for dotfiles multi-flake repository
+# Runs format/lint checks, flake validation, and NixOS builds
+#
+# Architecture:
+#   - flakes/base-lib/          Shared library functions
+#   - flakes/nixos-modules/     Shared NixOS modules
+#   - flakes/hm-modules/        Shared home-manager modules
+#   - flakes/darwin-modules/    Shared Darwin modules
+#   - flakes/hosts/<hostname>/  Individual host flakes
+#
+# Note: suremac is Darwin (macOS) and cannot be built on Linux CI
+
 image: nixos/unstable
 packages:
   - nixos.cachix
+  - nixos.alejandra
+  - nixos.statix
 sources:
   - https://git.sr.ht/~averagechris/dotfiles
 secrets:
   - 731f7e55-4497-4228-8fa4-1657da7d3625
 tasks:
+  # Configure Nix for flakes support
   - setup-nix: |
       mkdir -p ~/.config/nix/
       echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
       echo "max-jobs = auto" >> ~/.config/nix/nix.conf
 
+  # Configure cachix for build caching
   - setup-cachix: |
       cachix authtoken --stdin < ~/.ci_secrets/cachix_token
       cachix use averagechris-dotfiles
 
-  - pre-commit-checks: |
+  # Fast-fail checks: format and lint
+  - format-check: |
+      cd ~/dotfiles
+      echo "Checking code formatting with alejandra..."
+      alejandra --check .
+
+  - lint-check: |
+      cd ~/dotfiles
+      echo "Linting with statix..."
+      statix check
+
+  # Validate module flakes (shared libraries and modules)
+  - check-module-flakes: |
+      cd ~/dotfiles
+      echo "Checking base-lib flake..."
+      nix flake check ./flakes/base-lib --accept-flake-config
+
+      echo "Checking nixos-modules flake..."
+      nix flake check ./flakes/nixos-modules --accept-flake-config
+
+      echo "Checking hm-modules flake..."
+      nix flake check ./flakes/hm-modules --accept-flake-config
+
+      echo "Checking darwin-modules flake..."
+      nix flake check ./flakes/darwin-modules --accept-flake-config
+
+  # Validate all host flakes (including Darwin for syntax/eval)
+  - check-host-flakes: |
+      cd ~/dotfiles
+      echo "Checking host flakes..."
+
+      for host in trap thorny tom cruber taz tootsie; do
+        echo "Checking flakes/hosts/$host..."
+        nix flake check ./flakes/hosts/$host --accept-flake-config
+      done
+
+      # Check suremac flake syntax (won't build on Linux but can validate)
+      echo "Checking flakes/hosts/suremac (Darwin - syntax only)..."
+      nix flake check ./flakes/hosts/suremac --accept-flake-config --no-build
+
+  # Check top-level aggregator flake
+  - check-toplevel-flake: |
+      cd ~/dotfiles
+      echo "Checking top-level flake..."
+      nix flake check --accept-flake-config
+
+  # Build all active NixOS hosts
+  # Uses cachix watch-exec to push built paths to cache
+  - build-nixos-hosts: |
       cd ~/dotfiles
 
-      cachix watch-exec averagechris-dotfiles -- \
-          nix develop --accept-flake-config --command \
-          pre-commit run --all
+      # Active hosts
+      for host in trap thorny tom cruber; do
+        echo "Building $host..."
+        cachix watch-exec averagechris-dotfiles -- \
+            nix build --accept-flake-config \
+            .#nixosConfigurations.$host.config.system.build.toplevel
+      done
 
-  - nix-build-nixos-configurations: |
-      cd ~/dotfiles
-
-      cachix watch-exec averagechris-dotfiles -- \
-          nix build --accept-flake-config .#nixosConfigurations.tom.config.system.build.toplevel
-
-      cachix watch-exec averagechris-dotfiles -- \
-          nix build --accept-flake-config .#nixosConfigurations.thorny.config.system.build.toplevel
-
-      cachix watch-exec averagechris-dotfiles -- \
-          nix build --accept-flake-config .#nixosConfigurations.cruber.config.system.build.toplevel
+      # Inactive hosts (still validate they build)
+      for host in taz tootsie; do
+        echo "Building $host (inactive)..."
+        cachix watch-exec averagechris-dotfiles -- \
+            nix build --accept-flake-config \
+            .#nixosConfigurations.$host.config.system.build.toplevel
+      done
