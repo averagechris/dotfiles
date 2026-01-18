@@ -116,6 +116,19 @@ darwin-rebuild switch --flake .#suremac
 - **Style**: Use type/scope prefix (e.g., `feat(opencode): add changelog policy`)
 - **Agent consumption**: The changelog agent reads this policy from `AGENTS.md`
 
+## CI (SourceHut)
+
+Jobs in `.builds/` run in parallel on push. SourceHut limits: **4 concurrent jobs**, **5 min timeout** per job.
+
+| Job | Purpose |
+|-----|---------|
+| `lint-check.yml` | alejandra, statix, `nix flake check` |
+| `build-suremac.yml` | Darwin flake validation (`--no-build` on Linux) |
+| `build-tom.yml` | Build tom NixOS config |
+| `build-trap.yml` | Build trap NixOS config |
+
+**Critical**: Never track `result` symlinks—they point to local store paths and break CI. See `.gitignore` patterns: `/result`, `/result-*`, `flakes/hosts/*/result`.
+
 ## Host-Specific Notes
 
 | Host | System | Notes |
