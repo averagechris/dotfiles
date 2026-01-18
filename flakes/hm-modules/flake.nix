@@ -17,6 +17,7 @@
   outputs = {
     nixpkgs,
     flake-utils,
+    home-manager,
     ...
   }:
     {
@@ -62,13 +63,58 @@
         zellij = ./modules/zellij/default.nix;
       };
     }
-    // flake-utils.lib.eachDefaultSystem (system: {
+    // flake-utils.lib.eachDefaultSystem (system: let
+      pkgs = nixpkgs.legacyPackages.${system};
+      isLinux = pkgs.stdenv.isLinux;
+      # Provide dotfiles_lib that modules expect (normally provided by base-lib)
+      dotfiles_lib = {
+        options = with nixpkgs.lib; {
+          mkDefaultEnabledOption = description:
+            mkOption {
+              type = types.bool;
+              default = true;
+              example = false;
+              inherit description;
+            };
+        };
+      };
+    in {
       checks = {
-        # Basic check that modules can be imported
-        modules-import = nixpkgs.legacyPackages.${system}.runCommand "hm-modules-check" {} ''
-          echo "Home-manager modules flake check passed"
-          touch $out
-        '';
+        # Test that modules can be imported and evaluated with home-manager
+        # This forces evaluation of the home-manager configuration, catching any
+        # module syntax errors, missing imports, or type mismatches.
+        # Only runs on Linux since many GUI modules (waybar, etc.) are Linux-only.
+        modules-eval =
+          if isLinux
+          then let
+            testConfig = home-manager.lib.homeManagerConfiguration {
+              inherit pkgs;
+              extraSpecialArgs = {inherit dotfiles_lib system;};
+              modules = [
+                ./modules/default.nix
+                {
+                  home.username = "test";
+                  home.homeDirectory = "/tmp/test-home";
+                  home.stateVersion = "24.05";
+                }
+              ];
+            };
+          in
+            # Force evaluation of the activation package to catch errors
+            pkgs.runCommand "hm-modules-eval-test" {} ''
+              # Reference the activation package to force evaluation
+              echo "Testing home-manager module evaluation..."
+              echo "Activation package: ${testConfig.activationPackage}"
+              mkdir -p $out
+              touch $out/success
+            ''
+          else
+            # On non-Linux systems, just verify the flake structure is valid
+            pkgs.runCommand "hm-modules-structure-test" {} ''
+              echo "Home-manager modules structure check passed (full eval skipped on non-Linux)"
+              mkdir -p $out
+              touch $out/success
+            '';
       };
     });
 }
