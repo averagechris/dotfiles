@@ -1,4 +1,4 @@
-# Build cruber NixOS configuration
+# Validate suremac Darwin configuration (syntax/eval only - cannot build on Linux)
 image: nixos/unstable
 packages:
   - nixos.cachix
@@ -10,13 +10,10 @@ tasks:
   - setup: |
       mkdir -p ~/.config/nix/
       echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
-      echo "max-jobs = auto" >> ~/.config/nix/nix.conf
       cachix authtoken --stdin < ~/.ci_secrets/cachix_token
       cachix use averagechris-dotfiles
 
-  - build: |
+  - check: |
       cd ~/dotfiles
-      echo "Building cruber..."
-      cachix watch-exec averagechris-dotfiles -- \
-          nix build --accept-flake-config \
-          .#nixosConfigurations.cruber.config.system.build.toplevel
+      echo "Checking suremac flake (Darwin - syntax/eval only)..."
+      nix flake check ./flakes/hosts/suremac --accept-flake-config --no-build

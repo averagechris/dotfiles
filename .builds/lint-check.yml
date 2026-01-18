@@ -1,7 +1,9 @@
-# Build thorny NixOS configuration
+# Lint and flake validation
 image: nixos/unstable
 packages:
   - nixos.cachix
+  - nixos.alejandra
+  - nixos.statix
 sources:
   - https://git.sr.ht/~averagechris/dotfiles
 secrets:
@@ -10,13 +12,20 @@ tasks:
   - setup: |
       mkdir -p ~/.config/nix/
       echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
-      echo "max-jobs = auto" >> ~/.config/nix/nix.conf
       cachix authtoken --stdin < ~/.ci_secrets/cachix_token
       cachix use averagechris-dotfiles
 
-  - build: |
+  - format: |
       cd ~/dotfiles
-      echo "Building thorny..."
-      cachix watch-exec averagechris-dotfiles -- \
-          nix build --accept-flake-config \
-          .#nixosConfigurations.thorny.config.system.build.toplevel
+      echo "Checking code formatting with alejandra..."
+      alejandra --check .
+
+  - lint: |
+      cd ~/dotfiles
+      echo "Linting with statix..."
+      statix check
+
+  - check: |
+      cd ~/dotfiles
+      echo "Checking top-level flake..."
+      nix flake check --accept-flake-config
