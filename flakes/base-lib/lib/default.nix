@@ -89,7 +89,6 @@
       config = {
         allowUnfree = true;
         allowUnsupportedSystem = true;
-        allowBroken = true;
       };
       overlays = [
         (final: prev: {
@@ -168,22 +167,6 @@
         alejandra.enable = true;
         statix.enable = true;
         shellcheck.enable = true;
-        markdown-formatter = {
-          enable = false;
-          name = "markdown-formatter";
-          types = ["markdown"];
-          language = "system";
-          pass_filenames = true;
-          # entry = with inputs.nixpkgs.legacyPackages.${system}.python311Packages; "${mdformat}/bin/mdformat";
-        };
-        markdown-linter = {
-          enable = false;
-          name = "markdown-linter";
-          types = ["markdown"];
-          language = "system";
-          pass_filenames = true;
-          # entry = with inputs.nixpkgs.legacyPackages.${system}; "${mdl}/bin/mdl -g";
-        };
       };
     };
   };

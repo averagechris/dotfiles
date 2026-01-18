@@ -14,7 +14,6 @@
   ];
 
   nixpkgs.config.allowUnsupportedSystem = true;
-  nixpkgs.config.allowBroken = true;
   nixpkgs.overlays = lib.attrValues overlays;
   nix = {
     enable = false; # must be false with determinate nix trying that out :shrug:
