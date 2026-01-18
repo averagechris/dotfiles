@@ -6,7 +6,7 @@
   ...
 }: let
   cfg = config.dotfiles.opensshClient.safeConfig;
-  inherit (lib) mkIf mkOption types mkDefault mdDoc optional;
+  inherit (lib) mkIf mkOption types mkDefault optional;
 in {
   options.dotfiles.opensshClient.safeConfig = {
     enable = dotfiles_lib.options.mkDefaultEnabledOption "Install a safe system ssh client config that only includes files from /etc (avoids /nix/store vendor drop-ins with OpenSSH strict permission checks).";
@@ -14,7 +14,7 @@ in {
     copySystemdProxyDropin = mkOption {
       type = types.bool;
       default = false;
-      description = mdDoc "If true, copy systemd's ssh proxy drop-in into /etc as a real file so OpenSSH accepts it.";
+      description = "If true, copy systemd's ssh proxy drop-in into /etc as a real file so OpenSSH accepts it.";
     };
   };
 

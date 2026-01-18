@@ -26,6 +26,7 @@
       dropbox = ./modules/dropbox.nix;
       graphical = ./modules/graphical.nix;
       searx = ./modules/searx.nix;
+      sudoDeploy = ./modules/sudo-deploy.nix;
       users = {
         chris = ./modules/users/chris.nix;
         chrisMinimal = ./modules/users/chris-minimal.nix;
