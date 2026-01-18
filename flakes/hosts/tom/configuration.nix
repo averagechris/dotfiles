@@ -6,6 +6,7 @@
   imports = [
     inputs.nixos-modules.nixosModules.common
     inputs.nixos-modules.nixosModules.desktopCommon
+    inputs.nixos-modules.nixosModules.sudoDeploy
     inputs.nixos-modules.nixosModules.tailscale
     inputs.nixos-modules.nixosModules.users.chrisMinimal
     inputs.nixos-modules.nixosModules.homeAssistant
@@ -29,11 +30,8 @@
     home.stateVersion = "24.11";
   };
 
-  # TODO extract into deployable module
-  security.sudo = {
-    wheelNeedsPassword = false;
-    execWheelOnly = true;
-  };
+  # Passwordless sudo for deploy-rs
+  dotfiles.sudoNoPassword.enable = true;
 
   services.calibre-web = {
     enable = true;

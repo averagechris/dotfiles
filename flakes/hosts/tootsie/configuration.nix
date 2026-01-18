@@ -6,6 +6,7 @@
   imports = [
     inputs.nixos-modules.nixosModules.common
     inputs.nixos-modules.nixosModules.networking
+    inputs.nixos-modules.nixosModules.sudoDeploy
     inputs.nixos-modules.nixosModules.tailscale
     inputs.nixos-modules.nixosModules.users.chrisMinimal
     ./hardware.nix
@@ -65,9 +66,6 @@
 
   time.timeZone = "UTC";
 
-  # TODO extract into deployable module
-  security.sudo = {
-    wheelNeedsPassword = false;
-    execWheelOnly = true;
-  };
+  # Passwordless sudo for deploy-rs
+  dotfiles.sudoNoPassword.enable = true;
 }
