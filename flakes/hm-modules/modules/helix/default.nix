@@ -120,11 +120,6 @@ in {
             command = "alejandra";
             args = ["-"];
           };
-          # language-server = {
-          #   command = "nixd";
-          #   args = [];
-          #   environment = {};
-          # };
         }
         {
           # lsp: https://github.com/python-lsp/python-lsp-server
@@ -135,13 +130,6 @@ in {
           };
           language-servers = ["pylsp" "ruff"];
         }
-        # {
-        #   # lsp: https://github.com/bash-lsp/bash-language-server
-        #   name = "bash";
-        # }
-        # {
-        #   name = "toml";
-        # }
       ];
     };
   };

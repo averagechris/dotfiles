@@ -14,7 +14,6 @@ in
       ./zoom.nix
       ./firefox.nix
       ./linux_desktop.nix
-      ./sway
       ./hyprland
       ./kitty.nix
       ./zed.nix
@@ -66,9 +65,6 @@ in
       programs.keepassxc.enable = mkDefault cfg.enable;
       programs.signal.enable = mkDefault cfg.enable;
       programs.zoom.enable = mkDefault cfg.enable;
-
-      # use sway by default if gui is enabled
-      dotfiles.gui.sway.enable = mkDefault cfg.enable;
 
       services.udiskie.enable = mkDefault isLinux;
 

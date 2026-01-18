@@ -10,7 +10,7 @@
     };
   };
 
-   outputs = {...}: {
+  outputs = {...}: {
     nixosModules = {
       common = ./modules/common.nix;
       cosmicDesktop = ./modules/cosmic-desktop.nix;

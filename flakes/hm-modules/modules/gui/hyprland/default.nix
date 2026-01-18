@@ -29,8 +29,8 @@ in {
   };
 
   imports = [
-    ../sway/screenshots.nix
-    ../sway/swayidle.nix
+    ../wayland-shared/screenshots.nix
+    ../wayland-shared/swayidle.nix
     ./windowrules.nix
     ./waybar.nix
     ./wallpaperd.nix

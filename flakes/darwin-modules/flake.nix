@@ -19,8 +19,8 @@
   };
 
   outputs = {...}: {
-    # Note: Legacy modules archived in ./archive/
-    # See archive/README.md for restoration instructions
+    # Darwin-specific modules can be added here as needed
+    # Currently, Darwin configuration is handled directly in flakes/hosts/suremac/
     darwinModules = {};
   };
 }

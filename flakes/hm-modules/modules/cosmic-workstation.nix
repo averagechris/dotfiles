@@ -38,9 +38,7 @@ in {
   config = mkIf cfg.enable {
     # Core GUI configuration
     dotfiles.gui.enable = mkDefault true;
-    dotfiles.gui.sway.enable = mkDefault false;
     dotfiles.gui.hyprland.enable = mkDefault false;
-    dotfiles.gui.swayidle.enable = mkDefault false;
 
     # Shell utilities
     dotfiles.shell.calibre-utils.enable = mkDefault true;

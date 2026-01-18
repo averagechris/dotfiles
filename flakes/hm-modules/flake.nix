@@ -38,7 +38,6 @@
           windsurf = ./modules/gui/windsurf.nix;
           zoom = ./modules/gui/zoom.nix;
           linux_desktop = ./modules/gui/linux_desktop.nix;
-          sway = ./modules/gui/sway/default.nix;
           hyprland = ./modules/gui/hyprland/default.nix;
           wezterm = ./modules/gui/wezterm/default.nix;
           ghostty = ./modules/gui/ghostty/default.nix;

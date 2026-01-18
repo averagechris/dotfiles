@@ -4,7 +4,7 @@
   config,
   ...
 }: {
-  config = lib.mkIf (config.dotfiles.gui.sway.enable || config.dotfiles.gui.hyprland.enable) {
+  config = lib.mkIf config.dotfiles.gui.hyprland.enable {
     xdg.configFile."swappy/config".text = ''
       [Default]
       save_dir=$HOME/screenshots
