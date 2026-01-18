@@ -52,10 +52,10 @@ dotfiles/
 │       ├── thorny/          # NixOS system
 │       ├── tom/             # NixOS system
 │       ├── cruber/          # NixOS system
-│       ├── taz/             # NixOS system
-│       └── tootsie/         # NixOS system
-├── nixpkgs/                 # Custom NixOS modules and overlays
-└── hm_modules/              # Legacy home-manager modules
+│       ├── taz/             # NixOS system (inactive)
+│       └── tootsie/         # NixOS system (inactive)
+├── secrets/                 # Encrypted secrets (agenix)
+└── scripts/                 # Utility scripts
 ```
 
 See [flakes/README.md](flakes/README.md) for detailed architecture documentation.

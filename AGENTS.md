@@ -134,6 +134,10 @@ Jobs in `.builds/` run in parallel on push. SourceHut limits: **4 concurrent job
 | `build-suremac.yml` | Darwin flake validation (`--no-build` on Linux) |
 | `build-tom.yml` | Build tom NixOS config |
 | `build-trap.yml` | Build trap NixOS config |
+| `build-thorny.yml` | Build thorny NixOS config |
+| `build-cruber.yml` | Build cruber NixOS config |
+
+**Note**: Inactive hosts (taz, tootsie) are intentionally excluded from CI. They remain in the repo for reference but are not actively maintained or deployed. Adding CI for them would consume limited SourceHut job slots without benefit.
 
 **Critical**: Never track `result` symlinks—they point to local store paths and break CI. See `.gitignore` patterns: `/result`, `/result-*`, `flakes/hosts/*/result`.
 
