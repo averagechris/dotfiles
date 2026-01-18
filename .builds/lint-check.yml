@@ -26,3 +26,16 @@ tasks:
       cd ~/dotfiles
       echo "Checking top-level flake..."
       nix flake check --accept-flake-config
+
+  - check-host-flakes: |
+      cd ~/dotfiles
+      echo "Checking individual host flakes..."
+      for host in trap thorny tom cruber suremac; do
+        echo "Checking flakes/hosts/$host..."
+        nix flake check --accept-flake-config --no-build "./flakes/hosts/$host"
+      done
+      echo "Checking shared module flakes..."
+      nix flake check --accept-flake-config --no-build ./flakes/base-lib
+      nix flake check --accept-flake-config --no-build ./flakes/nixos-modules
+      nix flake check --accept-flake-config --no-build ./flakes/hm-modules
+      nix flake check --accept-flake-config --no-build ./flakes/darwin-modules
