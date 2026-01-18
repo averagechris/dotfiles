@@ -40,6 +40,48 @@ flakes/hosts/HOSTNAME/
 └── hardware.nix        # Hardware config (NixOS only)
 ```
 
+## Input Duplication Pattern
+
+Each host flake declares nearly identical input blocks. **This is intentional** and supports flake independence:
+
+### Why Inputs Are Duplicated
+
+1. **Standalone builds**: Each host can be built independently without the root flake
+   ```bash
+   nix build ./flakes/hosts/trap#nixosConfigurations.trap.config.system.build.toplevel
+   ```
+
+2. **Clear dependencies**: Each host explicitly declares what it needs, making dependencies transparent
+
+3. **Flexible updates**: Individual hosts can be updated independently if needed (though `follows` keeps them synchronized)
+
+### The `follows` Pattern
+
+All host flakes use `follows` to ensure consistent versions across the repository:
+
+```nix
+inputs = {
+  base-lib.url = "path:../../base-lib";
+  nixpkgs.follows = "base-lib/nixpkgs";           # Use base-lib's nixpkgs
+  home-manager.follows = "base-lib/home-manager"; # Use base-lib's home-manager
+  # ... other follows ...
+};
+```
+
+This pattern ensures:
+- All hosts use the same `nixpkgs` version
+- All hosts use the same `home-manager` version
+- Dependency versions are controlled from `base-lib/flake.nix`
+- No version conflicts between hosts
+
+### Not Technical Debt
+
+The duplication is **not** a limitation to be refactored away. It's an architectural choice that:
+- Enables independent host builds
+- Makes each host's dependencies explicit
+- Allows future flexibility (e.g., one host on a different nixpkgs version if needed)
+- Follows Nix flake best practices for modular systems
+
 ## Special Notes
 
 - **suremac**: Uses `darwin-rebuild`, not deploy-rs
