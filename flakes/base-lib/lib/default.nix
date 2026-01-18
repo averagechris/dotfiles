@@ -13,13 +13,13 @@
 }: rec {
   # Helper library for options
   dotfiles_lib = {
-    options = with inputs.nixpkgs.legacyPackages.x86_64-linux.lib; {
+    options = with inputs.nixpkgs.lib; {
       mkDefaultEnabledOption = description:
         mkOption {
           type = types.bool;
           default = true;
           example = false;
-          description = mdDoc description;
+          description = description;
         };
     };
   };
