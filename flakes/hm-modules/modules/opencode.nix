@@ -808,9 +808,10 @@
 
         1. **Work on current change** - Edit files, they're auto-saved to `@`
         2. **Describe when ready** - `jj describe -m "feat: ..."` to set the message
-        3. **Start new change** - `jj new` creates empty change on top, "finishing" the previous one
-        4. **Tug before push** - `jj tug` moves bookmark to `@-` (the finished change)
-        5. **Push** - `jj git push --bookmark <name>`
+        3. **Finish and push** - `jj new && jj tug` then `jj git push`
+           - `jj new` creates empty change on top, making described change `@-`
+           - `jj tug` moves the bookmark to `@-` (the finished change)
+           - `jj git push` pushes the bookmark to remote
 
         ### Iterative Squash Pattern
 
@@ -865,9 +866,14 @@
         ## Bookmark Workflow
 
         ```bash
+        # Finishing a change and pushing
+        jj new && jj tug                    # Finish change, move bookmark to @-
+        jj git push                         # Push bookmark to remote
+
+        # Manual bookmark management
         jj bookmark set <name>              # Create/move bookmark to @
-        jj tug                              # Move bookmark to @- (before push)
-        jj git push --bookmark <name>       # Push to remote
+        jj bookmark set <name> -r @-        # Move bookmark to parent
+        jj git push --bookmark <name>       # Push specific bookmark
         ```
 
         ## Commit Message Style
