@@ -110,7 +110,5 @@
       };
   in {
     darwinConfigurations.suremac = mkHostWithModules ./configuration.nix;
-
-    deploy.nodes.suremac = lib.mkDeploy' self.darwinConfigurations.suremac;
   };
 }

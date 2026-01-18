@@ -65,7 +65,6 @@
         inherit (cruber.deploy.nodes) cruber;
         inherit (taz.deploy.nodes) taz;
         inherit (tootsie.deploy.nodes) tootsie;
-        inherit (suremac.deploy.nodes) suremac;
       };
     }
     // flake-utils.lib.eachDefaultSystem (system: let
@@ -79,7 +78,7 @@
       # Setup script for Darwin
       packages.setup-darwin-determinate-substituters = pkgs.writeShellApplication {
         name = "setup-darwin-determinate-substituters";
-        text = builtins.readFile ./nixpkgs/scripts/setup-darwin-determinate-nix.sh;
+        text = builtins.readFile ./scripts/setup-darwin-determinate-nix.sh;
       };
 
       apps.setup-darwin-determinate-substituters = {
