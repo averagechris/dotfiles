@@ -10,10 +10,7 @@ secrets:
   - 731f7e55-4497-4228-8fa4-1657da7d3625
 tasks:
   - setup: |
-      mkdir -p ~/.config/nix/
-      echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
-      cachix authtoken --stdin < ~/.ci_secrets/cachix_token
-      cachix use averagechris-dotfiles
+      source ~/dotfiles/scripts/ci-setup.sh
 
   - format: |
       cd ~/dotfiles
