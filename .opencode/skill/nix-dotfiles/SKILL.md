@@ -4,6 +4,11 @@ description: |
   Multi-flake Nix dotfiles repository reference. Use when working with NixOS/Darwin configurations,
   home-manager modules, host flakes, or the base-lib. Covers repo structure, build commands,
   code style, and patterns specific to this dotfiles architecture.
+license: MIT
+compatibility: opencode
+metadata:
+  audience: developers
+  workflow: nix
 ---
 
 # Nix Dotfiles Repository Skill
@@ -85,13 +90,15 @@ dotfiles.feature.enable = true/false;
 Use `mkDefaultEnabledOption` helper for boolean options.
 
 ### File Locations
-- **Host flakes**: `flakes/hosts/<hostname>/`
-- **Host configs**: `flakes/hosts/<hostname>/configuration.nix`
-- **Hardware configs**: `flakes/hosts/<hostname>/hardware.nix`
-- **NixOS modules**: `flakes/nixos-modules/modules/`
-- **Home-manager modules**: `flakes/hm-modules/modules/` and `hm_modules/`
-- **Darwin modules**: `flakes/darwin-modules/modules/`
-- **Library functions**: `flakes/base-lib/lib/`
+| Type | Location |
+|------|----------|
+| Host flakes | `flakes/hosts/<hostname>/` |
+| Host configs | `flakes/hosts/<hostname>/configuration.nix` |
+| Hardware configs | `flakes/hosts/<hostname>/hardware.nix` |
+| NixOS modules | `flakes/nixos-modules/modules/` |
+| Home-manager modules | `flakes/hm-modules/modules/` and `hm_modules/` |
+| Darwin modules | `flakes/darwin-modules/modules/` |
+| Library functions | `flakes/base-lib/lib/` |
 
 ## Adding a New Host
 
@@ -168,8 +175,55 @@ config = lib.mkIf cfg.enable {
 option = lib.mkDefault "value";
 ```
 
+### Merging Configurations
+```nix
+config = lib.mkMerge [
+  (lib.mkIf condition1 { ... })
+  (lib.mkIf condition2 { ... })
+];
+```
+
+### Force Override
+```nix
+option = lib.mkForce "value";
+```
+
+## Debugging Nix Issues
+
+### Common Commands
+```bash
+# Show flake outputs
+nix flake show
+
+# Evaluate an attribute
+nix eval .#<attr>
+
+# Build with trace
+nix build .#<attr> --show-trace
+
+# Check flake
+nix flake check
+
+# Update a specific input
+nix flake lock --update-input <input-name>
+```
+
+### Common Issues
+
+1. **Missing input**: Check that the input is declared in `flake.nix` and passed to modules
+2. **Circular import**: Restructure modules to avoid circular dependencies
+3. **Type mismatch**: Use `builtins.typeOf` to debug, ensure options have correct types
+4. **Infinite recursion**: Often caused by self-referential definitions; use `lib.mkDefault` or restructure
+
 ## VCS Notes
 
 - Repository is managed with `jj` (Jujutsu) VCS, colocated with git
 - Use `jj` commands, not `git` commands
 - See the `jj-vcs` skill for jj-specific guidance
+
+## Changelog Policy
+
+- **Canonical source**: The `jj describe` message is the changelog entry
+- **Format**: Keep entries concise; sparing Markdown allowed
+- **Splitting changes**: Break disparate changes into separate commits using `jj split`, `jj squash`
+- **Style**: Use type/scope prefix (e.g., `feat(opencode): add changelog policy`)
