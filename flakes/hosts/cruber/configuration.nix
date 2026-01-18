@@ -38,7 +38,7 @@
   hardware.enableRedistributableFirmware = true;
   system.stateVersion = "24.11";
   home-manager.users.chris = {...}: {
-    home.stateVersion = "23.05";
+    home.stateVersion = "24.11";
     imports = [
       inputs.hm-modules.homeManagerModules.default
     ];
