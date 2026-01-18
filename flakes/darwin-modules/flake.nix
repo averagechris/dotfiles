@@ -22,7 +22,6 @@
     darwinModules = {
       configuration = ./modules/configuration.nix;
       desktop = ./modules/desktop.nix;
-      karabiner = ./modules/karabiner.nix;
       skhd = ./modules/skhd.nix;
     };
   };
