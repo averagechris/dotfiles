@@ -197,7 +197,6 @@
       gpg.enable = true;
     };
     dotfiles.gui.enable = true;
-    dotfiles.gui.sway.enable = false;
     programs.git.settings = {
       user.name = "Chris Cummings";
       user.email = "chris.cummings@sureapp.com";

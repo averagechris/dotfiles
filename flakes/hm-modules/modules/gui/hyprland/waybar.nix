@@ -3,9 +3,11 @@
   lib,
   ...
 }: let
-  cfg = config.dotfiles.gui.hyprland.waybar;
+  hyprlandCfg = config.dotfiles.gui.hyprland;
+  cfg = hyprlandCfg.waybar;
 in {
-  config = lib.mkIf cfg.enable {
+  # Only enable waybar config when both hyprland and hyprland.waybar are enabled
+  config = lib.mkIf (hyprlandCfg.enable && cfg.enable) {
     programs.waybar = {
       enable = lib.mkDefault true;
       systemd = {

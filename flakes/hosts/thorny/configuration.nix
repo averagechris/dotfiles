@@ -12,6 +12,7 @@
     inputs.nixos-modules.nixosModules.sound
     inputs.nixos-modules.nixosModules.tailscale
     inputs.nixos-modules.nixosModules.users.chris
+    inputs.nixos-modules.nixosModules.cosmicDesktop
     ./hardware.nix
     inputs.agenix.nixosModules.default
     inputs.nixos-hardware.nixosModules.system76
@@ -21,10 +22,8 @@
     inputs.nixos-hardware.nixosModules.common-pc-ssd
   ];
 
-  services.desktopManager.cosmic.enable = true;
-  services.displayManager.cosmic-greeter.enable = true;
-  environment.sessionVariables.COSMIC_DATA_CONTROL_ENABLED = 1;
-  services.gnome.gnome-keyring.enable = false;
+  dotfiles.cosmic.enable = true;
+  dotfiles.cosmic.system76.enable = true;
 
   boot.initrd.luks.devices.root.device = "/dev/sda2";
   networking.hostName = "thorny";
@@ -32,15 +31,10 @@
   networking.wireless.interfaces = ["wlp6s0"];
 
   environment.systemPackages = with pkgs; [
-    cosmic-ext-ctl
-    cosmic-ext-tweaks
-    examine
     mesa
-    system76-firmware
   ];
   hardware.graphics.enable = true;
   hardware.enableRedistributableFirmware = true;
-  hardware.system76.enableAll = true;
 
   programs.steam.enable = true;
   hardware.xone.enable = true;
@@ -51,18 +45,9 @@
     imports = [
       inputs.hm-modules.homeManagerModules.default
     ];
-    dotfiles.gui.enable = true;
+    dotfiles.cosmic-workstation.enable = true;
     programs.meganz.enable = true;
 
-    dotfiles.gui.sway.enable = false;
-    dotfiles.gui.hyprland.enable = false;
-    dotfiles.gui.swayidle.enable = false;
-    dotfiles.shell.calibre-utils.enable = true;
-    dotfiles.shell.python.enable = true;
-    dotfiles.shell.pipx.enable = true;
-    dotfiles.shell.yazi.enable = true;
-    dotfiles.wezterm.enable = true;
-    programs.helix.terminal.flavor = "wezterm";
     dotfiles.helix-terminal-tools = {
       enable = true;
       yazi = {
@@ -78,8 +63,4 @@
     programs.opencode.enable = true;
     home.packages = [pkgs.claude-code];
   };
-
-  services.dbus.enable = true;
-  services.flatpak.enable = true;
-  services.fwupd.enable = true;
 }
