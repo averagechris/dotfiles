@@ -19,71 +19,114 @@
           type = types.bool;
           default = true;
           example = false;
-          description = description;
+          inherit description;
         };
     };
   };
 
   # Generate special arguments for modules
-  specialArgs = system: {
-    inherit inputs sshKeys system agenix dotfiles_lib;
-    overlays =
-      (import ../overlays/default.nix {
-        inherit inputs nixpkgs titlecase;
-      }).default
-      system;
+  # Used by mkNixosHost and mkDarwinHost
+  mkSpecialArgs = {
+    system,
+    extraInputs ? {},
+  }: {
+    inherit sshKeys system agenix dotfiles_lib;
+    inputs = inputs // extraInputs;
+    overlays = {
+      default = final: prev: {};
+    };
   };
 
-  # Create a NixOS or Darwin system configuration
-  mkHost = system: hostPath: let
-    isMacos = system == flake-utils.lib.system.aarch64-darwin;
+  # Create a NixOS system configuration
+  # This replaces the duplicated mkHostWithModules pattern in host flakes
+  mkNixosHost = {
+    system,
+    hostPath,
+    extraInputs ? {},
+    permittedInsecurePackages ? [],
+  }: let
+    specialArgs = mkSpecialArgs {inherit system extraInputs;};
     pkgs = import nixpkgs {
       inherit system;
       config = {
         allowUnfree = true;
-        allowUnsupportedSystem = isMacos;
-        allowBroken = isMacos;
-        # Required for home-assistant on tom.nix which needs legacy OpenSSL
-        permittedInsecurePackages =
-          if hostPath == ./hosts/tom.nix
-          then ["openssl-1.1.1w"]
-          else [];
+        inherit permittedInsecurePackages;
       };
       overlays = [
         (final: prev: {
-          titlecase = inputs.titlecase.packages.${system}.default;
+          titlecase =
+            if extraInputs ? titlecase
+            then extraInputs.titlecase.packages.${system}.default
+            else inputs.titlecase.packages.${system}.default;
         })
       ];
     };
-    fn =
-      if system == "aarch64-darwin"
-      then darwin.lib.darwinSystem
-      else nixpkgs.lib.nixosSystem;
-    hmModule =
-      if system == "aarch64-darwin"
-      then home-manager.darwinModules.home-manager
-      else home-manager.nixosModules.home-manager;
   in
-    fn {
-      inherit pkgs system;
-      specialArgs = specialArgs system;
-      modules =
-        [
-          hostPath
-          hmModule
-          {
-            home-manager.extraSpecialArgs = specialArgs system;
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.backupFileExtension = "hm.bak";
-          }
-        ]
-        ++ (
-          if system == "aarch64-darwin"
-          then [mac-app-util.darwinModules.default]
-          else []
-        );
+    nixpkgs.lib.nixosSystem {
+      inherit pkgs system specialArgs;
+      modules = [
+        hostPath
+        home-manager.nixosModules.home-manager
+        {
+          home-manager.extraSpecialArgs = specialArgs;
+          home-manager.useGlobalPkgs = true;
+          home-manager.useUserPackages = true;
+          home-manager.backupFileExtension = "hm.bak";
+        }
+      ];
     };
+
+  # Create a Darwin (macOS) system configuration
+  # This replaces the duplicated mkHostWithModules pattern in host flakes
+  mkDarwinHost = {
+    system ? "aarch64-darwin",
+    hostPath,
+    extraInputs ? {},
+  }: let
+    specialArgs = mkSpecialArgs {inherit system extraInputs;};
+    pkgs = import nixpkgs {
+      inherit system;
+      config = {
+        allowUnfree = true;
+        allowUnsupportedSystem = true;
+        allowBroken = true;
+      };
+      overlays = [
+        (final: prev: {
+          titlecase =
+            if extraInputs ? titlecase
+            then extraInputs.titlecase.packages.${system}.default
+            else inputs.titlecase.packages.${system}.default;
+        })
+      ];
+    };
+  in
+    darwin.lib.darwinSystem {
+      inherit pkgs system specialArgs;
+      modules = [
+        hostPath
+        home-manager.darwinModules.home-manager
+        mac-app-util.darwinModules.default
+        {
+          home-manager.extraSpecialArgs = specialArgs;
+          home-manager.useGlobalPkgs = true;
+          home-manager.useUserPackages = true;
+          home-manager.backupFileExtension = "hm.bak";
+        }
+      ];
+    };
+
+  # Legacy: kept for backwards compatibility but prefer mkNixosHost/mkDarwinHost
+  specialArgs = system: mkSpecialArgs {inherit system;};
+
+  # Legacy: Create a NixOS or Darwin system configuration
+  # Prefer mkNixosHost or mkDarwinHost instead
+  mkHost = system: hostPath: let
+    isMacos = system == flake-utils.lib.system.aarch64-darwin;
+  in
+    if isMacos
+    then mkDarwinHost {inherit system hostPath;}
+    else mkNixosHost {inherit system hostPath;};
 
   # Create a deploy-rs configuration for a host
   mkDeploy = host: {

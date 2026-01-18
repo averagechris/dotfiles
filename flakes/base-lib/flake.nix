@@ -59,7 +59,7 @@
     {
       # Export library functions
       lib = {
-        inherit (lib) mkHost mkDeploy mkDeploy' mkCommitCheck specialArgs dotfiles_lib;
+        inherit (lib) mkHost mkNixosHost mkDarwinHost mkDeploy mkDeploy' mkCommitCheck mkSpecialArgs specialArgs dotfiles_lib;
       };
 
       # Export SSH keys
