@@ -30,6 +30,7 @@
         gui = {
           default = ./modules/gui/default.nix;
           alacritty = ./modules/gui/alacritty.nix;
+          cosmicPortalWorkarounds = ./modules/gui/cosmic-portal-workarounds.nix;
           firefox = ./modules/gui/firefox.nix;
           kitty = ./modules/gui/kitty.nix;
           zed = ./modules/gui/zed.nix;

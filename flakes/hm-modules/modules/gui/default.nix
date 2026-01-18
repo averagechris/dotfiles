@@ -10,6 +10,7 @@ in
   with lib; {
     imports = [
       ./alacritty.nix
+      ./cosmic-portal-workarounds.nix
       ./zoom.nix
       ./firefox.nix
       ./linux_desktop.nix
