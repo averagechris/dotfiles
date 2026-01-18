@@ -28,15 +28,15 @@ in
           options = {
             package = mkOption {
               type = types.package;
-              description = mdDoc "The terminal program to pass to the window manager, by default kitty.";
+              description = "The terminal program to pass to the window manager, by default kitty.";
             };
             args = mkOption {
               type = types.listOf types.str;
-              description = mdDoc "The args passed to the invocation of the terminal program used by the window manager.";
+              description = "The args passed to the invocation of the terminal program used by the window manager.";
             };
             binPath = mkOption {
               type = types.str;
-              description = mdDoc "The invocation of the terminal program used by the window manager.";
+              description = "The invocation of the terminal program used by the window manager.";
             };
           };
         };
@@ -45,7 +45,7 @@ in
           args = ["--single-instance" "--instance-group=0" "--listen-on=unix:/tmp/main-kitty-socket"];
           binPath = let inherit (config.dotfiles.gui.terminal) package args; in ''${package}/bin/${package.pname} ${builtins.concatStringsSep " " args}'';
         };
-        description = mdDoc "A submodule describing the terminal program passed to the window manager, by default kitty.";
+        description = "A submodule describing the terminal program passed to the window manager, by default kitty.";
       };
     };
     options.programs = {
