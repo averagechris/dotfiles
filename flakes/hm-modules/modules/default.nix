@@ -3,9 +3,8 @@
     ./gui
     ./meganz.nix
     ./shell.nix
-    ./opencode.nix
-    ./email.nix
-    ./helix.nix
+    ./opencode
+    ./helix
     ./helix-terminal-tools
   ];
   options.dotfiles = with dotfiles_lib.options; {

@@ -23,9 +23,9 @@
       homeManagerModules = {
         default = ./modules/default.nix;
         shell = ./modules/shell.nix;
-        helix = ./modules/helix.nix;
-        opencode = ./modules/opencode.nix;
-        email = ./modules/email.nix;
+        helix = ./modules/helix/default.nix;
+        opencode = ./modules/opencode/default.nix;
+
         meganz = ./modules/meganz.nix;
         gui = {
           default = ./modules/gui/default.nix;
