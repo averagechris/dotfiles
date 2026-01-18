@@ -34,6 +34,6 @@ in {
     imports =
       if inputs ? hm-modules
       then [inputs.hm-modules.homeManagerModules.default]
-      else [../../../hm_modules];
+      else [];
   };
 }

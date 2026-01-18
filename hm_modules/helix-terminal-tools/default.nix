@@ -87,7 +87,6 @@ in {
         description = "Currently hardcoded to space.t.f - to be improved in future versions";
       };
     };
-
   };
 
   config = mkIf cfg.enable {
@@ -126,7 +125,6 @@ in {
           };
         };
       })
-
     ];
 
     # Create a custom Yazi configuration directory for the integration
