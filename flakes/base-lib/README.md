@@ -5,7 +5,7 @@ Foundation library for the dotfiles repository containing shared functions, util
 ## Overview
 
 The base-lib flake serves as the central hub for:
-- System configuration creation (`mkHost`)
+- System configuration creation (`mkNixosHost`, `mkDarwinHost`)
 - Deployment configuration (`mkDeploy`, `mkDeploy'`)
 - SSH key management
 - Package overlays
@@ -14,22 +14,23 @@ The base-lib flake serves as the central hub for:
 
 ## Library API
 
-### `mkHost(system, hostPath)`
+### `mkNixosHost({ system, hostPath, extraInputs?, permittedInsecurePackages? })`
 
-Creates a NixOS or Darwin system configuration.
+Creates a NixOS system configuration.
 
 **Parameters**:
-- `system` (string): System architecture (e.g., `"x86_64-linux"`, `"aarch64-darwin"`)
+- `system` (string): System architecture (e.g., `"x86_64-linux"`)
 - `hostPath` (path): Path to the host's `configuration.nix`
+- `extraInputs` (attribute set, optional): Additional flake inputs to pass to modules
+- `permittedInsecurePackages` (list, optional): List of insecure packages to permit (e.g., `["openssl-1.1.1w"]`)
 
-**Returns**: A system configuration that can be used in `nixosConfigurations` or `darwinConfigurations`
+**Returns**: A NixOS system configuration for use in `nixosConfigurations`
 
 **Features**:
-- Automatically detects system type (NixOS vs Darwin)
-- Integrates home-manager
-- Configures overlays and special arguments
-- Handles insecure packages (e.g., openssl-1.1.1w for tom)
-- Sets up mac-app-util for Darwin systems
+- Integrates home-manager with global packages enabled
+- Configures special arguments for all modules
+- Supports custom overlays via extraInputs
+- Handles insecure packages (e.g., openssl-1.1.1w for home-assistant)
 
 **Example**:
 
@@ -42,16 +43,102 @@ Creates a NixOS or Darwin system configuration.
 
   outputs = inputs @ { base-lib, ... }:
     with base-lib.lib; {
-      nixosConfigurations.myhost = mkHost "x86_64-linux" ./configuration.nix;
-      darwinConfigurations.mymac = mkHost "aarch64-darwin" ./configuration.nix;
+      nixosConfigurations.myhost = mkNixosHost {
+        system = "x86_64-linux";
+        hostPath = ./configuration.nix;
+      };
+      
+      # With insecure packages
+      nixosConfigurations.tom = mkNixosHost {
+        system = "x86_64-linux";
+        hostPath = ./configuration.nix;
+        permittedInsecurePackages = ["openssl-1.1.1w"];
+      };
     };
 }
 ```
 
-**Special Handling**:
-- **tom host**: Automatically permits `openssl-1.1.1w` for home-assistant compatibility
-- **Darwin systems**: Includes mac-app-util module for app management
-- **All systems**: Includes home-manager with global packages enabled
+### `mkDarwinHost({ system?, hostPath, extraInputs? })`
+
+Creates a Darwin (macOS) system configuration.
+
+**Parameters**:
+- `system` (string, optional): System architecture (defaults to `"aarch64-darwin"`)
+- `hostPath` (path): Path to the host's `configuration.nix`
+- `extraInputs` (attribute set, optional): Additional flake inputs to pass to modules
+
+**Returns**: A Darwin system configuration for use in `darwinConfigurations`
+
+**Features**:
+- Integrates home-manager with global packages enabled
+- Includes mac-app-util module for app management
+- Configures special arguments for all modules
+- Supports custom overlays via extraInputs
+
+**Example**:
+
+```nix
+{
+  inputs = {
+    base-lib.url = "path:../../base-lib";
+    nixpkgs.follows = "base-lib/nixpkgs";
+  };
+
+  outputs = inputs @ { base-lib, ... }:
+    with base-lib.lib; {
+      darwinConfigurations.mymac = mkDarwinHost {
+        hostPath = ./configuration.nix;
+      };
+    };
+}
+```
+
+### `mkSpecialArgs({ system, extraInputs? })`
+
+Generates special arguments passed to all NixOS and home-manager modules.
+
+**Parameters**:
+- `system` (string): System architecture
+- `extraInputs` (attribute set, optional): Additional flake inputs to merge with standard inputs
+
+**Returns**: Attribute set with special arguments
+
+**Provided Arguments**:
+- `inputs`: All flake inputs (merged with extraInputs if provided)
+- `sshKeys`: SSH public keys (see SSH Keys section)
+- `system`: System architecture
+- `agenix`: Secrets management module
+- `dotfiles_lib`: Helper library for module options
+
+**Example**:
+
+```nix
+# In a module
+{ config, lib, pkgs, inputs, sshKeys, system, dotfiles_lib, agenix, ... }:
+
+{
+  # Access special arguments
+  users.users.root.openssh.authorizedKeys.keys = [
+    sshKeys.chris.thelio
+  ];
+}
+```
+
+**Note**: `mkNixosHost` and `mkDarwinHost` automatically call `mkSpecialArgs` internally, so you typically don't need to call this directly unless building custom host configurations.
+
+### `mkHost(system, hostPath)` (Legacy)
+
+**Deprecated**: Use `mkNixosHost` or `mkDarwinHost` instead.
+
+Creates a NixOS or Darwin system configuration by automatically detecting the system type.
+
+**Parameters**:
+- `system` (string): System architecture (e.g., `"x86_64-linux"`, `"aarch64-darwin"`)
+- `hostPath` (path): Path to the host's `configuration.nix`
+
+**Returns**: A system configuration that can be used in `nixosConfigurations` or `darwinConfigurations`
+
+**Note**: This function is kept for backwards compatibility but should not be used in new code. Use `mkNixosHost` for NixOS hosts and `mkDarwinHost` for Darwin hosts instead.
 
 ### `mkDeploy(host)`
 
@@ -129,36 +216,7 @@ Creates pre-commit hook checks for code quality.
 }
 ```
 
-### `specialArgs(system)`
 
-Generates special arguments passed to all NixOS and home-manager modules.
-
-**Parameters**:
-- `system` (string): System architecture
-
-**Returns**: Attribute set with special arguments
-
-**Provided Arguments**:
-- `inputs`: All flake inputs
-- `sshKeys`: SSH public keys (see SSH Keys section)
-- `system`: System architecture
-- `overlays`: Package overlays
-- `dotfiles_lib`: Helper library
-- `agenix`: Secrets management
-
-**Example**:
-
-```nix
-# In a module
-{ config, lib, pkgs, inputs, sshKeys, system, overlays, dotfiles_lib, agenix, ... }:
-
-{
-  # Access special arguments
-  users.users.root.openssh.authorizedKeys.keys = [
-    sshKeys.chris.thelio
-  ];
-}
-```
 
 ### `dotfiles_lib`
 
@@ -286,7 +344,7 @@ The base-lib flake depends on several external inputs:
 
 ## Usage Examples
 
-### Basic Host Configuration
+### Basic NixOS Host Configuration
 
 ```nix
 # flakes/hosts/myhost/flake.nix
@@ -299,8 +357,31 @@ The base-lib flake depends on several external inputs:
 
   outputs = inputs @ { base-lib, ... }:
     with base-lib.lib; {
-      nixosConfigurations.myhost = mkHost "x86_64-linux" ./configuration.nix;
+      nixosConfigurations.myhost = mkNixosHost {
+        system = "x86_64-linux";
+        hostPath = ./configuration.nix;
+      };
       deploy.nodes.myhost = mkDeploy self.nixosConfigurations.myhost;
+    };
+}
+```
+
+### Basic Darwin Host Configuration
+
+```nix
+# flakes/hosts/mymac/flake.nix
+{
+  inputs = {
+    base-lib.url = "path:../../base-lib";
+    nixpkgs.follows = "base-lib/nixpkgs";
+    home-manager.follows = "base-lib/home-manager";
+  };
+
+  outputs = inputs @ { base-lib, ... }:
+    with base-lib.lib; {
+      darwinConfigurations.mymac = mkDarwinHost {
+        hostPath = ./configuration.nix;
+      };
     };
 }
 ```
