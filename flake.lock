@@ -5417,6 +5417,27 @@
         "type": "github"
       }
     },
+    "disko": {
+      "inputs": {
+        "nixpkgs": [
+          "tater",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1768727946,
+        "narHash": "sha256-le2GY+ZR6uRHMuOAc60sBR3gBD2BEk1qOZ3S5C/XFpU=",
+        "owner": "nix-community",
+        "repo": "disko",
+        "rev": "558e84658d0eafc812497542ad6ca0d9654b3b0f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "disko",
+        "type": "github"
+      }
+    },
     "fenix": {
       "inputs": {
         "nixpkgs": [
@@ -21581,6 +21602,7 @@
           "base-lib",
           "deploy-rs"
         ],
+        "disko": "disko",
         "flake-utils": [
           "tater",
           "base-lib",

@@ -1,35 +1,35 @@
-# PLACEHOLDER: This file should be generated on the actual hardware using:
-#   nixos-generate-config --root /mnt
-# Then copy the generated hardware-configuration.nix here.
+# Hardware configuration for ThinkPad T14s Gen 5 AMD
 #
-# This placeholder allows the flake to be checked before hardware is available.
+# NOTE: After running nixos-generate-config on the actual hardware,
+# merge any additional detected settings (like specific kernel modules)
+# into this file.
 {
   config,
   lib,
   pkgs,
   modulesPath,
+  inputs,
   ...
 }: {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
+    inputs.disko.nixosModules.disko
+    ./disk-config.nix
   ];
 
+  # Kernel modules for ThinkPad T14s Gen 5 AMD
   boot.initrd.availableKernelModules = ["nvme" "xhci_pci" "thunderbolt" "usb_storage" "sd_mod"];
   boot.initrd.kernelModules = [];
   boot.kernelModules = ["kvm-amd"];
   boot.extraModulePackages = [];
 
-  # Placeholder filesystem configuration - MUST be updated after installation
-  fileSystems."/" = {
-    device = "/dev/disk/by-label/nixos";
-    fsType = "ext4";
-  };
+  # Enable hibernation (resume from swap)
+  # The swap partition is randomly encrypted, so hibernation requires
+  # a persistent swap. If you need hibernation, change disk-config.nix
+  # to use a LUKS-encrypted swap instead of randomEncryption.
+  # boot.resumeDevice = "/dev/disk/by-label/swap";
 
-  fileSystems."/boot" = {
-    device = "/dev/disk/by-label/boot";
-    fsType = "vfat";
-  };
-
+  # Swap is handled by disko (see disk-config.nix)
   swapDevices = [];
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
