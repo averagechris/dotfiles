@@ -19,6 +19,7 @@
           type = "gpt";
           partitions = {
             ESP = {
+              priority = 1;
               size = "512M";
               type = "EF00";
               content = {
@@ -28,8 +29,17 @@
                 mountOptions = ["umask=0077"];
               };
             };
+            swap = {
+              priority = 2;
+              size = "16G";
+              content = {
+                type = "swap";
+                randomEncryption = true; # Encrypt swap with random key each boot
+              };
+            };
             luks = {
-              size = "-16G"; # All space except last 16GB
+              priority = 3;
+              size = "100%"; # All remaining space
               content = {
                 type = "luks";
                 name = "cryptroot";
@@ -43,13 +53,6 @@
                   mountpoint = "/";
                   mountOptions = ["noatime"];
                 };
-              };
-            };
-            swap = {
-              size = "100%"; # Remaining 16GB
-              content = {
-                type = "swap";
-                randomEncryption = true; # Encrypt swap with random key each boot
               };
             };
           };
