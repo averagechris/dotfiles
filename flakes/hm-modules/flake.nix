@@ -64,7 +64,7 @@
     }
     // flake-utils.lib.eachDefaultSystem (system: let
       pkgs = nixpkgs.legacyPackages.${system};
-      isLinux = pkgs.stdenv.isLinux;
+      inherit (pkgs.stdenv) isLinux;
       # Provide dotfiles_lib that modules expect (normally provided by base-lib)
       dotfiles_lib = {
         options = with nixpkgs.lib; {

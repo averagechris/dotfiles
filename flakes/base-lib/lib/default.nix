@@ -44,6 +44,7 @@
     hostPath,
     extraInputs ? {},
     permittedInsecurePackages ? [],
+    extraOverlays ? [],
   }: let
     specialArgs = mkSpecialArgs {inherit system extraInputs;};
     pkgs = import nixpkgs {
@@ -52,14 +53,16 @@
         allowUnfree = true;
         inherit permittedInsecurePackages;
       };
-      overlays = [
-        (final: prev: {
-          titlecase =
-            if extraInputs ? titlecase
-            then extraInputs.titlecase.packages.${system}.default
-            else inputs.titlecase.packages.${system}.default;
-        })
-      ];
+      overlays =
+        [
+          (final: prev: {
+            titlecase =
+              if extraInputs ? titlecase
+              then extraInputs.titlecase.packages.${system}.default
+              else inputs.titlecase.packages.${system}.default;
+          })
+        ]
+        ++ extraOverlays;
     };
   in
     nixpkgs.lib.nixosSystem {

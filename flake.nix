@@ -9,6 +9,7 @@
     tom.url = "path:./flakes/hosts/tom";
     cruber.url = "path:./flakes/hosts/cruber";
     tater.url = "path:./flakes/hosts/tater";
+    trainwreck.url = "path:./flakes/hosts/trainwreck";
     taz.url = "path:./flakes/hosts/taz";
     tootsie.url = "path:./flakes/hosts/tootsie";
 
@@ -33,6 +34,7 @@
     tom,
     cruber,
     tater,
+    trainwreck,
     taz,
     tootsie,
     base-lib,
@@ -51,6 +53,7 @@
         inherit (tom.nixosConfigurations) tom;
         inherit (cruber.nixosConfigurations) cruber;
         inherit (tater.nixosConfigurations) tater;
+        inherit (trainwreck.nixosConfigurations) trainwreck;
         inherit (taz.nixosConfigurations) taz;
         inherit (tootsie.nixosConfigurations) tootsie;
       };
@@ -67,6 +70,7 @@
         inherit (tom.deploy.nodes) tom;
         inherit (cruber.deploy.nodes) cruber;
         inherit (tater.deploy.nodes) tater;
+        inherit (trainwreck.deploy.nodes) trainwreck;
         inherit (taz.deploy.nodes) taz;
         inherit (tootsie.deploy.nodes) tootsie;
       };
