@@ -14,6 +14,7 @@
     nixosModules = {
       common = ./modules/common.nix;
       cosmicDesktop = ./modules/cosmic-desktop.nix;
+      hyprlandDesktop = ./modules/hyprland-desktop.nix;
       desktopCommon = ./modules/desktop-common.nix;
       networking = ./modules/networking.nix;
       docker = ./modules/docker.nix;

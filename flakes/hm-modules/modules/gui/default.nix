@@ -20,6 +20,15 @@ in
       ./windsurf.nix
       ./wezterm
       ./ghostty
+      # Hyprland ecosystem tools
+      ./anyrun
+      ./swaync
+      ./hyprlock
+      ./hypridle
+      ./wlogout
+      ./eww
+      # Theming
+      ./theming
     ];
     options.dotfiles.gui = {
       enable = mkEnableOption "Enables the GUI window manager and apps that I've configured.";

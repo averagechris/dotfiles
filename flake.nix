@@ -8,6 +8,7 @@
     thorny.url = "path:./flakes/hosts/thorny";
     tom.url = "path:./flakes/hosts/tom";
     cruber.url = "path:./flakes/hosts/cruber";
+    tater.url = "path:./flakes/hosts/tater";
     taz.url = "path:./flakes/hosts/taz";
     tootsie.url = "path:./flakes/hosts/tootsie";
 
@@ -31,6 +32,7 @@
     thorny,
     tom,
     cruber,
+    tater,
     taz,
     tootsie,
     base-lib,
@@ -48,6 +50,7 @@
         inherit (thorny.nixosConfigurations) thorny;
         inherit (tom.nixosConfigurations) tom;
         inherit (cruber.nixosConfigurations) cruber;
+        inherit (tater.nixosConfigurations) tater;
         inherit (taz.nixosConfigurations) taz;
         inherit (tootsie.nixosConfigurations) tootsie;
       };
@@ -63,6 +66,7 @@
         inherit (thorny.deploy.nodes) thorny;
         inherit (tom.deploy.nodes) tom;
         inherit (cruber.deploy.nodes) cruber;
+        inherit (tater.deploy.nodes) tater;
         inherit (taz.deploy.nodes) taz;
         inherit (tootsie.deploy.nodes) tootsie;
       };

@@ -1,0 +1,124 @@
+; Eww configuration for Hyprland bar
+; Rose Pine Moon themed
+
+; Variables
+(defpoll time :interval "1s" "date '+%H:%M'")
+(defpoll date :interval "60s" "date '+%a %b %d'")
+(defpoll battery :interval "30s" "cat /sys/class/power_supply/BAT0/capacity 2>/dev/null || echo 100")
+(defpoll battery-status :interval "30s" "cat /sys/class/power_supply/BAT0/status 2>/dev/null || echo 'Full'")
+(defpoll volume :interval "1s" "pamixer --get-volume 2>/dev/null || echo 0")
+(defpoll volume-muted :interval "1s" "pamixer --get-mute 2>/dev/null || echo false")
+(defpoll brightness :interval "1s" "brightnessctl -m | cut -d',' -f4 | tr -d '%' 2>/dev/null || echo 100")
+(defpoll wifi-ssid :interval "10s" "nmcli -t -f active,ssid dev wifi | grep '^yes' | cut -d':' -f2 || echo 'Disconnected'")
+(defpoll bluetooth-connected :interval "10s" "bluetoothctl info 2>/dev/null | grep -q 'Connected: yes' && echo true || echo false")
+
+; Workspaces (updated via hyprland IPC)
+(deflisten workspaces :initial "[]" "scripts/workspaces.sh")
+(deflisten active-workspace :initial "1" "scripts/active-workspace.sh")
+
+; Media
+(defpoll media-title :interval "1s" "playerctl metadata title 2>/dev/null || echo ''")
+(defpoll media-artist :interval "1s" "playerctl metadata artist 2>/dev/null || echo ''")
+(defpoll media-status :interval "1s" "playerctl status 2>/dev/null || echo 'Stopped'")
+
+; Widgets
+(defwidget workspaces-widget []
+  (box :class "workspaces" :orientation "h" :space-evenly false
+    (for ws in workspaces
+      (button :class {ws == active-workspace ? "workspace active" : "workspace"}
+              :onclick "hyprctl dispatch workspace ${ws}"
+        ws))))
+
+(defwidget clock []
+  (box :class "clock" :orientation "h" :space-evenly false
+    (label :text time)))
+
+(defwidget date-widget []
+  (box :class "date" :orientation "h" :space-evenly false
+    (label :text date)))
+
+(defwidget battery-widget []
+  (box :class "battery ${battery-status == 'Charging' ? 'charging' : ''}" 
+       :orientation "h" :space-evenly false
+       :tooltip "Battery: ${battery}% (${battery-status})"
+    (label :text {battery < 20 ? "󰁺" : 
+                  battery < 40 ? "󰁼" : 
+                  battery < 60 ? "󰁾" : 
+                  battery < 80 ? "󰂀" : "󰁹"})
+    (label :text "${battery}%")))
+
+(defwidget volume-widget []
+  (eventbox :onclick "pamixer -t"
+            :onscroll "pamixer {} 5"
+    (box :class "volume ${volume-muted == 'true' ? 'muted' : ''}" 
+         :orientation "h" :space-evenly false
+         :tooltip "Volume: ${volume}%"
+      (label :text {volume-muted == "true" ? "󰝟" : 
+                    volume < 30 ? "󰕿" : 
+                    volume < 70 ? "󰖀" : "󰕾"})
+      (label :text "${volume}%"))))
+
+(defwidget brightness-widget []
+  (box :class "brightness" :orientation "h" :space-evenly false
+       :tooltip "Brightness: ${brightness}%"
+    (label :text {brightness < 30 ? "󰃞" : 
+                  brightness < 70 ? "󰃟" : "󰃠"})
+    (label :text "${brightness}%")))
+
+(defwidget network-widget []
+  (box :class "network" :orientation "h" :space-evenly false
+       :tooltip "WiFi: ${wifi-ssid}"
+    (label :text {wifi-ssid == "Disconnected" ? "󰤭" : "󰤨"})
+    (label :text wifi-ssid :limit-width 15)))
+
+(defwidget bluetooth-widget []
+  (box :class "bluetooth ${bluetooth-connected == 'true' ? 'connected' : ''}" 
+       :orientation "h" :space-evenly false
+    (label :text {bluetooth-connected == "true" ? "󰂯" : "󰂲"})))
+
+(defwidget media-widget []
+  (box :class "media ${media-status}" :orientation "h" :space-evenly false
+       :visible {media-title != ""}
+    (button :onclick "playerctl previous" "󰒮")
+    (button :onclick "playerctl play-pause" 
+      {media-status == "Playing" ? "󰏤" : "󰐊"})
+    (button :onclick "playerctl next" "󰒭")
+    (label :text "${media-artist} - ${media-title}" :limit-width 30)))
+
+(defwidget power-button []
+  (button :class "power" :onclick "wlogout" "󰐥"))
+
+; Bar sections
+(defwidget left []
+  (box :class "left" :orientation "h" :space-evenly false :halign "start"
+    (workspaces-widget)))
+
+(defwidget center []
+  (box :class "center" :orientation "h" :space-evenly false :halign "center"
+    (media-widget)))
+
+(defwidget right []
+  (box :class "right" :orientation "h" :space-evenly false :halign "end"
+    (network-widget)
+    (bluetooth-widget)
+    (brightness-widget)
+    (volume-widget)
+    (battery-widget)
+    (date-widget)
+    (clock)
+    (power-button)))
+
+(defwidget bar []
+  (centerbox :class "bar"
+    (left)
+    (center)
+    (right)))
+
+; Windows
+(defwindow bar
+  :monitor 0
+  :geometry (geometry :x "0%" :y "4px" :width "99%" :height "32px" :anchor "top center")
+  :stacking "fg"
+  :exclusive true
+  :focusable false
+  (bar))

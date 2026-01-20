@@ -58,6 +58,63 @@ in {
         class = "firefox";
       })
       (noDimWindowsTitled {titles = ["YouTube" "Picture-in-Picture"];})
+
+      # Scratchpad window rules
+      "float,class:^(scratchpad-.*)$"
+      "size 80% 80%,class:^(scratchpad-.*)$"
+      "center,class:^(scratchpad-.*)$"
+      "animation slide,class:^(scratchpad-.*)$"
+
+      # Terminal scratchpad specific
+      "float,class:^(scratchpad-terminal)$"
+      "size 80% 70%,class:^(scratchpad-terminal)$"
+
+      # Music scratchpad specific (for spotify, cider, etc)
+      "float,title:^(Spotify.*)$"
+      "size 70% 80%,title:^(Spotify.*)$"
+
+      # Picture-in-Picture
+      "float,title:^(Picture-in-Picture)$"
+      "pin,title:^(Picture-in-Picture)$"
+      "size 480 270,title:^(Picture-in-Picture)$"
+      "move 100%-490 100%-280,title:^(Picture-in-Picture)$"
+      "nodim,title:^(Picture-in-Picture)$"
+      "noblur,title:^(Picture-in-Picture)$"
+      "noinitialfocus,title:^(Picture-in-Picture)$"
+
+      # MPV video player
+      "float,class:^(mpv)$"
+      "size 960 540,class:^(mpv)$"
+      "center,class:^(mpv)$"
+
+      # Steam and gaming
+      "fullscreen,class:^(steam_app_.*)$"
+      "immediate,class:^(steam_app_.*)$"
+      "noblur,class:^(steam_app_.*)$"
+      "noshadow,class:^(steam_app_.*)$"
+
+      # Pavucontrol (audio control)
+      "float,class:^(pavucontrol)$"
+      "size 800 600,class:^(pavucontrol)$"
+      "center,class:^(pavucontrol)$"
+
+      # File dialogs
+      "float,title:^(Open File)$"
+      "float,title:^(Save File)$"
+      "float,title:^(Open Folder)$"
+      "size 800 600,title:^(Open File)$"
+      "size 800 600,title:^(Save File)$"
+      "center,title:^(Open File)$"
+      "center,title:^(Save File)$"
+
+      # Calculator
+      "float,class:^(qalculate-gtk)$"
+      "size 400 500,class:^(qalculate-gtk)$"
+
+      # Image viewer (imv)
+      "float,class:^(imv)$"
+      "size 80% 80%,class:^(imv)$"
+      "center,class:^(imv)$"
     ];
   };
 }

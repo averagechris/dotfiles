@@ -1,0 +1,145 @@
+// Rose Pine Moon theme for Eww
+$base: #232136;
+$surface: #2a273f;
+$overlay: #393552;
+$muted: #6e6a86;
+$subtle: #908caa;
+$text: #e0def4;
+$love: #eb6f92;
+$gold: #f6c177;
+$rose: #ea9a97;
+$pine: #3e8fb0;
+$foam: #9ccfd8;
+$iris: #c4a7e7;
+$highlight-low: #2a283e;
+$highlight-med: #44415a;
+$highlight-high: #56526e;
+
+* {
+  all: unset;
+  font-family: "Inter", "JetBrainsMono Nerd Font", sans-serif;
+  font-size: 14px;
+}
+
+.bar {
+  background: $base;
+  border-radius: 8px;
+  margin: 4px;
+  padding: 0 8px;
+}
+
+.left, .center, .right {
+  padding: 4px 0;
+}
+
+.workspaces {
+  button {
+    padding: 0 8px;
+    margin: 0 2px;
+    border-radius: 4px;
+    color: $muted;
+    
+    &:hover {
+      background: $overlay;
+      color: $text;
+    }
+    
+    &.active {
+      background: $iris;
+      color: $base;
+    }
+  }
+}
+
+.clock {
+  color: $text;
+  font-weight: bold;
+  padding: 0 12px;
+}
+
+.date {
+  color: $subtle;
+  padding: 0 8px;
+}
+
+.battery {
+  color: $foam;
+  padding: 0 8px;
+  
+  &.charging {
+    color: $gold;
+  }
+  
+  label:first-child {
+    margin-right: 4px;
+  }
+}
+
+.volume {
+  color: $iris;
+  padding: 0 8px;
+  
+  &.muted {
+    color: $muted;
+  }
+  
+  label:first-child {
+    margin-right: 4px;
+  }
+}
+
+.brightness {
+  color: $gold;
+  padding: 0 8px;
+  
+  label:first-child {
+    margin-right: 4px;
+  }
+}
+
+.network {
+  color: $pine;
+  padding: 0 8px;
+  
+  label:first-child {
+    margin-right: 4px;
+  }
+}
+
+.bluetooth {
+  color: $muted;
+  padding: 0 8px;
+  
+  &.connected {
+    color: $foam;
+  }
+}
+
+.media {
+  color: $rose;
+  padding: 0 12px;
+  
+  button {
+    padding: 0 4px;
+    color: $subtle;
+    
+    &:hover {
+      color: $text;
+    }
+  }
+  
+  label {
+    margin-left: 8px;
+  }
+}
+
+.power {
+  color: $love;
+  padding: 0 8px;
+  border-radius: 4px;
+  
+  &:hover {
+    background: $love;
+    color: $base;
+  }
+}
