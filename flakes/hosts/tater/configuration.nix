@@ -53,13 +53,9 @@
   # Thermal management
   services.thermald.enable = true;
 
-  # LUKS configuration - NEEDS ADJUSTMENT FOR ACTUAL HARDWARE
-  boot.initrd.luks.devices = {
-    root.device = "/dev/nvme0n1p2";
-    root.preLVM = true;
-  };
+  # LUKS configuration is handled by disko (see disk-config.nix)
 
-   hardware.graphics.enable = true;
+  hardware.graphics.enable = true;
    hardware.enableRedistributableFirmware = true;
 
    # Bluetooth support
