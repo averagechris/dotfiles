@@ -15841,17 +15841,17 @@
         ]
       },
       "locked": {
-        "lastModified": 1768984365,
-        "narHash": "sha256-1/I4xlqw0BIWNlheznS2Z5d8Hii6ULVHoJuLrZ0Dvts=",
-        "owner": "clawdbot",
-        "repo": "nix-clawdbot",
-        "rev": "219a7a0d705e8b28a2dfb1398dcf6b0e1bc3eb0c",
-        "type": "github"
+        "lastModified": 1769494389,
+        "narHash": "sha256-cpRsIZ1yIVlFbmk5N9t0bymYgZDQ7nT2UP/388IE73E=",
+        "ref": "refs/heads/main",
+        "rev": "78c69c18000e9b09bdcd0763b8ea9124f9141371",
+        "revCount": 308,
+        "type": "git",
+        "url": "https://git.sr.ht/~averagechris/nix-clawdbot"
       },
       "original": {
-        "owner": "clawdbot",
-        "repo": "nix-clawdbot",
-        "type": "github"
+        "type": "git",
+        "url": "https://git.sr.ht/~averagechris/nix-clawdbot"
       }
     },
     "nix-steipete-tools": {

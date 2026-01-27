@@ -84,7 +84,8 @@
       };
       instances.default = {
         enable = true;
-        providers.anthropic.apiKeyFile = config.age.secrets.openrouter-api-key.path;
+        agent.model = "openrouter/anthropic/claude-opus-4.5";
+        providers.openrouter.apiKeyFile = config.age.secrets.openrouter-api-key.path;
         providers.telegram = {
           enable = true;
           botTokenFile = config.age.secrets.telegram-bot-token.path;

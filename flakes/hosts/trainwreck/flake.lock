@@ -1412,11 +1412,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1769493014,
-        "narHash": "sha256-AA7NeaASutujGfhtk6xraKI6QO43HR//TBwGy73z+0s=",
+        "lastModified": 1769494389,
+        "narHash": "sha256-cpRsIZ1yIVlFbmk5N9t0bymYgZDQ7nT2UP/388IE73E=",
         "ref": "refs/heads/main",
-        "rev": "e96678ab9ec55c3fbb3a0ae8750446790b202ec4",
-        "revCount": 307,
+        "rev": "78c69c18000e9b09bdcd0763b8ea9124f9141371",
+        "revCount": 308,
         "type": "git",
         "url": "https://git.sr.ht/~averagechris/nix-clawdbot"
       },
