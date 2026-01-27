@@ -51,43 +51,8 @@ in {
 
   home.packages = [refresh-poetry-auth];
 
-  # Auto-refresh poetry auth 3 minutes after login and periodically
-  launchd.agents.refresh-poetry-auth-auto = {
-    enable = true;
-    config = {
-      ProgramArguments = [
-        "${pkgs.bash}/bin/bash"
-        "-c"
-        "sleep 180 && ${refresh-poetry-auth}/bin/refresh-poetry-auth"
-      ];
-      RunAtLoad = true; # Run when user logs in
-      KeepAlive = false;
-      EnvironmentVariables = {
-        PATH = "/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:${pkgs.awscli2}/bin:${pkgs.poetry}/bin";
-      };
-    };
-  };
-
-  # Periodic refresh twice daily
-  launchd.agents.refresh-poetry-auth-periodic = {
-    enable = true;
-    config = {
-      ProgramArguments = ["${refresh-poetry-auth}/bin/refresh-poetry-auth"];
-      StartCalendarInterval = [
-        {
-          Hour = 9;
-          Minute = 0;
-        } # 9 AM
-        {
-          Hour = 17;
-          Minute = 0;
-        } # 5 PM
-      ];
-      EnvironmentVariables = {
-        PATH = "/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:${pkgs.awscli2}/bin:${pkgs.poetry}/bin";
-      };
-    };
-  };
+  # NOTE: Launchd agents for auto-refresh removed due to poetry build issues in nixpkgs.
+  # Run `refresh-poetry-auth` manually when needed.
 
   programs.zsh = {
     sessionVariables = {
