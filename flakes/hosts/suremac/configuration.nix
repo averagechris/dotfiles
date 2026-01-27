@@ -189,6 +189,7 @@
     imports = [
       inputs.hm-modules.homeManagerModules.default
       inputs.mac-app-util.homeManagerModules.default
+      ./aws.nix
     ];
     dotfiles.shell = {
       enable = true;
