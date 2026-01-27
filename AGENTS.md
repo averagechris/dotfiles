@@ -141,6 +141,12 @@ Jobs in `.builds/` run in parallel on push. SourceHut limits: **4 concurrent job
 
 **Critical**: Never track `result` symlinks—they point to local store paths and break CI. See `.gitignore` patterns: `/result`, `/result-*`, `flakes/hosts/*/result`.
 
+## Troubleshooting
+
+See `docs/troubleshooting/` for common issues and solutions:
+
+- **Sudo/setuid broken (`nobody:nogroup` ownership)**: If `sudo` fails with permission errors and `/run/wrappers/bin/sudo` is owned by `nobody:nogroup`, see `docs/troubleshooting/sudo-setuid-nobody-nogroup.md`. This typically occurs when NixOS was installed from within a user namespace.
+
 ## Host-Specific Notes
 
 | Host | System | Notes |
