@@ -93,6 +93,14 @@
         };
         systemd.enable = true;
         launchd.enable = false;
+        # Add kimi-k2.5 to the model catalog (new model not yet in clawdbot's built-in list)
+        configOverrides = {
+          agents.defaults.models = {
+            "openrouter/moonshotai/kimi-k2.5" = {
+              alias = "Kimi K2.5 (OpenRouter)";
+            };
+          };
+        };
       };
     };
 
