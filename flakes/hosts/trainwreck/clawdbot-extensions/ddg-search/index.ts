@@ -11,7 +11,7 @@ export default function ddgSearchPlugin(api: any) {
   const logger = api.logger || console;
   
   api.registerTool({
-    name: 'web_search',
+    name: 'ddg_search',
     description: 'Search the web using DuckDuckGo',
     parameters: {
       type: 'object',
@@ -157,10 +157,10 @@ export default function ddgSearchPlugin(api: any) {
     }
   });
 
-  // Also register the kagi_search name as an alias
+  // Also register a search_web alias
   api.registerTool({
-    name: 'kagi_search',
-    description: 'Search the web using DuckDuckGo (Kagi fallback)',
+    name: 'search_web',
+    description: 'Search the web using DuckDuckGo',
     parameters: {
       type: 'object',
       properties: {
@@ -179,9 +179,9 @@ export default function ddgSearchPlugin(api: any) {
       required: ['query']
     },
     execute: async (_id: string, args: any) => {
-      return api.tools.web_search.execute(_id, args);
+      return api.tools.ddg_search.execute(_id, args);
     }
   });
 
-  logger.info('DuckDuckGo search plugin loaded successfully (replacing web_search)');
+  logger.info('DuckDuckGo search plugin loaded successfully (ddg_search, search_web tools)');
 }
