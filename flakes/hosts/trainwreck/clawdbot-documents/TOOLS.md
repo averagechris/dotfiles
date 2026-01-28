@@ -2,14 +2,14 @@
 
 ## Available Tools
 
-### Web Search (oracle)
-Search the web for current information.
+### Web Search
+Search the web for current information using Brave Search.
 
-### Summarize
-Summarize web pages, PDFs, and videos.
+### opencode
+AI-powered coding assistant. Use for complex code tasks, refactoring, and project work.
 
 ## Usage Guidelines
 
 - Use web search for current events, facts you're unsure about, or when asked
-- Summarize long content before presenting it
-- Combine tools when it makes sense (search then summarize)
+- Use opencode for in-depth coding work when appropriate
+- Combine tools when it makes sense

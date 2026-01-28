@@ -106,6 +106,9 @@
 
     # Disable programs that require flake inputs not available on this host
     programs.helix.enable = lib.mkForce false;
-    programs.jujutsu.enable = lib.mkForce false;
+
+    # Enable jj and opencode
+    programs.jujutsu.enable = true;
+    programs.opencode.enable = true;
   };
 }
