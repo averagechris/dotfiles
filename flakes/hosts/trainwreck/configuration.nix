@@ -101,7 +101,7 @@
         providers.telegram = {
           enable = true;
           botTokenFile = config.age.secrets.telegram-bot-token.path;
-          allowFrom = builtins.fromJSON (builtins.readFile config.age.secrets.telegram-user-ids.path);
+          allowFromFile = config.age.secrets.telegram-user-ids.path;
         };
         systemd.enable = true;
         launchd.enable = false;
