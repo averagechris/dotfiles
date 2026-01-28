@@ -45,6 +45,12 @@
       group = "users";
       mode = "0400";
     };
+    telegram-user-ids = {
+      file = ../../../secrets/trainwreck/telegram-user-ids.age;
+      owner = "chris";
+      group = "users";
+      mode = "0400";
+    };
     openrouter-api-key = {
       file = ../../../secrets/trainwreck/openrouter-api-key.age;
       owner = "chris";
@@ -95,7 +101,7 @@
         providers.telegram = {
           enable = true;
           botTokenFile = config.age.secrets.telegram-bot-token.path;
-          allowFrom = [7281917558];
+          allowFrom = builtins.fromJSON (builtins.readFile config.age.secrets.telegram-user-ids.path);
         };
         systemd.enable = true;
         launchd.enable = false;
