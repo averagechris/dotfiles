@@ -1,0 +1,14 @@
+{
+  "name": "@grem/ddg-search",
+  "version": "1.0.0", 
+  "description": "DuckDuckGo web search for Clawdbot",
+  "main": "index.ts",
+  "clawdbot": {
+    "extensions": ["./index.ts"]
+  },
+  "dependencies": {
+    "node-fetch": "^3.0.0"
+  },
+  "author": "Grem",
+  "license": "MIT"
+}

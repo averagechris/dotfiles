@@ -99,16 +99,17 @@
         };
         systemd.enable = true;
         launchd.enable = false;
-        # Custom extensions/plugins
+        # Custom plugins/extensions
         extraConfig = {
           plugins = {
             load.paths = ["./clawdbot-extensions"];
             entries = {
-              "kagi-search" = {
+              ddg-search = {
                 enabled = true;
                 config = {
-                  apiToken = builtins.readFile config.age.secrets.kagi-api-token.path;
                   maxResults = 10;
+                  safeSearch = "moderate";
+                  region = "us-en";
                 };
               };
             };

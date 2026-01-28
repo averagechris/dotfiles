@@ -1,0 +1,45 @@
+{
+  "id": "ddg-search",
+  "name": "DuckDuckGo Search Plugin",
+  "description": "Web search using DuckDuckGo Instant Answer API",
+  "version": "1.0.0",
+  "author": "Grem",
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "maxResults": {
+        "type": "integer",
+        "default": 10,
+        "minimum": 1,
+        "maximum": 30,
+        "description": "Maximum number of results to return"
+      },
+      "safeSearch": {
+        "type": "string",
+        "enum": ["strict", "moderate", "off"],
+        "default": "moderate",
+        "description": "Safe search setting"
+      },
+      "region": {
+        "type": "string",
+        "default": "us-en",
+        "description": "Search region (e.g., us-en, uk-en, etc.)"
+      }
+    },
+    "additionalProperties": false
+  },
+  "uiHints": {
+    "maxResults": {
+      "label": "Max Results",
+      "placeholder": "10"
+    },
+    "safeSearch": {
+      "label": "Safe Search",
+      "placeholder": "moderate"
+    },
+    "region": {
+      "label": "Region",
+      "placeholder": "us-en"
+    }
+  }
+}
