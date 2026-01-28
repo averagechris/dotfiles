@@ -1,0 +1,36 @@
+{
+  "id": "kagi-search",
+  "name": "Kagi Search Plugin",
+  "description": "High-quality web search using Kagi API",
+  "version": "1.0.0",
+  "author": "Grem",
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "apiToken": {
+        "type": "string",
+        "description": "Kagi API token"
+      },
+      "maxResults": {
+        "type": "integer",
+        "default": 10,
+        "minimum": 1,
+        "maximum": 50,
+        "description": "Maximum number of results to return"
+      }
+    },
+    "required": ["apiToken"],
+    "additionalProperties": false
+  },
+  "uiHints": {
+    "apiToken": {
+      "label": "Kagi API Token",
+      "sensitive": true,
+      "placeholder": "Your Kagi API token"
+    },
+    "maxResults": {
+      "label": "Max Results",
+      "placeholder": "10"
+    }
+  }
+}

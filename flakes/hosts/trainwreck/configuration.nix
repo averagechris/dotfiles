@@ -51,6 +51,12 @@
       group = "users";
       mode = "0400";
     };
+    kagi-api-token = {
+      file = ../../../secrets/trainwreck/kagi-api-token.age;
+      owner = "chris";
+      group = "users";
+      mode = "0400";
+    };
   };
 
   # System packages
@@ -93,6 +99,21 @@
         };
         systemd.enable = true;
         launchd.enable = false;
+        # Custom extensions/plugins
+        extraConfig = {
+          plugins = {
+            load.paths = ["./clawdbot-extensions"];
+            entries = {
+              "kagi-search" = {
+                enabled = true;
+                config = {
+                  apiToken = builtins.readFile config.age.secrets.kagi-api-token.path;
+                  maxResults = 10;
+                };
+              };
+            };
+          };
+        };
       };
     };
 
