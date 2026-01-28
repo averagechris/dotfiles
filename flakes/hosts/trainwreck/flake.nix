@@ -23,6 +23,9 @@
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # starship-jj for jujutsu starship prompt integration
+    starship-jj.url = "sourcehut:~averagechris/starship-jj";
   };
 
   outputs = inputs @ {
