@@ -8,7 +8,7 @@ interface DDGSearchResult {
 }
 
 export default function ddgSearchPlugin(api: any) {
-  const logger = api.logger.child({ plugin: 'ddg-search' });
+  const logger = api.logger || console;
   
   api.registerTool({
     name: 'web_search',

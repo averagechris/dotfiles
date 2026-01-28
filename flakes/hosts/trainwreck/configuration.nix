@@ -99,22 +99,6 @@
         };
         systemd.enable = true;
         launchd.enable = false;
-        # Custom plugins/extensions
-        extraConfig = {
-          plugins = {
-            load.paths = ["./clawdbot-extensions"];
-            entries = {
-              ddg-search = {
-                enabled = true;
-                config = {
-                  maxResults = 10;
-                  safeSearch = "moderate";
-                  region = "us-en";
-                };
-              };
-            };
-          };
-        };
       };
     };
 
