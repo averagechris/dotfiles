@@ -84,7 +84,7 @@
       };
       instances.default = {
         enable = true;
-        agent.model = "openrouter/moonshotai/kimi-k2";
+        agent.model = "openrouter/moonshotai/kimi-k2.5";
         providers.openrouter.apiKeyFile = config.age.secrets.openrouter-api-key.path;
         providers.telegram = {
           enable = true;
