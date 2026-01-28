@@ -45,7 +45,7 @@ export default function ddgSearchPlugin(api: any) {
       },
       required: ['query']
     },
-    handler: async (args: any, context: any) => {
+    execute: async (_id: string, args: any) => {
       const config = api.getConfig()?.plugins?.entries?.['ddg-search']?.config || {};
       const { query, count = 10, country = 'US', search_lang = 'en' } = args;
       
@@ -137,13 +137,17 @@ export default function ddgSearchPlugin(api: any) {
         logger.info(`Found ${results.length} results from DuckDuckGo`);
 
         return {
-          success: true,
-          results: results.slice(0, count),
-          meta: {
-            total: results.length,
-            query: query,
-            source: 'DuckDuckGo'
-          }
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              results: results.slice(0, count),
+              meta: {
+                total: results.length,
+                query: query,
+                source: 'DuckDuckGo'
+              }
+            }, null, 2)
+          }]
         };
 
       } catch (error) {
@@ -174,8 +178,8 @@ export default function ddgSearchPlugin(api: any) {
       },
       required: ['query']
     },
-    handler: async (args: any, context: any) => {
-      return api.tools.web_search.handler(args, context);
+    execute: async (_id: string, args: any) => {
+      return api.tools.web_search.execute(_id, args);
     }
   });
 
