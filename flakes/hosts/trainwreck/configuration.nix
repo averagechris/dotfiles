@@ -84,7 +84,7 @@
       };
       instances.default = {
         enable = true;
-        agent.model = "openrouter/moonshotai/kimi-k2.5";
+        agent.model = "openrouter/anthropic/claude-sonnet-4";
         providers.openrouter.apiKeyFile = config.age.secrets.openrouter-api-key.path;
         providers.telegram = {
           enable = true;
@@ -93,14 +93,6 @@
         };
         systemd.enable = true;
         launchd.enable = false;
-        # Add kimi-k2.5 to the model catalog (new model not yet in clawdbot's built-in list)
-        configOverrides = {
-          agents.defaults.models = {
-            "openrouter/moonshotai/kimi-k2.5" = {
-              alias = "Kimi K2.5 (OpenRouter)";
-            };
-          };
-        };
       };
     };
 
