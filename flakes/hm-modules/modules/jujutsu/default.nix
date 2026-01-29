@@ -119,9 +119,44 @@ in {
         lint = with pkgs; let
           script = writeShellApplication {
             name = "jj-lint";
-            runtimeInputs = [jujutsu coreutils fd shellcheck alejandra statix];
+            runtimeInputs = [jujutsu coreutils fd shellcheck alejandra statix gnused];
             text = ''
               set -euo pipefail
+
+              # Terminal width for formatting (default 80)
+              term_width="''${COLUMNS:-80}"
+
+              # Colors (disabled if not a tty)
+              if [ -t 1 ]; then
+                GREEN=$'\x1b[32m'
+                RED=$'\x1b[31m'
+                RESET=$'\x1b[0m'
+              else
+                GREEN=""
+                RED=""
+                RESET=""
+              fi
+
+              # Extract short name from command for display
+              get_lint_name() {
+                local cmd="$1"
+                # Extract first word (the command name)
+                echo "$cmd" | awk '{print $1}' | sed 's|.*/||'
+              }
+
+              # Print result line with dots (pre-commit style)
+              print_result() {
+                local name="$1"
+                local status="$2"
+                local name_len="''${#name}"
+                # Account for color codes in length calculation (Passed/Failed = 6 chars)
+                local visible_status_len=6
+                local dots_needed=$((term_width - name_len - visible_status_len - 1))
+                [ "$dots_needed" -lt 3 ] && dots_needed=3
+                local dots
+                dots=$(printf '%*s' "$dots_needed" "" | tr ' ' '.')
+                printf '%s%s%s\n' "$name" "$dots" "$status"
+              }
 
               # Read lint commands from jj repo config
               lints="$(jj config get dotfiles.push-lints 2>/dev/null || true)"
@@ -131,20 +166,45 @@ in {
                 exit 0
               fi
 
-              echo "Running lints..."
+              # Parse commands into array
+              mapfile -t cmds < <(echo "$lints" | tr -d '[]"' | tr ',' '\n' | while IFS= read -r cmd; do
+                cmd="$(echo "$cmd" | xargs)"
+                [ -n "$cmd" ] && echo "$cmd"
+              done)
 
-              # Parse JSON array and run each command
-              echo "$lints" | tr -d '[]"' | tr ',' '\n' | while IFS= read -r cmd; do
-                cmd="$(echo "$cmd" | xargs)"  # trim whitespace
-                [ -z "$cmd" ] && continue
-                echo "  Running: $cmd"
-                if ! eval "$cmd"; then
-                  echo "ERROR: Lint failed: $cmd"
-                  exit 1
+              if [ "''${#cmds[@]}" -eq 0 ]; then
+                echo "No lints configured"
+                exit 0
+              fi
+
+              failed=0
+              failed_cmds=()
+              outputs=()
+
+              for cmd in "''${cmds[@]}"; do
+                name="$(get_lint_name "$cmd")"
+                # Run command and capture output
+                output=""
+                if output=$(eval "$cmd" 2>&1); then
+                  print_result "$name" "''${GREEN}Passed''${RESET}"
+                else
+                  print_result "$name" "''${RED}Failed''${RESET}"
+                  failed=1
+                  failed_cmds+=("$cmd")
+                  outputs+=("$output")
                 fi
               done
 
-              echo "All lints passed!"
+              # Print failure details at the end
+              if [ "$failed" -eq 1 ]; then
+                echo ""
+                for i in "''${!failed_cmds[@]}"; do
+                  echo "''${RED}==> ''${failed_cmds[$i]}''${RESET}"
+                  echo "''${outputs[$i]}"
+                  echo ""
+                done
+                exit 1
+              fi
             '';
           };
         in ["util" "exec" "--" "${script}/bin/jj-lint"];
@@ -154,12 +214,44 @@ in {
         push = with pkgs; let
           script = writeShellApplication {
             name = "jj-push";
-            runtimeInputs = [jujutsu coreutils fd shellcheck alejandra statix];
+            runtimeInputs = [jujutsu coreutils fd shellcheck alejandra statix gnused];
             text = ''
               set -euo pipefail
 
+              # Terminal width for formatting (default 80)
+              term_width="''${COLUMNS:-80}"
+
+              # Colors (disabled if not a tty)
+              if [ -t 1 ]; then
+                GREEN=$'\x1b[32m'
+                RED=$'\x1b[31m'
+                RESET=$'\x1b[0m'
+              else
+                GREEN=""
+                RED=""
+                RESET=""
+              fi
+
+              # Extract short name from command for display
+              get_lint_name() {
+                local cmd="$1"
+                echo "$cmd" | awk '{print $1}' | sed 's|.*/||'
+              }
+
+              # Print result line with dots (pre-commit style)
+              print_result() {
+                local name="$1"
+                local status="$2"
+                local name_len="''${#name}"
+                local visible_status_len=6
+                local dots_needed=$((term_width - name_len - visible_status_len - 1))
+                [ "$dots_needed" -lt 3 ] && dots_needed=3
+                local dots
+                dots=$(printf '%*s' "$dots_needed" "" | tr ' ' '.')
+                printf '%s%s%s\n' "$name" "$dots" "$status"
+              }
+
               # Read lint commands from jj repo config
-              # Returns empty if not configured
               lints="$(jj config get dotfiles.push-lints 2>/dev/null || true)"
 
               if [ -z "$lints" ]; then
@@ -168,20 +260,46 @@ in {
                 exit 0
               fi
 
-              echo "Running pre-push lints..."
+              # Parse commands into array
+              mapfile -t cmds < <(echo "$lints" | tr -d '[]"' | tr ',' '\n' | while IFS= read -r cmd; do
+                cmd="$(echo "$cmd" | xargs)"
+                [ -n "$cmd" ] && echo "$cmd"
+              done)
 
-              # Parse JSON array and run each command
-              # jj config get returns JSON, e.g. ["cmd1", "cmd2"]
-              echo "$lints" | tr -d '[]"' | tr ',' '\n' | while IFS= read -r cmd; do
-                cmd="$(echo "$cmd" | xargs)"  # trim whitespace
-                [ -z "$cmd" ] && continue
-                echo "  Running: $cmd"
-                if ! eval "$cmd"; then
-                  echo "ERROR: Lint failed: $cmd"
-                  exit 1
+              if [ "''${#cmds[@]}" -eq 0 ]; then
+                jj git push "$@"
+                exit 0
+              fi
+
+              failed=0
+              failed_cmds=()
+              outputs=()
+
+              for cmd in "''${cmds[@]}"; do
+                name="$(get_lint_name "$cmd")"
+                output=""
+                if output=$(eval "$cmd" 2>&1); then
+                  print_result "$name" "''${GREEN}Passed''${RESET}"
+                else
+                  print_result "$name" "''${RED}Failed''${RESET}"
+                  failed=1
+                  failed_cmds+=("$cmd")
+                  outputs+=("$output")
                 fi
               done
 
+              # Print failure details at the end
+              if [ "$failed" -eq 1 ]; then
+                echo ""
+                for i in "''${!failed_cmds[@]}"; do
+                  echo "''${RED}==> ''${failed_cmds[$i]}''${RESET}"
+                  echo "''${outputs[$i]}"
+                  echo ""
+                done
+                exit 1
+              fi
+
+              echo ""
               echo "Lints passed! Pushing..."
               jj git push "$@"
             '';

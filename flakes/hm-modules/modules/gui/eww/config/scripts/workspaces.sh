@@ -9,7 +9,7 @@ workspaces() {
 echo "[$(workspaces)]"
 
 # Listen for workspace changes
-socat -u UNIX-CONNECT:/tmp/hypr/$HYPRLAND_INSTANCE_SIGNATURE/.socket2.sock - | while read -r line; do
+socat -u UNIX-CONNECT:/tmp/hypr/"$HYPRLAND_INSTANCE_SIGNATURE"/.socket2.sock - | while read -r line; do
   case $line in
     workspace*|createworkspace*|destroyworkspace*)
       echo "[$(workspaces)]"
