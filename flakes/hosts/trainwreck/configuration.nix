@@ -93,7 +93,6 @@
     # Moltbot configuration
     programs.moltbot = {
       documents = ./clawdbot-documents;
-      gateway.authTokenFile = config.age.secrets.gateway-auth-token.path;
       firstParty = {
         # Disabled: nix-steipete-tools has corrupted store paths locally
         summarize.enable = false;
@@ -104,6 +103,7 @@
       instances.default = {
         enable = true;
         agent.model = "openrouter/anthropic/claude-sonnet-4";
+        gateway.authTokenFile = config.age.secrets.gateway-auth-token.path;
         providers.openrouter.apiKeyFile = config.age.secrets.openrouter-api-key.path;
         providers.telegram = {
           enable = true;
