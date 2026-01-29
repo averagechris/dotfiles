@@ -16,10 +16,6 @@
       url = "github:serokell/deploy-rs";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    pre-commit-hooks = {
-      url = "github:cachix/pre-commit-hooks.nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     agenix = {
       url = "github:ryantm/agenix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -37,7 +33,6 @@
     home-manager,
     darwin,
     deploy-rs,
-    pre-commit-hooks,
     agenix,
     mac-app-util,
     titlecase,
@@ -48,27 +43,23 @@
 
     # Import library functions
     lib = import ./lib/default.nix {
-      inherit inputs nixpkgs flake-utils home-manager darwin deploy-rs pre-commit-hooks agenix mac-app-util titlecase sshKeys;
+      inherit inputs nixpkgs flake-utils home-manager darwin deploy-rs agenix mac-app-util titlecase sshKeys;
     };
 
     # Import overlays
     overlaysModule = import ./overlays/default.nix {
       inherit inputs nixpkgs titlecase;
     };
-  in
-    {
-      # Export library functions
-      lib = {
-        inherit (lib) mkHost mkNixosHost mkDarwinHost mkDeploy mkDeploy' mkCommitCheck mkSpecialArgs specialArgs dotfiles_lib;
-      };
+  in {
+    # Export library functions
+    lib = {
+      inherit (lib) mkHost mkNixosHost mkDarwinHost mkDeploy mkDeploy' mkSpecialArgs specialArgs dotfiles_lib;
+    };
 
-      # Export SSH keys
-      inherit sshKeys;
+    # Export SSH keys
+    inherit sshKeys;
 
-      # Export overlays as a function that takes system
-      overlays.default = overlaysModule.default;
-    }
-    // flake-utils.lib.eachDefaultSystem (system: {
-      checks = lib.mkCommitCheck system;
-    });
+    # Export overlays as a function that takes system
+    overlays.default = overlaysModule.default;
+  };
 }

@@ -111,6 +111,82 @@ in {
             '';
           };
         in ["util" "exec" "--" "${script}/bin/jj-prune-stale"];
+
+        # Run repo-configured lints without pushing
+        # Configure lints in repo config (.jj/repo/config.toml):
+        #   [dotfiles]
+        #   push-lints = ["alejandra --check .", "statix check"]
+        lint = with pkgs; let
+          script = writeShellApplication {
+            name = "jj-lint";
+            runtimeInputs = [jujutsu coreutils fd shellcheck alejandra statix];
+            text = ''
+              set -euo pipefail
+
+              # Read lint commands from jj repo config
+              lints="$(jj config get dotfiles.push-lints 2>/dev/null || true)"
+
+              if [ -z "$lints" ]; then
+                echo "No lints configured (set dotfiles.push-lints in repo config)"
+                exit 0
+              fi
+
+              echo "Running lints..."
+
+              # Parse JSON array and run each command
+              echo "$lints" | tr -d '[]"' | tr ',' '\n' | while IFS= read -r cmd; do
+                cmd="$(echo "$cmd" | xargs)"  # trim whitespace
+                [ -z "$cmd" ] && continue
+                echo "  Running: $cmd"
+                if ! eval "$cmd"; then
+                  echo "ERROR: Lint failed: $cmd"
+                  exit 1
+                fi
+              done
+
+              echo "All lints passed!"
+            '';
+          };
+        in ["util" "exec" "--" "${script}/bin/jj-lint"];
+
+        # Push with pre-push lints (configurable per-repo)
+        # Or skip lints entirely with: jj git push
+        push = with pkgs; let
+          script = writeShellApplication {
+            name = "jj-push";
+            runtimeInputs = [jujutsu coreutils fd shellcheck alejandra statix];
+            text = ''
+              set -euo pipefail
+
+              # Read lint commands from jj repo config
+              # Returns empty if not configured
+              lints="$(jj config get dotfiles.push-lints 2>/dev/null || true)"
+
+              if [ -z "$lints" ]; then
+                echo "No push lints configured (set dotfiles.push-lints in repo config)"
+                jj git push "$@"
+                exit 0
+              fi
+
+              echo "Running pre-push lints..."
+
+              # Parse JSON array and run each command
+              # jj config get returns JSON, e.g. ["cmd1", "cmd2"]
+              echo "$lints" | tr -d '[]"' | tr ',' '\n' | while IFS= read -r cmd; do
+                cmd="$(echo "$cmd" | xargs)"  # trim whitespace
+                [ -z "$cmd" ] && continue
+                echo "  Running: $cmd"
+                if ! eval "$cmd"; then
+                  echo "ERROR: Lint failed: $cmd"
+                  exit 1
+                fi
+              done
+
+              echo "Lints passed! Pushing..."
+              jj git push "$@"
+            '';
+          };
+        in ["util" "exec" "--" "${script}/bin/jj-push"];
       };
       scope = [
         {

@@ -30,6 +30,9 @@ dotfiles/
 ## Build/Lint/Test Commands
 
 ```bash
+# Run all configured lints (alejandra, statix, shellcheck)
+jj lint
+
 # Format
 alejandra .
 
@@ -63,10 +66,23 @@ darwin-rebuild switch --flake .#suremac
 - Lint with Statix (disabled rules: empty_pattern, repeated_keys)
 - Use attribute sets with named parameters
 - Follow existing patterns for similar functionality
-- Use `mk` prefix for library functions (mkHost, mkDeploy, mkCommitCheck)
+- Use `mk` prefix for library functions (mkHost, mkDeploy)
 - Use `dotfiles.feature.enable = true/false` pattern for options
 - Helper `mkDefaultEnabledOption` for boolean options
 - Configure `permittedInsecurePackages` in individual host flakes (e.g., tom needs openssl-1.1.1w)
+
+## Pre-Push Lints
+
+The `jj push` alias automatically runs lints before pushing. Lints are configured per-repo in `.jj/repo/config.toml`:
+
+```toml
+[dotfiles]
+push-lints = ["alejandra --check .", "statix check", "fd -e sh -e bash -e zsh -x shellcheck"]
+```
+
+- `jj lint` - run lints without pushing
+- `jj push` - run lints, then push if they pass
+- `jj git push` - push directly, skip lints
 
 ## Naming Conventions
 

@@ -45,31 +45,33 @@ in {
           after_sleep_cmd = "hyprctl dispatch dpms on";
         };
 
-        listener = [
-          {
-            # Dim screen
-            timeout = cfg.timeouts.dim;
-            on-timeout = "${pkgs.brightnessctl}/bin/brightnessctl -s set 10";
-            on-resume = "${pkgs.brightnessctl}/bin/brightnessctl -r";
-          }
-          {
-            # Lock screen
-            timeout = cfg.timeouts.lock;
-            on-timeout = "loginctl lock-session";
-          }
-          {
-            # Turn off display
-            timeout = cfg.timeouts.dpms;
-            on-timeout = "hyprctl dispatch dpms off";
-            on-resume = "hyprctl dispatch dpms on";
-          }
-        ] ++ lib.optionals (cfg.timeouts.suspend > 0) [
-          {
-            # Suspend
-            timeout = cfg.timeouts.suspend;
-            on-timeout = "systemctl suspend";
-          }
-        ];
+        listener =
+          [
+            {
+              # Dim screen
+              timeout = cfg.timeouts.dim;
+              on-timeout = "${pkgs.brightnessctl}/bin/brightnessctl -s set 10";
+              on-resume = "${pkgs.brightnessctl}/bin/brightnessctl -r";
+            }
+            {
+              # Lock screen
+              timeout = cfg.timeouts.lock;
+              on-timeout = "loginctl lock-session";
+            }
+            {
+              # Turn off display
+              timeout = cfg.timeouts.dpms;
+              on-timeout = "hyprctl dispatch dpms off";
+              on-resume = "hyprctl dispatch dpms on";
+            }
+          ]
+          ++ lib.optionals (cfg.timeouts.suspend > 0) [
+            {
+              # Suspend
+              timeout = cfg.timeouts.suspend;
+              on-timeout = "systemctl suspend";
+            }
+          ];
       };
     };
   };

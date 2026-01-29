@@ -12,7 +12,7 @@
   ...
 }: let
   cfg = config.dotfiles.anyrun;
-  colors = config.dotfiles.gui.hyprland.theme.colors;
+  inherit (config.dotfiles.gui.hyprland.theme) colors;
 
   # Get anyrun packages from flake input if available
   hasAnyrunInput = inputs ? anyrun;
@@ -32,7 +32,7 @@ in {
         plugins = with anyrunPkgs; [
           applications
           shell
-          rink        # Calculator
+          rink # Calculator
           symbols
           stdin
         ];

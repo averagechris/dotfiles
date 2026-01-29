@@ -5,7 +5,6 @@
   home-manager,
   darwin,
   deploy-rs,
-  pre-commit-hooks,
   agenix,
   mac-app-util,
   titlecase,
@@ -156,21 +155,6 @@
       magicRollback = false;
       autoRollback = false;
       interactiveSudo = true;
-    };
-  };
-
-  # Create pre-commit checks
-  mkCommitCheck = system: {
-    pre-commit = pre-commit-hooks.lib.${system}.run {
-      src = builtins.path {
-        path = ../../../.;
-        name = "source";
-      };
-      hooks = {
-        alejandra.enable = true;
-        statix.enable = true;
-        shellcheck.enable = true;
-      };
     };
   };
 }

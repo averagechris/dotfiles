@@ -14,7 +14,7 @@
 
     # Clawdbot - personal AI assistant (fork with NixOS compatibility fixes)
     nix-clawdbot = {
-      url = "git+https://git.sr.ht/~averagechris/nix-clawdbot";
+      url = "git+https://git.sr.ht/~averagechris/nix-moltbot";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 

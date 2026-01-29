@@ -167,7 +167,8 @@ in
           curl
           fd
           just
-          pre-commit
+          # pre-commit removed: pulls in dotnet-sdk which requires building Swift
+          # Use 'nix develop' in repos with pre-commit-hooks.nix instead
           procs
           titlecase
         ]

@@ -23,7 +23,6 @@
     nixpkgs.follows = "base-lib/nixpkgs";
     flake-utils.follows = "base-lib/flake-utils";
     deploy-rs.follows = "base-lib/deploy-rs";
-    pre-commit-hooks.follows = "base-lib/pre-commit-hooks";
   };
 
   outputs = inputs @ {
@@ -40,7 +39,6 @@
     base-lib,
     flake-utils,
     deploy-rs,
-    pre-commit-hooks,
     ...
   }: let
     inherit (base-lib) lib;
@@ -99,7 +97,6 @@
 
       # Development shell
       devShells.default = pkgs.mkShell {
-        inherit (self.checks.${system}.pre-commit) shellHook;
         buildInputs = with pkgs; [
           alejandra
           cachix
@@ -119,16 +116,7 @@
           rust-analyzer
           pkg-config
           openssl.dev
-
-          # Python development
-          ruff
-          python3Packages.python-lsp-server
-          python3Packages.python-lsp-ruff
-          python3Packages.pylsp-rope
         ];
       };
-
-      # Checks
-      checks = lib.mkCommitCheck system;
     });
 }

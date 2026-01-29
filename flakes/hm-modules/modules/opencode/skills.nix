@@ -79,13 +79,16 @@
     - `jj tug` - move closest ancestor bookmark to @- (parent of working copy)
     - `jj ch` - fuzzy-pick a bookmark and create new change on it
     - `jj ll` - log ancestors and descendants of current change
+    - `jj lint` - run repo-configured lints (without pushing)
+    - `jj push` - run repo-configured lints, then push (see below)
 
     ## Bookmark Workflow
 
     ```bash
     # Finishing a change and pushing
     jj new && jj tug                    # Finish change, move bookmark to @-
-    jj git push                         # Push bookmark to remote
+    jj push                             # Run lints and push (preferred)
+    jj git push                         # Push directly, skip lints
 
     # Manual bookmark management
     jj bookmark set <name>              # Create/move bookmark to @
@@ -103,8 +106,28 @@
     ## Colocated Workflow (jj + git)
     - jj manages git refs automatically
     - Use `jj git fetch` instead of `git fetch`
-    - Use `jj git push` instead of `git push`
+    - Use `jj push` (with lints) or `jj git push` (without lints)
     - Avoid raw git commands; they may desync jj
+
+    ## Pre-Push Lints
+
+    The `jj push` alias runs lints before pushing. Configure per-repo in `.jj/repo/config.toml`:
+
+    ```toml
+    [dotfiles]
+    push-lints = ["alejandra --check .", "statix check"]
+    ```
+
+    Examples for other project types:
+    ```toml
+    # Rust
+    push-lints = ["cargo fmt --check", "cargo clippy"]
+
+    # Python
+    push-lints = ["ruff check .", "ruff format --check ."]
+    ```
+
+    If no lints are configured, `jj push` just pushes without running anything.
 
     ## Machine-Friendly Output
     - Use `--no-pager` or pipe to `cat`

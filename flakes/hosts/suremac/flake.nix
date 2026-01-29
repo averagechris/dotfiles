@@ -14,8 +14,9 @@
     deploy-rs.follows = "base-lib/deploy-rs";
     titlecase.follows = "base-lib/titlecase";
     helix = {
+      # Don't follow nixpkgs - use helix's own nixpkgs to get cached builds
+      # from helix.cachix.org (avoids building Swift/dotnet for tree-sitter grammars)
       url = "github:helix-editor/helix";
-      inputs.nixpkgs.follows = "nixpkgs";
     };
     starship-jj = {
       url = "sourcehut:~averagechris/starship-jj";

@@ -28,27 +28,27 @@
 
   networking.hostName = "tater";
 
-   # Fingerprint reader support
-   services.fprintd.enable = true;
-   security.pam.services.hyprlock.fprintAuth = true;
+  # Fingerprint reader support
+  services.fprintd.enable = true;
+  security.pam.services.hyprlock.fprintAuth = true;
 
   # Firmware updates
   services.fwupd.enable = true;
 
-   # Power management for ThinkPad
-   services.tlp = {
-     enable = true;
-     settings = {
-       CPU_SCALING_GOVERNOR_ON_AC = "performance";
-       CPU_SCALING_GOVERNOR_ON_BAT = "powersave";
-       CPU_ENERGY_PERF_POLICY_ON_AC = "performance";
-       CPU_ENERGY_PERF_POLICY_ON_BAT = "power";
-       START_CHARGE_THRESH_BAT0 = 75;
-       STOP_CHARGE_THRESH_BAT0 = 80;
-       WIFI_PWR_ON_AC = "off";
-       WIFI_PWR_ON_BAT = "on";
-     };
-   };
+  # Power management for ThinkPad
+  services.tlp = {
+    enable = true;
+    settings = {
+      CPU_SCALING_GOVERNOR_ON_AC = "performance";
+      CPU_SCALING_GOVERNOR_ON_BAT = "powersave";
+      CPU_ENERGY_PERF_POLICY_ON_AC = "performance";
+      CPU_ENERGY_PERF_POLICY_ON_BAT = "power";
+      START_CHARGE_THRESH_BAT0 = 75;
+      STOP_CHARGE_THRESH_BAT0 = 80;
+      WIFI_PWR_ON_AC = "off";
+      WIFI_PWR_ON_BAT = "on";
+    };
+  };
 
   # Thermal management
   services.thermald.enable = true;
@@ -56,14 +56,14 @@
   # LUKS configuration is handled by disko (see disk-config.nix)
 
   hardware.graphics.enable = true;
-   hardware.enableRedistributableFirmware = true;
+  hardware.enableRedistributableFirmware = true;
 
-   # Bluetooth support
-   hardware.bluetooth.enable = true;
-   hardware.bluetooth.powerOnBoot = true;
-   services.blueman.enable = true;
+  # Bluetooth support
+  hardware.bluetooth.enable = true;
+  hardware.bluetooth.powerOnBoot = true;
+  services.blueman.enable = true;
 
-   system.stateVersion = "24.11";
+  system.stateVersion = "24.11";
 
   # Podman for rootless containers
   virtualisation.podman = {
@@ -79,23 +79,23 @@
 
   users.users.chris.extraGroups = ["libvirtd" "podman"];
 
-   home-manager.users.chris = {...}: {
-     home.stateVersion = "24.11";
-     imports = [
-       inputs.hm-modules.homeManagerModules.default
-     ];
+  home-manager.users.chris = {...}: {
+    home.stateVersion = "24.11";
+    imports = [
+      inputs.hm-modules.homeManagerModules.default
+    ];
 
-     # Use the unified Hyprland workstation configuration
-     dotfiles.hyprland-workstation.enable = true;
-     dotfiles.hyprland-workstation.terminal = "ghostty";
+    # Use the unified Hyprland workstation configuration
+    dotfiles.hyprland-workstation.enable = true;
+    dotfiles.hyprland-workstation.terminal = "ghostty";
 
-     # Additional tools
-     dotfiles.shell.yazi.enable = true;
-     programs.opencode.enable = true;
-     programs.meganz.enable = true;
+    # Additional tools
+    dotfiles.shell.yazi.enable = true;
+    programs.opencode.enable = true;
+    programs.meganz.enable = true;
 
-     # Bluetooth and network management
-     home.packages = [pkgs.overskride];
-     services.network-manager-applet.enable = true;
-   };
+    # Bluetooth and network management
+    home.packages = [pkgs.overskride];
+    services.network-manager-applet.enable = true;
+  };
 }
