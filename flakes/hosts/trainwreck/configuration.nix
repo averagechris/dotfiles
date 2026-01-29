@@ -81,11 +81,11 @@
 
     imports = [
       inputs.hm-modules.homeManagerModules.default
-      inputs.nix-clawdbot.homeManagerModules.clawdbot
+      inputs.nix-clawdbot.homeManagerModules.moltbot
     ];
 
-    # Clawdbot configuration
-    programs.clawdbot = {
+    # Moltbot configuration
+    programs.moltbot = {
       documents = ./clawdbot-documents;
       firstParty = {
         # Disabled: nix-steipete-tools has corrupted store paths locally
