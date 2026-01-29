@@ -1455,11 +1455,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1769654085,
-        "narHash": "sha256-sT/O4SzQuYmghlENfS5g+Tg0sdiJQiHolNF0HQefEgA=",
+        "lastModified": 1769671646,
+        "narHash": "sha256-Z8WJ8wu2tMveTjMdqmcXZ8rQh+iQBdwN0QAdtHPMoSQ=",
         "ref": "refs/heads/main",
-        "rev": "dc81bd2b43a1e1e87ea64f05c133a9b6c7247059",
-        "revCount": 380,
+        "rev": "5ad48cd9e683633abbc40aade0c455487a93e61d",
+        "revCount": 381,
         "type": "git",
         "url": "https://git.sr.ht/~averagechris/nix-moltbot"
       },

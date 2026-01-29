@@ -1865,7 +1865,6 @@
         "home-manager": "home-manager_62",
         "mac-app-util": "mac-app-util_26",
         "nixpkgs": "nixpkgs_131",
-        "pre-commit-hooks": "pre-commit-hooks_27",
         "titlecase": "titlecase_26"
       },
       "locked": {
@@ -1893,7 +1892,6 @@
           "hm-modules",
           "nixpkgs"
         ],
-        "pre-commit-hooks": "pre-commit-hooks_28",
         "titlecase": "titlecase_27"
       },
       "locked": {
@@ -1922,7 +1920,6 @@
           "nixos-modules",
           "nixpkgs"
         ],
-        "pre-commit-hooks": "pre-commit-hooks_29",
         "titlecase": "titlecase_28"
       },
       "locked": {
@@ -1947,7 +1944,7 @@
         "home-manager": "home-manager_70",
         "mac-app-util": "mac-app-util_29",
         "nixpkgs": "nixpkgs_148",
-        "pre-commit-hooks": "pre-commit-hooks_30",
+        "pre-commit-hooks": "pre-commit-hooks_27",
         "titlecase": "titlecase_29"
       },
       "locked": {
@@ -2004,7 +2001,7 @@
           "hm-modules",
           "nixpkgs"
         ],
-        "pre-commit-hooks": "pre-commit-hooks_31",
+        "pre-commit-hooks": "pre-commit-hooks_28",
         "titlecase": "titlecase_30"
       },
       "locked": {
@@ -2033,7 +2030,7 @@
           "nixos-modules",
           "nixpkgs"
         ],
-        "pre-commit-hooks": "pre-commit-hooks_32",
+        "pre-commit-hooks": "pre-commit-hooks_29",
         "titlecase": "titlecase_31"
       },
       "locked": {
@@ -5684,7 +5681,7 @@
     },
     "deploy-rs_27": {
       "inputs": {
-        "flake-compat": "flake-compat_80",
+        "flake-compat": "flake-compat_79",
         "nixpkgs": [
           "trainwreck",
           "hm-modules",
@@ -5709,7 +5706,7 @@
     },
     "deploy-rs_28": {
       "inputs": {
-        "flake-compat": "flake-compat_83",
+        "flake-compat": "flake-compat_81",
         "nixpkgs": [
           "trainwreck",
           "nixos-modules",
@@ -5734,7 +5731,7 @@
     },
     "deploy-rs_29": {
       "inputs": {
-        "flake-compat": "flake-compat_86",
+        "flake-compat": "flake-compat_83",
         "nixpkgs": [
           "trap",
           "base-lib",
@@ -5783,7 +5780,7 @@
     },
     "deploy-rs_30": {
       "inputs": {
-        "flake-compat": "flake-compat_89",
+        "flake-compat": "flake-compat_86",
         "nixpkgs": [
           "trap",
           "hm-modules",
@@ -5808,7 +5805,7 @@
     },
     "deploy-rs_31": {
       "inputs": {
-        "flake-compat": "flake-compat_92",
+        "flake-compat": "flake-compat_89",
         "nixpkgs": [
           "trap",
           "nixos-modules",
@@ -8372,15 +8369,15 @@
     "flake-compat_79": {
       "flake": false,
       "locked": {
-        "lastModified": 1767039857,
-        "narHash": "sha256-vNpUSpF5Nuw8xvDLj2KCwwksIbjua2LZCqhV1LNRDns=",
-        "owner": "NixOS",
+        "lastModified": 1733328505,
+        "narHash": "sha256-NeCCThCEP3eCl2l/+27kNNK7QrwZB1IJCrXfrbv5oqU=",
+        "owner": "edolstra",
         "repo": "flake-compat",
-        "rev": "5edf11c44bc78a0d334f6334cdaf7d60d732daab",
+        "rev": "ff81ac966bb2cae68946d5ed5fc4994f96d0ffec",
         "type": "github"
       },
       "original": {
-        "owner": "NixOS",
+        "owner": "edolstra",
         "repo": "flake-compat",
         "type": "github"
       }
@@ -8405,22 +8402,6 @@
     "flake-compat_80": {
       "flake": false,
       "locked": {
-        "lastModified": 1733328505,
-        "narHash": "sha256-NeCCThCEP3eCl2l/+27kNNK7QrwZB1IJCrXfrbv5oqU=",
-        "owner": "edolstra",
-        "repo": "flake-compat",
-        "rev": "ff81ac966bb2cae68946d5ed5fc4994f96d0ffec",
-        "type": "github"
-      },
-      "original": {
-        "owner": "edolstra",
-        "repo": "flake-compat",
-        "type": "github"
-      }
-    },
-    "flake-compat_81": {
-      "flake": false,
-      "locked": {
         "lastModified": 1730663653,
         "narHash": "sha256-kFCUWettiFHDIqxCWWQ9qY8pVh+Lj+XL0Giyy/kdomg=",
         "owner": "hraban",
@@ -8435,18 +8416,35 @@
         "type": "github"
       }
     },
-    "flake-compat_82": {
+    "flake-compat_81": {
       "flake": false,
       "locked": {
-        "lastModified": 1767039857,
-        "narHash": "sha256-vNpUSpF5Nuw8xvDLj2KCwwksIbjua2LZCqhV1LNRDns=",
-        "owner": "NixOS",
+        "lastModified": 1733328505,
+        "narHash": "sha256-NeCCThCEP3eCl2l/+27kNNK7QrwZB1IJCrXfrbv5oqU=",
+        "owner": "edolstra",
         "repo": "flake-compat",
-        "rev": "5edf11c44bc78a0d334f6334cdaf7d60d732daab",
+        "rev": "ff81ac966bb2cae68946d5ed5fc4994f96d0ffec",
         "type": "github"
       },
       "original": {
-        "owner": "NixOS",
+        "owner": "edolstra",
+        "repo": "flake-compat",
+        "type": "github"
+      }
+    },
+    "flake-compat_82": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1730663653,
+        "narHash": "sha256-kFCUWettiFHDIqxCWWQ9qY8pVh+Lj+XL0Giyy/kdomg=",
+        "owner": "hraban",
+        "repo": "flake-compat",
+        "rev": "e5b16676185cb7548581c852f51ce7f3a49bba5e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "hraban",
+        "ref": "fixed-output",
         "repo": "flake-compat",
         "type": "github"
       }
@@ -8599,55 +8597,6 @@
       }
     },
     "flake-compat_91": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1767039857,
-        "narHash": "sha256-vNpUSpF5Nuw8xvDLj2KCwwksIbjua2LZCqhV1LNRDns=",
-        "owner": "NixOS",
-        "repo": "flake-compat",
-        "rev": "5edf11c44bc78a0d334f6334cdaf7d60d732daab",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "repo": "flake-compat",
-        "type": "github"
-      }
-    },
-    "flake-compat_92": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1733328505,
-        "narHash": "sha256-NeCCThCEP3eCl2l/+27kNNK7QrwZB1IJCrXfrbv5oqU=",
-        "owner": "edolstra",
-        "repo": "flake-compat",
-        "rev": "ff81ac966bb2cae68946d5ed5fc4994f96d0ffec",
-        "type": "github"
-      },
-      "original": {
-        "owner": "edolstra",
-        "repo": "flake-compat",
-        "type": "github"
-      }
-    },
-    "flake-compat_93": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1730663653,
-        "narHash": "sha256-kFCUWettiFHDIqxCWWQ9qY8pVh+Lj+XL0Giyy/kdomg=",
-        "owner": "hraban",
-        "repo": "flake-compat",
-        "rev": "e5b16676185cb7548581c852f51ce7f3a49bba5e",
-        "type": "github"
-      },
-      "original": {
-        "owner": "hraban",
-        "ref": "fixed-output",
-        "repo": "flake-compat",
-        "type": "github"
-      }
-    },
-    "flake-compat_94": {
       "flake": false,
       "locked": {
         "lastModified": 1767039857,
@@ -12102,7 +12051,7 @@
     "gitignore_27": {
       "inputs": {
         "nixpkgs": [
-          "trainwreck",
+          "trap",
           "base-lib",
           "pre-commit-hooks",
           "nixpkgs"
@@ -12125,7 +12074,7 @@
     "gitignore_28": {
       "inputs": {
         "nixpkgs": [
-          "trainwreck",
+          "trap",
           "hm-modules",
           "base-lib",
           "pre-commit-hooks",
@@ -12149,7 +12098,7 @@
     "gitignore_29": {
       "inputs": {
         "nixpkgs": [
-          "trainwreck",
+          "trap",
           "nixos-modules",
           "base-lib",
           "pre-commit-hooks",
@@ -12175,77 +12124,6 @@
         "nixpkgs": [
           "cruber",
           "hm-modules",
-          "base-lib",
-          "pre-commit-hooks",
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1709087332,
-        "narHash": "sha256-HG2cCnktfHsKV0s4XW83gU3F57gaTljL9KNSuG6bnQs=",
-        "owner": "hercules-ci",
-        "repo": "gitignore.nix",
-        "rev": "637db329424fd7e46cf4185293b9cc8c88c95394",
-        "type": "github"
-      },
-      "original": {
-        "owner": "hercules-ci",
-        "repo": "gitignore.nix",
-        "type": "github"
-      }
-    },
-    "gitignore_30": {
-      "inputs": {
-        "nixpkgs": [
-          "trap",
-          "base-lib",
-          "pre-commit-hooks",
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1709087332,
-        "narHash": "sha256-HG2cCnktfHsKV0s4XW83gU3F57gaTljL9KNSuG6bnQs=",
-        "owner": "hercules-ci",
-        "repo": "gitignore.nix",
-        "rev": "637db329424fd7e46cf4185293b9cc8c88c95394",
-        "type": "github"
-      },
-      "original": {
-        "owner": "hercules-ci",
-        "repo": "gitignore.nix",
-        "type": "github"
-      }
-    },
-    "gitignore_31": {
-      "inputs": {
-        "nixpkgs": [
-          "trap",
-          "hm-modules",
-          "base-lib",
-          "pre-commit-hooks",
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1709087332,
-        "narHash": "sha256-HG2cCnktfHsKV0s4XW83gU3F57gaTljL9KNSuG6bnQs=",
-        "owner": "hercules-ci",
-        "repo": "gitignore.nix",
-        "rev": "637db329424fd7e46cf4185293b9cc8c88c95394",
-        "type": "github"
-      },
-      "original": {
-        "owner": "hercules-ci",
-        "repo": "gitignore.nix",
-        "type": "github"
-      }
-    },
-    "gitignore_32": {
-      "inputs": {
-        "nixpkgs": [
-          "trap",
-          "nixos-modules",
           "base-lib",
           "pre-commit-hooks",
           "nixpkgs"
@@ -15599,7 +15477,7 @@
     "mac-app-util_27": {
       "inputs": {
         "cl-nix-lite": "cl-nix-lite_27",
-        "flake-compat": "flake-compat_81",
+        "flake-compat": "flake-compat_80",
         "flake-utils": "flake-utils_104",
         "nixpkgs": "nixpkgs_134",
         "systems": "systems_189",
@@ -15622,7 +15500,7 @@
     "mac-app-util_28": {
       "inputs": {
         "cl-nix-lite": "cl-nix-lite_28",
-        "flake-compat": "flake-compat_84",
+        "flake-compat": "flake-compat_82",
         "flake-utils": "flake-utils_109",
         "nixpkgs": "nixpkgs_140",
         "systems": "systems_197",
@@ -15645,7 +15523,7 @@
     "mac-app-util_29": {
       "inputs": {
         "cl-nix-lite": "cl-nix-lite_29",
-        "flake-compat": "flake-compat_87",
+        "flake-compat": "flake-compat_84",
         "flake-utils": "flake-utils_114",
         "nixpkgs": "nixpkgs_146",
         "systems": "systems_205",
@@ -15691,7 +15569,7 @@
     "mac-app-util_30": {
       "inputs": {
         "cl-nix-lite": "cl-nix-lite_30",
-        "flake-compat": "flake-compat_90",
+        "flake-compat": "flake-compat_87",
         "flake-utils": "flake-utils_117",
         "nixpkgs": "nixpkgs_151",
         "systems": "systems_211",
@@ -15714,7 +15592,7 @@
     "mac-app-util_31": {
       "inputs": {
         "cl-nix-lite": "cl-nix-lite_31",
-        "flake-compat": "flake-compat_93",
+        "flake-compat": "flake-compat_90",
         "flake-utils": "flake-utils_121",
         "nixpkgs": "nixpkgs_156",
         "systems": "systems_218",
@@ -15883,11 +15761,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1769654085,
-        "narHash": "sha256-sT/O4SzQuYmghlENfS5g+Tg0sdiJQiHolNF0HQefEgA=",
+        "lastModified": 1769671646,
+        "narHash": "sha256-Z8WJ8wu2tMveTjMdqmcXZ8rQh+iQBdwN0QAdtHPMoSQ=",
         "ref": "refs/heads/main",
-        "rev": "dc81bd2b43a1e1e87ea64f05c133a9b6c7247059",
-        "revCount": 380,
+        "rev": "5ad48cd9e683633abbc40aade0c455487a93e61d",
+        "revCount": 381,
         "type": "git",
         "url": "https://git.sr.ht/~averagechris/nix-moltbot"
       },
@@ -19647,10 +19525,10 @@
     },
     "pre-commit-hooks_27": {
       "inputs": {
-        "flake-compat": "flake-compat_79",
+        "flake-compat": "flake-compat_85",
         "gitignore": "gitignore_27",
         "nixpkgs": [
-          "trainwreck",
+          "trap",
           "base-lib",
           "nixpkgs"
         ]
@@ -19671,10 +19549,10 @@
     },
     "pre-commit-hooks_28": {
       "inputs": {
-        "flake-compat": "flake-compat_82",
+        "flake-compat": "flake-compat_88",
         "gitignore": "gitignore_28",
         "nixpkgs": [
-          "trainwreck",
+          "trap",
           "hm-modules",
           "base-lib",
           "nixpkgs"
@@ -19696,10 +19574,10 @@
     },
     "pre-commit-hooks_29": {
       "inputs": {
-        "flake-compat": "flake-compat_85",
+        "flake-compat": "flake-compat_91",
         "gitignore": "gitignore_29",
         "nixpkgs": [
-          "trainwreck",
+          "trap",
           "nixos-modules",
           "base-lib",
           "nixpkgs"
@@ -19726,80 +19604,6 @@
         "nixpkgs": [
           "cruber",
           "hm-modules",
-          "base-lib",
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1769069492,
-        "narHash": "sha256-Efs3VUPelRduf3PpfPP2ovEB4CXT7vHf8W+xc49RL/U=",
-        "owner": "cachix",
-        "repo": "pre-commit-hooks.nix",
-        "rev": "a1ef738813b15cf8ec759bdff5761b027e3e1d23",
-        "type": "github"
-      },
-      "original": {
-        "owner": "cachix",
-        "repo": "pre-commit-hooks.nix",
-        "type": "github"
-      }
-    },
-    "pre-commit-hooks_30": {
-      "inputs": {
-        "flake-compat": "flake-compat_88",
-        "gitignore": "gitignore_30",
-        "nixpkgs": [
-          "trap",
-          "base-lib",
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1769069492,
-        "narHash": "sha256-Efs3VUPelRduf3PpfPP2ovEB4CXT7vHf8W+xc49RL/U=",
-        "owner": "cachix",
-        "repo": "pre-commit-hooks.nix",
-        "rev": "a1ef738813b15cf8ec759bdff5761b027e3e1d23",
-        "type": "github"
-      },
-      "original": {
-        "owner": "cachix",
-        "repo": "pre-commit-hooks.nix",
-        "type": "github"
-      }
-    },
-    "pre-commit-hooks_31": {
-      "inputs": {
-        "flake-compat": "flake-compat_91",
-        "gitignore": "gitignore_31",
-        "nixpkgs": [
-          "trap",
-          "hm-modules",
-          "base-lib",
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1769069492,
-        "narHash": "sha256-Efs3VUPelRduf3PpfPP2ovEB4CXT7vHf8W+xc49RL/U=",
-        "owner": "cachix",
-        "repo": "pre-commit-hooks.nix",
-        "rev": "a1ef738813b15cf8ec759bdff5761b027e3e1d23",
-        "type": "github"
-      },
-      "original": {
-        "owner": "cachix",
-        "repo": "pre-commit-hooks.nix",
-        "type": "github"
-      }
-    },
-    "pre-commit-hooks_32": {
-      "inputs": {
-        "flake-compat": "flake-compat_94",
-        "gitignore": "gitignore_32",
-        "nixpkgs": [
-          "trap",
-          "nixos-modules",
           "base-lib",
           "nixpkgs"
         ]

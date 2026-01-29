@@ -43,6 +43,6 @@
       extraOverlays = [inputs.nix-clawdbot.overlays.default];
     };
 
-    deploy.nodes.trainwreck = lib.mkDeploy' self.nixosConfigurations.trainwreck;
+    deploy.nodes.trainwreck = lib.mkDeploy self.nixosConfigurations.trainwreck;
   };
 }

@@ -63,6 +63,12 @@
       group = "users";
       mode = "0400";
     };
+    gateway-auth-token = {
+      file = ../../../secrets/trainwreck/gateway-auth-token.age;
+      owner = "chris";
+      group = "users";
+      mode = "0400";
+    };
   };
 
   # System packages
@@ -87,6 +93,7 @@
     # Moltbot configuration
     programs.moltbot = {
       documents = ./clawdbot-documents;
+      gateway.authTokenFile = config.age.secrets.gateway-auth-token.path;
       firstParty = {
         # Disabled: nix-steipete-tools has corrupted store paths locally
         summarize.enable = false;
