@@ -104,13 +104,6 @@
       instances.default = {
         enable = true;
         agent.model = "openrouter/anthropic/claude-sonnet-4";
-        subagents = {
-          allowAgents = ["limited"];
-          tools = {
-            allow = ["web_search" "web_fetch" "memory_search" "memory_get" "read"];
-            deny = ["exec" "bash" "process" "gateway" "edit" "write"];
-          };
-        };
         providers.openrouter.apiKeyFile = config.age.secrets.openrouter-api-key.path;
         providers.telegram = {
           enable = true;
