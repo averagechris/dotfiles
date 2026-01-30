@@ -235,21 +235,22 @@
 
     # Add environment variables for memory-lancedb to use OpenRouter embeddings
     # OPENAI_BASE_URL: Points OpenAI SDK to OpenRouter's API
-    # OPENROUTER_API_KEY: Read from agenix secret for embedding API calls
-    systemd.user.services.moltbot-gateway = {
-      Service = {
-        Environment = [
-          "OPENAI_BASE_URL=https://openrouter.ai/api/v1"
-        ];
-        # Generate env file from secret before starting
-        ExecStartPre = [
-          "${pkgs.writeShellScript "moltbot-env-setup" ''
-            mkdir -p /tmp/moltbot
-            echo "OPENROUTER_API_KEY=$(cat ${config.age.secrets.openrouter-api-key.path})" > /tmp/moltbot/openrouter-env
-          ''}"
-        ];
-        EnvironmentFile = "/tmp/moltbot/openrouter-env";
-      };
+    # OPENROUTER_API_KEY: Read from secret file via ExecStartPre, then sourced
+    systemd.user.services.moltbot-gateway.Service = {
+      Environment = [
+        "OPENAI_BASE_URL=https://openrouter.ai/api/v1"
+      ];
+      ExecStartPre = lib.mkAfter [
+        ''${pkgs.writeShellScript "moltbot-openrouter-env" "mkdir -p /tmp/moltbot && echo OPENROUTER_API_KEY=$(cat ${config.age.secrets.openrouter-api-key.path}) > /tmp/moltbot/openrouter-env"}''
+      ];
+      ExecStart = lib.mkForce ''
+        ${pkgs.writeShellScript "moltbot-gateway-wrapper" ''
+          set -a
+          source /tmp/moltbot/openrouter-env
+          set +a
+          exec ${pkgs.moltbot}/bin/moltbot-gateway gateway --port 18789
+        ''}
+      '';
     };
 
     # Minimal shell setup for server
