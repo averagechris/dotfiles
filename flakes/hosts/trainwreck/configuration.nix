@@ -261,6 +261,8 @@
         launchd.enable = false;
         # Same config as default - modify here to test changes
         configOverrides = {
+          # Use different gateway port to avoid conflict with default instance
+          gateway.port = 18889;
           # Register custom models not yet in moltbot's built-in registry
           models = {
             mode = "merge";
