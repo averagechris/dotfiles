@@ -180,17 +180,29 @@ See `docs/troubleshooting/` for common issues and solutions:
 
 Moltbot is a Telegram AI assistant running on trainwreck. Configuration is in `flakes/hosts/trainwreck/configuration.nix`.
 
+### Instances
+
+There are two moltbot instances running on trainwreck:
+
+| Instance | Service | Purpose |
+|----------|---------|---------|
+| `default` | `moltbot-gateway.service` | Production bot |
+| `staging` | `moltbot-gateway-staging.service` | Testing config changes |
+
+**Development workflow**: Always make config changes to `instances.staging` first, deploy, and test with the staging Telegram bot. Once verified working, copy the changes to `instances.default` and deploy again.
+
 ### Service Management
 
 ```bash
-# Service name (user service, not system)
+# Production bot
 systemctl --user status moltbot-gateway.service
 systemctl --user restart moltbot-gateway.service
-systemctl --user stop moltbot-gateway.service
-
-# View logs
 journalctl --user -u moltbot-gateway.service -f
-tail -f /tmp/moltbot/moltbot-gateway.log
+
+# Staging bot (use for testing config changes)
+systemctl --user status moltbot-gateway-staging.service
+systemctl --user restart moltbot-gateway-staging.service
+journalctl --user -u moltbot-gateway-staging.service -f
 ```
 
 **Note**: SSH access from suremac requires the trainwreck public IP (ask the user). Other hosts can use `ssh chris@trainwreck` via Tailscale.
