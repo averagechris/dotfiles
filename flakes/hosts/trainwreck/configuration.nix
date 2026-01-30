@@ -88,6 +88,7 @@
     tmux
     curl
     jq
+    ungoogled-chromium # For moltbot browser support
   ];
 
   system.stateVersion = "25.11";
@@ -137,6 +138,13 @@
           };
           plugins.entries."image-generator" = {
             enabled = true;
+          };
+          # Browser configuration for headless server
+          browser = {
+            enabled = true;
+            headless = true;
+            noSandbox = true; # Required for headless/server environments
+            executablePath = "${pkgs.ungoogled-chromium}/bin/chromium";
           };
         };
         plugins = [
