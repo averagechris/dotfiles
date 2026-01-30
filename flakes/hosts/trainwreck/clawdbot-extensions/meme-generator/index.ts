@@ -148,8 +148,17 @@ export default function (api: any) {
         const data = await response.json();
         
         if (!data.success) {
+          const errorMsg = data.error_message || 'Unknown error';
+          if (errorMsg.includes('Username and password')) {
+            return {
+              content: [{ 
+                type: "text", 
+                text: `⚠️ Imgflip now requires authentication. Please use meme_generate_ai for AI-generated memes instead, or ask your admin to configure Imgflip credentials.\n\nError: ${errorMsg}` 
+              }]
+            };
+          }
           return {
-            content: [{ type: "text", text: `Imgflip API error: ${data.error_message || 'Unknown error'}` }]
+            content: [{ type: "text", text: `Imgflip API error: ${errorMsg}` }]
           };
         }
 
@@ -199,8 +208,13 @@ export default function (api: any) {
         model: {
           type: "string",
           description: "AI model to use for generation",
-          default: "black-forest-labs/flux-schnell",
-          enum: ["black-forest-labs/flux-schnell", "stability-ai/stable-diffusion-xl", "openai/dall-e-3"]
+          default: "black-forest-labs/flux.2-pro",
+          enum: [
+            "black-forest-labs/flux.2-pro",
+            "black-forest-labs/flux.2-flex", 
+            "google/gemini-2.5-flash-image-preview",
+            "sourceful/riverflow-v2-standard-preview"
+          ]
         }
       },
       required: ["prompt"]
@@ -220,12 +234,13 @@ export default function (api: any) {
       try {
         const prompt = args.prompt;
         const style = args.style || "funny";
-        const model = args.model || "black-forest-labs/flux-schnell";
+        const model = args.model || "black-forest-labs/flux.2-pro";
         
         // Enhance the prompt for meme generation
         const enhancedPrompt = `${prompt}, ${style} meme style, internet meme format, high quality, clear text readability, meme aesthetic`;
 
-        const response = await fetch('https://openrouter.ai/api/v1/images/generations', {
+        // Use OpenRouter's image generation API with the chat completions endpoint
+        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${openrouterKey}`,
@@ -233,9 +248,13 @@ export default function (api: any) {
           },
           body: JSON.stringify({
             model: model,
-            prompt: enhancedPrompt,
-            n: 1,
-            size: "1024x1024"
+            messages: [
+              {
+                role: "user", 
+                content: enhancedPrompt
+              }
+            ],
+            modalities: ["image", "text"]
           })
         });
 
@@ -248,13 +267,20 @@ export default function (api: any) {
 
         const data = await response.json();
         
-        if (!data.data || !data.data[0] || !data.data[0].url) {
+        if (!data.choices || !data.choices[0] || !data.choices[0].message || !data.choices[0].message.images) {
           return {
-            content: [{ type: "text", text: "Unexpected response format from OpenRouter API" }]
+            content: [{ type: "text", text: "Unexpected response format from OpenRouter API. Model may not support image generation." }]
           };
         }
 
-        const imageUrl = data.data[0].url;
+        const images = data.choices[0].message.images;
+        if (!images || images.length === 0) {
+          return {
+            content: [{ type: "text", text: "No images generated. Make sure the model supports image generation." }]
+          };
+        }
+
+        const imageUrl = images[0].image_url.url;
         
         return {
           content: [{ 
