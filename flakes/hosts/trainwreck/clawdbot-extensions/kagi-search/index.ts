@@ -4,7 +4,7 @@ export default function (api: any) {
   api.registerTool({
     name: "kagi_search",
     description: "Search the web using Kagi Search API. Provides high-quality, ad-free search results.",
-    schema: {
+    parameters: {
       type: "object",
       properties: {
         query: {
@@ -13,24 +13,23 @@ export default function (api: any) {
         },
         limit: {
           type: "number",
-          description: "Number of results to return (1-10)",
-          minimum: 1,
-          maximum: 10
+          description: "Number of results to return (1-10)"
         }
       },
       required: ["query"]
     },
-    handler: async ({ query, limit = 5 }: { query: string; limit?: number }, ctx: any) => {
+    execute: async (_toolCallId: string, args: any, ctx: any) => {
+      const query = args.query;
+      const limit = args.limit ?? 5;
+      
       // Try to get API token from plugin config first, then fall back to agenix secret
-      let apiToken = ctx.getPluginConfig?.("kagi-search")?.apiToken;
+      let apiToken = ctx?.getPluginConfig?.("kagi-search")?.apiToken;
       
       if (!apiToken) {
         try {
           apiToken = readFileSync("/run/agenix/kagi-api-token", "utf-8").trim();
         } catch (e) {
-          return {
-            error: "Kagi API token not available. Check /run/agenix/kagi-api-token"
-          };
+          return { error: "Kagi API token not available. Check /run/agenix/kagi-api-token" };
         }
       }
 
@@ -49,9 +48,7 @@ export default function (api: any) {
 
         if (!response.ok) {
           const errorText = await response.text();
-          return {
-            error: `Kagi API error (${response.status}): ${errorText}`
-          };
+          return { error: `Kagi API error (${response.status}): ${errorText}` };
         }
 
         const data = await response.json();
@@ -66,11 +63,7 @@ export default function (api: any) {
           snippet: result.snippet || ""
         }));
 
-        return {
-          query,
-          count: results.length,
-          results
-        };
+        return { query, count: results.length, results };
 
       } catch (error: any) {
         return { error: `Kagi search failed: ${error.message}` };
