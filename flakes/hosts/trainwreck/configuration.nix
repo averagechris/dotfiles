@@ -4,7 +4,9 @@
   config,
   lib,
   ...
-}: {
+}: let
+  nixosConfig = config;
+in {
   imports = [
     inputs.nixos-modules.nixosModules.common
     inputs.nixos-modules.nixosModules.tailscale
@@ -128,12 +130,12 @@
       instances.default = {
         enable = true;
         agent.model = "openrouter/moonshotai/kimi-k2-0905";
-        gateway.authTokenFile = config.age.secrets.gateway-auth-token.path;
-        providers.openrouter.apiKeyFile = config.age.secrets.openrouter-api-key.path;
+        gateway.authTokenFile = nixosConfig.age.secrets.gateway-auth-token.path;
+        providers.openrouter.apiKeyFile = nixosConfig.age.secrets.openrouter-api-key.path;
         providers.telegram = {
           enable = true;
-          botTokenFile = config.age.secrets.telegram-bot-token.path;
-          allowFromFile = config.age.secrets.telegram-user-ids.path;
+          botTokenFile = nixosConfig.age.secrets.telegram-bot-token.path;
+          allowFromFile = nixosConfig.age.secrets.telegram-user-ids.path;
           groups = {
             "*" = {requireMention = true;};
             "-4996214260" = {requireMention = false;};
@@ -252,12 +254,12 @@
       instances.staging = {
         enable = true;
         agent.model = "openrouter/moonshotai/kimi-k2-0905";
-        gateway.authTokenFile = config.age.secrets.gateway-auth-token.path;
-        providers.openrouter.apiKeyFile = config.age.secrets.openrouter-api-key.path;
+        gateway.authTokenFile = nixosConfig.age.secrets.gateway-auth-token.path;
+        providers.openrouter.apiKeyFile = nixosConfig.age.secrets.openrouter-api-key.path;
         providers.telegram = {
           enable = true;
-          botTokenFile = config.age.secrets.telegram-bot-token-staging.path;
-          allowFromFile = config.age.secrets.telegram-user-ids.path;
+          botTokenFile = nixosConfig.age.secrets.telegram-bot-token-staging.path;
+          allowFromFile = nixosConfig.age.secrets.telegram-user-ids.path;
           groups = {
             "*" = {requireMention = true;};
           };
