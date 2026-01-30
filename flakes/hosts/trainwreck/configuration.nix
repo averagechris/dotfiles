@@ -114,7 +114,7 @@
       };
       instances.default = {
         enable = true;
-        agent.model = "openrouter/anthropic/claude-sonnet-4";
+        agent.model = "openrouter/moonshotai/kimi-k2";
         gateway.authTokenFile = config.age.secrets.gateway-auth-token.path;
         providers.openrouter.apiKeyFile = config.age.secrets.openrouter-api-key.path;
         providers.telegram = {
