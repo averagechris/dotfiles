@@ -145,6 +145,7 @@
             headless = true;
             noSandbox = true; # Required for headless/server environments
             executablePath = "${pkgs.ungoogled-chromium}/bin/chromium";
+            defaultProfile = "clawd"; # Use managed browser, not extension relay
           };
         };
         plugins = [
