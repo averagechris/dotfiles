@@ -172,5 +172,65 @@ See `docs/troubleshooting/` for common issues and solutions:
 | thorny | x86_64-linux | COSMIC desktop, System76 Thelio |
 | tom | x86_64-linux | Requires openssl-1.1.1w for home-assistant |
 | cruber | x86_64-linux | COSMIC desktop, Dell XPS |
+| trainwreck | aarch64-linux | Hetzner VPS, runs moltbot (Telegram AI assistant) |
 | taz | x86_64-linux | Inactive, Linode VM, Searx |
 | tootsie | x86_64-linux | Inactive, Linode VM, Tailscale exit node |
+
+## Moltbot (trainwreck)
+
+Moltbot is a Telegram AI assistant running on trainwreck. Configuration is in `flakes/hosts/trainwreck/configuration.nix`.
+
+### Service Management
+
+```bash
+# Service name (user service, not system)
+systemctl --user status moltbot-gateway.service
+systemctl --user restart moltbot-gateway.service
+systemctl --user stop moltbot-gateway.service
+
+# View logs
+journalctl --user -u moltbot-gateway.service -f
+tail -f /tmp/moltbot/moltbot-gateway.log
+```
+
+**Note**: SSH access from suremac requires the trainwreck public IP (ask the user). Other hosts can use `ssh chris@trainwreck` via Tailscale.
+
+### Directory Structure on trainwreck
+
+| Path | Purpose |
+|------|---------|
+| `~/.moltbot/` | Main moltbot state directory |
+| `~/.moltbot/moltbot.json` | Config symlink (points to nix store) |
+| `~/.moltbot/runtime/moltbot-default.json` | Runtime config (generated) |
+| `~/.moltbot/extensions/` | Symlink to `~/dotfiles/flakes/hosts/trainwreck/clawdbot-extensions/` |
+| `~/.moltbot/telegram/` | Telegram session state |
+| `~/.moltbot/agents/` | Agent configurations |
+| `~/.moltbot/workspace/` | Workspace files |
+| `/tmp/moltbot/moltbot-gateway.log` | Service log file |
+
+### Custom Extensions
+
+Extensions live in `flakes/hosts/trainwreck/clawdbot-extensions/`:
+
+- `kagi-search/` - Kagi search integration
+- `meme-generator/` - Meme generation (imgflip + AI)
+- `image-generator/` - AI image generation (profile pics, artwork)
+
+**Important**: After pushing changes to extensions, you must also pull on trainwreck:
+
+```bash
+ssh chris@<trainwreck-ip> "cd ~/dotfiles && git pull"
+systemctl --user restart moltbot-gateway.service
+```
+
+### Deploying trainwreck
+
+Deploy-rs has issues with cross-architecture builds. Use this approach instead:
+
+```bash
+# Push changes first
+jj push
+
+# SSH and rebuild on trainwreck directly
+ssh chris@<trainwreck-ip> "cd ~/dotfiles && git pull && sudo nixos-rebuild switch --flake .#trainwreck"
+```
