@@ -148,6 +148,7 @@
             defaultProfile = "clawd"; # Use managed browser, not extension relay
             profiles.clawd = {
               cdpPort = 18800;
+              color = "#FF4500"; # Required field
             };
           };
         };
