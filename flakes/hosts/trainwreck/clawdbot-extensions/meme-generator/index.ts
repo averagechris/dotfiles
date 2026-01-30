@@ -305,52 +305,58 @@ export default function (api: any) {
         // Check if it's a base64 data URL
         const isBase64 = imageData.startsWith('data:image/');
         
-        // Build content array with proper moltbot image format
-        const contentItems: any[] = [{ 
-          type: "text", 
-          text: `🎨 AI Meme generated successfully!\n\n**Prompt:** ${prompt}\n**Style:** ${style}\n**Model:** ${model}` 
-        }];
-        
+        // For base64 images, save to a temp file and return the path
+        // This avoids issues with the LLM trying to process the image data
         if (isBase64) {
-          // Extract media type and base64 data from data URL
-          // Format: data:image/png;base64,iVBORw0KGgo...
-          const matches = imageData.match(/^data:(image\/[^;]+);base64,(.+)$/);
+          const fs = await import('fs');
+          const path = await import('path');
+          const os = await import('os');
+          
+          // Extract media type and base64 data
+          const matches = imageData.match(/^data:(image\/([^;]+));base64,(.+)$/);
           if (matches) {
-            const [, mediaType, base64Data] = matches;
-            // Use moltbot's expected format for base64 images
-            contentItems.push({
-              type: "image",
-              source: {
-                type: "base64",
-                media_type: mediaType,
-                data: base64Data
+            const [, mediaType, extension, base64Data] = matches;
+            const ext = extension === 'jpeg' ? 'jpg' : extension;
+            
+            // Save to temp file
+            const tempDir = os.tmpdir();
+            const filename = `meme-${Date.now()}.${ext}`;
+            const filepath = path.join(tempDir, filename);
+            
+            const buffer = Buffer.from(base64Data, 'base64');
+            fs.writeFileSync(filepath, buffer);
+            
+            return {
+              content: [{ 
+                type: "text", 
+                text: `🎨 AI Meme generated successfully!\n\n**Prompt:** ${prompt}\n**Style:** ${style}\n**Model:** ${model}\n\n**Image saved to:** ${filepath}\n\nUse the message tool to send this image to the user.`
+              }],
+              details: {
+                success: true,
+                prompt: prompt,
+                enhanced_prompt: enhancedPrompt,
+                style: style,
+                model: model,
+                image_path: filepath,
+                media_type: mediaType
               }
-            });
-          } else {
-            // Fallback: include as image_url with full data URL
-            contentItems.push({
-              type: "image_url",
-              image_url: { url: imageData }
-            });
+            };
           }
-        } else {
-          // Regular URL - use image_url format
-          contentItems.push({
-            type: "image_url",
-            image_url: { url: imageData }
-          });
         }
         
+        // For regular URLs, just return the URL
         return {
-          content: contentItems,
+          content: [{ 
+            type: "text", 
+            text: `🎨 AI Meme generated successfully!\n\n**Prompt:** ${prompt}\n**Style:** ${style}\n**Model:** ${model}\n\n**Image URL:** ${imageData}`
+          }],
           details: {
             success: true,
             prompt: prompt,
             enhanced_prompt: enhancedPrompt,
             style: style,
             model: model,
-            image_data: imageData,
-            is_base64: isBase64
+            image_url: imageData
           }
         };
 
