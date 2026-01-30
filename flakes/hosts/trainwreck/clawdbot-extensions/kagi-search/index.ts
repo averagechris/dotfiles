@@ -27,11 +27,13 @@ export default function (api: any) {
       try {
         apiToken = readFileSync("/run/agenix/kagi-api-token", "utf-8").trim();
       } catch (e) {
-        return { error: "Kagi API token not available. Check /run/agenix/kagi-api-token" };
+        return {
+          content: [{ type: "text", text: "Error: Kagi API token not available. Check /run/agenix/kagi-api-token" }]
+        };
       }
 
       try {
-        // Kagi API uses GET with query params, not POST with JSON body
+        // Kagi API uses GET with query params
         const url = new URL("https://kagi.com/api/v0/search");
         url.searchParams.set("q", query);
         if (limit) {
@@ -47,13 +49,17 @@ export default function (api: any) {
 
         if (!response.ok) {
           const errorText = await response.text();
-          return { error: `Kagi API error (${response.status}): ${errorText.slice(0, 200)}` };
+          return {
+            content: [{ type: "text", text: `Kagi API error (${response.status}): ${errorText.slice(0, 200)}` }]
+          };
         }
 
         const data = await response.json();
         
         if (!data.data || !Array.isArray(data.data)) {
-          return { error: "Unexpected response format from Kagi API", raw: data };
+          return {
+            content: [{ type: "text", text: "Unexpected response format from Kagi API" }]
+          };
         }
 
         // Filter for search results (t=0) and format them
@@ -67,15 +73,23 @@ export default function (api: any) {
             published: result.published || null
           }));
 
-        return { 
+        const payload = { 
           query, 
           count: results.length, 
           results,
           api_balance: data.meta?.api_balance
         };
 
+        // Return in moltbot's expected format
+        return {
+          content: [{ type: "text", text: JSON.stringify(payload, null, 2) }],
+          details: payload
+        };
+
       } catch (error: any) {
-        return { error: `Kagi search failed: ${error.message}` };
+        return {
+          content: [{ type: "text", text: `Kagi search failed: ${error.message}` }]
+        };
       }
     }
   });
