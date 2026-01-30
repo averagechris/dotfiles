@@ -117,6 +117,9 @@
           plugins.entries."kagi-search" = {
             enabled = true;
           };
+          plugins.entries."meme-generator" = {
+            enabled = true;
+          };
         };
       };
     };

@@ -1,0 +1,25 @@
+{
+  "id": "meme-generator",
+  "name": "Meme Generator",
+  "version": "1.0.0",
+  "description": "Generate memes using popular templates or AI-generated images",
+  "extensions": ["./index.ts"],
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "openrouterApiKey": {
+        "type": "string",
+        "description": "OpenRouter API key for AI image generation (optional - reads from /run/agenix/openrouter-api-key if not set)"
+      },
+      "imgflipUsername": {
+        "type": "string",
+        "description": "Imgflip username (optional, for higher rate limits)"
+      },
+      "imgflipPassword": {
+        "type": "string",
+        "description": "Imgflip password (optional, for higher rate limits)"
+      }
+    }
+  }
+}
