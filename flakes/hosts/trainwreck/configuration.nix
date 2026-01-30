@@ -199,6 +199,21 @@
           plugins.entries."image-generator" = {
             enabled = true;
           };
+          # Enable LanceDB memory plugin (semantic search, auto-recall, auto-capture)
+          plugins.slots.memory = "memory-lancedb";
+          plugins.entries."memory-lancedb" = {
+            enabled = true;
+            config = {
+              embedding = {
+                # Uses OPENAI_BASE_URL env var to point to OpenRouter
+                # API key is read from file at runtime
+                apiKey = "\${OPENROUTER_API_KEY}";
+                model = "openai/text-embedding-3-small";
+              };
+              autoRecall = true;
+              autoCapture = true;
+            };
+          };
           # Browser configuration for headless server
           browser = {
             enabled = true;
@@ -215,6 +230,24 @@
         plugins = [
           # { source = "github:moltbot/nix-steipete-tools?dir=tools/summarize"; }
         ];
+      };
+    };
+
+    # Add environment variables for memory-lancedb to use OpenRouter embeddings
+    # OPENAI_BASE_URL: Points OpenAI SDK to OpenRouter's API
+    # OPENROUTER_API_KEY: Read from agenix secret for embedding API calls
+    systemd.user.services.moltbot-gateway = {
+      Service = {
+        Environment = [
+          "OPENAI_BASE_URL=https://openrouter.ai/api/v1"
+        ];
+        # Generate env file from secret before starting
+        ExecStartPre = [
+          "${pkgs.writeShellScript "moltbot-env-setup" ''
+            echo "OPENROUTER_API_KEY=$(cat ${config.age.secrets.openrouter-api-key.path})" > /tmp/moltbot/openrouter-env
+          ''}"
+        ];
+        EnvironmentFile = "/tmp/moltbot/openrouter-env";
       };
     };
 
