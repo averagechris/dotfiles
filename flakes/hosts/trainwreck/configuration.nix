@@ -112,6 +112,12 @@
         };
         systemd.enable = true;
         launchd.enable = false;
+        # Enable local extensions from clawdbot-extensions/
+        configOverrides = {
+          plugins.entries."kagi-search" = {
+            enabled = true;
+          };
+        };
       };
     };
 
