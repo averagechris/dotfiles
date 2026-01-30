@@ -241,7 +241,7 @@
         "OPENAI_BASE_URL=https://openrouter.ai/api/v1"
       ];
       ExecStartPre = lib.mkAfter [
-        ''${pkgs.writeShellScript "moltbot-openrouter-env" "mkdir -p /tmp/moltbot && echo OPENROUTER_API_KEY=$(cat ${config.age.secrets.openrouter-api-key.path}) > /tmp/moltbot/openrouter-env"}''
+        ''${pkgs.writeShellScript "moltbot-openrouter-env" "${pkgs.coreutils}/bin/mkdir -p /tmp/moltbot && echo OPENROUTER_API_KEY=$(${pkgs.coreutils}/bin/cat ${config.age.secrets.openrouter-api-key.path}) > /tmp/moltbot/openrouter-env"}''
       ];
       ExecStart = lib.mkForce ''
         ${pkgs.writeShellScript "moltbot-gateway-wrapper" ''
