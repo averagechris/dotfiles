@@ -245,9 +245,7 @@
       ];
       ExecStart = lib.mkForce ''
         ${pkgs.writeShellScript "moltbot-gateway-wrapper" ''
-          set -a
-          source /tmp/moltbot/openrouter-env
-          set +a
+          export OPENROUTER_API_KEY="$(${pkgs.coreutils}/bin/cat ${config.age.secrets.openrouter-api-key.path})"
           exec ${pkgs.moltbot}/bin/moltbot gateway --port 18789
         ''}
       '';
