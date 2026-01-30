@@ -248,7 +248,7 @@
           set -a
           source /tmp/moltbot/openrouter-env
           set +a
-          exec ${pkgs.moltbot}/bin/moltbot-gateway gateway --port 18789
+          exec ${pkgs.moltbot}/bin/moltbot gateway --port 18789
         ''}
       '';
     };
