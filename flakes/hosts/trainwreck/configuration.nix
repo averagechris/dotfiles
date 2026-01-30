@@ -71,7 +71,6 @@
     };
   };
 
-  # System packages
   environment.systemPackages = with pkgs; [
     htop
     tmux
@@ -79,11 +78,11 @@
     jq
   ];
 
-  system.stateVersion = "24.11";
+  system.stateVersion = "25.11";
 
   # Home Manager configuration for chris
-  home-manager.users.chris = {pkgs, ...}: {
-    home.stateVersion = "24.11";
+  home-manager.users.chris = {...}: {
+    home.stateVersion = "25.11";
 
     imports = [
       inputs.hm-modules.homeManagerModules.default
@@ -94,9 +93,9 @@
     programs.moltbot = {
       documents = ./clawdbot-documents;
       firstParty = {
-        # Disabled: nix-steipete-tools has corrupted store paths locally
-        summarize.enable = false;
-        oracle.enable = false;
+        summarize.enable = true;
+        sag.enable = true; # Text-to-speech
+        oracle.enable = false; # Using kagi-search instead
         # Disabled: no screen on headless server
         peekaboo.enable = false;
       };
@@ -109,6 +108,10 @@
           enable = true;
           botTokenFile = config.age.secrets.telegram-bot-token.path;
           allowFromFile = config.age.secrets.telegram-user-ids.path;
+          groups = {
+            "*" = {requireMention = true;};
+            "-4996214260" = {requireMention = false;};
+          };
         };
         systemd.enable = true;
         launchd.enable = false;
@@ -121,6 +124,9 @@
             enabled = true;
           };
         };
+        plugins = [
+          # { source = "github:moltbot/nix-steipete-tools?dir=tools/summarize"; }
+        ];
       };
     };
 
@@ -138,5 +144,6 @@
     # Enable jj and opencode
     programs.jujutsu.enable = true;
     programs.opencode.enable = true;
+    programs.starship.enable = false;
   };
 }

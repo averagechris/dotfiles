@@ -210,11 +210,11 @@ export default function (api: any) {
         },
         model: {
           type: "string",
-          description: "AI model to use for generation",
+          description: "AI model to use for generation. Nano Banana models are Google's image generators.",
           default: "google/gemini-2.5-flash-image",
           enum: [
             "google/gemini-2.5-flash-image",
-            "google/gemini-3-pro-image-preview", 
+            "google/gemini-3-pro-image-preview",
             "openai/gpt-5-image-mini",
             "openai/gpt-5-image"
           ]
@@ -283,20 +283,57 @@ export default function (api: any) {
           };
         }
 
-        const imageUrl = images[0].image_url.url;
+        const imageData = images[0].image_url.url;
+        
+        // Check if it's a base64 data URL
+        const isBase64 = imageData.startsWith('data:image/');
+        
+        // Build content array with proper moltbot image format
+        const contentItems: any[] = [{ 
+          type: "text", 
+          text: `🎨 AI Meme generated successfully!\n\n**Prompt:** ${prompt}\n**Style:** ${style}\n**Model:** ${model}` 
+        }];
+        
+        if (isBase64) {
+          // Extract media type and base64 data from data URL
+          // Format: data:image/png;base64,iVBORw0KGgo...
+          const matches = imageData.match(/^data:(image\/[^;]+);base64,(.+)$/);
+          if (matches) {
+            const [, mediaType, base64Data] = matches;
+            // Use moltbot's expected format for base64 images
+            contentItems.push({
+              type: "image",
+              source: {
+                type: "base64",
+                media_type: mediaType,
+                data: base64Data
+              }
+            });
+          } else {
+            // Fallback: include as image_url with full data URL
+            contentItems.push({
+              type: "image_url",
+              image_url: { url: imageData }
+            });
+          }
+        } else {
+          // Regular URL - use image_url format
+          contentItems.push({
+            type: "image_url",
+            image_url: { url: imageData }
+          });
+        }
         
         return {
-          content: [{ 
-            type: "text", 
-            text: `🎨 AI Meme generated successfully!\n\n**Prompt:** ${prompt}\n**Style:** ${style}\n**Model:** ${model}\n\n**Image URL:** ${imageUrl}` 
-          }],
+          content: contentItems,
           details: {
             success: true,
             prompt: prompt,
             enhanced_prompt: enhancedPrompt,
             style: style,
             model: model,
-            url: imageUrl
+            image_data: imageData,
+            is_base64: isBase64
           }
         };
 
