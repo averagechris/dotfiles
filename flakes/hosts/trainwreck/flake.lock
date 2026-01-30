@@ -1312,7 +1312,7 @@
     "home-manager_6": {
       "inputs": {
         "nixpkgs": [
-          "nix-clawdbot",
+          "nix-openclaw",
           "nixpkgs"
         ]
       },
@@ -1445,7 +1445,7 @@
         "type": "github"
       }
     },
-    "nix-clawdbot": {
+    "nix-openclaw": {
       "inputs": {
         "flake-utils": "flake-utils_8",
         "home-manager": "home-manager_6",
@@ -1455,17 +1455,17 @@
         ]
       },
       "locked": {
-        "lastModified": 1769797838,
-        "narHash": "sha256-nD3JmtmUy84jGNzhcJcqU15PXIoNZoILbsQvKnLv4Yc=",
+        "lastModified": 1769814446,
+        "narHash": "sha256-9U35OT+M7yjBeQIPrqDVRGDAnFH0wvnZcXPyCkOBsEw=",
         "ref": "refs/heads/main",
-        "rev": "85655b66013dc7974198c7fc93d38d01dcf4532c",
-        "revCount": 387,
+        "rev": "575d11793ad011e4007a15b5ce6e6ff423796231",
+        "revCount": 412,
         "type": "git",
-        "url": "https://git.sr.ht/~averagechris/nix-moltbot"
+        "url": "https://git.sr.ht/~averagechris/nix-openclaw"
       },
       "original": {
         "type": "git",
-        "url": "https://git.sr.ht/~averagechris/nix-moltbot"
+        "url": "https://git.sr.ht/~averagechris/nix-openclaw"
       }
     },
     "nix-steipete-tools": {
@@ -1473,15 +1473,15 @@
         "nixpkgs": "nixpkgs_11"
       },
       "locked": {
-        "lastModified": 1769632524,
-        "narHash": "sha256-lDGYIwZUPXF+FoqE9fATn8sqDjfpM7Iy81KhHvqFjyw=",
-        "owner": "moltbot",
+        "lastModified": 1769797395,
+        "narHash": "sha256-QkPl/Rgk9DXgaVNhjvHHHjy5e81j+MzcVOouZRdUTLA=",
+        "owner": "openclaw",
         "repo": "nix-steipete-tools",
-        "rev": "53ead4d5fd722020dddaede861745a32e39d284e",
+        "rev": "dbf0a31a57407d9140e32357ea8d0215bd9feed9",
         "type": "github"
       },
       "original": {
-        "owner": "moltbot",
+        "owner": "openclaw",
         "repo": "nix-steipete-tools",
         "type": "github"
       }
@@ -1911,7 +1911,7 @@
           "base-lib",
           "home-manager"
         ],
-        "nix-clawdbot": "nix-clawdbot",
+        "nix-openclaw": "nix-openclaw",
         "nixos-modules": "nixos-modules",
         "nixpkgs": [
           "base-lib",

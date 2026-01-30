@@ -12,9 +12,9 @@
     deploy-rs.follows = "base-lib/deploy-rs";
     titlecase.follows = "base-lib/titlecase";
 
-    # Clawdbot - personal AI assistant (fork with NixOS compatibility fixes)
-    nix-clawdbot = {
-      url = "git+https://git.sr.ht/~averagechris/nix-moltbot";
+    # Openclaw - personal AI assistant (fork with NixOS compatibility fixes)
+    nix-openclaw = {
+      url = "git+https://git.sr.ht/~averagechris/nix-openclaw";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -40,7 +40,7 @@
       inherit system;
       hostPath = ./configuration.nix;
       extraInputs = inputs;
-      extraOverlays = [inputs.nix-clawdbot.overlays.default];
+      extraOverlays = [inputs.nix-openclaw.overlays.default];
     };
 
     deploy.nodes.trainwreck = lib.mkDeploy self.nixosConfigurations.trainwreck;

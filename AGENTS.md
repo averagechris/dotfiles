@@ -172,22 +172,22 @@ See `docs/troubleshooting/` for common issues and solutions:
 | thorny | x86_64-linux | COSMIC desktop, System76 Thelio |
 | tom | x86_64-linux | Requires openssl-1.1.1w for home-assistant |
 | cruber | x86_64-linux | COSMIC desktop, Dell XPS |
-| trainwreck | aarch64-linux | Hetzner VPS, runs moltbot (Telegram AI assistant) |
+| trainwreck | aarch64-linux | Hetzner VPS, runs openclaw (Telegram AI assistant) |
 | taz | x86_64-linux | Inactive, Linode VM, Searx |
 | tootsie | x86_64-linux | Inactive, Linode VM, Tailscale exit node |
 
-## Moltbot (trainwreck)
+## Openclaw (trainwreck)
 
-Moltbot is a Telegram AI assistant running on trainwreck. Configuration is in `flakes/hosts/trainwreck/configuration.nix`.
+Openclaw is a Telegram AI assistant running on trainwreck. Configuration is in `flakes/hosts/trainwreck/configuration.nix`.
 
 ### Instances
 
-There are two moltbot instances running on trainwreck:
+There are two openclaw instances running on trainwreck:
 
 | Instance | Service | Purpose |
 |----------|---------|---------|
-| `default` | `moltbot-gateway.service` | Production bot |
-| `staging` | `moltbot-gateway-staging.service` | Testing config changes |
+| `default` | `openclaw-gateway.service` | Production bot |
+| `staging` | `openclaw-gateway-staging.service` | Testing config changes |
 
 **Development workflow**: Always make config changes to `instances.staging` first, deploy, and test with the staging Telegram bot. Once verified working, copy the changes to `instances.default` and deploy again.
 
@@ -195,14 +195,14 @@ There are two moltbot instances running on trainwreck:
 
 ```bash
 # Production bot
-systemctl --user status moltbot-gateway.service
-systemctl --user restart moltbot-gateway.service
-journalctl --user -u moltbot-gateway.service -f
+systemctl --user status openclaw-gateway.service
+systemctl --user restart openclaw-gateway.service
+journalctl --user -u openclaw-gateway.service -f
 
 # Staging bot (use for testing config changes)
-systemctl --user status moltbot-gateway-staging.service
-systemctl --user restart moltbot-gateway-staging.service
-journalctl --user -u moltbot-gateway-staging.service -f
+systemctl --user status openclaw-gateway-staging.service
+systemctl --user restart openclaw-gateway-staging.service
+journalctl --user -u openclaw-gateway-staging.service -f
 ```
 
 **Note**: SSH access from suremac requires the trainwreck public IP (ask the user). Other hosts can use `ssh chris@trainwreck` via Tailscale.
@@ -211,14 +211,14 @@ journalctl --user -u moltbot-gateway-staging.service -f
 
 | Path | Purpose |
 |------|---------|
-| `~/.moltbot/` | Main moltbot state directory |
-| `~/.moltbot/moltbot.json` | Config symlink (points to nix store) |
-| `~/.moltbot/runtime/moltbot-default.json` | Runtime config (generated) |
-| `~/.moltbot/extensions/` | Symlink to `~/dotfiles/flakes/hosts/trainwreck/clawdbot-extensions/` |
-| `~/.moltbot/telegram/` | Telegram session state |
-| `~/.moltbot/agents/` | Agent configurations |
-| `~/.moltbot/workspace/` | Workspace files |
-| `/tmp/moltbot/moltbot-gateway.log` | Service log file |
+| `~/.openclaw/` | Main openclaw state directory |
+| `~/.openclaw/openclaw.json` | Config symlink (points to nix store) |
+| `~/.openclaw/runtime/openclaw-default.json` | Runtime config (generated) |
+| `~/.openclaw/extensions/` | Symlink to `~/dotfiles/flakes/hosts/trainwreck/clawdbot-extensions/` |
+| `~/.openclaw/telegram/` | Telegram session state |
+| `~/.openclaw/agents/` | Agent configurations |
+| `~/.openclaw/workspace/` | Workspace files |
+| `/tmp/openclaw/openclaw-gateway.log` | Service log file |
 
 ### Custom Extensions
 
@@ -232,7 +232,7 @@ Extensions live in `flakes/hosts/trainwreck/clawdbot-extensions/`:
 
 ```bash
 ssh chris@<trainwreck-ip> "cd ~/dotfiles && git pull"
-systemctl --user restart moltbot-gateway.service
+systemctl --user restart openclaw-gateway.service
 ```
 
 ### Deploying trainwreck

@@ -6,6 +6,111 @@
   ...
 }: let
   nixosConfig = config;
+
+  # Shared base configuration for openclaw instances
+  baseInstance = {
+    enable = true;
+    agent.model = "openrouter/moonshotai/kimi-k2-0905";
+    gateway.authTokenFile = nixosConfig.age.secrets.gateway-auth-token.path;
+    providers.openrouter.apiKeyFile = nixosConfig.age.secrets.openrouter-api-key.path;
+    providers.telegram = {
+      enable = true;
+      allowFromFile = nixosConfig.age.secrets.telegram-user-ids.path;
+      groups."*" = {requireMention = true;};
+    };
+    systemd.enable = true;
+    launchd.enable = false;
+    plugins = [];
+  };
+
+  # Shared configOverrides for both instances
+  baseConfigOverrides = {
+    # Register custom models not yet in openclaw's built-in registry
+    models = {
+      mode = "merge";
+      providers.openrouter = {
+        baseUrl = "https://openrouter.ai/api/v1";
+        api = "openai-responses";
+        models = [
+          {
+            id = "moonshotai/kimi-k2.5";
+            name = "Kimi K2.5";
+            api = "openai-responses";
+            reasoning = true;
+            input = ["text"];
+            contextWindow = 131072;
+            maxTokens = 8192;
+          }
+          {
+            id = "moonshotai/kimi-k2";
+            name = "Kimi K2";
+            api = "openai-responses";
+            reasoning = false;
+            input = ["text"];
+            contextWindow = 131072;
+            maxTokens = 8192;
+          }
+          {
+            id = "moonshotai/kimi-k2-0905";
+            name = "Kimi K2 0905";
+            api = "openai-responses";
+            reasoning = false;
+            input = ["text"];
+            contextWindow = 262144;
+            maxTokens = 8192;
+          }
+          {
+            id = "moonshotai/kimi-k2-thinking";
+            name = "Kimi K2 Thinking";
+            api = "openai-responses";
+            reasoning = true;
+            input = ["text"];
+            contextWindow = 131072;
+            maxTokens = 16000;
+          }
+        ];
+      };
+    };
+    # Model catalog for /model command
+    agents.defaults.models = {
+      "openrouter/moonshotai/kimi-k2.5" = {alias = "K2.5";};
+      "openrouter/moonshotai/kimi-k2" = {alias = "K2";};
+      "openrouter/moonshotai/kimi-k2-0905" = {alias = "K2 Stable";};
+      "openrouter/moonshotai/kimi-k2-thinking" = {alias = "K2 Think";};
+      "openrouter/anthropic/claude-opus-4.5" = {alias = "Opus";};
+      "openrouter/anthropic/claude-sonnet-4.5" = {alias = "Sonnet";};
+      "openrouter/openai/gpt-5.2-mini" = {alias = "GPT Mini";};
+      "openrouter/openai/gpt-5.2-codex" = {alias = "Codex";};
+      "openrouter/google/gemini-2.5-flash" = {alias = "Gemini";};
+    };
+    # Plugin configuration
+    plugins.entries."kagi-search".enabled = true;
+    plugins.entries."meme-generator".enabled = true;
+    plugins.entries."image-generator".enabled = true;
+    plugins.entries."opencode-delegate".enabled = true;
+    # Enable LanceDB memory plugin (semantic search, auto-recall, auto-capture)
+    plugins.slots.memory = "memory-lancedb";
+    plugins.entries."memory-lancedb" = {
+      enabled = true;
+      config = {
+        embedding = {
+          # Uses OPENAI_BASE_URL env var to point to OpenRouter
+          # API key is read from file at runtime
+          apiKey = "\${OPENROUTER_API_KEY}";
+          model = "text-embedding-3-small";
+        };
+        autoRecall = true;
+        autoCapture = true;
+      };
+    };
+    # Browser configuration for headless server
+    browser = {
+      enabled = true;
+      headless = true;
+      noSandbox = true; # Required for headless/server environments
+      executablePath = "${pkgs.ungoogled-chromium}/bin/chromium";
+    };
+  };
 in {
   imports = [
     inputs.nixos-modules.nixosModules.common
@@ -96,7 +201,7 @@ in {
     tmux
     curl
     jq
-    ungoogled-chromium # For moltbot browser support
+    ungoogled-chromium # For openclaw browser support
   ];
 
   system.stateVersion = "25.11";
@@ -114,11 +219,11 @@ in {
 
     imports = [
       inputs.hm-modules.homeManagerModules.default
-      inputs.nix-clawdbot.homeManagerModules.moltbot
+      inputs.nix-openclaw.homeManagerModules.openclaw
     ];
 
-    # Moltbot configuration
-    programs.moltbot = {
+    # Openclaw configuration
+    programs.openclaw = {
       documents = ./clawdbot-documents;
       firstParty = {
         summarize.enable = true;
@@ -127,264 +232,50 @@ in {
         # Disabled: no screen on headless server
         peekaboo.enable = false;
       };
-      instances.default = {
-        enable = true;
-        agent.model = "openrouter/moonshotai/kimi-k2-0905";
-        gateway.authTokenFile = nixosConfig.age.secrets.gateway-auth-token.path;
-        providers.openrouter.apiKeyFile = nixosConfig.age.secrets.openrouter-api-key.path;
-        providers.telegram = {
-          enable = true;
-          botTokenFile = nixosConfig.age.secrets.telegram-bot-token.path;
-          allowFromFile = nixosConfig.age.secrets.telegram-user-ids.path;
-          groups = {
-            "*" = {requireMention = true;};
-            "-4996214260" = {requireMention = false;};
+
+      # Production instance
+      instances.default = lib.recursiveUpdate baseInstance {
+        providers.telegram.botTokenFile = nixosConfig.age.secrets.telegram-bot-token.path;
+        providers.telegram.groups."-4996214260" = {requireMention = false;};
+        configOverrides = lib.recursiveUpdate baseConfigOverrides {
+          plugins.load.paths = ["/home/chris/.openclaw/extensions"];
+          browser.defaultProfile = "clawd";
+          browser.profiles.clawd = {
+            cdpPort = 18800;
+            color = "#FF4500";
           };
         };
-        systemd.enable = true;
-        launchd.enable = false;
-        # Enable local extensions from clawdbot-extensions/
-        configOverrides = {
-          # Register custom models not yet in moltbot's built-in registry
-          models = {
-            mode = "merge";
-            providers.openrouter = {
-              baseUrl = "https://openrouter.ai/api/v1";
-              api = "openai-responses";
-              models = [
-                {
-                  id = "moonshotai/kimi-k2.5";
-                  name = "Kimi K2.5";
-                  api = "openai-responses";
-                  reasoning = true;
-                  input = ["text"];
-                  contextWindow = 131072;
-                  maxTokens = 8192;
-                }
-                {
-                  id = "moonshotai/kimi-k2";
-                  name = "Kimi K2";
-                  api = "openai-responses";
-                  reasoning = false;
-                  input = ["text"];
-                  contextWindow = 131072;
-                  maxTokens = 8192;
-                }
-                {
-                  id = "moonshotai/kimi-k2-0905";
-                  name = "Kimi K2 0905";
-                  api = "openai-responses";
-                  reasoning = false;
-                  input = ["text"];
-                  contextWindow = 262144;
-                  maxTokens = 8192;
-                }
-                {
-                  id = "moonshotai/kimi-k2-thinking";
-                  name = "Kimi K2 Thinking";
-                  api = "openai-responses";
-                  reasoning = true;
-                  input = ["text"];
-                  contextWindow = 131072;
-                  maxTokens = 16000;
-                }
-              ];
-            };
-          };
-          # Model catalog for /model command
-          agents.defaults.models = {
-            "openrouter/moonshotai/kimi-k2.5" = {alias = "K2.5";};
-            "openrouter/moonshotai/kimi-k2" = {alias = "K2";};
-            "openrouter/moonshotai/kimi-k2-0905" = {alias = "K2 Stable";};
-            "openrouter/moonshotai/kimi-k2-thinking" = {alias = "K2 Think";};
-            "openrouter/anthropic/claude-opus-4.5" = {alias = "Opus";};
-            "openrouter/anthropic/claude-sonnet-4.5" = {alias = "Sonnet";};
-            "openrouter/openai/gpt-5.2-mini" = {alias = "GPT Mini";};
-            "openrouter/openai/gpt-5.2-codex" = {alias = "Codex";};
-            "openrouter/google/gemini-2.5-flash" = {alias = "Gemini";};
-          };
-          # Tell moltbot where to find local plugins
-          plugins.load.paths = ["/home/chris/.moltbot/extensions"];
-          plugins.entries."kagi-search" = {
-            enabled = true;
-          };
-          plugins.entries."meme-generator" = {
-            enabled = true;
-          };
-          plugins.entries."image-generator" = {
-            enabled = true;
-          };
-          plugins.entries."opencode-delegate" = {
-            enabled = true;
-          };
-          # Enable LanceDB memory plugin (semantic search, auto-recall, auto-capture)
-          plugins.slots.memory = "memory-lancedb";
-          plugins.entries."memory-lancedb" = {
-            enabled = true;
-            config = {
-              embedding = {
-                # Uses OPENAI_BASE_URL env var to point to OpenRouter
-                # API key is read from file at runtime
-                apiKey = "\${OPENROUTER_API_KEY}";
-                model = "text-embedding-3-small";
-              };
-              autoRecall = true;
-              autoCapture = true;
-            };
-          };
-          # Browser configuration for headless server
-          browser = {
-            enabled = true;
-            headless = true;
-            noSandbox = true; # Required for headless/server environments
-            executablePath = "${pkgs.ungoogled-chromium}/bin/chromium";
-            defaultProfile = "clawd"; # Use managed browser, not extension relay
-            profiles.clawd = {
-              cdpPort = 18800;
-              color = "#FF4500"; # Required field
-            };
-          };
-        };
-        plugins = [
-          # { source = "github:moltbot/nix-steipete-tools?dir=tools/summarize"; }
-        ];
       };
 
       # Staging instance for testing configuration changes before deploying to main
-      instances.staging = {
-        enable = true;
-        agent.model = "openrouter/moonshotai/kimi-k2-0905";
+      instances.staging = lib.recursiveUpdate baseInstance {
         gatewayPort = 18889; # Different port from default (18789)
-        gateway.authTokenFile = nixosConfig.age.secrets.gateway-auth-token.path;
-        providers.openrouter.apiKeyFile = nixosConfig.age.secrets.openrouter-api-key.path;
-        providers.telegram = {
-          enable = true;
-          botTokenFile = nixosConfig.age.secrets.telegram-bot-token-staging.path;
-          allowFromFile = nixosConfig.age.secrets.telegram-user-ids.path;
-          groups = {
-            "*" = {requireMention = true;};
+        providers.telegram.botTokenFile = nixosConfig.age.secrets.telegram-bot-token-staging.path;
+        configOverrides = lib.recursiveUpdate baseConfigOverrides {
+          plugins.load.paths = ["/home/chris/.openclaw-staging/extensions"];
+          browser.defaultProfile = "clawd-staging";
+          browser.profiles.clawd-staging = {
+            cdpPort = 18801;
+            color = "#00BFFF";
           };
         };
-        systemd.enable = true;
-        launchd.enable = false;
-        # Same config as default - modify here to test changes
-        configOverrides = {
-          # Register custom models not yet in moltbot's built-in registry
-          models = {
-            mode = "merge";
-            providers.openrouter = {
-              baseUrl = "https://openrouter.ai/api/v1";
-              api = "openai-responses";
-              models = [
-                {
-                  id = "moonshotai/kimi-k2.5";
-                  name = "Kimi K2.5";
-                  api = "openai-responses";
-                  reasoning = true;
-                  input = ["text"];
-                  contextWindow = 131072;
-                  maxTokens = 8192;
-                }
-                {
-                  id = "moonshotai/kimi-k2";
-                  name = "Kimi K2";
-                  api = "openai-responses";
-                  reasoning = false;
-                  input = ["text"];
-                  contextWindow = 131072;
-                  maxTokens = 8192;
-                }
-                {
-                  id = "moonshotai/kimi-k2-0905";
-                  name = "Kimi K2 0905";
-                  api = "openai-responses";
-                  reasoning = false;
-                  input = ["text"];
-                  contextWindow = 262144;
-                  maxTokens = 8192;
-                }
-                {
-                  id = "moonshotai/kimi-k2-thinking";
-                  name = "Kimi K2 Thinking";
-                  api = "openai-responses";
-                  reasoning = true;
-                  input = ["text"];
-                  contextWindow = 131072;
-                  maxTokens = 16000;
-                }
-              ];
-            };
-          };
-          # Model catalog for /model command
-          agents.defaults.models = {
-            "openrouter/moonshotai/kimi-k2.5" = {alias = "K2.5";};
-            "openrouter/moonshotai/kimi-k2" = {alias = "K2";};
-            "openrouter/moonshotai/kimi-k2-0905" = {alias = "K2 Stable";};
-            "openrouter/moonshotai/kimi-k2-thinking" = {alias = "K2 Think";};
-            "openrouter/anthropic/claude-opus-4.5" = {alias = "Opus";};
-            "openrouter/anthropic/claude-sonnet-4.5" = {alias = "Sonnet";};
-            "openrouter/openai/gpt-5.2-mini" = {alias = "GPT Mini";};
-            "openrouter/openai/gpt-5.2-codex" = {alias = "Codex";};
-            "openrouter/google/gemini-2.5-flash" = {alias = "Gemini";};
-          };
-          # Tell moltbot where to find local plugins
-          plugins.load.paths = ["/home/chris/.moltbot-staging/extensions"];
-          plugins.entries."kagi-search" = {
-            enabled = true;
-          };
-          plugins.entries."meme-generator" = {
-            enabled = true;
-          };
-          plugins.entries."image-generator" = {
-            enabled = true;
-          };
-          plugins.entries."opencode-delegate" = {
-            enabled = true;
-          };
-          # Enable LanceDB memory plugin (semantic search, auto-recall, auto-capture)
-          plugins.slots.memory = "memory-lancedb";
-          plugins.entries."memory-lancedb" = {
-            enabled = true;
-            config = {
-              embedding = {
-                apiKey = "\${OPENROUTER_API_KEY}";
-                model = "text-embedding-3-small";
-              };
-              autoRecall = true;
-              autoCapture = true;
-            };
-          };
-          # Browser configuration for headless server
-          browser = {
-            enabled = true;
-            headless = true;
-            noSandbox = true;
-            executablePath = "${pkgs.ungoogled-chromium}/bin/chromium";
-            defaultProfile = "clawd-staging";
-            profiles.clawd-staging = {
-              cdpPort = 18801; # Different port from default
-              color = "#00BFFF"; # Different color to distinguish
-            };
-          };
-        };
-        plugins = [];
       };
     };
 
     # Add OPENAI_BASE_URL for memory-lancedb to use OpenRouter embeddings
-    # The nix-clawdbot wrapper already handles OPENROUTER_API_KEY from apiKeyFile
-    systemd.user.services.moltbot-gateway.Service.Environment = [
+    # The nix-openclaw wrapper already handles OPENROUTER_API_KEY from apiKeyFile
+    systemd.user.services.openclaw-gateway.Service.Environment = [
       "OPENAI_BASE_URL=https://openrouter.ai/api/v1"
     ];
-    systemd.user.services.moltbot-gateway-staging.Service.Environment = [
+    systemd.user.services.openclaw-gateway-staging.Service.Environment = [
       "OPENAI_BASE_URL=https://openrouter.ai/api/v1"
     ];
 
     # Set up extensions symlink for staging instance
-    home.activation.moltbot-staging-extensions = hmLib.hm.dag.entryAfter ["writeBoundary"] ''
-      mkdir -p $HOME/.moltbot-staging
-      if [ ! -L $HOME/.moltbot-staging/extensions ]; then
-        ln -sf $HOME/dotfiles/flakes/hosts/trainwreck/clawdbot-extensions $HOME/.moltbot-staging/extensions
+    home.activation.openclaw-staging-extensions = hmLib.hm.dag.entryAfter ["writeBoundary"] ''
+      mkdir -p $HOME/.openclaw-staging
+      if [ ! -L $HOME/.openclaw-staging/extensions ]; then
+        ln -sf $HOME/dotfiles/flakes/hosts/trainwreck/clawdbot-extensions $HOME/.openclaw-staging/extensions
       fi
     '';
 

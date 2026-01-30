@@ -75,13 +75,13 @@ MEDIA:/path/to/image.jpg
 
 ### Browser Screenshots
 When you take a browser screenshot and want to share it with the user:
-1. The browser tool saves screenshots to `~/.moltbot/media/browser/`
+1. The browser tool saves screenshots to `~/.openclaw/media/browser/`
 2. After taking a screenshot, output the path with `MEDIA:` prefix to send it
 
 Example workflow:
 - User: "Show me what github.com looks like"
 - You: Use browser tool to navigate and screenshot
-- You: "Here's the GitHub homepage: MEDIA:/home/chris/.moltbot/media/browser/screenshot-123.jpg"
+- You: "Here's the GitHub homepage: MEDIA:/home/chris/.openclaw/media/browser/screenshot-123.jpg"
 
 ### Other Media
 The `MEDIA:` prefix works for any local file path:

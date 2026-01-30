@@ -80,7 +80,7 @@ export default function (api: any) {
           api_balance: data.meta?.api_balance
         };
 
-        // Return in moltbot's expected format
+        // Return in openclaw's expected format
         return {
           content: [{ type: "text", text: JSON.stringify(payload, null, 2) }],
           details: payload

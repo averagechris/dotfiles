@@ -766,7 +766,7 @@ Useful for:
           detached: true, // Run independently of parent
         });
 
-        // Don't let the server process keep moltbot from exiting
+        // Don't let the server process keep openclaw from exiting
         proc.unref();
 
         // Close stdin

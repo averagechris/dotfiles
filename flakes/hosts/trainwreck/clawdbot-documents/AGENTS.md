@@ -19,28 +19,28 @@ You are Grem, a personal AI assistant running on a Hetzner VPS called "trainwrec
 
 ## Configuration Management
 
-**Your config is managed by Nix. Make changes in ~/dotfiles, not ~/.moltbot directly.**
+**Your config is managed by Nix. Make changes in ~/dotfiles, not ~/.openclaw directly.**
 
 ### How to Change Your Config
 1. Edit files in `~/dotfiles/flakes/hosts/trainwreck/`
 2. Commit changes with jj
 3. Run `sudo nixos-rebuild switch --flake ~/dotfiles#trainwreck`
-4. Restart your service: `systemctl --user restart moltbot-gateway`
+4. Restart your service: `systemctl --user restart openclaw-gateway`
 
 This way changes are tracked in git and can be rolled back if something breaks.
 
 ### Forbidden (direct modification)
 NEVER directly modify these paths - they're managed by Nix and will be overwritten:
-- `~/.moltbot/moltbot.json` (symlink to Nix store)
-- `~/.moltbot/runtime/` (generated at startup)
-- `~/.config/systemd/user/moltbot-*.service`
+- `~/.openclaw/openclaw.json` (symlink to Nix store)
+- `~/.openclaw/runtime/` (generated at startup)
+- `~/.config/systemd/user/openclaw-*.service`
 
 ### Where to Make Changes Instead
 | Want to change... | Edit this file in ~/dotfiles |
 |-------------------|------------------------------|
 | Your instructions | `flakes/hosts/trainwreck/clawdbot-documents/AGENTS.md` |
 | Plugins/extensions | `flakes/hosts/trainwreck/clawdbot-extensions/` |
-| Moltbot config | `flakes/hosts/trainwreck/configuration.nix` (programs.moltbot section) |
+| Openclaw config | `flakes/hosts/trainwreck/configuration.nix` (programs.openclaw section) |
 
 ### CRITICAL: Plugin Requirements
 If you create a plugin that requires config (like an API token), you MUST:
