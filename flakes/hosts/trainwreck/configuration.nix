@@ -199,6 +199,9 @@
           plugins.entries."image-generator" = {
             enabled = true;
           };
+          plugins.entries."opencode-delegate" = {
+            enabled = true;
+          };
           # Enable LanceDB memory plugin (semantic search, auto-recall, auto-capture)
           plugins.slots.memory = "memory-lancedb";
           plugins.entries."memory-lancedb" = {
