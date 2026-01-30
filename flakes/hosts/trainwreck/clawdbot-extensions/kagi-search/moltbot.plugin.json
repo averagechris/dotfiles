@@ -1,0 +1,17 @@
+{
+  "id": "kagi-search",
+  "name": "Kagi Search",
+  "version": "1.0.0",
+  "description": "Search the web using Kagi Search API",
+  "extensions": ["./index.ts"],
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "apiToken": {
+        "type": "string",
+        "description": "Kagi API token (reads from /run/agenix/kagi-api-token if not set)"
+      }
+    }
+  }
+}
