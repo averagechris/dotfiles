@@ -14,6 +14,7 @@ in {
 
   # Trainwreck secrets (clawdbot)
   "trainwreck/telegram-bot-token.age".publicKeys = trainwreck-keys ++ systems-keys;
+  "trainwreck/telegram-bot-token-staging.age".publicKeys = trainwreck-keys ++ systems-keys;
   "trainwreck/telegram-user-ids.age".publicKeys = trainwreck-keys ++ systems-keys;
   "trainwreck/openrouter-api-key.age".publicKeys = trainwreck-keys ++ systems-keys;
   "trainwreck/kagi-api-token.age".publicKeys = trainwreck-keys ++ systems-keys;
