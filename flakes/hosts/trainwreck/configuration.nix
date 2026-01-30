@@ -368,7 +368,7 @@
     systemd.user.services.moltbot-gateway.Service.Environment = [
       "OPENAI_BASE_URL=https://openrouter.ai/api/v1"
     ];
-    systemd.user.services.moltbot-staging.Service.Environment = [
+    systemd.user.services.moltbot-gateway-staging.Service.Environment = [
       "OPENAI_BASE_URL=https://openrouter.ai/api/v1"
     ];
 
