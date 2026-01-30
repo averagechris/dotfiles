@@ -100,7 +100,9 @@
   system.stateVersion = "25.11";
 
   # Home Manager configuration for chris
-  home-manager.users.chris = {...}: {
+  home-manager.users.chris = {lib, ...}: let
+    hmLib = lib;
+  in {
     home.stateVersion = "25.11";
 
     imports = [
@@ -371,7 +373,7 @@
     ];
 
     # Set up extensions symlink for staging instance
-    home.activation.moltbot-staging-extensions = lib.hm.dag.entryAfter ["writeBoundary"] ''
+    home.activation.moltbot-staging-extensions = hmLib.hm.dag.entryAfter ["writeBoundary"] ''
       mkdir -p $HOME/.moltbot-staging
       if [ ! -L $HOME/.moltbot-staging/extensions ]; then
         ln -sf $HOME/dotfiles/flakes/hosts/trainwreck/clawdbot-extensions $HOME/.moltbot-staging/extensions
