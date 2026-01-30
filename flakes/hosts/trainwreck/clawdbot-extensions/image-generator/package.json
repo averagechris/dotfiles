@@ -1,0 +1,10 @@
+{
+  "name": "image-generator",
+  "version": "1.0.0",
+  "description": "AI image generator plugin for Moltbot",
+  "main": "index.ts",
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

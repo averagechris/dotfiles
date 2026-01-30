@@ -1,0 +1,17 @@
+{
+  "id": "image-generator",
+  "name": "Image Generator",
+  "version": "1.0.0",
+  "description": "Generate arbitrary images using AI (profile pics, avatars, artwork, etc.)",
+  "extensions": ["./index.ts"],
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "openrouterApiKey": {
+        "type": "string",
+        "description": "OpenRouter API key for AI image generation (optional - reads from /run/agenix/openrouter-api-key if not set)"
+      }
+    }
+  }
+}

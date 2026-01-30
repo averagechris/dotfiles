@@ -135,6 +135,9 @@
           plugins.entries."meme-generator" = {
             enabled = true;
           };
+          plugins.entries."image-generator" = {
+            enabled = true;
+          };
         };
         plugins = [
           # { source = "github:moltbot/nix-steipete-tools?dir=tools/summarize"; }
