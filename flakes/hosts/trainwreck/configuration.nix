@@ -114,7 +114,7 @@
       };
       instances.default = {
         enable = true;
-        agent.model = "openrouter/moonshotai/kimi-k2.5";
+        agent.model = "openrouter/anthropic/claude-sonnet-4";
         gateway.authTokenFile = config.age.secrets.gateway-auth-token.path;
         providers.openrouter.apiKeyFile = config.age.secrets.openrouter-api-key.path;
         providers.telegram = {
@@ -156,6 +156,15 @@
                   maxTokens = 8192;
                 }
                 {
+                  id = "moonshotai/kimi-k2-0905";
+                  name = "Kimi K2 0905";
+                  api = "openai-responses";
+                  reasoning = false;
+                  input = ["text"];
+                  contextWindow = 262144;
+                  maxTokens = 8192;
+                }
+                {
                   id = "moonshotai/kimi-k2-thinking";
                   name = "Kimi K2 Thinking";
                   api = "openai-responses";
@@ -171,6 +180,7 @@
           agents.defaults.models = {
             "openrouter/moonshotai/kimi-k2.5" = {alias = "K2.5";};
             "openrouter/moonshotai/kimi-k2" = {alias = "K2";};
+            "openrouter/moonshotai/kimi-k2-0905" = {alias = "K2 Stable";};
             "openrouter/moonshotai/kimi-k2-thinking" = {alias = "K2 Think";};
             "openrouter/anthropic/claude-opus-4.5" = {alias = "Opus";};
             "openrouter/anthropic/claude-sonnet-4.5" = {alias = "Sonnet";};
