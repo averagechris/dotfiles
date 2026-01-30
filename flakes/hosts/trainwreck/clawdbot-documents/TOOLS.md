@@ -17,6 +17,44 @@ Generate AI images for profile pictures, avatars, artwork, or any visual content
 ### Summarize
 Summarize YouTube videos and web articles. Paste a URL to get a concise summary of the content.
 
+### OpenCode Delegate
+Delegate complex coding tasks to opencode, a powerful AI coding assistant. Use this for tasks that require multiple steps, file edits, terminal commands, or specialized knowledge.
+
+**Tools:**
+- `opencode_delegate` - Main delegation tool for coding tasks
+- `opencode_review` - Quick code review with focus options
+- `opencode_server_start` - Start a server Chris can attach to remotely
+- `opencode_server_stop` - Stop a running server
+- `opencode_server_list` - List running servers
+- `opencode_server_info` - Get connection details for a server
+
+**When to use opencode_delegate:**
+- Multi-file code changes or refactoring
+- Complex debugging that requires reading multiple files
+- Creating new features with multiple components
+- Tasks requiring many terminal commands and/or file edits
+- Tasks that benefit from opencode's sub-agents and skills
+
+**When NOT to use it:**
+- Simple questions you can answer directly
+- Single file edits you can do yourself
+- Quick lookups or searches
+
+**Session continuity:** Use `session_key` to continue multi-turn conversations:
+```
+First call: opencode_delegate(task="Start refactoring the auth module", session_key="auth-refactor")
+Later call: opencode_delegate(task="Now add tests for what you changed", session_key="auth-refactor")
+```
+
+**Starting servers for Chris to attach to:**
+When Chris wants to work on something interactively, start a server:
+```
+opencode_server_start(name="dotfiles-work", workdir="/home/chris/dotfiles")
+```
+This returns URLs Chris can use to attach from his laptop:
+- Tailscale URL (preferred): `opencode attach http://trainwreck.tail*.ts.net:4096`
+- SSH tunnel fallback: `ssh -L 4096:localhost:4096 chris@trainwreck` then `opencode attach http://localhost:4096`
+
 ## Usage Guidelines
 
 - Use Kagi search for current events, facts, or when you need to verify information
@@ -24,6 +62,8 @@ Summarize YouTube videos and web articles. Paste a URL to get a concise summary 
 - Use meme generator when humor or reactions are appropriate
 - Use image generator for custom visual content requests
 - Use summarize for long videos or articles the user wants condensed
+- Use opencode_delegate for complex coding tasks that need multiple steps or tools
+- Use opencode_server_start when Chris wants to attach and work interactively
 
 ## Sending Media to Users
 
