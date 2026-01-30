@@ -135,10 +135,12 @@
             mode = "merge";
             providers.openrouter = {
               baseUrl = "https://openrouter.ai/api/v1";
+              api = "openai-responses";
               models = [
                 {
                   id = "moonshotai/kimi-k2.5";
                   name = "Kimi K2.5";
+                  api = "openai-responses";
                   reasoning = true;
                   input = ["text"];
                   contextWindow = 131072;
@@ -147,6 +149,7 @@
                 {
                   id = "moonshotai/kimi-k2";
                   name = "Kimi K2";
+                  api = "openai-responses";
                   reasoning = false;
                   input = ["text"];
                   contextWindow = 131072;
@@ -155,6 +158,7 @@
                 {
                   id = "moonshotai/kimi-k2-thinking";
                   name = "Kimi K2 Thinking";
+                  api = "openai-responses";
                   reasoning = true;
                   input = ["text"];
                   contextWindow = 131072;
