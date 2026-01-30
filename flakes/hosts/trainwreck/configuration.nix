@@ -379,11 +379,12 @@ in {
     ];
     systemd.user.services.moltbot-gateway-staging.Service = {
       Environment = ["OPENAI_BASE_URL=https://openrouter.ai/api/v1"];
-      # Override ExecStart to use different port (module hardcodes 18789)
+      # Override ExecStart to use port from config file (module hardcodes --port 18789)
+      # The wrapper package path is constructed by the module
       ExecStart = let
-        pkg = hmConfig.programs.moltbot.instances.staging.package;
+        wrapperPkg = hmConfig.programs.moltbot.instances.staging.wrapperPackage;
       in
-        hmLib.mkForce "${pkg}/bin/moltbot-gateway-staging gateway --port 18889";
+        hmLib.mkForce "${wrapperPkg}/bin/moltbot-gateway-staging gateway";
     };
 
     # Set up extensions symlink for staging instance
