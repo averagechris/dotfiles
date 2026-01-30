@@ -308,7 +308,9 @@ async function getTailscaleHostname(): Promise<string | null> {
 
 // Find opencode binary
 function findOpencodeBinary(): string {
+  const username = process.env.USER || "chris";
   const opencodePaths = [
+    `/etc/profiles/per-user/${username}/bin/opencode`, // NixOS per-user profile
     join(homedir(), ".nix-profile/bin/opencode"),
     "/run/current-system/sw/bin/opencode",
     "/usr/local/bin/opencode",
