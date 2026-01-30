@@ -254,6 +254,7 @@ in {
       instances.staging = {
         enable = true;
         agent.model = "openrouter/moonshotai/kimi-k2-0905";
+        gatewayPort = 18889; # Different port from default (18789)
         gateway.authTokenFile = nixosConfig.age.secrets.gateway-auth-token.path;
         providers.openrouter.apiKeyFile = nixosConfig.age.secrets.openrouter-api-key.path;
         providers.telegram = {
@@ -268,8 +269,6 @@ in {
         launchd.enable = false;
         # Same config as default - modify here to test changes
         configOverrides = {
-          # Use different gateway port to avoid conflict with default instance
-          gateway.port = 18889;
           # Register custom models not yet in moltbot's built-in registry
           models = {
             mode = "merge";
@@ -377,16 +376,9 @@ in {
     systemd.user.services.moltbot-gateway.Service.Environment = [
       "OPENAI_BASE_URL=https://openrouter.ai/api/v1"
     ];
-    systemd.user.services.moltbot-gateway-staging.Service = {
-      Environment = ["OPENAI_BASE_URL=https://openrouter.ai/api/v1"];
-      # Override ExecStart to use port 18889 instead of hardcoded 18789
-      ExecStart = hmLib.mkForce (
-        builtins.replaceStrings
-        ["--port 18789"]
-        ["--port 18889"]
-        hmConfig.systemd.user.services.moltbot-gateway-staging.Service.ExecStart
-      );
-    };
+    systemd.user.services.moltbot-gateway-staging.Service.Environment = [
+      "OPENAI_BASE_URL=https://openrouter.ai/api/v1"
+    ];
 
     # Set up extensions symlink for staging instance
     home.activation.moltbot-staging-extensions = hmLib.hm.dag.entryAfter ["writeBoundary"] ''
