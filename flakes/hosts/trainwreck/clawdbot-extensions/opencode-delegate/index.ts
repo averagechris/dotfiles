@@ -266,8 +266,13 @@ async function findAvailablePort(startPort: number = 4096): Promise<number> {
   });
 }
 
-// Get Tailscale hostname if available
-async function getTailscaleHostname(): Promise<string | null> {
+// Get Tailscale info (hostname and IP) if available
+interface TailscaleInfo {
+  hostname: string | null;
+  ip: string | null;
+}
+
+async function getTailscaleInfo(): Promise<TailscaleInfo> {
   return new Promise((resolve) => {
     const proc = spawn("tailscale", ["status", "--json"], {
       stdio: ["pipe", "pipe", "pipe"],
@@ -280,30 +285,36 @@ async function getTailscaleHostname(): Promise<string | null> {
 
     proc.on("close", (code) => {
       if (code !== 0) {
-        resolve(null);
+        resolve({ hostname: null, ip: null });
         return;
       }
       try {
         const status = JSON.parse(stdout);
-        if (status.Self?.DNSName) {
-          // Remove trailing dot
-          resolve(status.Self.DNSName.replace(/\.$/, ""));
-        } else {
-          resolve(null);
-        }
+        const hostname = status.Self?.DNSName
+          ? status.Self.DNSName.replace(/\.$/, "")
+          : null;
+        // Get the first Tailscale IP (usually the IPv4 address)
+        const ip = status.Self?.TailscaleIPs?.[0] || null;
+        resolve({ hostname, ip });
       } catch {
-        resolve(null);
+        resolve({ hostname: null, ip: null });
       }
     });
 
-    proc.on("error", () => resolve(null));
+    proc.on("error", () => resolve({ hostname: null, ip: null }));
 
     // Timeout after 5 seconds
     setTimeout(() => {
       proc.kill();
-      resolve(null);
+      resolve({ hostname: null, ip: null });
     }, 5000);
   });
+}
+
+// Legacy wrapper for backward compatibility
+async function getTailscaleHostname(): Promise<string | null> {
+  const info = await getTailscaleInfo();
+  return info.hostname;
 }
 
 // Find opencode binary
@@ -732,13 +743,17 @@ Useful for:
         // Find available port
         const port = requestedPort || (await findAvailablePort());
 
-        // Get Tailscale hostname for remote access
-        const tailscaleHost = await getTailscaleHostname();
+        // Get Tailscale info for secure remote access
+        const tailscaleInfo = await getTailscaleInfo();
 
         const opencodeBin = findOpencodeBinary();
 
+        // SECURITY: Only bind to Tailscale IP if available, otherwise localhost only
+        // Never bind to 0.0.0.0 to avoid exposing to public internet
+        const bindHost = tailscaleInfo.ip || "127.0.0.1";
+
         // Start the server
-        const serverArgs = ["serve", "--port", String(port), "--hostname", "0.0.0.0"];
+        const serverArgs = ["serve", "--port", String(port), "--hostname", bindHost];
 
         const proc = spawn(opencodeBin, serverArgs, {
           cwd: workdir,
@@ -774,8 +789,8 @@ Useful for:
         }
 
         const localHostname = hostname();
-        const localUrl = `http://localhost:${port}`;
-        const tailscaleUrl = tailscaleHost ? `http://${tailscaleHost}:${port}` : undefined;
+        const localUrl = `http://${bindHost}:${port}`;
+        const tailscaleUrl = tailscaleInfo.hostname ? `http://${tailscaleInfo.hostname}:${port}` : undefined;
 
         const serverInstance: ServerInstance = {
           name,
@@ -794,15 +809,17 @@ Useful for:
         let response = `## opencode Server Started: ${name}\n\n`;
         response += `**Working Directory:** ${workdir}\n`;
         response += `**Port:** ${port}\n`;
+        response += `**Bound to:** ${bindHost} (Tailscale only - not publicly accessible)\n`;
         response += `**Started:** ${serverInstance.startedAt.toISOString()}\n\n`;
         response += `### How to Connect\n\n`;
-        response += `**Local (on this machine):**\n\`\`\`\nopencode attach ${localUrl}\n\`\`\`\n\n`;
 
         if (tailscaleUrl) {
-          response += `**Via Tailscale (from any device on your tailnet):**\n\`\`\`\nopencode attach ${tailscaleUrl}\n\`\`\`\n\n`;
+          response += `**Via Tailscale (recommended):**\n\`\`\`\nopencode attach ${tailscaleUrl}\n\`\`\`\n\n`;
+          response += `**Via SSH tunnel (if not on Tailscale):**\n\`\`\`\nssh -L ${port}:${bindHost}:${port} chris@trainwreck\nopencode attach http://localhost:${port}\n\`\`\`\n`;
+        } else {
+          response += `**Local only (Tailscale not available):**\n\`\`\`\nopencode attach ${localUrl}\n\`\`\`\n\n`;
+          response += `**Via SSH tunnel:**\n\`\`\`\nssh -L ${port}:localhost:${port} chris@trainwreck\nopencode attach http://localhost:${port}\n\`\`\`\n`;
         }
-
-        response += `**Via SSH tunnel (if not on Tailscale):**\n\`\`\`\nssh -L ${port}:localhost:${port} chris@trainwreck\nopencode attach ${localUrl}\n\`\`\`\n`;
 
         return {
           content: [{ type: "text", text: response }],
