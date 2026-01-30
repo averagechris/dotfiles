@@ -100,8 +100,13 @@
   system.stateVersion = "25.11";
 
   # Home Manager configuration for chris
-  home-manager.users.chris = {lib, ...}: let
+  home-manager.users.chris = {
+    lib,
+    config,
+    ...
+  }: let
     hmLib = lib;
+    hmConfig = config;
   in {
     home.stateVersion = "25.11";
 
@@ -374,7 +379,7 @@
       Environment = ["OPENAI_BASE_URL=https://openrouter.ai/api/v1"];
       # Override ExecStart to use different port (module hardcodes 18789)
       ExecStart = let
-        pkg = config.programs.moltbot.instances.staging.package;
+        pkg = hmConfig.programs.moltbot.instances.staging.package;
       in
         hmLib.mkForce "${pkg}/bin/moltbot-gateway-staging gateway --port 18889";
     };
