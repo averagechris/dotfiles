@@ -133,32 +133,35 @@
           # Register custom models not yet in moltbot's built-in registry
           models = {
             mode = "merge";
-            providers.openrouter.models = [
-              {
-                id = "moonshotai/kimi-k2.5";
-                name = "Kimi K2.5";
-                reasoning = true;
-                input = ["text"];
-                contextWindow = 131072;
-                maxTokens = 8192;
-              }
-              {
-                id = "moonshotai/kimi-k2";
-                name = "Kimi K2";
-                reasoning = false;
-                input = ["text"];
-                contextWindow = 131072;
-                maxTokens = 8192;
-              }
-              {
-                id = "moonshotai/kimi-k2-thinking";
-                name = "Kimi K2 Thinking";
-                reasoning = true;
-                input = ["text"];
-                contextWindow = 131072;
-                maxTokens = 16000;
-              }
-            ];
+            providers.openrouter = {
+              baseUrl = "https://openrouter.ai/api/v1";
+              models = [
+                {
+                  id = "moonshotai/kimi-k2.5";
+                  name = "Kimi K2.5";
+                  reasoning = true;
+                  input = ["text"];
+                  contextWindow = 131072;
+                  maxTokens = 8192;
+                }
+                {
+                  id = "moonshotai/kimi-k2";
+                  name = "Kimi K2";
+                  reasoning = false;
+                  input = ["text"];
+                  contextWindow = 131072;
+                  maxTokens = 8192;
+                }
+                {
+                  id = "moonshotai/kimi-k2-thinking";
+                  name = "Kimi K2 Thinking";
+                  reasoning = true;
+                  input = ["text"];
+                  contextWindow = 131072;
+                  maxTokens = 16000;
+                }
+              ];
+            };
           };
           # Model catalog for /model command
           agents.defaults.models = {
