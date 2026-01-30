@@ -114,7 +114,7 @@
       };
       instances.default = {
         enable = true;
-        agent.model = "openrouter/anthropic/claude-sonnet-4";
+        agent.model = "openrouter/moonshotai/kimi-k2.5";
         gateway.authTokenFile = config.age.secrets.gateway-auth-token.path;
         providers.openrouter.apiKeyFile = config.age.secrets.openrouter-api-key.path;
         providers.telegram = {
@@ -130,6 +130,17 @@
         launchd.enable = false;
         # Enable local extensions from clawdbot-extensions/
         configOverrides = {
+          # Model catalog for /model command
+          agents.defaults.models = {
+            "openrouter/moonshotai/kimi-k2.5" = {alias = "K2.5";};
+            "openrouter/moonshotai/kimi-k2" = {alias = "K2";};
+            "openrouter/moonshotai/kimi-k2-thinking" = {alias = "K2 Think";};
+            "openrouter/anthropic/claude-opus-4.5" = {alias = "Opus";};
+            "openrouter/anthropic/claude-sonnet-4.5" = {alias = "Sonnet";};
+            "openrouter/openai/gpt-5.2-mini" = {alias = "GPT Mini";};
+            "openrouter/openai/gpt-5.2-codex" = {alias = "Codex";};
+            "openrouter/google/gemini-2.5-flash" = {alias = "Gemini";};
+          };
           # Tell moltbot where to find local plugins
           plugins.load.paths = ["/home/chris/.moltbot/extensions"];
           plugins.entries."kagi-search" = {
