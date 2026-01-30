@@ -208,7 +208,7 @@
                 # Uses OPENAI_BASE_URL env var to point to OpenRouter
                 # API key is read from file at runtime
                 apiKey = "\${OPENROUTER_API_KEY}";
-                model = "openai/text-embedding-3-small";
+                model = "text-embedding-3-small";
               };
               autoRecall = true;
               autoCapture = true;
