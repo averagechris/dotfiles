@@ -130,6 +130,8 @@
         launchd.enable = false;
         # Enable local extensions from clawdbot-extensions/
         configOverrides = {
+          # Tell moltbot where to find local plugins
+          plugins.load.paths = ["/home/chris/.moltbot/extensions"];
           plugins.entries."kagi-search" = {
             enabled = true;
           };
