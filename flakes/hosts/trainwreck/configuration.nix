@@ -244,6 +244,7 @@
         # Generate env file from secret before starting
         ExecStartPre = [
           "${pkgs.writeShellScript "moltbot-env-setup" ''
+            mkdir -p /tmp/moltbot
             echo "OPENROUTER_API_KEY=$(cat ${config.age.secrets.openrouter-api-key.path})" > /tmp/moltbot/openrouter-env
           ''}"
         ];
