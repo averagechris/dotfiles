@@ -132,9 +132,12 @@ export default function (api: any) {
         formData.append('text1', bottomText);
         
         // Add username/password if configured
-        if (api.config?.imgflipUsername && api.config?.imgflipPassword) {
-          formData.append('username', api.config.imgflipUsername);
-          formData.append('password', api.config.imgflipPassword);
+        const imgflipUsername = api.config?.imgflipUsername;
+        const imgflipPassword = api.config?.imgflipPassword;
+        
+        if (imgflipUsername && imgflipPassword) {
+          formData.append('username', imgflipUsername);
+          formData.append('password', imgflipPassword);
         }
 
         const response = await fetch('https://api.imgflip.com/caption_image', {
@@ -153,7 +156,7 @@ export default function (api: any) {
             return {
               content: [{ 
                 type: "text", 
-                text: `⚠️ Imgflip now requires authentication. Please use meme_generate_ai for AI-generated memes instead, or ask your admin to configure Imgflip credentials.\n\nError: ${errorMsg}` 
+                text: `⚠️ Imgflip now requires authentication for meme templates.\n\n**Options:**\n1. **Use AI memes**: Try \`meme_generate_ai\` for custom meme images\n2. **Configure Imgflip**: Add credentials to plugin config:\n   \`\`\`\n   imgflipUsername: "your_username"\n   imgflipPassword: "your_password"\n   \`\`\`\n\n**For now, try AI memes instead!** 🎨\n\nError: ${errorMsg}` 
               }]
             };
           }
@@ -208,12 +211,12 @@ export default function (api: any) {
         model: {
           type: "string",
           description: "AI model to use for generation",
-          default: "black-forest-labs/flux.2-pro",
+          default: "google/gemini-2.5-flash-image",
           enum: [
-            "black-forest-labs/flux.2-pro",
-            "black-forest-labs/flux.2-flex", 
-            "google/gemini-2.5-flash-image-preview",
-            "sourceful/riverflow-v2-standard-preview"
+            "google/gemini-2.5-flash-image",
+            "google/gemini-3-pro-image-preview", 
+            "openai/gpt-5-image-mini",
+            "openai/gpt-5-image"
           ]
         }
       },
@@ -234,7 +237,7 @@ export default function (api: any) {
       try {
         const prompt = args.prompt;
         const style = args.style || "funny";
-        const model = args.model || "black-forest-labs/flux.2-pro";
+        const model = args.model || "google/gemini-2.5-flash-image";
         
         // Enhance the prompt for meme generation
         const enhancedPrompt = `${prompt}, ${style} meme style, internet meme format, high quality, clear text readability, meme aesthetic`;
