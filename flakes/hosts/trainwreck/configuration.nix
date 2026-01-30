@@ -69,6 +69,18 @@
       group = "users";
       mode = "0400";
     };
+    imgflip-username = {
+      file = ../../../secrets/trainwreck/imgflip-username.age;
+      owner = "chris";
+      group = "users";
+      mode = "0400";
+    };
+    imgflip-password = {
+      file = ../../../secrets/trainwreck/imgflip-password.age;
+      owner = "chris";
+      group = "users";
+      mode = "0400";
+    };
   };
 
   environment.systemPackages = with pkgs; [

@@ -30,6 +30,24 @@ export default function (api: any) {
     }
   }
 
+  // Helper function to get Imgflip credentials
+  function getImgflipCredentials(): { username: string; password: string } | null {
+    try {
+      const username = readFileSync("/run/agenix/imgflip-username", "utf-8").trim();
+      const password = readFileSync("/run/agenix/imgflip-password", "utf-8").trim();
+      return { username, password };
+    } catch (e) {
+      // Fall back to config if files not available
+      if (api.config?.imgflipUsername && api.config?.imgflipPassword) {
+        return {
+          username: api.config.imgflipUsername,
+          password: api.config.imgflipPassword
+        };
+      }
+      return null;
+    }
+  }
+
   // Register list templates tool
   api.registerTool({
     name: "meme_list_templates",
@@ -132,12 +150,11 @@ export default function (api: any) {
         formData.append('text1', bottomText);
         
         // Add username/password if configured
-        const imgflipUsername = api.config?.imgflipUsername;
-        const imgflipPassword = api.config?.imgflipPassword;
+        const imgflipCreds = getImgflipCredentials();
         
-        if (imgflipUsername && imgflipPassword) {
-          formData.append('username', imgflipUsername);
-          formData.append('password', imgflipPassword);
+        if (imgflipCreds) {
+          formData.append('username', imgflipCreds.username);
+          formData.append('password', imgflipCreds.password);
         }
 
         const response = await fetch('https://api.imgflip.com/caption_image', {

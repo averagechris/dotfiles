@@ -18,4 +18,6 @@ in {
   "trainwreck/openrouter-api-key.age".publicKeys = trainwreck-keys ++ systems-keys;
   "trainwreck/kagi-api-token.age".publicKeys = trainwreck-keys ++ systems-keys;
   "trainwreck/gateway-auth-token.age".publicKeys = trainwreck-keys ++ systems-keys;
+  "trainwreck/imgflip-username.age".publicKeys = trainwreck-keys ++ systems-keys;
+  "trainwreck/imgflip-password.age".publicKeys = trainwreck-keys ++ systems-keys;
 }
