@@ -246,7 +246,6 @@
         enable = true;
         agent.model = "openrouter/moonshotai/kimi-k2-0905";
         gateway.authTokenFile = config.age.secrets.gateway-auth-token.path;
-        gateway.port = 18081; # Different port from default (18080)
         providers.openrouter.apiKeyFile = config.age.secrets.openrouter-api-key.path;
         providers.telegram = {
           enable = true;
