@@ -40,6 +40,12 @@
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # Openclaw - for running as a node connecting to trainwreck gateway
+    nix-openclaw = {
+      url = "git+https://git.sr.ht/~averagechris/nix-openclaw";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = inputs @ {
@@ -54,6 +60,7 @@
       inherit system;
       hostPath = ./configuration.nix;
       extraInputs = inputs;
+      extraOverlays = [inputs.nix-openclaw.overlays.default];
     };
 
     deploy.nodes.tater = lib.mkDeploy' self.nixosConfigurations.tater;

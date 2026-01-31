@@ -92,6 +92,7 @@
     home.stateVersion = "24.11";
     imports = [
       inputs.hm-modules.homeManagerModules.default
+      inputs.nix-openclaw.homeManagerModules.openclaw
     ];
 
     # Use the unified Hyprland workstation configuration
@@ -107,5 +108,14 @@
     # Bluetooth and network management
     home.packages = [pkgs.overskride];
     services.network-manager-applet.enable = true;
+
+    # Openclaw node - connects to trainwreck gateway via Tailscale
+    programs.openclaw.nodes.default = {
+      enable = true;
+      gateway.host = "trainwreck"; # Tailscale hostname
+      gateway.port = 18789;
+      displayName = "Tater";
+      # systemd.enable defaults to true - auto-starts on login
+    };
   };
 }
