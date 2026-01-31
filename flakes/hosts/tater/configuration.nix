@@ -1,6 +1,7 @@
 {
   inputs,
   pkgs,
+  config,
   ...
 }: {
   imports = [
@@ -25,6 +26,14 @@
 
   # Enable Hyprland desktop environment
   dotfiles.hyprland-desktop.enable = true;
+
+  # Agenix secrets
+  age.secrets.openrouter-api-key = {
+    file = ../../../secrets/openrouter-api-key.age;
+    owner = "chris";
+    group = "users";
+    mode = "0400";
+  };
 
   networking.hostName = "tater";
 
@@ -92,6 +101,7 @@
     # Additional tools
     dotfiles.shell.yazi.enable = true;
     programs.opencode.enable = true;
+    dotfiles.opencode.openrouterApiKeyFile = config.age.secrets.openrouter-api-key.path;
     programs.meganz.enable = true;
 
     # Bluetooth and network management

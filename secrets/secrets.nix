@@ -6,11 +6,19 @@ let
   ];
 
   trainwreck-key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICxXGUQ9Ey9/ndUJgr8ClI3PcnWYNnaY4kUMyHRrsYma root@trainwreck";
+  suremac-key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILz1u19VoCC/jj2lL34CmHwKAtIGt2clyMbZU8Cz4q14 chris.cummings@sureapp.com";
+  tater-key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBq8+MKDCaI81h80Q0xqch/jnJLaScTjpy0/LfpNQerv root@tater";
 
   trainwreck-keys = [trainwreck-key];
+
+  # All keys that should have access to shared secrets (openrouter, etc.)
+  all-keys = systems-keys ++ trainwreck-keys ++ [suremac-key tater-key];
 in {
   "fastmail_password.age".publicKeys = systems-keys;
   "fastmail_primary_address.age".publicKeys = systems-keys;
+
+  # Shared secrets (accessible from all machines)
+  "openrouter-api-key.age".publicKeys = all-keys;
 
   # Trainwreck secrets (clawdbot)
   "trainwreck/telegram-bot-token.age".publicKeys = trainwreck-keys ++ systems-keys;

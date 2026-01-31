@@ -108,6 +108,7 @@
         hostPath
         home-manager.darwinModules.home-manager
         mac-app-util.darwinModules.default
+        agenix.darwinModules.default
         {
           home-manager.extraSpecialArgs = specialArgs;
           home-manager.useGlobalPkgs = true;

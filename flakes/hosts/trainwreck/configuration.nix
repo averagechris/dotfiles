@@ -165,7 +165,7 @@ in {
       mode = "0400";
     };
     openrouter-api-key = {
-      file = ../../../secrets/trainwreck/openrouter-api-key.age;
+      file = ../../../secrets/openrouter-api-key.age;
       owner = "chris";
       group = "users";
       mode = "0400";
@@ -293,6 +293,7 @@ in {
     # Enable jj and opencode
     programs.jujutsu.enable = true;
     programs.opencode.enable = true;
+    dotfiles.opencode.openrouterApiKeyFile = nixosConfig.age.secrets.openrouter-api-key.path;
     programs.starship.enable = false;
   };
 }

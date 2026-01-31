@@ -1,6 +1,7 @@
 {
   inputs,
   pkgs,
+  config,
   ...
 }: {
   imports = [
@@ -25,6 +26,14 @@
   dotfiles.cosmic.enable = true;
   dotfiles.cosmic.system76.enable = true;
 
+  # Agenix secrets
+  age.secrets.openrouter-api-key = {
+    file = ../../../secrets/openrouter-api-key.age;
+    owner = "chris";
+    group = "users";
+    mode = "0400";
+  };
+
   boot.initrd.luks.devices = {
     root.device = "/dev/nvme1n1p2";
     root.preLVM = true;
@@ -46,6 +55,7 @@
     dotfiles.cosmic-workstation.enable = true;
     dotfiles.cosmic-workstation.ghostty.enable = true;
     programs.opencode.enable = true;
+    dotfiles.opencode.openrouterApiKeyFile = config.age.secrets.openrouter-api-key.path;
     programs.meganz.enable = true;
   };
 
