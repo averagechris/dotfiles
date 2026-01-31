@@ -1455,11 +1455,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1769814446,
-        "narHash": "sha256-9U35OT+M7yjBeQIPrqDVRGDAnFH0wvnZcXPyCkOBsEw=",
+        "lastModified": 1769834809,
+        "narHash": "sha256-cp4F+BTxIxsPlcMsx4UEFRqBZr/Nvs50EnOdq0Bd0R0=",
         "ref": "refs/heads/main",
-        "rev": "575d11793ad011e4007a15b5ce6e6ff423796231",
-        "revCount": 412,
+        "rev": "7cd515905805fa3a57835a129c865df95d283c1d",
+        "revCount": 414,
         "type": "git",
         "url": "https://git.sr.ht/~averagechris/nix-openclaw"
       },
