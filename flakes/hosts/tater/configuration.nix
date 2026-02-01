@@ -88,7 +88,7 @@
 
   users.users.chris.extraGroups = ["libvirtd" "podman"];
 
-  home-manager.users.chris = {...}: {
+  home-manager.users.chris = {config, ...}: {
     home.stateVersion = "24.11";
     imports = [
       inputs.hm-modules.homeManagerModules.default
@@ -102,20 +102,50 @@
     # Additional tools
     dotfiles.shell.yazi.enable = true;
     programs.opencode.enable = true;
-    dotfiles.opencode.openrouterApiKeyFile = config.age.secrets.openrouter-api-key.path;
+    dotfiles.opencode.openrouterApiKeyFile = "/run/agenix/openrouter-api-key";
     programs.meganz.enable = true;
 
     # Bluetooth and network management
     home.packages = [pkgs.overskride];
     services.network-manager-applet.enable = true;
 
-    # Openclaw node - connects to trainwreck gateway via Tailscale
-    programs.openclaw.nodes.default = {
-      enable = true;
-      gateway.host = "trainwreck"; # Tailscale hostname
-      gateway.port = 18789;
-      displayName = "Tater";
-      # systemd.enable defaults to true - auto-starts on login
+    # Openclaw configuration (minimal base config for nodes)
+    programs.openclaw = let
+      # Create minimal documents for node (required by module)
+      documentsDir = pkgs.runCommand "openclaw-documents" {} ''
+        mkdir -p $out
+        echo "# AGENTS
+
+This is a node." > $out/AGENTS.md
+        echo "# SOUL
+
+Node configuration." > $out/SOUL.md
+        echo "# TOOLS
+
+Node tools." > $out/TOOLS.md
+      '';
+    in {
+      # Required even for nodes to prevent activation script errors
+      documents = documentsDir;
+      
+      # Minimal instance to satisfy activation script (enabled but minimal)
+      instances.minimal = {
+        enable = true;
+        stateDir = "~/.openclaw";
+        workspaceDir = "~/.openclaw/workspace";
+        systemd.enable = false;
+        plugins = [];
+      };
+      
+      # Openclaw node - connects to trainwreck gateway via Tailscale
+      nodes.default = {
+        enable = true;
+        gateway.host = "trainwreck"; # Tailscale hostname
+        gateway.port = 18789;
+        displayName = "Tater";
+        stateDir = "~/.openclaw-node";
+        systemd.enable = false;  # Disable systemd to avoid activation script issues
+      };
     };
   };
 }

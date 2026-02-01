@@ -13,9 +13,12 @@ let
 
   # All keys that should have access to shared secrets (openrouter, etc.)
   all-keys = systems-keys ++ trainwreck-keys ++ [suremac-key tater-key];
+
+  # Systems keys plus tater for fastmail access
+  systems-keys-plus-tater = systems-keys ++ [tater-key];
 in {
-  "fastmail_password.age".publicKeys = systems-keys;
-  "fastmail_primary_address.age".publicKeys = systems-keys;
+  "fastmail_password.age".publicKeys = systems-keys-plus-tater;
+  "fastmail_primary_address.age".publicKeys = systems-keys-plus-tater;
 
   # Shared secrets (accessible from all machines)
   "openrouter-api-key.age".publicKeys = all-keys;

@@ -1,26 +1,26 @@
 {pkgs, ...}:
 with pkgs; rec {
-  video_compress = writeShellApplication {
-    name = "video_compress";
-    runtimeInputs = [handbrake];
-    text = ''
-      HandBrakeCLI -i "$1" -o "$2" \
-        -e x264 \
-        -q 18 \
-        -a 1,1 \
-        -E faac,copy:ac3 \
-        -B 256,256 \
-        -6 dpl2,auto \
-        -R Auto,Auto \
-        -D 0.0,0.0 \
-        -f mp4 \
-        --detelecine \
-        --decomb \
-        --loose-anamorphic \
-        -m \
-        -x b-adapt=2:rc-lookahead=50
-    '';
-  };
+  # video_compress = writeShellApplication {
+  #   name = "video_compress";
+  #   runtimeInputs = [handbrake];
+  #   text = ''
+  #     HandBrakeCLI -i "$1" -o "$2" \
+  #       -e x264 \
+  #       -q 18 \
+  #       -a 1,1 \
+  #       -E faac,copy:ac3 \
+  #       -B 256,256 \
+  #       -6 dpl2,auto \
+  #       -R Auto,Auto \
+  #       -D 0.0,0.0 \
+  #       -f mp4 \
+  #       --detelecine \
+  #       --decomb \
+  #       --loose-anamorphic \
+  #       -m \
+  #       -x b-adapt=2:rc-lookahead=50
+  #   '';
+  # };
 
   extract = writeShellApplication {
     name = "extract";
