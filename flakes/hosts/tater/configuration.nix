@@ -1,7 +1,6 @@
 {
   inputs,
   pkgs,
-  config,
   ...
 }: {
   imports = [
@@ -36,6 +35,12 @@
   };
   age.secrets.gpg-private-key = {
     file = ../../../secrets/gpg-private-key.age;
+    owner = "chris";
+    group = "users";
+    mode = "0400";
+  };
+  age.secrets.gpg-key-id = {
+    file = ../../../secrets/gpg-key-id.age;
     owner = "chris";
     group = "users";
     mode = "0400";
@@ -94,11 +99,7 @@
 
   users.users.chris.extraGroups = ["libvirtd" "podman"];
 
-  home-manager.users.chris = {
-    config,
-    lib,
-    ...
-  }: let
+  home-manager.users.chris = {lib, ...}: let
     # GUI services that require a display and will hang during activation
     # These get RefuseManualStart=yes so sd-switch skips them, but they still
     # start normally via graphical-session.target when you log in
@@ -125,7 +126,7 @@
         };
       };
   in {
-    _module.args = {gpgPrivateKeyPath = "/run/agenix/gpg-private-key";};
+    # secrets are passed via _module.args in nixos-modules/modules/users/chris.nix
     home.stateVersion = "24.11";
     imports = [
       inputs.hm-modules.homeManagerModules.default

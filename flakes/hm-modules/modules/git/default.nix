@@ -6,16 +6,15 @@
 }: {
   config.home.packages = [pkgs.gnupg];
   config.programs.git = {
+    # Note: The gpg module (flakes/hm-modules/modules/gpg.nix) manages git config
+    # including signing.key when dotfiles.gpg.enable = true. It imports the GPG key
+    # from agenix and configures signing during activation.
     settings = {
       pull.rebase = true;
       init.defaultBranch = "main";
     };
     ignores = [".DS_Store"];
-    # signing.key is set dynamically by the gpg module if a GPG key is available
-    # The gpg module (flakes/hm-modules/modules/gpg.nix) automatically imports
-    # the GPG private key from agenix and configures the signing key during
-    # home-manager activation. This allows the same GPG key to be used across
-    # all machines without hardcoding the key ID.
+    # signing configuration is managed by the gpg module when enabled
 
     settings.alias = with pkgs; {
       ch = let

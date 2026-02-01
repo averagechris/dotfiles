@@ -90,7 +90,11 @@
           then let
             testConfig = home-manager.lib.homeManagerConfiguration {
               inherit pkgs;
-              extraSpecialArgs = {inherit dotfiles_lib system;};
+              extraSpecialArgs = {
+                inherit dotfiles_lib system;
+                # Provide empty secrets for modules that optionally use agenix secrets
+                secrets = {};
+              };
               modules = [
                 ./modules/default.nix
                 {

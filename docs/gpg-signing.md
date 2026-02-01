@@ -7,8 +7,9 @@ This document describes the automatic GPG signing setup for git and jj (jujutsu)
 The dotfiles repository includes an automated GPG signing configuration that:
 - Stores your GPG private key securely with agenix
 - Automatically imports the key during system rebuilds
-- Configures both git and jj to sign commits with the imported key
+- Configures both git and jj to sign commits with your GPG key
 - Works across all machines (tater, suremac, trap, thorny, cruber, trainwreck)
+- Passphrase caching for 7 days (no need to enter passphrase for every commit)
 
 ## Architecture
 
@@ -21,50 +22,51 @@ The dotfiles repository includes an automated GPG signing configuration that:
 
 2. **GPG Module** (`flakes/hm-modules/modules/gpg.nix`)
    - Imports the GPG key during home-manager activation
-   - Automatically detects the key ID from the imported key
-   - Configures git and jj to use the detected key
+   - Configures git and jj with the signing key from `_module.args`
    - Sets `GPG_TTY` for proper pinentry functionality
+   - Enables GPG agent with 7-day passphrase cache
 
-3. **Git Module** (`flakes/hm-modules/modules/git/default.nix`)
-   - Configures git to sign commits by default
-   - Signing key is set dynamically by the GPG module
-   - Avoids hardcoding the key ID in the configuration
+3. **Git Configuration**
+   - Signing key is set in home-manager config from `_module.args.gpgSigningKey`
+   - Commits are signed by default (`commit.gpgsign = true`)
 
-4. **Jujutsu Module** (`flakes/hm-modules/modules/jujutsu/default.nix`)
-   - Inherits the signing key from git configuration
-   - Uses the same GPG key for signing jj commits
-   - Configures GPG as the signing backend
+4. **Jujutsu Configuration**
+   - Signing key is set in home-manager config from `_module.args.gpgSigningKey`
+   - Uses GPG backend for signing
 
 5. **GPG Agent** (NixOS configuration)
    - Configured in `flakes/nixos-modules/modules/users/chris.nix`
    - Uses pinentry-qt for graphical passphrase prompts
-   - 7-day cache TTL (604800 seconds) to reduce passphrase prompts
+   - **7-day cache TTL (604800 seconds)** - enter passphrase once, cached for a week
    - 1-year max cache TTL (31536000 seconds)
 
 ## Setup Instructions
 
 ### Initial Setup (One-time)
 
-1. **Export your GPG private key** (if you haven't already):
+1. **Get your GPG key ID**:
    ```bash
-   # Find your key ID
    gpg --list-secret-keys --keyid-format LONG
-   
-   # Export the private key (replace YOUR_KEY_ID)
+   ```
+   Look for the line starting with `sec` and copy the key ID (e.g., `623745A83D6C9C02`)
+
+2. **Export your GPG private key**:
+   ```bash
+   # Replace YOUR_KEY_ID with the ID from step 1
    gpg --export-secret-key --armor YOUR_KEY_ID > ~/private-key.asc
    ```
 
-2. **Create the agenix secret**:
+3. **Create the agenix secrets**:
    ```bash
    cd ~/dotfiles/secrets
    ./recreate-secrets.sh
    ```
-   - Use fzf to select `gpg-private-key.age`
-   - When the editor opens, paste your entire GPG private key
-   - Include the `-----BEGIN PGP PRIVATE KEY BLOCK-----` and `-----END PGP PRIVATE KEY BLOCK-----` lines
-   - Save and close the editor
+   - Use fzf to select both `gpg-private-key.age` and `gpg-key-id.age`
+   - For `gpg-private-key.age`: paste your entire GPG private key (including BEGIN/END lines)
+   - For `gpg-key-id.age`: paste just the key ID (e.g., `623745A83D6C9C02`)
+   - Save and close each editor
 
-3. **Configure your host** (example for tater):
+4. **Configure your host** (example for tater):
    ```nix
    # In flakes/hosts/tater/configuration.nix
    age.secrets.gpg-private-key = {
@@ -73,14 +75,20 @@ The dotfiles repository includes an automated GPG signing configuration that:
      group = "users";
      mode = "0400";
    };
+   age.secrets.gpg-key-id = {
+     file = ../../../secrets/gpg-key-id.age;
+     owner = "chris";
+     group = "users";
+     mode = "0400";
+   };
    
    home-manager.users.chris = {config, lib, ...}: {
-     _module.args = {gpgPrivateKeyPath = "/run/agenix/gpg-private-key"; };
+     _module.args = {inherit (config.age) secrets;};
      dotfiles.gpg.enable = true;
    };
    ```
 
-4. **Deploy the configuration**:
+5. **Deploy the configuration**:
    ```bash
    sudo nixos-rebuild switch --flake ./flakes/hosts/tater#tater
    ```
@@ -90,29 +98,57 @@ The dotfiles repository includes an automated GPG signing configuration that:
 To add GPG signing to a new machine:
 
 1. Ensure the machine's SSH key is in `secrets/secrets.nix` under `all-keys`
-2. Add the agenix secret configuration to the host's `configuration.nix`
-3. Enable the GPG module with `dotfiles.gpg.enable = true`
-4. Pass the secret path via `_module.args`
+2. Add both agenix secrets to the host's `configuration.nix`:
+   ```nix
+   age.secrets.gpg-private-key = { ... };
+   age.secrets.gpg-key-id = { ... };
+   ```
+3. Enable the GPG module: `dotfiles.gpg.enable = true`
+4. Pass secrets via `_module.args`: `_module.args = {inherit (config.age) secrets;}`
 5. Rebuild the system
 
 ## How It Works
 
 ### During System Rebuild
 
-1. Agenix decrypts `gpg-private-key.age` to `/run/agenix/gpg-private-key`
+1. Agenix decrypts secrets to `/run/agenix/`
+   - `gpg-private-key.age` → `/run/agenix/gpg-private-key`
+   - `gpg-key-id.age` → `/run/agenix/gpg-key-id`
 2. Home-manager activation runs the `import-gpg-key` script
 3. The script imports the GPG private key into the user's keyring
-4. The `configure-signing-keys` script runs after import
-5. It extracts the key ID from the imported key
-6. Configures git: `git config --global user.signingkey $KEY_ID`
-7. Configures jj: `jj config set --user user.signing-key $KEY_ID`
+4. The `configure-signing-key` script reads the key ID from `/run/agenix/gpg-key-id`
+5. It configures git: `git config --global user.signingkey $KEY_ID`
+6. It configures jj: `jj config set --user user.signing-key $KEY_ID`
+7. The GPG agent is started with 7-day passphrase cache
 
 ### During Normal Operation
 
 - Git automatically signs all commits with the configured key
 - Jujutsu automatically signs all commits with the same key
-- GPG agent caches the passphrase for 7 days (configurable)
+- **GPG agent caches the passphrase for 7 days** - you only need to enter it once per week
 - The key persists in the GPG keyring across rebuilds
+- The key ID is read from agenix on each rebuild
+
+### Passphrase Caching
+
+The GPG agent is configured with:
+- `default-cache-ttl` = 604800 seconds (7 days)
+- `max-cache-ttl` = 31536000 seconds (1 year)
+
+This means:
+- After entering your passphrase once, it's cached for 7 days
+- Each time you use it, the 7-day timer resets
+- Maximum cache time is 1 year
+- You can change these values in `flakes/nixos-modules/modules/users/chris.nix`
+
+To test the caching:
+```bash
+# After entering your passphrase for the first commit:
+git commit -m "First commit"  # Will prompt for passphrase
+
+# Subsequent commits within 7 days:
+git commit -m "Second commit"  # Will NOT prompt for passphrase
+```
 
 ## Troubleshooting
 
@@ -143,16 +179,16 @@ If GPG prompts don't appear:
 2. Check GPG agent status: `gpg-agent --daemon`
 3. Test pinentry: `echo "test" | gpg --clearsign`
 
-### Key ID Mismatch
+### Key ID Changes
 
-If the wrong key is being used:
-
-**Cause**: Multiple GPG keys in keyring
+If you generate a new GPG key:
 
 **Solution**:
-1. List all secret keys: `gpg --list-secret-keys --keyid-format LONG`
-2. Remove unwanted keys: `gpg --delete-secret-key KEY_ID`
-3. Rebuild to re-import the correct key
+1. Export the new private key: `gpg --export-secret-key --armor NEW_KEY_ID > new-key.asc`
+2. Update both agenix secrets: `cd ~/dotfiles/secrets && ./recreate-secrets.sh`
+   - Update `gpg-private-key.age` with the new private key
+   - Update `gpg-key-id.age` with the new key ID
+3. Rebuild: `sudo nixos-rebuild switch --flake ./flakes/hosts/<hostname>#<hostname>`
 
 ## Security Considerations
 
@@ -164,11 +200,13 @@ If the wrong key is being used:
 
 ## Related Files
 
-- `secrets/secrets.nix` - Defines which machines can access the GPG key
+- `secrets/secrets.nix` - Defines which machines can access the GPG secrets
 - `secrets/recreate-secrets.sh` - Interactive script to create/update secrets
+- `secrets/gpg-private-key.age` - Encrypted GPG private key
+- `secrets/gpg-key-id.age` - Encrypted GPG key ID
 - `flakes/hm-modules/modules/gpg.nix` - Main GPG module with activation scripts
-- `flakes/hm-modules/modules/git/default.nix` - Git configuration (signing key set dynamically)
-- `flakes/hm-modules/modules/jujutsu/default.nix` - Jujutsu configuration (inherits git signing key)
+- `flakes/hm-modules/modules/git/default.nix` - Git configuration
+- `flakes/hm-modules/modules/jujutsu/default.nix` - Jujutsu configuration
 - `flakes/nixos-modules/modules/users/chris.nix` - GPG agent configuration
 
 ## Future Improvements
