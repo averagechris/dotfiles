@@ -161,7 +161,7 @@ in {
             # "P, pseudo,"
             # "J, togglesplit,"
             "P, togglefloating"
-            "P, pin"
+            "+SHIFT, P, pin"
             "SPACE, exec, ${pkgs.wofi}/bin/wofi --show drun"
 
             # movement between windows
@@ -234,9 +234,9 @@ in {
             "Escape, exec, ${term} -e btop"
 
             # Screenshot keybindings
-            ", Print, exec, grimblast --notify copysave area"
+            "Print, exec, grimblast --notify copysave area"
             "+ SHIFT, Print, exec, grimblast --notify copysave output"
-            ", Print, exec, grimblast --notify copysave active"
+            "Print, exec, grimblast --notify copysave active"
           ];
         bindl = [
           ",switch:Lid Switch, exec, ${toggleDisplayWithLid}"

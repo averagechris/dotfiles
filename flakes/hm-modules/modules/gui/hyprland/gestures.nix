@@ -12,16 +12,12 @@ in {
 
   config = lib.mkIf (cfg.enable && cfg.gestures.enable) {
     wayland.windowManager.hyprland.settings = {
-      gestures = {
-        workspace_swipe = true;
-        workspace_swipe_fingers = 3;
-        workspace_swipe_distance = 300;
-        workspace_swipe_invert = false;
-        workspace_swipe_min_speed_to_force = 30;
-        workspace_swipe_cancel_ratio = 0.5;
-        workspace_swipe_create_new = true;
-        workspace_swipe_forever = true;
-      };
+      # New gesture syntax for hyprland 0.53.1
+      # gesture = fingers, direction, action, options
+      gesture = [
+        "3, left, workspace, e-1"
+        "3, right, workspace, e+1"
+      ];
     };
   };
 }
