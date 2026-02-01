@@ -316,7 +316,11 @@ in {
         }
       ];
       signing = {
-        inherit (config.programs.git.signing) key;
+        # Inherit signing key from git configuration. The gpg module
+        # (flakes/hm-modules/modules/gpg.nix) sets git.signing.key dynamically
+        # during home-manager activation after importing the GPG key from agenix.
+        # This ensures jj uses the same GPG key as git without hardcoding the key ID.
+        key = lib.mkIf (config.programs.git.signing.key != null) config.programs.git.signing.key;
         behavior = "own";
         backend = "gpg";
       };

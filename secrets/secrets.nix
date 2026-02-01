@@ -22,6 +22,7 @@ in {
 
   # Shared secrets (accessible from all machines)
   "openrouter-api-key.age".publicKeys = all-keys;
+  "gpg-private-key.age".publicKeys = all-keys;
 
   # Trainwreck secrets (clawdbot)
   "trainwreck/telegram-bot-token.age".publicKeys = trainwreck-keys ++ systems-keys;

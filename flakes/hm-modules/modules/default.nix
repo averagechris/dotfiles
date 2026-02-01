@@ -1,6 +1,7 @@
 {dotfiles_lib, ...}: {
   imports = [
     ./gui
+    ./gpg.nix
     ./meganz.nix
     ./shell.nix
     ./opencode

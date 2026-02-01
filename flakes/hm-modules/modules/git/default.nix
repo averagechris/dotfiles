@@ -11,7 +11,11 @@
       init.defaultBranch = "main";
     };
     ignores = [".DS_Store"];
-    signing.key = "E026151F78807B8E6012590F623745A83D6C9C02";
+    # signing.key is set dynamically by the gpg module if a GPG key is available
+    # The gpg module (flakes/hm-modules/modules/gpg.nix) automatically imports
+    # the GPG private key from agenix and configures the signing key during
+    # home-manager activation. This allows the same GPG key to be used across
+    # all machines without hardcoding the key ID.
 
     settings.alias = with pkgs; {
       ch = let

@@ -60,6 +60,14 @@ nix run .#deploy -- .#<hostname>
 darwin-rebuild switch --flake .#suremac
 ```
 
+## Documentation
+
+See [docs/README.md](/docs/README.md) for documentation index, including:
+- [nixos.md](/docs/nixos.md) - General NixOS configuration notes
+- [gpg-signing.md](/docs/gpg-signing.md) - GPG signing setup for git and jj commits with agenix
+
+See `docs/troubleshooting/` for common issues and solutions.
+
 ## Code Style Guidelines
 
 - Format with Alejandra (Nix formatter)

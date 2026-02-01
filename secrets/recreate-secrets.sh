@@ -22,6 +22,8 @@ SECRETS=(
   "openrouter-api-key.age"
   "fastmail_password.age"
   "fastmail_primary_address.age"
+  "gpg-private-key.age"
+  "gpg-key-id.age"
   "trainwreck/telegram-bot-token.age"
   "trainwreck/telegram-bot-token-staging.age"
   "trainwreck/telegram-user-ids.age"

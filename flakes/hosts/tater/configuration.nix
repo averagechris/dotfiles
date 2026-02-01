@@ -34,6 +34,12 @@
     group = "users";
     mode = "0400";
   };
+  age.secrets.gpg-private-key = {
+    file = ../../../secrets/gpg-private-key.age;
+    owner = "chris";
+    group = "users";
+    mode = "0400";
+  };
 
   networking.hostName = "tater";
 
@@ -88,7 +94,11 @@
 
   users.users.chris.extraGroups = ["libvirtd" "podman"];
 
-  home-manager.users.chris = {config, lib, ...}: let
+  home-manager.users.chris = {
+    config,
+    lib,
+    ...
+  }: let
     # GUI services that require a display and will hang during activation
     # These get RefuseManualStart=yes so sd-switch skips them, but they still
     # start normally via graphical-session.target when you log in
@@ -106,14 +116,16 @@
       "com.mitchellh.ghostty"
       "mega-cmd-server-init"
     ];
-    mkSkipDuringActivation = name: lib.nameValuePair name {
-      Unit = {
-        # Skip this service during home-manager activation (sd-switch respects this)
-        # The service will still start normally via WantedBy when graphical session starts
-        RefuseManualStart = lib.mkForce true;
+    mkSkipDuringActivation = name:
+      lib.nameValuePair name {
+        Unit = {
+          # Skip this service during home-manager activation (sd-switch respects this)
+          # The service will still start normally via WantedBy when graphical session starts
+          RefuseManualStart = lib.mkForce true;
+        };
       };
-    };
   in {
+    _module.args = {gpgPrivateKeyPath = "/run/agenix/gpg-private-key";};
     home.stateVersion = "24.11";
     imports = [
       inputs.hm-modules.homeManagerModules.default
@@ -138,6 +150,9 @@
     dotfiles.opencode.openrouterApiKeyFile = "/run/agenix/openrouter-api-key";
     programs.meganz.enable = true;
 
+    # GPG configuration with automatic key import
+    dotfiles.gpg.enable = true;
+
     # Bluetooth and network management
     home.packages = [pkgs.overskride];
     services.network-manager-applet.enable = true;
@@ -147,21 +162,21 @@
     programs.openclaw = let
       # Create minimal documents for node (required by module)
       documentsDir = pkgs.runCommand "openclaw-documents" {} ''
-        mkdir -p $out
-        echo "# AGENTS
+                mkdir -p $out
+                echo "# AGENTS
 
-This is a node." > $out/AGENTS.md
-        echo "# SOUL
+        This is a node." > $out/AGENTS.md
+                echo "# SOUL
 
-Node configuration." > $out/SOUL.md
-        echo "# TOOLS
+        Node configuration." > $out/SOUL.md
+                echo "# TOOLS
 
-Node tools." > $out/TOOLS.md
+        Node tools." > $out/TOOLS.md
       '';
     in {
       # Required even for nodes to prevent activation script errors
       documents = documentsDir;
-      
+
       # DEBUG: minimal instance enabled
       instances.minimal = {
         enable = true;
@@ -170,7 +185,7 @@ Node tools." > $out/TOOLS.md
         systemd.enable = false;
         plugins = [];
       };
-      
+
       # DEBUG: nodes enabled (this will likely cause timeout)
       nodes.default = {
         enable = true;
