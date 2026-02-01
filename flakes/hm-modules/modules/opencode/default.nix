@@ -57,8 +57,8 @@ in {
     # OpenRouter API key configuration (only when openrouterApiKeyFile is set)
     (lib.mkIf (cfg.openrouterApiKeyFile != null) {
       # Export OPENROUTER_API_KEY in shell initialization
-      # Using initExtra to read the file at shell startup time
-      programs.zsh.initExtra = ''
+      # Using initContent to read the file at shell startup time
+      programs.zsh.initContent = ''
         # OpenRouter API key for opencode (set by dotfiles.opencode.openrouterApiKeyFile)
         if [[ -r "${cfg.openrouterApiKeyFile}" ]]; then
           export OPENROUTER_API_KEY="$(cat "${cfg.openrouterApiKeyFile}")"

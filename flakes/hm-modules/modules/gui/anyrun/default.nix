@@ -18,7 +18,7 @@
   hasAnyrunInput = inputs ? anyrun;
   anyrunPkgs =
     if hasAnyrunInput
-    then inputs.anyrun.packages.${pkgs.system}
+    then inputs.anyrun.packages.${pkgs.stdenv.hostPlatform.system}
     else {};
 in {
   options.dotfiles.anyrun = {
