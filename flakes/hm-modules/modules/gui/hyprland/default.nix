@@ -170,22 +170,22 @@ in {
             "e, movefocus, u"
             "i, movefocus, r"
 
-            "+ SHIFT, m, swapwindow, l"
-            "+ SHIFT, n, swapwindow, d"
-            "+ SHIFT, e, swapwindow, u"
-            "+ SHIFT, i, swapwindow, r"
+            "+SHIFT, m, swapwindow, l"
+            "+SHIFT, n, swapwindow, d"
+            "+SHIFT, e, swapwindow, u"
+            "+SHIFT, i, swapwindow, r"
 
             # Move active window to a workspace with mainMod + SHIFT + [0-9]
-            "+ SHIFT, 1, movetoworkspace, 1"
-            "+ SHIFT, 2, movetoworkspace, 2"
-            "+ SHIFT, 3, movetoworkspace, 3"
-            "+ SHIFT, 4, movetoworkspace, 4"
-            "+ SHIFT, 5, movetoworkspace, 5"
-            "+ SHIFT, 6, movetoworkspace, 6"
-            "+ SHIFT, 7, movetoworkspace, 7"
-            "+ SHIFT, 8, movetoworkspace, 8"
-            "+ SHIFT, 9, movetoworkspace, 9"
-            "+ SHIFT, 0, movetoworkspace, 10"
+            "+SHIFT, 1, movetoworkspace, 1"
+            "+SHIFT, 2, movetoworkspace, 2"
+            "+SHIFT, 3, movetoworkspace, 3"
+            "+SHIFT, 4, movetoworkspace, 4"
+            "+SHIFT, 5, movetoworkspace, 5"
+            "+SHIFT, 6, movetoworkspace, 6"
+            "+SHIFT, 7, movetoworkspace, 7"
+            "+SHIFT, 8, movetoworkspace, 8"
+            "+SHIFT, 9, movetoworkspace, 9"
+            "+SHIFT, 0, movetoworkspace, 10"
 
             # change to workspace by number
             "1, workspace, 1"
@@ -198,8 +198,8 @@ in {
             "8, workspace, 8"
             "9, workspace, 9"
             "0, workspace, 10"
-            "+SHIFT, i, workspace, e+1"
-            "+SHIFT, m, workspace, e-1"
+            "+ALT, e, workspace, e+1"
+            "+ALT, n, workspace, e-1"
 
             # Scroll through existing workspaces with mainMod + scroll
             "mouse_right, workspace, e+1"
@@ -211,31 +211,23 @@ in {
 
             # Terminal scratchpad (grave/backtick key)
             "grave, togglespecialworkspace, terminal"
-            "+ SHIFT, grave, movetoworkspacesilent, special:terminal"
-
-            # Music player scratchpad
-            "M, togglespecialworkspace, music"
-            "+ SHIFT, M, movetoworkspacesilent, special:music"
-
-            # Notes scratchpad
-            "N, togglespecialworkspace, notes"
-            "+ SHIFT, N, movetoworkspacesilent, special:notes"
+            "+SHIFT, grave, movetoworkspacesilent, special:terminal"
 
             # toggle between qwerty and colemak_dh keyboard layouts
-            "+ SHIFT + CTRL + ALT, SPACE, exec, hyprctl switchxkblayout at-translated-set-2-keyboard next"
+            "+SHIFT+CTRL+ALT, SPACE, exec, hyprctl switchxkblayout at-translated-set-2-keyboard next"
 
             # Hypr ecosystem tools
             "C, exec, hyprpicker -a"
-            "+ SHIFT, I, exec, hyprsysteminfo"
+            "+SHIFT, I, exec, hyprsysteminfo"
 
             # Productivity features
-            "+ SHIFT, D, exec, swaync-client -d"
+            "+SHIFT, D, exec, swaync-client -d"
             "Z, exec, pkill -SIGUSR1 eww || eww open bar"
             "Escape, exec, ${term} -e btop"
 
             # Screenshot keybindings
             "Print, exec, grimblast --notify copysave area"
-            "+ SHIFT, Print, exec, grimblast --notify copysave output"
+            "+SHIFT, Print, exec, grimblast --notify copysave output"
             "Print, exec, grimblast --notify copysave active"
           ];
         bindl = [
