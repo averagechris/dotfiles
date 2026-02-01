@@ -568,6 +568,9 @@ in {
       Unit = {
         Description = "Ghostty terminal emulator";
         PartOf = ["graphical-session.target"];
+        After = ["graphical-session.target"];
+        # Only start when graphical session is actually ready
+        ConditionEnvironment = ["WAYLAND_DISPLAY" "DISPLAY"];
       };
 
       Install = {WantedBy = ["graphical-session.target"];};

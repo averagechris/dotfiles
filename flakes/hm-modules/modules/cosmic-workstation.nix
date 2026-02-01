@@ -58,7 +58,6 @@ in {
 
     # Optional ghostty terminal emulator
     dotfiles.ghostty.enable = mkIf cfg.ghostty.enable true;
-    dotfiles.ghostty.service.enable = mkIf cfg.ghostty.enable true;
 
     # Optional helix-terminal-tools with yazi integration
     dotfiles.helix-terminal-tools = mkIf cfg.helix-terminal-tools.enable {

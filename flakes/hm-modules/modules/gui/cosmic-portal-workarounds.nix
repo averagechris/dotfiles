@@ -29,6 +29,8 @@ in {
         Description = "Import DISPLAY/WAYLAND env into user systemd and DBus";
         PartOf = ["graphical-session.target"];
         After = ["graphical-session.target"];
+        # Only start when graphical session is actually ready
+        ConditionEnvironment = ["WAYLAND_DISPLAY" "DISPLAY"];
       };
       Service = {
         Type = "oneshot";
@@ -44,6 +46,8 @@ in {
         Description = "GTK xdg-desktop-portal backend";
         PartOf = ["graphical-session.target"];
         After = ["xdg-portal-env-import.service" "graphical-session.target"];
+        # Only start when graphical session is actually ready
+        ConditionEnvironment = ["WAYLAND_DISPLAY" "DISPLAY"];
       };
       Service = {
         ExecStart = "${pkgs.xdg-desktop-portal-gtk}/libexec/xdg-desktop-portal-gtk";
@@ -57,6 +61,8 @@ in {
         Description = "COSMIC xdg-desktop-portal backend";
         PartOf = ["graphical-session.target"];
         After = ["xdg-portal-env-import.service" "graphical-session.target"];
+        # Only start when graphical session is actually ready
+        ConditionEnvironment = ["WAYLAND_DISPLAY" "DISPLAY"];
       };
       Service = {
         ExecStart = "${pkgs.xdg-desktop-portal-cosmic}/libexec/xdg-desktop-portal-cosmic";

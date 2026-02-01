@@ -15,6 +15,9 @@ in {
         Description = "Sway Idle Manager";
         Documentation = "man:swayidle(1)";
         PartOf = ["graphical-session.target"];
+        After = ["graphical-session.target"];
+        # Only start when graphical session is actually ready
+        ConditionEnvironment = ["WAYLAND_DISPLAY" "DISPLAY"];
       };
 
       Install = {WantedBy = ["graphical-session.target"];};

@@ -23,7 +23,12 @@ in
         );
 
       systemd.user.services.mega-cmd-server-init = {
-        Unit.Description = "Try to start mega-cmd when sway starts.";
+        Unit = {
+          Description = "Try to start mega-cmd when sway starts.";
+          After = ["graphical-session.target"];
+          # Only start when graphical session is actually ready
+          ConditionEnvironment = ["WAYLAND_DISPLAY" "DISPLAY"];
+        };
         Install.WantedBy = ["graphical-session.target"];
         Service.Type = "oneshot";
         Service.ExecStart = "${pkgs.megacmd}/bin/mega-cmd-server";
