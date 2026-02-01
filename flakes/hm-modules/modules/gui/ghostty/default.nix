@@ -507,61 +507,50 @@ in {
 
       ${builtins.concatStringsSep "\n\n" (builtins.map formatCategory categories)}
     '';
+
+    keyValueSettings = {
+      listsAsDuplicateKeys = true;
+      mkKeyValue = lib.generators.mkKeyValueDefault {} " = ";
+    };
+    keyValue = pkgs.formats.keyValue keyValueSettings;
+
+    ghosttyConfig = keyValue.generate "ghostty-config" {
+      # Behavior
+      "window-inherit-working-directory" = true;
+      "shell-integration" = "detect";
+
+      # Visuals: Rose Pine Moon-inspired
+      background = "#232136";
+      foreground = "#e0def4";
+      "selection-background" = "#44415a";
+      "selection-foreground" = "#e0def4";
+
+      # Keybindings generated from structured data above
+      keybind = keybindStrings;
+
+      # 16-color palette
+      palette = [
+        "0=#393552"
+        "1=#eb6f92"
+        "2=#9ccfd8"
+        "3=#f6c177"
+        "4=#3e8fb0"
+        "5=#c4a7e7"
+        "6=#ea9a97"
+        "7=#e0def4"
+        "8=#6e6a86"
+        "9=#eb6f92"
+        "10=#9ccfd8"
+        "11=#f6c177"
+        "12=#3e8fb0"
+        "13=#c4a7e7"
+        "14=#ea9a97"
+        "15=#e0def4"
+      ];
+    };
   in {
-    programs.ghostty = {
-      enable = true;
-      # Start from a clean slate like kitty's clear_all_shortcuts
-      clearDefaultKeybinds = true;
-
-      # Follow shell program enables by default (users can override)
-      enableZshIntegration = lib.mkDefault (config.programs.zsh.enable or false);
-      enableBashIntegration = lib.mkDefault (config.programs.bash.enable or false);
-      enableFishIntegration = lib.mkDefault (config.programs.fish.enable or false);
-
-      settings = {
-        # Behavior
-        "window-inherit-working-directory" = true;
-        "shell-integration" = "detect";
-
-        # Visuals: Rose Pine Moon-inspired
-        background = "#232136";
-        foreground = "#e0def4";
-        "selection-background" = "#44415a";
-        "selection-foreground" = "#e0def4";
-
-        # Keybindings generated from structured data above
-        keybind = keybindStrings;
-
-        # 16-color palette
-        palette = [
-          "0=#393552"
-          "1=#eb6f92"
-          "2=#9ccfd8"
-          "3=#f6c177"
-          "4=#3e8fb0"
-          "5=#c4a7e7"
-          "6=#ea9a97"
-          "7=#e0def4"
-          "8=#6e6a86"
-          "9=#eb6f92"
-          "10=#9ccfd8"
-          "11=#f6c177"
-          "12=#3e8fb0"
-          "13=#c4a7e7"
-          "14=#ea9a97"
-          "15=#e0def4"
-        ];
-      };
-
-      # Optional: install syntax for editors
-      installVimSyntax = lib.mkDefault (config.programs.vim.enable or false);
-      installBatSyntax = lib.mkDefault (pkgs ? bat);
-    };
-
-    # Deploy a readable cheatsheet generated from the bindings
-    xdg.configFile = {
-      "ghostty/cheatsheet.md".text = cheatsheetText;
-    };
+    # Install ghostty and configure it directly without using home-manager's ghostty module
+    home.packages = [pkgs.ghostty];
 
     # Optional: Start ghostty at login via systemd user service
     systemd.user.services."com.mitchellh.ghostty" = lib.mkIf cfg.service.enable {
@@ -584,5 +573,23 @@ in {
         # tell systemd this unit will claim the DBus name so activation works
       };
     };
+
+    # Configure ghostty via xdg.configFile directly (without using home-manager's ghostty module)
+    xdg.configFile = lib.mkMerge [
+      {
+        "ghostty/config" = {
+          source = ghosttyConfig;
+          # Disable validation during activation to prevent hangs
+          onChange = lib.mkForce "true";
+        };
+        "ghostty/cheatsheet.md".text = cheatsheetText;
+      }
+      (lib.mkIf (config.programs.vim.enable or false) {
+        "vim/pack/ghostty/start/ghostty".source = "${pkgs.ghostty}/vim";
+      })
+      (lib.mkIf (pkgs ? bat) {
+        "bat/syntaxes/ghostty".source = "${pkgs.ghostty}/bat";
+      })
+    ];
   });
 }

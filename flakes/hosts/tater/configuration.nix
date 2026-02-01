@@ -88,12 +88,45 @@
 
   users.users.chris.extraGroups = ["libvirtd" "podman"];
 
-  home-manager.users.chris = {config, ...}: {
+  home-manager.users.chris = {config, lib, ...}: let
+    # GUI services that require a display and will hang during activation
+    # These get RefuseManualStart=yes so sd-switch skips them, but they still
+    # start normally via graphical-session.target when you log in
+    guiServicesToSkip = [
+      "blueman-applet"
+      "hyprpaper"
+      "hypridle"
+      "waybar"
+      "swaync"
+      "network-manager-applet"
+      "udiskie"
+      "mako"
+      "gammastep"
+      "swayidle"
+      "com.mitchellh.ghostty"
+      "mega-cmd-server-init"
+    ];
+    mkSkipDuringActivation = name: lib.nameValuePair name {
+      Unit = {
+        # Skip this service during home-manager activation (sd-switch respects this)
+        # The service will still start normally via WantedBy when graphical session starts
+        RefuseManualStart = lib.mkForce true;
+      };
+    };
+  in {
     home.stateVersion = "24.11";
     imports = [
       inputs.hm-modules.homeManagerModules.default
       inputs.nix-openclaw.homeManagerModules.openclaw
+      # Fix for openclaw node systemd service to prevent activation timeouts
+      inputs.hm-modules.homeManagerModules.openclaw-fix
+      # Fix for ghostty validation to prevent activation timeouts
+      inputs.hm-modules.homeManagerModules.ghostty-fix
     ];
+
+    # Keep service restarts enabled, but skip GUI services that hang without a display
+    systemd.user.startServices = true;
+    systemd.user.services = lib.listToAttrs (map mkSkipDuringActivation guiServicesToSkip);
 
     # Use the unified Hyprland workstation configuration
     dotfiles.hyprland-workstation.enable = true;
@@ -110,6 +143,7 @@
     services.network-manager-applet.enable = true;
 
     # Openclaw configuration (minimal base config for nodes)
+    # DEBUG: All enabled (will likely timeout)
     programs.openclaw = let
       # Create minimal documents for node (required by module)
       documentsDir = pkgs.runCommand "openclaw-documents" {} ''
@@ -128,7 +162,7 @@ Node tools." > $out/TOOLS.md
       # Required even for nodes to prevent activation script errors
       documents = documentsDir;
       
-      # Minimal instance to satisfy activation script (enabled but minimal)
+      # DEBUG: minimal instance enabled
       instances.minimal = {
         enable = true;
         stateDir = "~/.openclaw";
@@ -137,14 +171,14 @@ Node tools." > $out/TOOLS.md
         plugins = [];
       };
       
-      # Openclaw node - connects to trainwreck gateway via Tailscale
+      # DEBUG: nodes enabled (this will likely cause timeout)
       nodes.default = {
         enable = true;
-        gateway.host = "trainwreck"; # Tailscale hostname
+        gateway.host = "trainwreck";
         gateway.port = 18789;
         displayName = "Tater";
         stateDir = "~/.openclaw-node";
-        systemd.enable = false;  # Disable systemd to avoid activation script issues
+        systemd.enable = false;
       };
     };
   };

@@ -26,6 +26,8 @@
         shell = ./modules/shell.nix;
         helix = ./modules/helix/default.nix;
         opencode = ./modules/opencode/default.nix;
+        openclaw-fix = ./modules/openclaw-fix.nix;
+        ghostty-fix = ./modules/ghostty-fix.nix;
 
         meganz = ./modules/meganz.nix;
         gui = {

@@ -1,0 +1,21 @@
+--- a/nix/modules/home-manager/openclaw.nix
++++ b/nix/modules/home-manager/openclaw.nix
+@@ -1,6 +1,6 @@
+--- a/nix/modules/home-manager/openclaw.nix
+-+++ b/nix/modules/home-manager/openclaw.nix
+-@@ -...,... +...,...
++--- a/nix/modules/home-manager/openclaw.nix
+++++ b/nix/modules/home-manager/openclaw.nix
++@@ -...,... +...,...
+      systemdService = lib.optionalAttrs (pkgs.stdenv.hostPlatform.isLinux && node.systemd.enable) {
+        "${node.systemd.unitName}" = {
+          Unit = {
+@@ -8,6 +8,8 @@
+            After = ["network-online.target"];
+            Wants = ["network-online.target"];
+ +          # Only start when graphical session is actually ready
+++          # This prevents activation timeouts during home-manager switch
+ +          ConditionEnvironment = ["WAYLAND_DISPLAY" "DISPLAY"];
+          };
+ EOF
+cat /home/chris/dotfiles/flakes/base-lib/overlays/patches/openclaw-node-condition.patch
