@@ -10,7 +10,8 @@
   # Shared base configuration for openclaw instances
   baseInstance = {
     enable = true;
-    agent.model = "openrouter/moonshotai/kimi-k2-0905";
+    # Using :nitro suffix to prioritize highest throughput providers (Fireworks)
+    agent.model = "openrouter/moonshotai/kimi-k2-0905:nitro";
     gateway.authTokenFile = nixosConfig.age.secrets.gateway-auth-token.path;
     providers.openrouter.apiKeyFile = nixosConfig.age.secrets.openrouter-api-key.path;
     providers.telegram = {
@@ -25,63 +26,32 @@
 
   # Shared configOverrides for both instances
   baseConfigOverrides = {
-    # Register custom models not yet in openclaw's built-in registry
-    models = {
-      mode = "merge";
-      providers.openrouter = {
-        baseUrl = "https://openrouter.ai/api/v1";
-        api = "openai-responses";
-        models = [
-          {
-            id = "moonshotai/kimi-k2.5";
-            name = "Kimi K2.5";
-            api = "openai-responses";
-            reasoning = true;
-            input = ["text"];
-            contextWindow = 131072;
-            maxTokens = 8192;
-          }
-          {
-            id = "moonshotai/kimi-k2";
-            name = "Kimi K2";
-            api = "openai-responses";
-            reasoning = false;
-            input = ["text"];
-            contextWindow = 131072;
-            maxTokens = 8192;
-          }
-          {
-            id = "moonshotai/kimi-k2-0905";
-            name = "Kimi K2 0905";
-            api = "openai-responses";
-            reasoning = false;
-            input = ["text"];
-            contextWindow = 262144;
-            maxTokens = 8192;
-          }
-          {
-            id = "moonshotai/kimi-k2-thinking";
-            name = "Kimi K2 Thinking";
-            api = "openai-responses";
-            reasoning = true;
-            input = ["text"];
-            contextWindow = 131072;
-            maxTokens = 16000;
-          }
-        ];
-      };
-    };
     # Model catalog for /model command
+    # Note: Removed custom model definitions - let openclaw use its defaults
+    # to avoid API format issues (openai-responses vs openai-chat)
     agents.defaults.models = {
-      "openrouter/moonshotai/kimi-k2.5" = {alias = "K2.5";};
-      "openrouter/moonshotai/kimi-k2" = {alias = "K2";};
-      "openrouter/moonshotai/kimi-k2-0905" = {alias = "K2 Stable";};
-      "openrouter/moonshotai/kimi-k2-thinking" = {alias = "K2 Think";};
+      # Anthropic
       "openrouter/anthropic/claude-opus-4.5" = {alias = "Opus";};
       "openrouter/anthropic/claude-sonnet-4.5" = {alias = "Sonnet";};
-      "openrouter/openai/gpt-5.2-mini" = {alias = "GPT Mini";};
+      "openrouter/anthropic/claude-haiku-4.5" = {alias = "Haiku";};
+      "openrouter/anthropic/claude-3.5-haiku" = {alias = "Haiku 3.5";};
+      # OpenAI
       "openrouter/openai/gpt-5.2-codex" = {alias = "Codex";};
+      "openrouter/openai/gpt-5.2" = {alias = "GPT 5.2";};
+      "openrouter/openai/gpt-5-mini" = {alias = "GPT Mini";};
+      "openrouter/openai/gpt-5-nano" = {alias = "GPT Nano";};
+      # Google
       "openrouter/google/gemini-2.5-flash" = {alias = "Gemini";};
+      # Mistral
+      "openrouter/mistralai/mistral-large-2512" = {alias = "Mistral Large";};
+      "openrouter/mistralai/mistral-medium-3.1" = {alias = "Mistral Medium";};
+      "openrouter/mistralai/devstral-2512" = {alias = "Devstral";};
+      "openrouter/mistralai/codestral-2508" = {alias = "Codestral";};
+      # Kimi
+      "openrouter/moonshotai/kimi-k2.5" = {alias = "K2.5";};
+      "openrouter/moonshotai/kimi-k2-0905" = {alias = "K2";};
+      "openrouter/moonshotai/kimi-k2-0905:nitro" = {alias = "K2 Fast";};
+      "openrouter/moonshotai/kimi-k2-thinking" = {alias = "K2 Think";};
     };
     # Plugin configuration
     plugins.entries."kagi-search".enabled = true;
