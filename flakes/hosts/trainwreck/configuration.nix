@@ -316,6 +316,12 @@ in {
 
     # Openclaw configuration
     programs.openclaw = {
+      # Grem's documents (global default - Mira's are handled separately)
+      documentsRuntime = {
+        agentsFile = nixosConfig.age.secrets.grem-agents.path;
+        soulFile = nixosConfig.age.secrets.grem-soul.path;
+        toolsFile = nixosConfig.age.secrets.grem-tools.path;
+      };
       firstParty = {
         summarize.enable = true;
         sag.enable = true; # Text-to-speech
@@ -328,12 +334,6 @@ in {
       instances.grem = lib.recursiveUpdate baseInstance {
         providers.telegram.botTokenFile = nixosConfig.age.secrets.telegram-bot-token.path;
         providers.telegram.groups."-4996214260" = {requireMention = false;};
-        # Grem's personality documents
-        documentsRuntime = {
-          agentsFile = nixosConfig.age.secrets.grem-agents.path;
-          soulFile = nixosConfig.age.secrets.grem-soul.path;
-          toolsFile = nixosConfig.age.secrets.grem-tools.path;
-        };
         configOverrides = lib.recursiveUpdate baseConfigOverrides {
           plugins.load.paths = ["/home/chris/.openclaw-grem/extensions"];
           browser.defaultProfile = "grem";
@@ -348,12 +348,6 @@ in {
       instances.grem-staging = lib.recursiveUpdate baseInstance {
         gatewayPort = 18889; # Different port from default (18789)
         providers.telegram.botTokenFile = nixosConfig.age.secrets.telegram-bot-token-staging.path;
-        # Grem's personality documents (same as production)
-        documentsRuntime = {
-          agentsFile = nixosConfig.age.secrets.grem-agents.path;
-          soulFile = nixosConfig.age.secrets.grem-soul.path;
-          toolsFile = nixosConfig.age.secrets.grem-tools.path;
-        };
         configOverrides = lib.recursiveUpdate baseConfigOverrides {
           plugins.load.paths = ["/home/chris/.openclaw-grem-staging/extensions"];
           browser.defaultProfile = "grem-staging";
@@ -368,12 +362,6 @@ in {
       instances.mira = lib.recursiveUpdate miraBaseInstance {
         gatewayPort = 18790; # Different port from Grem
         providers.telegram.botTokenFile = nixosConfig.age.secrets.telegram-bot-token-mira.path;
-        # Mira uses her own personality documents
-        documentsRuntime = {
-          agentsFile = nixosConfig.age.secrets.mira-agents.path;
-          soulFile = nixosConfig.age.secrets.mira-soul.path;
-          toolsFile = nixosConfig.age.secrets.mira-tools.path;
-        };
         configOverrides = lib.recursiveUpdate miraConfigOverrides {
           plugins.load.paths = ["/home/chris/.openclaw-mira/extensions"];
           browser.defaultProfile = "mira";
@@ -388,12 +376,6 @@ in {
       instances.mira-staging = lib.recursiveUpdate miraBaseInstance {
         gatewayPort = 18891; # Different port from production
         providers.telegram.botTokenFile = nixosConfig.age.secrets.telegram-bot-token-mira-staging.path;
-        # Mira uses her own personality documents
-        documentsRuntime = {
-          agentsFile = nixosConfig.age.secrets.mira-agents.path;
-          soulFile = nixosConfig.age.secrets.mira-soul.path;
-          toolsFile = nixosConfig.age.secrets.mira-tools.path;
-        };
         configOverrides = lib.recursiveUpdate miraConfigOverrides {
           plugins.load.paths = ["/home/chris/.openclaw-mira-staging/extensions"];
           browser.defaultProfile = "mira-staging";
@@ -442,6 +424,18 @@ in {
       if [ ! -L $HOME/.openclaw-mira-staging/extensions ]; then
         ln -sf $HOME/dotfiles/flakes/hosts/trainwreck/clawdbot-extensions $HOME/.openclaw-mira-staging/extensions
       fi
+    '';
+
+    # Override Mira's documents (global documentsRuntime sets Grem's, we override for Mira)
+    home.activation.openclaw-mira-documents = hmLib.hm.dag.entryAfter ["openclawRuntimeDocuments" "agenix"] ''
+      # Mira production
+      ln -sfn "${nixosConfig.age.secrets.mira-agents.path}" "$HOME/.openclaw-mira/workspace/AGENTS.md"
+      ln -sfn "${nixosConfig.age.secrets.mira-soul.path}" "$HOME/.openclaw-mira/workspace/SOUL.md"
+      ln -sfn "${nixosConfig.age.secrets.mira-tools.path}" "$HOME/.openclaw-mira/workspace/TOOLS.md"
+      # Mira staging
+      ln -sfn "${nixosConfig.age.secrets.mira-agents.path}" "$HOME/.openclaw-mira-staging/workspace/AGENTS.md"
+      ln -sfn "${nixosConfig.age.secrets.mira-soul.path}" "$HOME/.openclaw-mira-staging/workspace/SOUL.md"
+      ln -sfn "${nixosConfig.age.secrets.mira-tools.path}" "$HOME/.openclaw-mira-staging/workspace/TOOLS.md"
     '';
 
     # Minimal shell setup for server
