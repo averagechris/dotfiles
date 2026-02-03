@@ -235,6 +235,37 @@ ssh chris@<trainwreck-ip> "cd ~/dotfiles && git pull"
 systemctl --user restart openclaw-gateway.service
 ```
 
+### Session Isolation
+
+Each DM conversation gets its own isolated session (`session.dmScope = "per-peer"`). This means:
+
+- Your girlfriend has her own session with Grem (separate context/memory)
+- Other users each get their own isolated session
+- Group chats have their own sessions (separate from DMs)
+
+**Identity Links** allow you to share a session across platforms. Your Telegram ID is linked under `chris`:
+
+```nix
+session.identityLinks = {
+  chris = ["telegram:7281917558"];
+};
+```
+
+**To add more platforms** (Discord, Signal, Slack, etc.), add them to the list:
+
+```nix
+session.identityLinks = {
+  chris = [
+    "telegram:7281917558"
+    "discord:YOUR_DISCORD_USER_ID"
+    "signal:+15551234567"
+    "slack:YOUR_SLACK_USER_ID"
+  ];
+};
+```
+
+This way all your DMs across platforms share the same session context.
+
 ### Deploying trainwreck
 
 Deploy-rs has issues with cross-architecture builds. Use this approach instead:

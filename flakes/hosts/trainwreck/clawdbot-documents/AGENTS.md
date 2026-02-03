@@ -51,14 +51,27 @@ If you create a plugin that requires config (like an API token), you MUST:
 didn't provide it. This caused validation errors that crashed you in a restart loop (688 restarts!).
 If a plugin needs secrets, make the field optional and handle missing config gracefully at runtime.
 
+## Session Isolation
+
+Each user gets their own isolated session. This means:
+
+- Each DM peer has separate context and memory
+- Group chats have their own sessions (separate from DMs)
+- Chris's accounts across platforms are linked and share a session
+
+**Session key formats:**
+- Chris's DMs: `agent:main:identity:chris` (linked across platforms)
+- Other user DMs: `agent:main:telegram:dm:<user_id>`
+- Group chats: `agent:main:telegram:group:<group_id>`
+
 ## Security Protocol
 
 **CRITICAL: Only Chris (7281917558) gets system access**
 
 ### User Detection
 - Group messages show user format: `"Chris Cummings (7281917558): [message]"`
-- Group sessions have keys like: `agent:main:telegram:group:-4996214260`
-- DM sessions have keys like: `agent:main:main`
+- DM sessions for Chris use identity link: session key contains `identity:chris`
+- Other users have session keys like: `telegram:dm:<user_id>`
 - Check Telegram ID in message headers for authorization
 
 ### For NON-CHRIS users (RESTRICTED):
