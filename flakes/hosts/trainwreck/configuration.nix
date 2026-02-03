@@ -19,12 +19,10 @@
       groups."*" = {requireMention = true;};
     };
     # Session isolation: each DM peer gets their own session
-    # identityLinks allows linking accounts across platforms to share a session
+    # identityLinksFile allows linking accounts across platforms to share a session
     session = {
       dmScope = "per-peer";
-      identityLinks = {
-        chris = ["telegram:7281917558"];
-      };
+      identityLinksFile = nixosConfig.age.secrets.identity-links.path;
     };
     systemd.enable = true;
     launchd.enable = false;
@@ -45,9 +43,7 @@
     };
     session = {
       dmScope = "per-peer";
-      identityLinks = {
-        chris = ["telegram:7281917558"];
-      };
+      identityLinksFile = nixosConfig.age.secrets.identity-links.path;
     };
     systemd.enable = true;
     launchd.enable = false;
@@ -282,6 +278,13 @@ in {
     };
     telegram-bot-token-mira-staging = {
       file = ../../../secrets/trainwreck/telegram-bot-token-mira-staging.age;
+      owner = "chris";
+      group = "users";
+      mode = "0400";
+    };
+    # Identity links for session sharing across platforms (contains phone numbers)
+    identity-links = {
+      file = ../../../secrets/trainwreck/identity-links.age;
       owner = "chris";
       group = "users";
       mode = "0400";

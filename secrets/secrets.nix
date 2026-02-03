@@ -43,4 +43,7 @@ in {
   # Mira Telegram bot tokens
   "trainwreck/telegram-bot-token-mira.age".publicKeys = trainwreck-keys ++ systems-keys;
   "trainwreck/telegram-bot-token-mira-staging.age".publicKeys = trainwreck-keys ++ systems-keys;
+
+  # Identity links for session sharing across platforms (contains phone numbers)
+  "trainwreck/identity-links.age".publicKeys = trainwreck-keys ++ systems-keys ++ [suremac-key];
 }
