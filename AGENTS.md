@@ -238,7 +238,7 @@ agenix -e trainwreck/grem-SOUL.md.age
 agenix -e trainwreck/grem-TOOLS.md.age
 ```
 
-Documents are decrypted at activation time and symlinked to `~/.openclaw/workspace/`.
+Documents are decrypted at activation time and symlinked to `~/.openclaw-grem/workspace/`.
 
 ### Custom Extensions
 
@@ -253,7 +253,7 @@ Extensions live in `flakes/hosts/trainwreck/clawdbot-extensions/`:
 
 ```bash
 ssh chris@<trainwreck-ip> "cd ~/dotfiles && git pull"
-systemctl --user restart openclaw-gateway.service
+systemctl --user restart openclaw-gateway-grem.service
 ```
 
 ### Session Isolation
