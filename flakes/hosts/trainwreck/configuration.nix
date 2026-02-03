@@ -233,28 +233,28 @@ in {
         peekaboo.enable = false;
       };
 
-      # Production instance
-      instances.default = lib.recursiveUpdate baseInstance {
+      # Grem - production instance
+      instances.grem = lib.recursiveUpdate baseInstance {
         providers.telegram.botTokenFile = nixosConfig.age.secrets.telegram-bot-token.path;
         providers.telegram.groups."-4996214260" = {requireMention = false;};
         configOverrides = lib.recursiveUpdate baseConfigOverrides {
-          plugins.load.paths = ["/home/chris/.openclaw/extensions"];
-          browser.defaultProfile = "clawd";
-          browser.profiles.clawd = {
+          plugins.load.paths = ["/home/chris/.openclaw-grem/extensions"];
+          browser.defaultProfile = "grem";
+          browser.profiles.grem = {
             cdpPort = 18800;
             color = "#FF4500";
           };
         };
       };
 
-      # Staging instance for testing configuration changes before deploying to main
-      instances.staging = lib.recursiveUpdate baseInstance {
+      # Grem - staging instance for testing configuration changes
+      instances.grem-staging = lib.recursiveUpdate baseInstance {
         gatewayPort = 18889; # Different port from default (18789)
         providers.telegram.botTokenFile = nixosConfig.age.secrets.telegram-bot-token-staging.path;
         configOverrides = lib.recursiveUpdate baseConfigOverrides {
-          plugins.load.paths = ["/home/chris/.openclaw-staging/extensions"];
-          browser.defaultProfile = "clawd-staging";
-          browser.profiles.clawd-staging = {
+          plugins.load.paths = ["/home/chris/.openclaw-grem-staging/extensions"];
+          browser.defaultProfile = "grem-staging";
+          browser.profiles.grem-staging = {
             cdpPort = 18801;
             color = "#00BFFF";
           };
@@ -264,18 +264,22 @@ in {
 
     # Add OPENAI_BASE_URL for memory-lancedb to use OpenRouter embeddings
     # The nix-openclaw wrapper already handles OPENROUTER_API_KEY from apiKeyFile
-    systemd.user.services.openclaw-gateway.Service.Environment = [
+    systemd.user.services.openclaw-gateway-grem.Service.Environment = [
       "OPENAI_BASE_URL=https://openrouter.ai/api/v1"
     ];
-    systemd.user.services.openclaw-gateway-staging.Service.Environment = [
+    systemd.user.services.openclaw-gateway-grem-staging.Service.Environment = [
       "OPENAI_BASE_URL=https://openrouter.ai/api/v1"
     ];
 
-    # Set up extensions symlink for staging instance
-    home.activation.openclaw-staging-extensions = hmLib.hm.dag.entryAfter ["writeBoundary"] ''
-      mkdir -p $HOME/.openclaw-staging
-      if [ ! -L $HOME/.openclaw-staging/extensions ]; then
-        ln -sf $HOME/dotfiles/flakes/hosts/trainwreck/clawdbot-extensions $HOME/.openclaw-staging/extensions
+    # Set up extensions symlinks for grem instances
+    home.activation.openclaw-grem-extensions = hmLib.hm.dag.entryAfter ["writeBoundary"] ''
+      mkdir -p $HOME/.openclaw-grem
+      if [ ! -L $HOME/.openclaw-grem/extensions ]; then
+        ln -sf $HOME/dotfiles/flakes/hosts/trainwreck/clawdbot-extensions $HOME/.openclaw-grem/extensions
+      fi
+      mkdir -p $HOME/.openclaw-grem-staging
+      if [ ! -L $HOME/.openclaw-grem-staging/extensions ]; then
+        ln -sf $HOME/dotfiles/flakes/hosts/trainwreck/clawdbot-extensions $HOME/.openclaw-grem-staging/extensions
       fi
     '';
 

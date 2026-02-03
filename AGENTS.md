@@ -186,23 +186,23 @@ There are two openclaw instances running on trainwreck:
 
 | Instance | Service | Purpose |
 |----------|---------|---------|
-| `default` | `openclaw-gateway.service` | Production bot |
-| `staging` | `openclaw-gateway-staging.service` | Testing config changes |
+| `grem` | `openclaw-gateway-grem.service` | Production bot |
+| `grem-staging` | `openclaw-gateway-grem-staging.service` | Testing config changes |
 
-**Development workflow**: Always make config changes to `instances.staging` first, deploy, and test with the staging Telegram bot. Once verified working, copy the changes to `instances.default` and deploy again.
+**Development workflow**: Always make config changes to `instances.grem-staging` first, deploy, and test with the staging Telegram bot. Once verified working, copy the changes to `instances.grem` and deploy again.
 
 ### Service Management
 
 ```bash
 # Production bot
-systemctl --user status openclaw-gateway.service
-systemctl --user restart openclaw-gateway.service
-journalctl --user -u openclaw-gateway.service -f
+systemctl --user status openclaw-gateway-grem.service
+systemctl --user restart openclaw-gateway-grem.service
+journalctl --user -u openclaw-gateway-grem.service -f
 
 # Staging bot (use for testing config changes)
-systemctl --user status openclaw-gateway-staging.service
-systemctl --user restart openclaw-gateway-staging.service
-journalctl --user -u openclaw-gateway-staging.service -f
+systemctl --user status openclaw-gateway-grem-staging.service
+systemctl --user restart openclaw-gateway-grem-staging.service
+journalctl --user -u openclaw-gateway-grem-staging.service -f
 ```
 
 **Note**: SSH access from suremac requires the trainwreck public IP (ask the user). Other hosts can use `ssh chris@trainwreck` via Tailscale.
@@ -211,13 +211,13 @@ journalctl --user -u openclaw-gateway-staging.service -f
 
 | Path | Purpose |
 |------|---------|
-| `~/.openclaw/` | Main openclaw state directory |
-| `~/.openclaw/openclaw.json` | Config symlink (points to nix store) |
-| `~/.openclaw/runtime/openclaw-default.json` | Runtime config (generated) |
-| `~/.openclaw/extensions/` | Symlink to `~/dotfiles/flakes/hosts/trainwreck/clawdbot-extensions/` |
-| `~/.openclaw/telegram/` | Telegram session state |
-| `~/.openclaw/agents/` | Agent configurations |
-| `~/.openclaw/workspace/` | Workspace files |
+| `~/.openclaw-grem/` | Grem production state directory |
+| `~/.openclaw-grem/openclaw.json` | Config symlink (points to nix store) |
+| `~/.openclaw-grem/runtime/openclaw-grem.json` | Runtime config (generated) |
+| `~/.openclaw-grem/extensions/` | Symlink to `~/dotfiles/flakes/hosts/trainwreck/clawdbot-extensions/` |
+| `~/.openclaw-grem/telegram/` | Telegram session state |
+| `~/.openclaw-grem/agents/` | Agent configurations |
+| `~/.openclaw-grem/workspace/` | Workspace files
 | `/tmp/openclaw/openclaw-gateway.log` | Service log file |
 
 ### Personality Documents (Encrypted)
