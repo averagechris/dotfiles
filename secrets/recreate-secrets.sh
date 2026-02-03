@@ -54,7 +54,6 @@ edit_secret() {
     local secret="$1"
     local tmpfile
     tmpfile=$(mktemp)
-    trap "rm -f '$tmpfile'" EXIT
     
     echo -e "${BLUE}Editing:${NC} $secret"
     
@@ -85,18 +84,20 @@ edit_secret() {
     
     if [[ ! -s "$tmpfile" ]]; then
         log_warn "Empty content - skipping $secret"
+        rm -f "$tmpfile"
         return 1
     fi
     
     if [[ "$original_sum" == "$new_sum" ]] && [[ -f "$secret" ]]; then
         log_info "No changes made - skipping re-encryption"
+        rm -f "$tmpfile"
         return 0
     fi
     
     # Encrypt the new content
     # We need to use a custom EDITOR that copies our temp file
-    local content_file="$tmpfile"
-    EDITOR="cp '$content_file'" agenix -e "$secret"
+    EDITOR="cp '$tmpfile'" agenix -e "$secret"
+    rm -f "$tmpfile"
     
     echo -e "${GREEN}✓${NC} Saved $secret"
     return 0
