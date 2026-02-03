@@ -7,7 +7,7 @@
 }: let
   nixosConfig = config;
 
-  # Shared base configuration for openclaw instances
+  # Shared base configuration for Grem instances (premium models)
   baseInstance = {
     enable = true;
     agent.model = "openrouter/moonshotai/kimi-k2-0905";
@@ -31,7 +31,30 @@
     plugins = [];
   };
 
-  # Shared configOverrides for both instances
+  # Shared base configuration for Mira instances (cheaper models, family-friendly)
+  miraBaseInstance = {
+    enable = true;
+    # Mira runs on cheaper models - Mistral Medium has good personality
+    agent.model = "openrouter/mistralai/mistral-medium-3.1";
+    gateway.authTokenFile = nixosConfig.age.secrets.gateway-auth-token.path;
+    providers.openrouter.apiKeyFile = nixosConfig.age.secrets.openrouter-api-key.path;
+    providers.telegram = {
+      enable = true;
+      allowFromFile = nixosConfig.age.secrets.telegram-user-ids.path;
+      groups."*" = {requireMention = true;};
+    };
+    session = {
+      dmScope = "per-peer";
+      identityLinks = {
+        chris = ["telegram:7281917558"];
+      };
+    };
+    systemd.enable = true;
+    launchd.enable = false;
+    plugins = [];
+  };
+
+  # Shared configOverrides for Grem instances
   baseConfigOverrides = {
     # Model catalog for /model command
     # Note: Removed custom model definitions - let openclaw use its defaults
@@ -84,6 +107,48 @@
       enabled = true;
       headless = true;
       noSandbox = true; # Required for headless/server environments
+      executablePath = "${pkgs.ungoogled-chromium}/bin/chromium";
+    };
+  };
+
+  # Shared configOverrides for Mira instances (simpler, no opencode-delegate)
+  miraConfigOverrides = {
+    # Simpler model catalog for Mira - cheap chat models only
+    agents.defaults.models = {
+      # Google
+      "openrouter/google/gemini-2.5-flash" = {alias = "Gemini";};
+      "openrouter/google/gemini-2.5-flash-lite" = {alias = "Gemini Lite";};
+      # Mistral (Mira's default)
+      "openrouter/mistralai/mistral-medium-3.1" = {alias = "Mistral";};
+      "openrouter/mistralai/mistral-small-2503" = {alias = "Mistral Small";};
+      # Anthropic
+      "openrouter/anthropic/claude-3.5-haiku" = {alias = "Haiku";};
+      # OpenAI
+      "openrouter/openai/gpt-5-mini" = {alias = "GPT Mini";};
+      "openrouter/openai/gpt-5-nano" = {alias = "GPT Nano";};
+    };
+    # Plugin configuration - simpler set for Mira (no opencode-delegate)
+    plugins.entries."kagi-search".enabled = true;
+    plugins.entries."meme-generator".enabled = true;
+    plugins.entries."image-generator".enabled = true;
+    # Enable LanceDB memory plugin
+    plugins.slots.memory = "memory-lancedb";
+    plugins.entries."memory-lancedb" = {
+      enabled = true;
+      config = {
+        embedding = {
+          apiKey = "\${OPENROUTER_API_KEY}";
+          model = "text-embedding-3-small";
+        };
+        autoRecall = true;
+        autoCapture = true;
+      };
+    };
+    # Browser configuration for headless server
+    browser = {
+      enabled = true;
+      headless = true;
+      noSandbox = true;
       executablePath = "${pkgs.ungoogled-chromium}/bin/chromium";
     };
   };
@@ -189,6 +254,38 @@ in {
       group = "users";
       mode = "0400";
     };
+    # Mira personality documents (Grem's baby sister)
+    mira-agents = {
+      file = ../../../secrets/trainwreck/mira-AGENTS.md.age;
+      owner = "chris";
+      group = "users";
+      mode = "0400";
+    };
+    mira-soul = {
+      file = ../../../secrets/trainwreck/mira-SOUL.md.age;
+      owner = "chris";
+      group = "users";
+      mode = "0400";
+    };
+    mira-tools = {
+      file = ../../../secrets/trainwreck/mira-TOOLS.md.age;
+      owner = "chris";
+      group = "users";
+      mode = "0400";
+    };
+    # Mira Telegram bot tokens
+    telegram-bot-token-mira = {
+      file = ../../../secrets/trainwreck/telegram-bot-token-mira.age;
+      owner = "chris";
+      group = "users";
+      mode = "0400";
+    };
+    telegram-bot-token-mira-staging = {
+      file = ../../../secrets/trainwreck/telegram-bot-token-mira-staging.age;
+      owner = "chris";
+      group = "users";
+      mode = "0400";
+    };
   };
 
   environment.systemPackages = with pkgs; [
@@ -260,6 +357,46 @@ in {
           };
         };
       };
+
+      # Mira - production instance (Grem's baby sister, cheaper models, family-friendly)
+      instances.mira = lib.recursiveUpdate miraBaseInstance {
+        gatewayPort = 18790; # Different port from Grem
+        providers.telegram.botTokenFile = nixosConfig.age.secrets.telegram-bot-token-mira.path;
+        # Mira uses her own personality documents
+        documentsRuntime = {
+          agentsFile = nixosConfig.age.secrets.mira-agents.path;
+          soulFile = nixosConfig.age.secrets.mira-soul.path;
+          toolsFile = nixosConfig.age.secrets.mira-tools.path;
+        };
+        configOverrides = lib.recursiveUpdate miraConfigOverrides {
+          plugins.load.paths = ["/home/chris/.openclaw-mira/extensions"];
+          browser.defaultProfile = "mira";
+          browser.profiles.mira = {
+            cdpPort = 18802;
+            color = "#FFB6C1"; # Light pink for Mira
+          };
+        };
+      };
+
+      # Mira - staging instance for testing configuration changes
+      instances.mira-staging = lib.recursiveUpdate miraBaseInstance {
+        gatewayPort = 18891; # Different port from production
+        providers.telegram.botTokenFile = nixosConfig.age.secrets.telegram-bot-token-mira-staging.path;
+        # Mira uses her own personality documents
+        documentsRuntime = {
+          agentsFile = nixosConfig.age.secrets.mira-agents.path;
+          soulFile = nixosConfig.age.secrets.mira-soul.path;
+          toolsFile = nixosConfig.age.secrets.mira-tools.path;
+        };
+        configOverrides = lib.recursiveUpdate miraConfigOverrides {
+          plugins.load.paths = ["/home/chris/.openclaw-mira-staging/extensions"];
+          browser.defaultProfile = "mira-staging";
+          browser.profiles.mira-staging = {
+            cdpPort = 18803;
+            color = "#DDA0DD"; # Plum for staging
+          };
+        };
+      };
     };
 
     # Add OPENAI_BASE_URL for memory-lancedb to use OpenRouter embeddings
@@ -268,6 +405,12 @@ in {
       "OPENAI_BASE_URL=https://openrouter.ai/api/v1"
     ];
     systemd.user.services.openclaw-gateway-grem-staging.Service.Environment = [
+      "OPENAI_BASE_URL=https://openrouter.ai/api/v1"
+    ];
+    systemd.user.services.openclaw-gateway-mira.Service.Environment = [
+      "OPENAI_BASE_URL=https://openrouter.ai/api/v1"
+    ];
+    systemd.user.services.openclaw-gateway-mira-staging.Service.Environment = [
       "OPENAI_BASE_URL=https://openrouter.ai/api/v1"
     ];
 
@@ -280,6 +423,18 @@ in {
       mkdir -p $HOME/.openclaw-grem-staging
       if [ ! -L $HOME/.openclaw-grem-staging/extensions ]; then
         ln -sf $HOME/dotfiles/flakes/hosts/trainwreck/clawdbot-extensions $HOME/.openclaw-grem-staging/extensions
+      fi
+    '';
+
+    # Set up extensions symlinks for mira instances
+    home.activation.openclaw-mira-extensions = hmLib.hm.dag.entryAfter ["writeBoundary"] ''
+      mkdir -p $HOME/.openclaw-mira
+      if [ ! -L $HOME/.openclaw-mira/extensions ]; then
+        ln -sf $HOME/dotfiles/flakes/hosts/trainwreck/clawdbot-extensions $HOME/.openclaw-mira/extensions
+      fi
+      mkdir -p $HOME/.openclaw-mira-staging
+      if [ ! -L $HOME/.openclaw-mira-staging/extensions ]; then
+        ln -sf $HOME/dotfiles/flakes/hosts/trainwreck/clawdbot-extensions $HOME/.openclaw-mira-staging/extensions
       fi
     '';
 

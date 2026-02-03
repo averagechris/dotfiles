@@ -34,4 +34,13 @@ in {
   "trainwreck/grem-AGENTS.md.age".publicKeys = trainwreck-keys ++ systems-keys ++ [suremac-key];
   "trainwreck/grem-SOUL.md.age".publicKeys = trainwreck-keys ++ systems-keys ++ [suremac-key];
   "trainwreck/grem-TOOLS.md.age".publicKeys = trainwreck-keys ++ systems-keys ++ [suremac-key];
+
+  # Mira personality documents (Grem's baby sister)
+  "trainwreck/mira-AGENTS.md.age".publicKeys = trainwreck-keys ++ systems-keys ++ [suremac-key];
+  "trainwreck/mira-SOUL.md.age".publicKeys = trainwreck-keys ++ systems-keys ++ [suremac-key];
+  "trainwreck/mira-TOOLS.md.age".publicKeys = trainwreck-keys ++ systems-keys ++ [suremac-key];
+
+  # Mira Telegram bot tokens
+  "trainwreck/telegram-bot-token-mira.age".publicKeys = trainwreck-keys ++ systems-keys;
+  "trainwreck/telegram-bot-token-mira-staging.age".publicKeys = trainwreck-keys ++ systems-keys;
 }
