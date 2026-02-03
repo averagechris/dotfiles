@@ -18,7 +18,15 @@
       allowFromFile = nixosConfig.age.secrets.telegram-user-ids.path;
       groups."*" = {requireMention = true;};
     };
-systemd.enable = true;
+    # Session isolation: each DM peer gets their own session
+    # identityLinks allows linking accounts across platforms to share a session
+    session = {
+      dmScope = "per-peer";
+      identityLinks = {
+        chris = ["telegram:7281917558"];
+      };
+    };
+    systemd.enable = true;
     launchd.enable = false;
     plugins = [];
   };
@@ -219,13 +227,6 @@ in {
       instances.staging = lib.recursiveUpdate baseInstance {
         gatewayPort = 18889; # Different port from default (18789)
         providers.telegram.botTokenFile = nixosConfig.age.secrets.telegram-bot-token-staging.path;
-        # Test per-peer session isolation before rolling out to production
-        session = {
-          dmScope = "per-peer";
-          identityLinks = {
-            chris = ["telegram:7281917558"];
-          };
-        };
         configOverrides = lib.recursiveUpdate baseConfigOverrides {
           plugins.load.paths = ["/home/chris/.openclaw-staging/extensions"];
           browser.defaultProfile = "clawd-staging";
