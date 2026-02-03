@@ -46,4 +46,7 @@ in {
 
   # Identity links for session sharing across platforms (contains phone numbers)
   "trainwreck/identity-links.age".publicKeys = trainwreck-keys ++ systems-keys ++ [suremac-key];
+
+  # Signal provider config (contains phone numbers - bot account and allowlist)
+  "trainwreck/signal-config.age".publicKeys = trainwreck-keys ++ systems-keys ++ [suremac-key];
 }

@@ -105,6 +105,26 @@
       noSandbox = true; # Required for headless/server environments
       executablePath = "${pkgs.ungoogled-chromium}/bin/chromium";
     };
+    # Signal provider configuration
+    # DISABLED: trainwreck is aarch64-linux and signal-cli's libsignal-client JAR
+    # only includes native libraries for: amd64 (Linux/Windows) and aarch64 (macOS).
+    # There is no libsignal_jni.so for Linux ARM64.
+    #
+    # To enable Signal on trainwreck, one of these is needed:
+    # 1. Run signal-cli daemon on an x86_64 machine (e.g., suremac) and configure
+    #    openclaw to connect via httpUrl: "http://<host>:8080"
+    # 2. Build libsignal from source for aarch64-linux (requires Rust toolchain)
+    # 3. Wait for upstream signal-cli to add aarch64-linux support
+    #
+    # The Signal account is registered and working on suremac.
+    # Account data is at: ~/.local/share/signal-cli/data/
+    # Phone numbers are in encrypted secret: secrets/trainwreck/signal-config.age
+    channels.signal = {
+      enabled = false;
+      # Config loaded from signalConfigFile at runtime (when enabled)
+      # cliPath = "${pkgs.signal-cli}/bin/signal-cli";  # Won't work on aarch64-linux
+      # httpUrl = "http://suremac.local:8080";  # Alternative: connect to remote daemon
+    };
   };
 
   # Shared configOverrides for Mira instances (simpler, no opencode-delegate)
@@ -147,6 +167,8 @@
       noSandbox = true;
       executablePath = "${pkgs.ungoogled-chromium}/bin/chromium";
     };
+    # Signal provider - disabled on aarch64-linux (see baseConfigOverrides comment)
+    channels.signal.enabled = false;
   };
 in {
   imports = [
@@ -297,6 +319,8 @@ in {
     curl
     jq
     ungoogled-chromium # For openclaw browser support
+    # signal-cli and openjdk removed - signal-cli doesn't support aarch64-linux
+    # (libsignal-client JAR lacks Linux ARM64 native library)
   ];
 
   system.stateVersion = "25.11";
