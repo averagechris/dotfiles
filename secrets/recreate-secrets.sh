@@ -1,8 +1,23 @@
 #!/usr/bin/env bash
-set -e
+# Edit agenix secrets with fzf selection and pre-populated content
+#
+# Usage:
+#   ./recreate-secrets.sh           # Interactive fzf selection
+#   ./recreate-secrets.sh --all     # Edit all secrets sequentially
+#   ./recreate-secrets.sh <secret>  # Edit a specific secret
+
+set -euo pipefail
 
 cd "$(dirname "$0")"
 
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+# All known secrets (add new ones here)
 SECRETS=(
   "openrouter-api-key.age"
   "fastmail_password.age"
@@ -15,37 +30,155 @@ SECRETS=(
   "trainwreck/gateway-auth-token.age"
   "trainwreck/imgflip-username.age"
   "trainwreck/imgflip-password.age"
+  "trainwreck/grem-AGENTS.md.age"
+  "trainwreck/grem-SOUL.md.age"
+  "trainwreck/grem-TOOLS.md.age"
 )
 
-echo "This script will recreate all secrets."
-echo "For each secret, you'll be prompted to confirm, then your editor will open."
-echo "Paste the secret value, save, and close the editor."
-echo ""
+log_info() { echo -e "${GREEN}[INFO]${NC} $1"; }
+log_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
+log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
-for secret in "${SECRETS[@]}"; do
-  echo "----------------------------------------"
-  echo "Secret: $secret"
-  
-  if [[ -f "$secret" ]]; then
-    echo "  (file exists, will be overwritten)"
-  fi
-  
-  read -p "Create this secret? [y/n/q] " -n 1 -r
-  echo ""
-  
-  if [[ $REPLY =~ ^[Qq]$ ]]; then
-    echo "Quitting."
-    exit 0
-  elif [[ $REPLY =~ ^[Yy]$ ]]; then
-    # Remove existing file if present
-    rm -f "$secret"
-    # Create/edit the secret
-    agenix -e "$secret"
-    echo "  ✓ Created $secret"
-  else
-    echo "  Skipped."
-  fi
-done
+# Try to decrypt a secret, return empty string if it fails
+try_decrypt() {
+    local secret="$1"
+    if [[ -f "$secret" ]]; then
+        agenix -d "$secret" 2>/dev/null || echo ""
+    else
+        echo ""
+    fi
+}
 
-echo ""
-echo "Done! All selected secrets have been recreated."
+# Edit a single secret with pre-populated content
+edit_secret() {
+    local secret="$1"
+    local tmpfile
+    tmpfile=$(mktemp)
+    trap "rm -f '$tmpfile'" EXIT
+    
+    echo -e "${BLUE}Editing:${NC} $secret"
+    
+    # Try to decrypt existing content into temp file
+    if [[ -f "$secret" ]]; then
+        local decrypted
+        decrypted=$(try_decrypt "$secret")
+        if [[ -n "$decrypted" ]]; then
+            echo "$decrypted" > "$tmpfile"
+            log_info "Pre-populated with existing decrypted content"
+        else
+            log_warn "Could not decrypt (no matching key?) - starting with empty buffer"
+        fi
+    else
+        log_info "New secret - starting with empty buffer"
+    fi
+    
+    # Get original checksum
+    local original_sum
+    original_sum=$(md5sum "$tmpfile" 2>/dev/null | cut -d' ' -f1 || echo "")
+    
+    # Open editor
+    ${EDITOR:-vim} "$tmpfile"
+    
+    # Check if content changed or is non-empty for new files
+    local new_sum
+    new_sum=$(md5sum "$tmpfile" 2>/dev/null | cut -d' ' -f1 || echo "")
+    
+    if [[ ! -s "$tmpfile" ]]; then
+        log_warn "Empty content - skipping $secret"
+        return 1
+    fi
+    
+    if [[ "$original_sum" == "$new_sum" ]] && [[ -f "$secret" ]]; then
+        log_info "No changes made - skipping re-encryption"
+        return 0
+    fi
+    
+    # Encrypt the new content
+    # We need to use a custom EDITOR that copies our temp file
+    local content_file="$tmpfile"
+    EDITOR="cp '$content_file'" agenix -e "$secret"
+    
+    echo -e "${GREEN}✓${NC} Saved $secret"
+    return 0
+}
+
+# Main logic
+main() {
+    local selected_secrets=()
+    
+    if [[ $# -eq 1 ]] && [[ "$1" != "--all" ]]; then
+        # Single secret specified
+        selected_secrets=("$1")
+    elif [[ "${1:-}" == "--all" ]]; then
+        # All secrets
+        selected_secrets=("${SECRETS[@]}")
+    else
+        # Interactive fzf selection
+        if ! command -v fzf &> /dev/null; then
+            log_error "fzf is required for interactive selection. Install it or specify a secret."
+            exit 1
+        fi
+        
+        # Build preview showing if file exists and if decryptable
+        local preview_cmd='
+            secret={}
+            if [[ -f "$secret" ]]; then
+                echo "Status: EXISTS"
+                echo ""
+                if content=$(agenix -d "$secret" 2>/dev/null); then
+                    echo "--- Decrypted content (first 20 lines) ---"
+                    echo "$content" | head -20
+                else
+                    echo "--- Cannot decrypt (no matching key) ---"
+                fi
+            else
+                echo "Status: NEW (does not exist yet)"
+            fi
+        '
+        
+        log_info "Select secrets to edit (TAB to select, ENTER to confirm):"
+        echo ""
+        
+        local selected
+        selected=$(printf '%s\n' "${SECRETS[@]}" | fzf --multi \
+            --header="Select secrets to edit (TAB=select, CTRL-A=all, ENTER=confirm)" \
+            --preview="$preview_cmd" \
+            --preview-window=right:50%:wrap \
+            --bind="ctrl-a:select-all" \
+            --bind="ctrl-d:deselect-all" \
+            --height=80% \
+            --border \
+            --prompt="Secrets> " || true)
+        
+        if [[ -z "$selected" ]]; then
+            log_info "No secrets selected. Exiting."
+            exit 0
+        fi
+        
+        while IFS= read -r secret; do
+            [[ -n "$secret" ]] && selected_secrets+=("$secret")
+        done <<< "$selected"
+    fi
+    
+    echo ""
+    log_info "Editing ${#selected_secrets[@]} secret(s)..."
+    echo ""
+    
+    local success=0
+    local failed=0
+    
+    for secret in "${selected_secrets[@]}"; do
+        echo "----------------------------------------"
+        if edit_secret "$secret"; then
+            ((success++))
+        else
+            ((failed++))
+        fi
+        echo ""
+    done
+    
+    echo "----------------------------------------"
+    log_info "Done! Edited: $success, Skipped: $failed"
+}
+
+main "$@"
