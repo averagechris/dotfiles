@@ -316,12 +316,6 @@ in {
 
     # Openclaw configuration
     programs.openclaw = {
-      # Documents are encrypted with agenix (contain personal info)
-      documentsRuntime = {
-        agentsFile = nixosConfig.age.secrets.grem-agents.path;
-        soulFile = nixosConfig.age.secrets.grem-soul.path;
-        toolsFile = nixosConfig.age.secrets.grem-tools.path;
-      };
       firstParty = {
         summarize.enable = true;
         sag.enable = true; # Text-to-speech
@@ -334,6 +328,12 @@ in {
       instances.grem = lib.recursiveUpdate baseInstance {
         providers.telegram.botTokenFile = nixosConfig.age.secrets.telegram-bot-token.path;
         providers.telegram.groups."-4996214260" = {requireMention = false;};
+        # Grem's personality documents
+        documentsRuntime = {
+          agentsFile = nixosConfig.age.secrets.grem-agents.path;
+          soulFile = nixosConfig.age.secrets.grem-soul.path;
+          toolsFile = nixosConfig.age.secrets.grem-tools.path;
+        };
         configOverrides = lib.recursiveUpdate baseConfigOverrides {
           plugins.load.paths = ["/home/chris/.openclaw-grem/extensions"];
           browser.defaultProfile = "grem";
@@ -348,6 +348,12 @@ in {
       instances.grem-staging = lib.recursiveUpdate baseInstance {
         gatewayPort = 18889; # Different port from default (18789)
         providers.telegram.botTokenFile = nixosConfig.age.secrets.telegram-bot-token-staging.path;
+        # Grem's personality documents (same as production)
+        documentsRuntime = {
+          agentsFile = nixosConfig.age.secrets.grem-agents.path;
+          soulFile = nixosConfig.age.secrets.grem-soul.path;
+          toolsFile = nixosConfig.age.secrets.grem-tools.path;
+        };
         configOverrides = lib.recursiveUpdate baseConfigOverrides {
           plugins.load.paths = ["/home/chris/.openclaw-grem-staging/extensions"];
           browser.defaultProfile = "grem-staging";
