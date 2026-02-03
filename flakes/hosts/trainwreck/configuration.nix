@@ -10,8 +10,7 @@
   # Shared base configuration for openclaw instances
   baseInstance = {
     enable = true;
-    # Using :nitro suffix to prioritize highest throughput providers (Fireworks)
-    agent.model = "openrouter/moonshotai/kimi-k2-0905:nitro";
+    agent.model = "openrouter/moonshotai/kimi-k2-0905";
     gateway.authTokenFile = nixosConfig.age.secrets.gateway-auth-token.path;
     providers.openrouter.apiKeyFile = nixosConfig.age.secrets.openrouter-api-key.path;
     providers.telegram = {
@@ -50,7 +49,6 @@
       # Kimi
       "openrouter/moonshotai/kimi-k2.5" = {alias = "K2.5";};
       "openrouter/moonshotai/kimi-k2-0905" = {alias = "K2";};
-      "openrouter/moonshotai/kimi-k2-0905:nitro" = {alias = "K2 Fast";};
       "openrouter/moonshotai/kimi-k2-thinking" = {alias = "K2 Think";};
     };
     # Plugin configuration
