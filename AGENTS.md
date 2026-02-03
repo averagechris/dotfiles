@@ -220,6 +220,26 @@ journalctl --user -u openclaw-gateway-staging.service -f
 | `~/.openclaw/workspace/` | Workspace files |
 | `/tmp/openclaw/openclaw-gateway.log` | Service log file |
 
+### Personality Documents (Encrypted)
+
+Grem's personality documents are encrypted with agenix (contain personal info):
+
+| Secret | Purpose |
+|--------|---------|
+| `secrets/trainwreck/grem-AGENTS.md.age` | Agent instructions, security protocol, multi-user awareness |
+| `secrets/trainwreck/grem-SOUL.md.age` | Personality, identity, relationship context |
+| `secrets/trainwreck/grem-TOOLS.md.age` | Tool documentation and usage guidelines |
+
+**To edit documents:**
+```bash
+cd ~/dotfiles/secrets
+agenix -e trainwreck/grem-AGENTS.md.age  # Opens in $EDITOR
+agenix -e trainwreck/grem-SOUL.md.age
+agenix -e trainwreck/grem-TOOLS.md.age
+```
+
+Documents are decrypted at activation time and symlinked to `~/.openclaw/workspace/`.
+
 ### Custom Extensions
 
 Extensions live in `flakes/hosts/trainwreck/clawdbot-extensions/`:
@@ -227,6 +247,7 @@ Extensions live in `flakes/hosts/trainwreck/clawdbot-extensions/`:
 - `kagi-search/` - Kagi search integration
 - `meme-generator/` - Meme generation (imgflip + AI)
 - `image-generator/` - AI image generation (profile pics, artwork)
+- `opencode-delegate/` - Delegate coding tasks to opencode
 
 **Important**: After pushing changes to extensions, you must also pull on trainwreck:
 
