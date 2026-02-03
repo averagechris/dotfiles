@@ -170,6 +170,25 @@ in {
       group = "users";
       mode = "0400";
     };
+    # Grem personality documents (contain personal info)
+    grem-agents = {
+      file = ../../../secrets/trainwreck/grem-AGENTS.md.age;
+      owner = "chris";
+      group = "users";
+      mode = "0400";
+    };
+    grem-soul = {
+      file = ../../../secrets/trainwreck/grem-SOUL.md.age;
+      owner = "chris";
+      group = "users";
+      mode = "0400";
+    };
+    grem-tools = {
+      file = ../../../secrets/trainwreck/grem-TOOLS.md.age;
+      owner = "chris";
+      group = "users";
+      mode = "0400";
+    };
   };
 
   environment.systemPackages = with pkgs; [
@@ -200,7 +219,12 @@ in {
 
     # Openclaw configuration
     programs.openclaw = {
-      documents = ./clawdbot-documents;
+      # Documents are encrypted with agenix (contain personal info)
+      documentsRuntime = {
+        agentsFile = nixosConfig.age.secrets.grem-agents.path;
+        soulFile = nixosConfig.age.secrets.grem-soul.path;
+        toolsFile = nixosConfig.age.secrets.grem-tools.path;
+      };
       firstParty = {
         summarize.enable = true;
         sag.enable = true; # Text-to-speech

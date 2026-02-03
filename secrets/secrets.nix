@@ -29,4 +29,9 @@ in {
   "trainwreck/gateway-auth-token.age".publicKeys = trainwreck-keys ++ systems-keys;
   "trainwreck/imgflip-username.age".publicKeys = trainwreck-keys ++ systems-keys;
   "trainwreck/imgflip-password.age".publicKeys = trainwreck-keys ++ systems-keys;
+
+  # Grem personality documents (contain personal info)
+  "trainwreck/grem-AGENTS.md.age".publicKeys = trainwreck-keys ++ systems-keys ++ [suremac-key];
+  "trainwreck/grem-SOUL.md.age".publicKeys = trainwreck-keys ++ systems-keys ++ [suremac-key];
+  "trainwreck/grem-TOOLS.md.age".publicKeys = trainwreck-keys ++ systems-keys ++ [suremac-key];
 }
