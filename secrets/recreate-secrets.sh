@@ -43,9 +43,7 @@ log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 try_decrypt() {
     local secret="$1"
     if [[ -f "$secret" ]]; then
-        agenix -d "$secret" 2>/dev/null || echo ""
-    else
-        echo ""
+        agenix -d "$secret" 2>/dev/null || true
     fi
 }
 
@@ -59,12 +57,10 @@ edit_secret() {
     
     # Try to decrypt existing content into temp file
     if [[ -f "$secret" ]]; then
-        local decrypted
-        decrypted=$(try_decrypt "$secret")
-        if [[ -n "$decrypted" ]]; then
-            echo "$decrypted" > "$tmpfile"
+        if try_decrypt "$secret" > "$tmpfile" 2>/dev/null && [[ -s "$tmpfile" ]]; then
             log_info "Pre-populated with existing decrypted content"
         else
+            : > "$tmpfile"  # Ensure empty file
             log_warn "Could not decrypt (no matching key?) - starting with empty buffer"
         fi
     else
@@ -170,11 +166,7 @@ main() {
     
     for secret in "${selected_secrets[@]}"; do
         echo "----------------------------------------"
-        if edit_secret "$secret"; then
-            ((success++))
-        else
-            ((failed++))
-        fi
+        edit_secret "$secret" && success=$((success + 1)) || failed=$((failed + 1))
         echo ""
     done
     
