@@ -13,7 +13,7 @@
 (defpoll bluetooth-connected :interval "10s" "bluetoothctl info 2>/dev/null | grep -q 'Connected: yes' && echo true || echo false")
 
 ; Workspaces (updated via hyprland IPC)
-(deflisten workspaces :initial "[]" "scripts/workspaces.sh")
+(deflisten workspaces :initial "[1]" "scripts/workspaces.sh")
 (deflisten active-workspace :initial "1" "scripts/active-workspace.sh")
 
 ; Media
