@@ -10,14 +10,14 @@ in {
     enable = lib.mkEnableOption "Enable touchpad gestures" // {default = true;};
   };
 
-  config = lib.mkIf (cfg.enable && cfg.gestures.enable) {
-    wayland.windowManager.hyprland.settings = {
-      # New gesture syntax for hyprland 0.53.1
-      # gesture = fingers, direction, action, options
-      gesture = [
-        "3, left, workspace, e-1"
-        "3, right, workspace, e+1"
-      ];
-    };
-  };
+   config = lib.mkIf (cfg.enable && cfg.gestures.enable) {
+     wayland.windowManager.hyprland.settings = {
+       # Try both gesture and mouse binding approaches for better compatibility
+       
+       # Gesture approach (may not work on all touchpads)
+        gesture = [
+          "3, horizontal, workspace"
+        ];
+     };
+   };
 }
