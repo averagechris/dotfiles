@@ -2,7 +2,7 @@
 ; Rose Pine Moon themed
 
 ; Variables
-(defpoll time :interval "1s" "date '+%H:%M'")
+(defpoll time :interval "1s" "date '+%I:%M %p'")
 (defpoll date :interval "60s" "date '+%a %b %d'")
 (defpoll battery :interval "30s" "cat /sys/class/power_supply/BAT0/capacity 2>/dev/null || echo 100")
 (defpoll battery-status :interval "30s" "cat /sys/class/power_supply/BAT0/status 2>/dev/null || echo 'Full'")
@@ -86,7 +86,7 @@
     (label :text "${media-artist} - ${media-title}" :limit-width 30)))
 
 (defwidget power-button []
-  (button :class "power" :onclick "wlogout" "󰐥"))
+  (button :class "power" :onclick "scripts/power-menu.sh" "󰐥"))
 
 ; Bar sections
 (defwidget left []
