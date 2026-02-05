@@ -45,7 +45,9 @@ in {
       pamixer
       brightnessctl
       networkmanager
+      networkmanagerapplet # provides nm-connection-editor
       bluez
+      overskride # Bluetooth GUI
     ];
 
     # Ensure eww starts with Hyprland
