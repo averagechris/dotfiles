@@ -569,8 +569,9 @@ in {
         ExecStart = "${pkgs.ghostty}/bin/ghostty";
         Restart = "on-failure";
         RestartSec = 5;
-        PrivateTmp = true;
-        # tell systemd this unit will claim the DBus name so activation works
+        # NOTE: PrivateTmp was removed because it causes systemd to create
+        # a restricted user namespace, which breaks sudo and other setuid
+        # binaries in child processes (they appear owned by nobody:nogroup)
       };
     };
 
