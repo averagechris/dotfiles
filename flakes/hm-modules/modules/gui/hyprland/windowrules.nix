@@ -46,20 +46,19 @@
     class ? "",
   }:
     mkRules (map (title: lib.concatStringsSep " " (lib.filter (s: s != "") ["${classIs class}" "${titleContains title}"])) (lib.lists.toList titles)) ["nodim" "noblur"];
-  in {
-    config = lib.mkIf cfg.enable {
-      # https://wiki.hyprland.org/Configuring/Window-Rules/#rules
-      # these end up
-      wayland.windowManager.hyprland.settings.windowrule = lib.lists.flatten [
-        (floatWindows {
-          # these won't auto-float unless it's the initial class
-          # https://github.com/hyprwm/Hyprland/issues/2687
-          titles = "Picture-in-Picture";
-          class = "firefox";
-        })
-        # Temporarily disabled noDimWindowsTitled due to syntax issues
-        # (noDimWindowsTitled {titles = ["YouTube" "Picture-in-Picture"];})
-
+in {
+  config = lib.mkIf cfg.enable {
+    # https://wiki.hyprland.org/Configuring/Window-Rules/#rules
+    # these end up
+    wayland.windowManager.hyprland.settings.windowrule = lib.lists.flatten [
+      (floatWindows {
+        # these won't auto-float unless it's the initial class
+        # https://github.com/hyprwm/Hyprland/issues/2687
+        titles = "Picture-in-Picture";
+        class = "firefox";
+      })
+      # Temporarily disabled noDimWindowsTitled due to syntax issues
+      # (noDimWindowsTitled {titles = ["YouTube" "Picture-in-Picture"];})
 
       # Scratchpad window rules
       "float class:^(scratchpad-.*)$"

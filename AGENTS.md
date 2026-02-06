@@ -81,11 +81,23 @@ See `docs/troubleshooting/` for common issues and solutions.
 
 ## Pre-Push Lints
 
-The `jj push` alias automatically runs lints before pushing. Lints are configured per-repo in `.jj/repo/config.toml`:
+The `jj push` alias automatically runs lints before pushing. Lints are configured via `.jj-lint.toml` in the repo root (VCS-tracked):
 
 ```toml
+# .jj-lint.toml
+lints = [
+  "alejandra --check .",
+  "statix check",
+  "fd -e sh -e bash -e zsh -x shellcheck"
+]
+```
+
+Alternatively, you can configure lints in the local repo config (not VCS-tracked):
+
+```toml
+# .jj/repo/config.toml
 [dotfiles]
-push-lints = ["alejandra --check .", "statix check", "fd -e sh -e bash -e zsh -x shellcheck"]
+push-lints = ["alejandra --check .", "statix check"]
 ```
 
 - `jj lint` - run lints without pushing

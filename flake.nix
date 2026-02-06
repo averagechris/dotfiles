@@ -101,7 +101,9 @@
           alejandra
           cachix
           mdl
+          shellcheck
           statix
+          yj # for parsing .jj-lint.toml
           nil # nix language server
           nixd
           nodePackages.bash-language-server

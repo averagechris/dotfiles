@@ -119,6 +119,7 @@ main() {
         fi
         
         # Build preview showing if file exists and if decryptable
+        # shellcheck disable=SC2016  # {} is fzf placeholder, not shell variable
         local preview_cmd='
             secret={}
             if [[ -f "$secret" ]]; then

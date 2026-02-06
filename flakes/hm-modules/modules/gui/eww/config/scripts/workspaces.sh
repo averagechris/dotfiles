@@ -8,13 +8,13 @@ get_workspaces() {
 }
 
 # Initial output
-echo "$(get_workspaces)"
+get_workspaces
 
 # Listen for workspace changes using correct socket path
-socat -u UNIX-CONNECT:$XDG_RUNTIME_DIR/hypr/"$HYPRLAND_INSTANCE_SIGNATURE"/.socket2.sock - | while read -r line; do
+socat -u UNIX-CONNECT:"$XDG_RUNTIME_DIR"/hypr/"$HYPRLAND_INSTANCE_SIGNATURE"/.socket2.sock - | while read -r line; do
   case $line in
     workspace*|createworkspace*|destroyworkspace*)
-      echo "$(get_workspaces)"
+      get_workspaces
       ;;
   esac
 done

@@ -113,13 +113,12 @@ in {
         in ["util" "exec" "--" "${script}/bin/jj-prune-stale"];
 
         # Run repo-configured lints without pushing
-        # Configure lints in repo config (.jj/repo/config.toml):
-        #   [dotfiles]
-        #   push-lints = ["alejandra --check .", "statix check"]
+        # Configure lints in .jj-lint.toml (VCS-tracked) or repo config (.jj/repo/config.toml):
+        #   lints = ["alejandra --check .", "statix check"]
         lint = with pkgs; let
           script = writeShellApplication {
             name = "jj-lint";
-            runtimeInputs = [jujutsu coreutils fd shellcheck alejandra statix gnused];
+            runtimeInputs = [jujutsu coreutils fd shellcheck alejandra statix gnused yj jq];
             text = ''
               set -euo pipefail
 
@@ -158,22 +157,31 @@ in {
                 printf '%s%s%s\n' "$name" "$dots" "$status"
               }
 
-              # Read lint commands from jj repo config
-              lints="$(jj config get dotfiles.push-lints 2>/dev/null || true)"
+              # Read lint commands from .jj-lint.toml (VCS-tracked) or fall back to repo config
+              cmds=()
+              repo_root="$(jj root 2>/dev/null || true)"
+              lint_file="''${repo_root}/.jj-lint.toml"
 
-              if [ -z "$lints" ]; then
-                echo "No lints configured (set dotfiles.push-lints in repo config)"
-                exit 0
+              if [ -n "$repo_root" ] && [ -f "$lint_file" ]; then
+                # Parse lints from TOML file using yj (converts TOML to JSON)
+                while IFS= read -r cmd; do
+                  [ -n "$cmd" ] && cmds+=("$cmd")
+                done < <(yj -t < "$lint_file" | jq -r '.lints // empty | if type == "array" then .[] else empty end' 2>/dev/null || true)
               fi
 
-              # Parse commands into array
-              mapfile -t cmds < <(echo "$lints" | tr -d '[]"' | tr ',' '\n' | while IFS= read -r cmd; do
-                cmd="$(echo "$cmd" | xargs)"
-                [ -n "$cmd" ] && echo "$cmd"
-              done)
+              # Fall back to repo config if file doesn't exist or has no lints
+              if [ ''${#cmds[@]} -eq 0 ]; then
+                lints="$(jj config get dotfiles.push-lints 2>/dev/null || true)"
+                if [ -n "$lints" ]; then
+                  while IFS= read -r cmd; do
+                    cmd="$(echo "$cmd" | xargs)"
+                    [ -n "$cmd" ] && cmds+=("$cmd")
+                  done < <(echo "$lints" | tr -d '[]"' | tr ',' '\n')
+                fi
+              fi
 
-              if [ "''${#cmds[@]}" -eq 0 ]; then
-                echo "No lints configured"
+              if [ ''${#cmds[@]} -eq 0 ]; then
+                echo "No lints configured (create .jj-lint.toml or set dotfiles.push-lints in repo config)"
                 exit 0
               fi
 
@@ -211,10 +219,11 @@ in {
 
         # Push with pre-push lints (configurable per-repo)
         # Or skip lints entirely with: jj git push
+        # Configure lints in .jj-lint.toml (VCS-tracked) or repo config (.jj/repo/config.toml)
         push = with pkgs; let
           script = writeShellApplication {
             name = "jj-push";
-            runtimeInputs = [jujutsu coreutils fd shellcheck alejandra statix gnused];
+            runtimeInputs = [jujutsu coreutils fd shellcheck alejandra statix gnused yj jq];
             text = ''
               set -euo pipefail
 
@@ -251,22 +260,33 @@ in {
                 printf '%s%s%s\n' "$name" "$dots" "$status"
               }
 
-              # Read lint commands from jj repo config
-              lints="$(jj config get dotfiles.push-lints 2>/dev/null || true)"
+              # Read lint commands from .jj-lint.toml (VCS-tracked) or fall back to repo config
+              cmds=()
+              repo_root="$(jj root 2>/dev/null || true)"
+              lint_file="''${repo_root}/.jj-lint.toml"
 
-              if [ -z "$lints" ]; then
-                echo "No push lints configured (set dotfiles.push-lints in repo config)"
-                jj git push "$@"
-                exit 0
+              if [ -n "$repo_root" ] && [ -f "$lint_file" ]; then
+                # Parse lints from TOML file using yj (converts TOML to JSON)
+                while IFS= read -r cmd; do
+                  [ -n "$cmd" ] && cmds+=("$cmd")
+                done < <(yj -t < "$lint_file" | jq -r '.lints // empty | if type == "array" then .[] else empty end' 2>/dev/null || true)
               fi
 
-              # Parse commands into array
-              mapfile -t cmds < <(echo "$lints" | tr -d '[]"' | tr ',' '\n' | while IFS= read -r cmd; do
-                cmd="$(echo "$cmd" | xargs)"
-                [ -n "$cmd" ] && echo "$cmd"
-              done)
+              # Fall back to repo config if file doesn't exist or has no lints
+              if [ ''${#cmds[@]} -eq 0 ]; then
+                lints="$(jj config get dotfiles.push-lints 2>/dev/null || true)"
+                if [ -z "$lints" ]; then
+                  echo "No push lints configured (create .jj-lint.toml or set dotfiles.push-lints in repo config)"
+                  jj git push "$@"
+                  exit 0
+                fi
+                while IFS= read -r cmd; do
+                  cmd="$(echo "$cmd" | xargs)"
+                  [ -n "$cmd" ] && cmds+=("$cmd")
+                done < <(echo "$lints" | tr -d '[]"' | tr ',' '\n')
+              fi
 
-              if [ "''${#cmds[@]}" -eq 0 ]; then
+              if [ ''${#cmds[@]} -eq 0 ]; then
                 jj git push "$@"
                 exit 0
               fi

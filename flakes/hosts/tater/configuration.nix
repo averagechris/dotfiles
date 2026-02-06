@@ -99,23 +99,23 @@
 
   users.users.chris.extraGroups = ["libvirtd" "podman"];
 
-    home-manager.users.chris = {lib, ...}: let
-      # GUI services that require a display and will hang during activation
-      # These get RefuseManualStart=yes so sd-switch skips them, but they still
-      # start normally via graphical-session.target when you log in
-      guiServicesToSkip = [
-        "blueman-applet"
-        "hyprpaper"
-        "hypridle"
-        "swaync"
-        "network-manager-applet"
-        "udiskie"
-        "mako"
-        "gammastep"
-        "swayidle"
-        "com.mitchellh.ghostty"
-        "mega-cmd-server-init"
-      ];
+  home-manager.users.chris = {lib, ...}: let
+    # GUI services that require a display and will hang during activation
+    # These get RefuseManualStart=yes so sd-switch skips them, but they still
+    # start normally via graphical-session.target when you log in
+    guiServicesToSkip = [
+      "blueman-applet"
+      "hyprpaper"
+      "hypridle"
+      "swaync"
+      "network-manager-applet"
+      "udiskie"
+      "mako"
+      "gammastep"
+      "swayidle"
+      "com.mitchellh.ghostty"
+      "mega-cmd-server-init"
+    ];
     mkSkipDuringActivation = name:
       lib.nameValuePair name {
         Unit = {
@@ -140,12 +140,12 @@
     systemd.user.startServices = true;
     systemd.user.services = lib.listToAttrs (map mkSkipDuringActivation guiServicesToSkip);
 
-     # Use the unified Hyprland workstation configuration
-     dotfiles.hyprland-workstation.enable = true;
-     dotfiles.hyprland-workstation.terminal = "ghostty";
-     
-     # Disable waybar when using eww
-     dotfiles.gui.hyprland.waybar.enable = false;
+    # Use the unified Hyprland workstation configuration
+    dotfiles.hyprland-workstation.enable = true;
+    dotfiles.hyprland-workstation.terminal = "ghostty";
+
+    # Disable waybar when using eww
+    dotfiles.gui.hyprland.waybar.enable = false;
 
     # Additional tools
     dotfiles.shell.yazi.enable = true;

@@ -1,0 +1,8 @@
+# jj lint configuration
+# Run with: jj lint
+# These lints also run automatically before jj push
+lints = [
+  "alejandra --check .",
+  "statix check",
+  "fd -e sh -e bash -e zsh -x shellcheck"
+]

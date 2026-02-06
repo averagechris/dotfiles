@@ -7,10 +7,8 @@
 pkill -f wlogout
 
 # Launch wlogout with layer-shell protocol for Wayland
-wlogout --protocol layer-shell
-
 # Alternative fallback if wlogout fails
-if [ $? -ne 0 ]; then
+if ! wlogout --protocol layer-shell; then
     # Use wofi as fallback
     choice=$(echo -e "Lock\nLogout\nSuspend\nReboot\nShutdown" | wofi --show dmenu --prompt "Power Menu")
     case "$choice" in
