@@ -109,10 +109,16 @@ $highlight-high: #56526e;
 .bluetooth {
   color: $muted;
   padding: 0 8px;
-  
+
   &.connected {
     color: $foam;
   }
+}
+
+.keyboard {
+  color: $rose;
+  padding: 0 8px;
+  font-weight: bold;
 }
 
 .media {

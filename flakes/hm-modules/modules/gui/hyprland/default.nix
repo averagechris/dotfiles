@@ -160,7 +160,6 @@ in {
             "F, fullscreen,"
             # "P, pseudo,"
             # "J, togglesplit,"
-            "P, togglefloating"
             "+SHIFT, P, pin"
             "SPACE, exec, ${pkgs.wofi}/bin/wofi --show drun"
 
@@ -198,20 +197,20 @@ in {
             "8, workspace, 8"
             "9, workspace, 9"
             "0, workspace, 10"
-            "+ALT, e, workspace, e+1"
-            "+ALT, n, workspace, e-1"
+            "+ALT, m, workspace, e-1"
+            "+ALT, i, workspace, e+1"
 
             # Scroll through existing workspaces with mainMod + scroll
             "mouse_right, workspace, e+1"
             "mouse_left, workspace, e-1"
 
-            # Move window to scratch pad
-            "+SHIFT, $dashKey, movetoworkspacesilent, special:scratchpad"
-            "$dashKey, togglespecialworkspace, scratchpad"
-
             # Terminal scratchpad (grave/backtick key)
             "grave, togglespecialworkspace, terminal"
             "+SHIFT, grave, movetoworkspacesilent, special:terminal"
+
+            # Scratchpad
+            "s, togglespecialworkspace, scratchpad"
+            "+SHIFT, s, movetoworkspacesilent, special:scratchpad"
 
             # toggle between qwerty and colemak_dh keyboard layouts
             "+SHIFT+CTRL+ALT, SPACE, exec, hyprctl switchxkblayout at-translated-set-2-keyboard next"

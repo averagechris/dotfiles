@@ -11,6 +11,7 @@
 (defpoll brightness :interval "1s" "brightnessctl -m | cut -d',' -f4 | tr -d '%' 2>/dev/null || echo 100")
 (defpoll wifi-ssid :interval "10s" "nmcli -t -f active,ssid dev wifi | grep '^yes' | cut -d':' -f2 || echo 'Disconnected'")
 (defpoll bluetooth-connected :interval "10s" "bluetoothctl info 2>/dev/null | grep -q 'Connected: yes' && echo true || echo false")
+(defpoll keyboard-layout :interval "2s" "hyprctl devices -j 2>/dev/null | jq -r '.keyboards[] | select(.main == true) | .active_keymap' | cut -d'(' -f2 | cut -d')' -f1 || echo 'us'")
 
 ; Workspaces (updated via hyprland IPC)
 (deflisten workspaces :initial "[1]" "scripts/workspaces.sh")
@@ -75,10 +76,18 @@
 
 (defwidget bluetooth-widget []
   (eventbox :onclick "overskride &"
-    (box :class "bluetooth ${bluetooth-connected == 'true' ? 'connected' : ''}" 
+    (box :class "bluetooth ${bluetooth-connected == 'true' ? 'connected' : ''}"
          :orientation "h" :space-evenly false
          :tooltip "Bluetooth (click to manage)"
       (label :text {bluetooth-connected == "true" ? "󰂯" : "󰂲"}))))
+
+(defwidget keyboard-widget []
+  (box :class "keyboard"
+       :orientation "h" :space-evenly false
+       :tooltip "Keyboard layout"
+    (label :text {keyboard-layout == "us" ? "󰌌 US" :
+                  keyboard-layout == "basic" ? "󰌌 QW" :
+                  keyboard-layout == "colemak_dh" ? "󰌌 CM" : "󰌌 ${keyboard-layout}"})))
 
 (defwidget media-widget []
   (box :class "media ${media-status}" :orientation "h" :space-evenly false
@@ -103,6 +112,7 @@
 
 (defwidget right []
   (box :class "right" :orientation "h" :space-evenly false :halign "end"
+    (keyboard-widget)
     (network-widget)
     (bluetooth-widget)
     (brightness-widget)
