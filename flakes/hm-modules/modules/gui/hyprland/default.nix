@@ -208,9 +208,11 @@ in {
             "grave, togglespecialworkspace, terminal"
             "+SHIFT, grave, movetoworkspacesilent, special:terminal"
 
-            # Scratchpad
-            "s, togglespecialworkspace, scratchpad"
-            "+SHIFT, s, movetoworkspacesilent, special:scratchpad"
+            # Scratchpad submap launcher
+            "s, submap, scratchpad"
+
+            # Resize submap launcher
+            "r, submap, resize"
 
             # toggle between qwerty and colemak_dh keyboard layouts
             "+SHIFT+CTRL+ALT, SPACE, exec, hyprctl switchxkblayout at-translated-set-2-keyboard next"
@@ -222,7 +224,10 @@ in {
             # Productivity features
             "+SHIFT, D, exec, swaync-client -d"
             "Z, exec, pkill -SIGUSR1 eww || eww open bar"
-            "Escape, exec, ${term} -e btop"
+            "+SHIFT, Escape, exec, ${term} -e btop"
+
+            # Consistent key to leave any scratchpad and return to previous workspace
+            "Escape, workspace, previous"
 
             # Screenshot keybindings
             "Print, exec, grimblast --notify copysave area"
@@ -245,6 +250,24 @@ in {
         };
       };
       extraConfig = ''
+        # Resize submap - use binde for repeatable resize actions
+        submap = resize
+        binde = , m, resizeactive, -20 0
+        binde = , n, resizeactive, 0 20
+        binde = , e, resizeactive, 0 -20
+        binde = , i, resizeactive, 20 0
+        bind = , escape, submap, reset
+        submap = reset
+
+        # Scratchpad submap - auto-exit after any key press
+        submap = scratchpad, reset
+        bind = , t, togglespecialworkspace, terminal
+        bind = SHIFT, t, movetoworkspacesilent, special:terminal
+        bind = , s, togglespecialworkspace, scratchpad
+        bind = SHIFT, s, movetoworkspacesilent, special:scratchpad
+        bind = , escape, submap, reset
+        submap = reset
+
         device {
           name = at-translated-set-2-keyboard
           kb_layout = us, us

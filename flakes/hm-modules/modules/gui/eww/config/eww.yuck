@@ -16,6 +16,7 @@
 ; Workspaces (updated via hyprland IPC)
 (deflisten workspaces :initial "[1]" "scripts/workspaces.sh")
 (deflisten active-workspace :initial "1" "scripts/active-workspace.sh")
+(deflisten current-submap :initial "" "scripts/submap.sh")
 
 ; Media
 (defpoll media-title :interval "1s" "playerctl metadata title 2>/dev/null || echo ''")
@@ -29,6 +30,15 @@
       (button :class {ws == active-workspace ? "workspace active" : "workspace"}
               :onclick "hyprctl dispatch workspace ${ws}"
         ws))))
+
+(defwidget submap-widget []
+  (box :class "submap ${current-submap != '' ? 'active' : ''}"
+       :orientation "h" :space-evenly false
+       :visible {current-submap != ""}
+       :tooltip "Active submap/mode"
+    (label :text {current-submap == "resize" ? "󰩨 RESIZE" :
+                  current-submap == "scratchpad" ? "󰗼 SCRATCH" :
+                  current-submap})))
 
 (defwidget clock []
   (box :class "clock" :orientation "h" :space-evenly false
@@ -104,7 +114,8 @@
 ; Bar sections
 (defwidget left []
   (box :class "left" :orientation "h" :space-evenly false :halign "start"
-    (workspaces-widget)))
+    (workspaces-widget)
+    (submap-widget)))
 
 (defwidget center []
   (box :class "center" :orientation "h" :space-evenly false :halign "center"
