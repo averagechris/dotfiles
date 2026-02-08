@@ -28,7 +28,7 @@ in {
           "borderangle, 1, 100, linear, loop"
           "fade, 1, 4, smoothIn"
           "fadeDim, 1, 4, smoothIn"
-          "workspaces, 1, 4, overshot, slidevert"
+          "workspaces, 1, 4, overshot, slidefade"
         ];
       };
     };
