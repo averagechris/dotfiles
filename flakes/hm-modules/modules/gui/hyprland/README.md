@@ -2,6 +2,8 @@
 
 This module provides a modern Hyprland window manager setup for Wayland, featuring advanced animations, window rules, and comprehensive keybindings with Colemak Mod-DH support.
 
+**📖 Full documentation**: See [docs/hyprland.md](/docs/hyprland.md) for complete keybindings reference and usage guide.
+
 ## Features
 
 - **Modern Wayland Compositor**: Hyprland with GPU acceleration and animations
@@ -85,9 +87,16 @@ The Hyprland configuration uses Colemak Mod-DH navigation keys (m, n, e, i for l
 - **Super+Shift+-**: Move window to scratchpad
 - **Super+-**: Toggle scratchpad visibility
 
+### Submaps (Modal Modes)
+
+- **Super+A**: Quick Actions submap (apps, system, tools)
+- **Super+R**: Resize mode
+- **Super+S**: Scratchpad mode
+
 ### Keyboard Layout
 
-- **Super+Shift+Ctrl+Alt+Space**: Toggle between Colemak DH and QWERTY layouts
+- **Super+Shift+Ctrl+Alt+Space**: Toggle between Colemak DH and QWERTY layouts (mega keychord)
+- **Super+A, y**: Toggle layout (alternative via quick actions)
 
 ### Media Controls
 

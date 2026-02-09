@@ -113,6 +113,29 @@ in {
       "float class:^(imv)$"
       "size 80% 80% class:^(imv)$"
       "center class:^(imv)$"
+
+      # Signal - chat workspace (9), float dialogs
+      "workspace 9 silent class:^(signal)$"
+      "float class:^(signal)$ title:^(Signal)$"
+      "size 1000 700 class:^(signal)$ title:^(Signal)$"
+      "center class:^(signal)$ title:^(Signal)$"
+
+      # Telegram - chat workspace (9), float dialogs
+      "workspace 9 silent class:^(telegramdesktop)$"
+      "float class:^(telegramdesktop)$ title:^(Telegram)$"
+      "size 1000 700 class:^(telegramdesktop)$ title:^(Telegram)$"
+      "center class:^(telegramdesktop)$ title:^(Telegram)$"
+
+      # KeePassXC - float and center for quick access
+      "float class:^(org.keepassxc.KeePassXC)$"
+      "size 900 600 class:^(org.keepassxc.KeePassXC)$"
+      "center class:^(org.keepassxc.KeePassXC)$"
+      "pin class:^(org.keepassxc.KeePassXC)$ title:^(Unlock Database)$"
+
+      # Keybindings help window - float and center
+      "float title:^(Hyprland Keybindings)$"
+      "size 900 700 title:^(Hyprland Keybindings)$"
+      "center title:^(Hyprland Keybindings)$"
     ];
   };
 }

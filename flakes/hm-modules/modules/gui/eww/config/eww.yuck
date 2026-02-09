@@ -38,6 +38,7 @@
        :tooltip "Active submap/mode"
     (label :text {current-submap == "resize" ? "󰩨 RESIZE" :
                   current-submap == "scratchpad" ? "󰗼 SCRATCH" :
+                  current-submap == "quickactions" ? "󰍜 ACTIONS" :
                   current-submap})))
 
 (defwidget clock []

@@ -79,6 +79,32 @@ See `docs/troubleshooting/` for common issues and solutions.
 - Helper `mkDefaultEnabledOption` for boolean options
 - Configure `permittedInsecurePackages` in individual host flakes (e.g., tom needs openssl-1.1.1w)
 
+## Documentation Requirements
+
+**All changes must include documentation updates, and all documentation must be accurate to the current code.**
+
+### When Making Changes
+
+1. **Update relevant documentation** - If you modify a module, update its corresponding doc file
+2. **Update the docs index** - Add new documentation to `docs/README.md`
+3. **Update `AGENTS.md`** - If adding new conventions, modules, or workflows
+4. **Keep docs in sync** - Documentation should always reflect the current state
+
+### Documentation Structure
+
+- Module docs: `docs/<module-name>.md` (e.g., `docs/hyprland.md`)
+- Index: `docs/README.md` - must list all docs with brief descriptions
+- Troubleshooting: `docs/troubleshooting/<issue>.md`
+- Agent instructions: `AGENTS.md` (this file)
+
+### Keybinding/Config Documentation
+
+For modules with keybindings or user-facing configuration:
+- List all keybindings in table format
+- Document submaps/modal modes with their key sequences
+- Include "how to use" examples
+- Keep keybinding docs in sync with the actual code
+
 ## Pre-Push Lints
 
 The `jj push` alias automatically runs lints before pushing. Lints are configured via `.jj-lint.toml` in the repo root (VCS-tracked):
