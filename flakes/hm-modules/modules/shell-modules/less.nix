@@ -5,7 +5,7 @@
       n forw-line
       e back-line
       i right-scroll
-      h left-scroll
+      m left-scroll
       k repeat-search
       K reverse-search
       h set-mark

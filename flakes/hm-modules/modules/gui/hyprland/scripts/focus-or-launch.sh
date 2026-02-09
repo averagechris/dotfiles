@@ -4,7 +4,6 @@
 
 WINDOW_CLASS="$1"
 shift
-LAUNCH_CMD="$@"
 
 # Check if window exists by class
 if hyprctl clients -j | jq -e ".[] | select(.class | test(\"$WINDOW_CLASS\"; \"i\"))" > /dev/null 2>&1; then
@@ -12,5 +11,5 @@ if hyprctl clients -j | jq -e ".[] | select(.class | test(\"$WINDOW_CLASS\"; \"i
     hyprctl dispatch focuswindow "class:^($WINDOW_CLASS)$"
 else
     # Window doesn't exist, launch it
-    $LAUNCH_CMD &
+    "$@" &
 fi
