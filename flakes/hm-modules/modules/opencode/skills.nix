@@ -45,22 +45,31 @@
 
     ## Safety Rules
 
-    **CRITICAL**: Never run mutating jj commands without explicit user approval.
+    ### Autonomous Actions (Safe to Run Without Asking)
+
+    **Creating new work** - These are safe because they don't modify existing commits:
+    - `jj new` - create a new empty change on top of current
+    - `jj describe` - set message for the current working copy commit (`@`)
+    - `jj bookmark set <name>` - create a new bookmark on `@` (only when creating new)
 
     ### Always Ask Before Running
-    - `jj describe` - modify commit message
-    - `jj new` - create a new change
-    - `jj squash` - combine changes
-    - `jj split` - split a change
-    - `jj abandon` - abandon a change
-    - `jj bookmark set/move/delete` - modify bookmarks
-    - `jj git push` - push to remote
-    - `jj resolve` - resolve conflicts
-    - `jj tug` - move bookmark to @- (user alias)
+
+    **Modifying existing history** - These can "smash" previous work:
+    - `jj squash` - fold changes into parent (modifies existing commit)
+    - `jj split` - split a change into multiple (modifies existing commit)
+    - `jj abandon` - abandon a change (loss of work possible)
+    - `jj bookmark move/delete` - moving existing bookmarks (changes history)
+    - `jj bookmark set <name> -r <rev>` - moving bookmark to specific revision
+    - `jj describe -r <rev>` - describing a non-working-copy revision
+    - `jj git push` - push to remote (irreversible)
+    - `jj resolve` - resolve conflicts (can lose work if wrong)
+    - `jj undo` - undo last operation
+    - `jj commit` - commit with message in one step
 
     ### Safe to Run (Read-Only)
     - `jj diff`, `jj log`, `jj status`, `jj show`, `jj files`
     - `jj bookmark list`, `jj config`, `jj op log`, `jj resolve --list`
+    - `jj tug` - move closest ancestor bookmark to parent (user convenience alias)
 
     ## Common Commands
 
