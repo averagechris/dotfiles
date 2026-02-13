@@ -12,6 +12,9 @@ in
       programs.zsh = {
         # NOTE: dotDir is being moved to "${config.xdg.configHome}/zsh" eventually
         dotDir = mkDefault config.home.homeDirectory;
+        envExtra = ''
+          export PATH="$HOME/.nix-profile/bin:$PATH"
+        '';
         history = {
           size = 50000;
           ignoreDups = true;
