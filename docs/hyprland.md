@@ -118,6 +118,38 @@ Submaps provide modal keybindings. Press `Super+<key>` to enter, `Escape` to exi
 | `XF86MonBrightness-` | Brightness down |
 | `Super+Shift+Ctrl+Alt+Space` | Toggle QWERTY/Colemak-DH layout (mega keychord) |
 
+## Idle & Locking
+
+Hyprland uses **hypridle** for idle timeouts and **hyprlock** for locking. The Hypridle module exposes timeout settings so you can tune lock and power behavior for laptops.
+
+The dim action is **relative to your current brightness** (it never increases brightness), so late-night low-brightness sessions won't be bumped up by the idle dim.
+
+### Hypridle timeout options
+
+| Option | Purpose |
+|--------|---------|
+| `dotfiles.hypridle.timeouts.dim` | Seconds before dimming the screen |
+| `dotfiles.hypridle.timeouts.lock` | Seconds before locking the session |
+| `dotfiles.hypridle.timeouts.dpms` | Seconds before turning off displays |
+| `dotfiles.hypridle.timeouts.suspend` | Seconds before suspending (set `0` to disable) |
+| `dotfiles.hypridle.timeouts.hibernate` | Seconds before hibernating (set `0` to disable) |
+
+### Suggested laptop timings
+
+For a battery-friendly setup:
+
+```nix
+dotfiles.hypridle.timeouts = {
+  dim = 120;       # 2 minutes
+  lock = 300;      # 5 minutes
+  dpms = 360;      # 6 minutes
+  suspend = 420;   # 7 minutes
+  hibernate = 1200; # 20 minutes
+};
+```
+
+> Note: hibernate requires working swap. If hibernation is not configured, set `hibernate = 0` and use `suspend` instead.
+
 ## Application Integration
 
 ### Signal

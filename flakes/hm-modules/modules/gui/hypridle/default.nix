@@ -6,6 +6,26 @@
   ...
 }: let
   cfg = config.dotfiles.hypridle;
+  dimScreen = pkgs.writeShellApplication {
+    name = "hypridle-dim-screen";
+    runtimeInputs = [pkgs.brightnessctl pkgs.coreutils];
+    text = ''
+      current=$(brightnessctl g)
+      max=$(brightnessctl m)
+
+      if [ -z "$current" ] || [ -z "$max" ] || [ "$max" -le 0 ]; then
+        exit 0
+      fi
+
+      # Dim relative to current brightness (about 30%), never increase
+      target=$((current / 3))
+      if [ "$target" -lt 1 ]; then
+        target=1
+      fi
+
+      brightnessctl -s set "$target"
+    '';
+  };
 in {
   options.dotfiles.hypridle = {
     enable = lib.mkEnableOption "Hypridle idle daemon";
@@ -31,6 +51,11 @@ in {
         default = 900;
         description = "Seconds before suspending (0 to disable)";
       };
+      hibernate = lib.mkOption {
+        type = lib.types.int;
+        default = 0;
+        description = "Seconds before hibernating (0 to disable)";
+      };
     };
   };
 
@@ -50,7 +75,7 @@ in {
             {
               # Dim screen
               timeout = cfg.timeouts.dim;
-              on-timeout = "${pkgs.brightnessctl}/bin/brightnessctl -s set 10";
+              on-timeout = "${dimScreen}/bin/hypridle-dim-screen";
               on-resume = "${pkgs.brightnessctl}/bin/brightnessctl -r";
             }
             {
@@ -70,6 +95,13 @@ in {
               # Suspend
               timeout = cfg.timeouts.suspend;
               on-timeout = "systemctl suspend";
+            }
+          ]
+          ++ lib.optionals (cfg.timeouts.hibernate > 0) [
+            {
+              # Hibernate
+              timeout = cfg.timeouts.hibernate;
+              on-timeout = "systemctl hibernate";
             }
           ];
       };

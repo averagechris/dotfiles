@@ -112,7 +112,6 @@
       "udiskie"
       "mako"
       "gammastep"
-      "swayidle"
       "com.mitchellh.ghostty"
       "mega-cmd-server-init"
     ];
@@ -143,6 +142,16 @@
     # Use the unified Hyprland workstation configuration
     dotfiles.hyprland-workstation.enable = true;
     dotfiles.hyprland-workstation.terminal = "ghostty";
+
+    # Prefer Hypridle + Hyprlock (disable swayidle/swaylock)
+    dotfiles.gui.swayidle.enable = false;
+    dotfiles.hypridle.timeouts = {
+      dim = 120;
+      lock = 300;
+      dpms = 360;
+      suspend = 420;
+      hibernate = 1200;
+    };
 
     # Disable waybar when using eww
     dotfiles.gui.hyprland.waybar.enable = false;

@@ -334,7 +334,6 @@ in {
       pavucontrol
       playerctl
       pulseaudio
-      swaylock-effects
       wl-clipboard
       wofi
       # Hypr ecosystem tools
