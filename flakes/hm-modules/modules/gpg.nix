@@ -63,11 +63,7 @@ in
             };
             Service = {
               Type = "oneshot";
-              ExecStart = ''
-                ${pkgs.gnupg}/bin/gpgconf --kill gpg-agent 2>/dev/null || true
-                ${pkgs.gnupg}/bin/pkill -9 keyboxd 2>/dev/null || true
-                ${pkgs.gnupg}/bin/gpgconf --launch gpg-agent 2>/dev/null || true
-              '';
+              ExecStart = "${pkgs.gnupg}/bin/pkill -9 keyboxd 2>/dev/null || true; ${pkgs.gnupg}/bin/gpgconf --kill gpg-agent 2>/dev/null || true; ${pkgs.gnupg}/bin/gpgconf --launch gpg-agent 2>/dev/null || true";
             };
             Install = {WantedBy = ["graphical-session.target"];};
           };
