@@ -188,6 +188,10 @@ push-lints = ["alejandra --check .", "statix check"]
 - The repository is managed with the `jj` VCS (colocated); use `jj` or follow user instructions for VCS actions
 - If unsure, ask the user before performing any version-control operations
 
+### jj-VCS Skill Sync
+
+**Important**: If you modify any jj configuration in this repository (e.g., `.jj-lint.toml`, `.jj/repo/config.toml`, aliases, or lint commands), you **must** update the `jj-vcs` skill accordingly. The skill lives at `~/.config/opencode/skill/jj-vcs/SKILL.md` and should always reflect the current jj configuration used in this repo.
+
 ## Changelog Policy
 
 - **Canonical source**: The `jj describe` message is the changelog entry
