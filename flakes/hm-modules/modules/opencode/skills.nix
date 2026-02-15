@@ -25,10 +25,10 @@
 
     1. **Work on current change** - Edit files, they're auto-saved to `@`
     2. **Describe when ready** - `jj describe -m "feat: ..."` to set the message
-    3. **Finish and push** - `jj new && jj tug` then `jj git push`
+    3. **Finish and push** - `jj new && jj tug && jj push`
        - `jj new` creates empty change on top, making described change `@-`
        - `jj tug` moves the bookmark to `@-` (the finished change)
-       - `jj git push` pushes the bookmark to remote
+       - `jj push` runs lints and pushes the bookmark to remote
 
     ### Iterative Squash Pattern
 
