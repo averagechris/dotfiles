@@ -18,7 +18,7 @@ Hyprland is a modern Wayland compositor with GPU acceleration, smooth animations
 | `Super+F` | Toggle fullscreen |
 | `Super+Shift+F` | Toggle floating |
 | `Super+Shift+P` | Pin window (floats on all workspaces) |
-| `Super+Space` | Application launcher (wofi) |
+| `Super+Space` | Application launcher (anyrun) |
 
 ### Window Navigation (Colemak-DH)
 

@@ -55,7 +55,7 @@ The Hyprland configuration uses Colemak Mod-DH navigation keys (m, n, e, i for l
 - **Super+Shift+F**: Toggle floating
 - **Super+F**: Fullscreen
 - **Super+P**: Toggle floating and pin window
-- **Super+Space**: Application launcher (Wofi)
+- **Super+Space**: Application launcher (anyrun)
 
 ### Window Navigation
 
@@ -147,7 +147,7 @@ The Hyprland configuration uses Colemak Mod-DH navigation keys (m, n, e, i for l
 ## Included Packages
 
 - imv, libnotify, mpv, pavucontrol, playerctl
-- pulseaudio, swaylock-effects, wl-clipboard, wofi
+- pulseaudio, swaylock-effects, wl-clipboard, anyrun
 
 ## Services
 

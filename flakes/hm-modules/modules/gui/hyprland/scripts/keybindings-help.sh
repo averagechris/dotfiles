@@ -22,7 +22,7 @@ cat << 'EOF' | less -R
 │  MOD+F              Toggle fullscreen                                       │
 │  MOD+Shift+F        Toggle floating                                         │
 │  MOD+Shift+P        Pin window (float on all workspaces)                    │
-│  MOD+Space          Application launcher (wofi)                             │
+│  MOD+Space          Application launcher (anyrun)                             │
 │  MOD+Tab            Cycle to next window                                    │
 │                                                                             │
 ├─────────────────────────────────────────────────────────────────────────────┤

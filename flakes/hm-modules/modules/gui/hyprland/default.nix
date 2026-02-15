@@ -50,11 +50,13 @@ in {
       settings = {
         env = [
           "GDK_BACKEND,wayland"
+          "XDG_DATA_DIRS,${config.home.profileDirectory}/share:/nix/var/nix/profiles/default/share"
           "XCURSOR_SIZE,24"
           "HYPRCURSOR_SIZE,24"
         ];
         exec-once = [
           "${pkgs.signal-desktop}/bin/signal-desktop --start-in-tray"
+          "anyrun daemon"
           "hyprpaper"
           "hyprsunset -t 4500"
           # Zen browser and Telegram are installed via nix profile
@@ -161,7 +163,7 @@ in {
             # "P, pseudo,"
             # "J, togglesplit,"
             "+SHIFT, P, pin"
-            "SPACE, exec, ${pkgs.wofi}/bin/wofi --show drun"
+            "SPACE, exec, anyrun"
 
             # movement between windows
             "m, movefocus, l"
@@ -371,7 +373,7 @@ in {
           │  MOD+F              Toggle fullscreen                                       │
           │  MOD+Shift+F        Toggle floating                                         │
           │  MOD+Shift+P        Pin window (float on all workspaces)                    │
-          │  MOD+Space          Application launcher (wofi)                             │
+          │  MOD+Space          Application launcher (anyrun)                             │
           │  MOD+Tab            Cycle to next window                                    │
           │                                                                             │
           ├─────────────────────────────────────────────────────────────────────────────┤

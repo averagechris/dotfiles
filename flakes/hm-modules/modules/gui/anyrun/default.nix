@@ -1,4 +1,4 @@
-# Anyrun launcher configuration with Rose Pine Moon theme
+# Anyrun launcher configuration
 #
 # Note: This module requires the anyrun flake input to be available.
 # The host flake should have:
@@ -13,6 +13,7 @@
 }: let
   cfg = config.dotfiles.anyrun;
   inherit (config.dotfiles.gui.hyprland.theme) colors;
+  subtleHex = lib.removePrefix "#" colors.subtle;
 
   # Get anyrun packages from flake input if available
   hasAnyrunInput = inputs ? anyrun;
@@ -20,77 +21,133 @@
     if hasAnyrunInput
     then inputs.anyrun.packages.${pkgs.stdenv.hostPlatform.system}
     else {};
+
+  # Helper to get plugin path from package
+  pluginPath = pkg: "${pkg}/lib/lib${lib.strings.replaceStrings ["-"] ["_"] pkg.pname}.so";
 in {
   options.dotfiles.anyrun = {
     enable = lib.mkEnableOption "Anyrun launcher";
   };
 
   config = lib.mkIf (cfg.enable && hasAnyrunInput) {
+    home.packages = [anyrunPkgs.anyrun-provider];
+
     programs.anyrun = {
       enable = true;
+      package = anyrunPkgs.anyrun;
       config = {
         plugins = with anyrunPkgs; [
-          applications
-          shell
-          rink # Calculator
-          symbols
-          stdin
+          (pluginPath applications)
+          (pluginPath shell)
+          (pluginPath rink)
+          (pluginPath symbols)
         ];
 
-        width.fraction = 0.3;
-        y.fraction = 0.2;
+        # Position and size - floating window, not fullscreen
+        width.fraction = 0.35;
+        y.fraction = 0.18;
+        height.absolute = 280;
+        margin = 0;
+
+        # Behavior
         hidePluginInfo = true;
         closeOnClick = true;
-        showResultsImmediately = true;
+        showResultsImmediately = false;
         maxEntries = 10;
+        ignoreExclusiveZones = false;
+        layer = "overlay";
       };
 
+      # Main styling - clean and minimal
       extraCss = ''
-        /* Rose Pine Moon theme for Anyrun */
         * {
-          font-family: "Inter", sans-serif;
+          font-family: "JetBrains Mono", "FiraCode Nerd Font", monospace;
+          font-size: 13px;
         }
 
-        #window {
+        window {
           background: transparent;
         }
 
-        #main {
+        box.main {
           background: ${colors.base};
-          border: 2px solid ${colors.overlay};
+          border: 1px solid ${colors.overlay};
           border-radius: 12px;
+          box-shadow: 0 18px 36px rgba(0, 0, 0, 0.35);
+          padding: 10px;
         }
 
-        #entry {
+        text {
           background: ${colors.surface};
-          border-radius: 8px;
-          padding: 12px;
+          border-radius: 10px;
           color: ${colors.text};
+          padding: 12px 14px;
+          margin: 2px;
+          font-size: 14px;
         }
 
-        #entry:focus {
-          border: none;
-          box-shadow: none;
+        text:focus {
+          outline: none;
         }
 
-        #match {
-          padding: 8px 12px;
+        text:empty {
+          color: ${colors.subtle};
+          background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='260' height='20'><text x='0' y='14' fill='%23${subtleHex}' font-family='Inter, sans-serif' font-size='12'>Type to search apps, calc, symbols…</text></svg>");
+          background-repeat: no-repeat;
+          background-position: 14px center;
+        }
+
+        box.matches {
+          margin: 6px 2px 2px;
+        }
+
+        box.plugin:first-child {
+          margin-top: 6px;
+        }
+
+        list.plugin {
+          background: transparent;
+        }
+
+        .match {
+          padding: 8px 16px;
           border-radius: 6px;
           color: ${colors.text};
         }
 
-        #match:selected {
-          background: ${colors.overlay};
-        }
-
-        #match:hover {
+        .match:selected {
           background: ${colors.highlightMed};
         }
 
-        #plugin {
-          background: transparent;
-          padding: 4px;
+        .match:hover {
+          background: ${colors.highlightLow};
         }
+
+        label.match {
+          color: ${colors.text};
+        }
+
+        label.match.description {
+          color: ${colors.subtle};
+          font-size: 11px;
+        }
+
+        label.plugin.info {
+          color: ${colors.subtle};
+          font-size: 10px;
+        }
+      '';
+
+      # Configure applications plugin
+      extraConfigFiles."applications.ron".text = ''
+        Config(
+          desktop_actions: true,
+          max_entries: 8,
+          terminal: Some(Terminal(
+            command: "ghostty",
+            args: "-e {}",
+          )),
+        )
       '';
     };
   };
