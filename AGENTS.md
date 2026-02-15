@@ -1,5 +1,11 @@
 # Agent Instructions for Dotfiles Repository
 
+> **IMPORTANT**: When working with this repository, load the `nix-dotfiles` skill:
+> ```
+> /load-skill nix-dotfiles
+> ```
+> This provides context about repo structure, build commands, and patterns.
+
 ## Repository Overview
 
 This is a multi-flake Nix repository managing NixOS and Darwin (macOS) system configurations. The architecture uses independent flakes for each host, with shared module flakes for reusability.
@@ -20,11 +26,15 @@ dotfiles/
 │       ├── thorny/              # NixOS host
 │       ├── tom/                 # NixOS host (home-assistant)
 │       ├── cruber/              # NixOS host
+│       ├── tater/               # NixOS host (ThinkPad T14s)
+│       ├── trainwreck/          # NixOS host (Hetzner VPS)
 │       ├── taz/                 # NixOS host (inactive)
 │       └── tootsie/             # NixOS host (inactive)
 ├── hm_modules/                  # Legacy (modules now in flakes/hm-modules/)
 ├── secrets/                     # Encrypted secrets (agenix)
-└── scripts/                     # Utility scripts
+├── scripts/                     # Utility scripts
+├── docs/                        # Documentation (see docs/README.md)
+└── .opencode/                   # OpenCode skills and config
 ```
 
 ## Build/Lint/Test Commands
@@ -208,6 +218,7 @@ Jobs in `.builds/` run in parallel on push. SourceHut limits: **4 concurrent job
 See `docs/troubleshooting/` for common issues and solutions:
 
 - **Sudo/setuid broken (`nobody:nogroup` ownership)**: If `sudo` fails with permission errors and `/run/wrappers/bin/sudo` is owned by `nobody:nogroup`, see `docs/troubleshooting/sudo-setuid-nobody-nogroup.md`. This typically occurs when NixOS was installed from within a user namespace.
+- **GPG agent lock / keyboxd timeout**: If jj or git fails with "waiting for lock" errors, see `docs/troubleshooting/gpg-agent-lock.md`. The cleanup service should run automatically on login.
 
 ## Host-Specific Notes
 

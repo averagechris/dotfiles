@@ -120,6 +120,7 @@ Use `mkDefaultEnabledOption` helper for boolean options.
 | thorny | x86_64-linux | COSMIC desktop, System76 Thelio |
 | tom | x86_64-linux | Requires `openssl-1.1.1w` for home-assistant |
 | cruber | x86_64-linux | COSMIC desktop, Dell XPS |
+| tater | x86_64-linux | ThinkPad T14s Gen 5 AMD |
 | taz | x86_64-linux | Inactive, Linode VM, Searx |
 | tootsie | x86_64-linux | Inactive, Linode VM, Tailscale exit node |
 
@@ -220,6 +221,19 @@ nix flake lock --update-input <input-name>
 - Repository is managed with `jj` (Jujutsu) VCS, colocated with git
 - Use `jj` commands, not `git` commands
 - See the `jj-vcs` skill for jj-specific guidance
+
+## Documentation
+
+**IMPORTANT**: Always check and update documentation when making changes.
+
+- **`docs/`** - Contains all project documentation
+  - `docs/README.md` - Documentation index with all available guides
+  - `docs/<module-name>.md` - Module-specific documentation (e.g., `hyprland.md`, `gpg-signing.md`)
+  - `docs/troubleshooting/` - Troubleshooting guides for common issues
+
+- **`AGENTS.md`** - Agent instructions and workflows (read this first for any task)
+  - Documents conventions, naming patterns, and build commands
+  - Lists troubleshooting guides in the Troubleshooting section
 
 ## Changelog Policy
 

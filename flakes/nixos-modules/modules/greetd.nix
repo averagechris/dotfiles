@@ -10,13 +10,13 @@
     bind=SUPER+SHIFT,Q,exec,systemctl poweroff
     bind=SUPER+SHIFT,R,exec,systemctl reboot
     bind=SUPER,R,exec,${lib.getExe pkgs.greetd.gtkgreet} -l; hyprtcl dispatch exit
-    bind=SUPER + SHIFT + CTRL + ALT, SPACE, exec, hyprctl switchxkblayout at-translated-set-2-keyboard next
+    bind=SUPER+SHIFT+CTRL+ALT,SPACE,exec,hyprctl switchxkblayout at-translated-set-2-keyboard next
 
     input {
       touchpad {
-        clickfinger_behavior=true
+        clickfinger_behavior = true
       }
-      numlock_by_default=true
+      numlock_by_default = true
     }
     animations {
       bezier=windowBezier, 0.05, 0.9, 0.1, 1.05
@@ -26,14 +26,14 @@
       animation=borderangle, 1, 8, default
       animation=fade, 1, 7, default
       animation=workspaces, 1, 6, default
-      enabled=yes
+      enabled = true
     }
 
     device {
       name = at-translated-set-2-keyboard
       kb_layout = us, us
       kb_variant = colemak_dh, basic
-      resolve_binds_by_sym = 1
+      resolve_binds_by_sym = true
     }
   '';
 in {

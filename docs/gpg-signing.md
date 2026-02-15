@@ -40,6 +40,12 @@ The dotfiles repository includes an automated GPG signing configuration that:
    - **7-day cache TTL (604800 seconds)** - enter passphrase once, cached for a week
    - 1-year max cache TTL (31536000 seconds)
 
+6. **GPG Cleanup Service** (home-manager)
+   - Automatically runs on login via `graphical-session.target`
+   - Kills stale `keyboxd` processes that hold locks after reboot
+   - Restarts `gpg-agent` to ensure clean state
+   - Configured in `flakes/hm-modules/modules/gpg.nix`
+
 ## Setup Instructions
 
 ### Initial Setup (One-time)
@@ -151,6 +157,16 @@ git commit -m "Second commit"  # Will NOT prompt for passphrase
 ```
 
 ## Troubleshooting
+
+### GPG Agent Lock / Timeout
+
+If you see "waiting for lock" errors or timeouts when signing with jj or git:
+
+**Cause**: Stale `keyboxd` process holding a lock after reboot
+
+**Solution**: See [GPG Agent Lock Troubleshooting Guide](../troubleshooting/gpg-agent-lock.md)
+
+The dotfiles now include an automatic cleanup service that runs on login to prevent this issue.
 
 ### "No secret key" Error
 
