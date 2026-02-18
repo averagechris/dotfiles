@@ -69,12 +69,19 @@
       modules = [
         hostPath
         home-manager.nixosModules.home-manager
-        {
-          home-manager.extraSpecialArgs = specialArgs;
+        ({config, ...}: {
+          home-manager.extraSpecialArgs =
+            specialArgs
+            // {
+              secrets =
+                if config ? age
+                then config.age.secrets
+                else {};
+            };
           home-manager.useGlobalPkgs = true;
           home-manager.useUserPackages = true;
           home-manager.backupFileExtension = "hm.bak";
-        }
+        })
       ];
     };
 
@@ -109,12 +116,19 @@
         home-manager.darwinModules.home-manager
         mac-app-util.darwinModules.default
         agenix.darwinModules.default
-        {
-          home-manager.extraSpecialArgs = specialArgs;
+        ({config, ...}: {
+          home-manager.extraSpecialArgs =
+            specialArgs
+            // {
+              secrets =
+                if config ? age
+                then config.age.secrets
+                else {};
+            };
           home-manager.useGlobalPkgs = true;
           home-manager.useUserPackages = true;
           home-manager.backupFileExtension = "hm.bak";
-        }
+        })
       ];
     };
 

@@ -191,6 +191,7 @@
       inputs.mac-app-util.homeManagerModules.default
       ./aws.nix
     ];
+    targets.darwin.copyApps.enableChecks = false;
     dotfiles.shell = {
       enable = true;
       shell_scripts.enable = false;

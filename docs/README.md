@@ -10,4 +10,6 @@
 
 ## Troubleshooting
 
-See [docs/troubleshooting/](/docs/troubleshooting/) for common issues and solutions.
+See [docs/troubleshooting/](/docs/troubleshooting/) for common issues and solutions, including:
+
+- [Home Manager App Management Permission Fails on macOS](/docs/troubleshooting/home-manager-app-management.md)

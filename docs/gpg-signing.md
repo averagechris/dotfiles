@@ -22,16 +22,16 @@ The dotfiles repository includes an automated GPG signing configuration that:
 
 2. **GPG Module** (`flakes/hm-modules/modules/gpg.nix`)
    - Imports the GPG key during home-manager activation
-   - Configures git and jj with the signing key from `_module.args`
+   - Configures git and jj with the signing key from agenix secrets
    - Sets `GPG_TTY` for proper pinentry functionality
    - Enables GPG agent with 7-day passphrase cache
 
 3. **Git Configuration**
-   - Signing key is set in home-manager config from `_module.args.gpgSigningKey`
+   - Signing key is written by activation from `/run/agenix/gpg-key-id`
    - Commits are signed by default (`commit.gpgsign = true`)
 
 4. **Jujutsu Configuration**
-   - Signing key is set in home-manager config from `_module.args.gpgSigningKey`
+   - Signing key is written by activation from `/run/agenix/gpg-key-id`
    - Uses GPG backend for signing
 
 5. **GPG Agent** (NixOS configuration)
@@ -88,11 +88,12 @@ The dotfiles repository includes an automated GPG signing configuration that:
      mode = "0400";
    };
    
-   home-manager.users.chris = {config, lib, ...}: {
-     _module.args = {inherit (config.age) secrets;};
+   home-manager.users.chris = {
      dotfiles.gpg.enable = true;
    };
    ```
+   The base-lib host helpers automatically pass `secrets = config.age.secrets`
+   into home-manager, so no manual `_module.args` wiring is needed.
 
 5. **Deploy the configuration**:
    ```bash
@@ -110,8 +111,7 @@ To add GPG signing to a new machine:
    age.secrets.gpg-key-id = { ... };
    ```
 3. Enable the GPG module: `dotfiles.gpg.enable = true`
-4. Pass secrets via `_module.args`: `_module.args = {inherit (config.age) secrets;}`
-5. Rebuild the system
+4. Rebuild the system
 
 ## How It Works
 
