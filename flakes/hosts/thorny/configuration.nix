@@ -39,9 +39,9 @@
   programs.steam.enable = true;
   hardware.xone.enable = true;
 
-  system.stateVersion = "24.11";
+  system.stateVersion = "26.05";
   home-manager.users.chris = {...}: {
-    home.stateVersion = "24.11";
+    home.stateVersion = "26.05";
     imports = [
       inputs.hm-modules.homeManagerModules.default
     ];

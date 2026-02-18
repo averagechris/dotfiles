@@ -24,10 +24,10 @@
     settings.PermitRootLogin = "no";
     settings.PasswordAuthentication = false;
   };
-  system.stateVersion = "24.11";
+  system.stateVersion = "26.05";
   users.users.chris.extraGroups = ["calibre-web"];
   home-manager.users.chris = {...}: {
-    home.stateVersion = "24.11";
+    home.stateVersion = "26.05";
   };
 
   # Passwordless sudo for deploy-rs

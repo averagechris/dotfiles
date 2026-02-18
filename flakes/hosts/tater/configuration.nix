@@ -83,7 +83,7 @@
   hardware.bluetooth.powerOnBoot = true;
   services.blueman.enable = true;
 
-  system.stateVersion = "24.11";
+  system.stateVersion = "26.05";
 
   # Podman for rootless containers
   virtualisation.podman = {
@@ -125,7 +125,7 @@
       };
   in {
     # secrets are passed via _module.args in nixos-modules/modules/users/chris.nix
-    home.stateVersion = "24.11";
+    home.stateVersion = "26.05";
     imports = [
       inputs.hm-modules.homeManagerModules.default
       inputs.nix-openclaw.homeManagerModules.openclaw

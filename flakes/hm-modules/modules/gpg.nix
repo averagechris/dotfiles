@@ -74,6 +74,7 @@ in
             enable = true;
             signing = {
               signByDefault = true;
+              format = "openpgp"; # Explicitly set for stateVersion >= 25.05 compatibility
               key = ""; # Placeholder, will be set by activation script
             };
           };

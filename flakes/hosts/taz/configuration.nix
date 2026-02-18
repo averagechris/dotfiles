@@ -50,9 +50,9 @@
     sysstat
   ];
 
-  system.stateVersion = "24.11";
+  system.stateVersion = "26.05";
   home-manager.users.chris = {pkgs, ...}: {
-    home.stateVersion = "24.11";
+    home.stateVersion = "26.05";
   };
 
   time.timeZone = "UTC";

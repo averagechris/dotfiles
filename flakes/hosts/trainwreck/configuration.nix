@@ -323,7 +323,7 @@ in {
     # (libsignal-client JAR lacks Linux ARM64 native library)
   ];
 
-  system.stateVersion = "25.11";
+  system.stateVersion = "26.05";
 
   # Home Manager configuration for chris
   home-manager.users.chris = {
@@ -334,7 +334,7 @@ in {
     hmLib = lib;
     hmConfig = config;
   in {
-    home.stateVersion = "25.11";
+    home.stateVersion = "26.05";
 
     imports = [
       inputs.hm-modules.homeManagerModules.default

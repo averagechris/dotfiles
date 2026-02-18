@@ -16,9 +16,6 @@
     settings = {
       "default-cache-ttl" = 604800;
       "max-cache-ttl" = 31536000;
-      # Prevent keyboxd hangs by setting a timeout for database operations
-      "scd-event-verbose" = 0;
-      "gnupg" = "${pkgs.gnupg}";
     };
   };
 

@@ -185,7 +185,7 @@
     home = "/Users/chris";
   };
   home-manager.users.chris = {pkgs, ...}: {
-    home.stateVersion = "25.05";
+    home.stateVersion = "26.05";
     imports = [
       inputs.hm-modules.homeManagerModules.default
       inputs.mac-app-util.homeManagerModules.default

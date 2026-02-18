@@ -271,3 +271,23 @@ git clone https://git.sr.ht/~averagechris/dotfiles ~/dotfiles
 cd ~/dotfiles
 nixos-rebuild switch --use-remote-sudo --flake .#HOSTNAME
 ```
+
+## Home Manager State Version Notes
+
+### 26.05 Changes
+
+The dotfiles use `home.stateVersion = "26.05"` across all hosts. Key changes from previous versions:
+
+- **GTK4 Theme**: `gtk.gtk4.theme` no longer mirrors `gtk.theme` automatically. If you use custom GTK themes and want them applied to GTK4 applications (like modern GNOME apps), you must explicitly set:
+  ```nix
+  gtk.gtk4.theme = config.gtk.theme;
+  ```
+  See [Home Manager issue #6325](https://github.com/nix-community/home-manager/issues/6325) for context. GTK4 theming is not officially supported and uses a workaround that may cause issues with some applications.
+
+- **Zsh dotDir**: With `xdg.enable = true`, zsh config now defaults to `~/.config/zsh/` instead of `~`. This keeps your home directory cleaner.
+
+- **Yazi wrapper**: The shell wrapper function changed from `yy` to `y`. This repository explicitly sets `programs.yazi.shellWrapperName = "yy"` to preserve the old behavior.
+
+- **Git signing format**: For GPG signing, `programs.git.signing.format` no longer defaults to `"openpgp"`. This repository explicitly sets it for GPG users.
+
+- **XDG user dirs**: `xdg.userDirs.setSessionVariables` now defaults to `false` instead of `true`.

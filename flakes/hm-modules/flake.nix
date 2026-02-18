@@ -100,7 +100,7 @@
                 {
                   home.username = "test";
                   home.homeDirectory = "/tmp/test-home";
-                  home.stateVersion = "24.05";
+                  home.stateVersion = "26.05";
                 }
               ];
             };
