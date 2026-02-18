@@ -75,12 +75,95 @@
         ## Common Commands
 
         ```bash
-        jj diff --from "trunk()"  # Diff from trunk/main
-        jj log -n 20              # Recent history
-        jj status                 # Workspace status
-        jj show <rev>:path        # Preview file at revision
-        jj bookmark list          # List bookmarks
-        jj op log                 # Operation history (for undo)
+        jj diff --from "trunk()"              # Diff from trunk/main
+        jj log -n 20                          # Recent history
+        jj status                             # Workspace status
+        jj bookmark list                      # List bookmarks
+        jj op log                             # Operation history (for undo)
+        jj file show <path> -r <rev>          # Preview file contents at revision
+        ```
+
+        ## Inspecting Changes
+
+        ### `jj status` vs `jj show`
+
+        **Prefer `jj status`** for routine checks - it shows working copy state concisely:
+        - What files are modified/added/deleted
+        - Current commit description (if any)
+        - Parent commit info
+
+        **Use `jj show` only when necessary** - it displays full commit details including diffs:
+        - Shows complete description, author, timestamp
+        - Includes full diff output (can be verbose!)
+        - Good for: reviewing a specific revision's complete changes
+        - Avoid: using as a replacement for `jj status` (unnecessarily verbose)
+
+        ```bash
+        # Quick check - PREFERRED for routine use
+        jj status
+
+        # View specific revision - use sparingly
+        jj show @           # Current working copy details + diff
+        jj show @-          # Parent commit details + diff
+        jj show main        # Bookmarked revision details
+
+        # Preview file contents at a specific revision (read-only)
+        jj file show path/to/file.nix -r main
+        ```
+
+        ## Agent-Friendly Command Patterns
+
+        ### Avoiding Interactive Editors
+
+        Many jj commands open `$EDITOR` by default. For automation, use these flags:
+
+        ```bash
+        # describe - ALWAYS use -m flag (never open editor)
+        jj describe -m "feat(scope): message"      # GOOD
+        jj describe                                 # BAD - opens $EDITOR
+
+        # split - provide file paths directly (avoid TUI)
+        jj split file1.nix file2.nix               # GOOD - non-interactive
+        jj split --interactive                     # BAD - opens TUI
+
+        # squash - use -i only when explicitly requested
+        jj squash -i                               # Interactive selection
+        jj squash                                  # Squashes all changes from @ into @-
+        ```
+
+        ### Model-Friendly Output Flags
+
+        Use these flags to get clean, parseable output:
+
+        ```bash
+        # Global flags (work with most commands)
+        --no-pager              # Disable pager (essential for automation)
+        --color=never           # No ANSI color codes
+        --quiet                 # Suppress non-primary output
+
+        # Log-specific flags
+        --no-graph              # Linear output without ASCII graph
+        -n 20                   # Limit to 20 entries
+        -T 'description'        # Custom template (see below)
+
+        # Examples
+        jj status --no-pager --color=never
+        jj log -n 10 --no-graph --color=never
+        jj log -r @ --no-graph -T 'commit_id ++ " " ++ description'
+        ```
+
+        ### Useful Templates for Automation
+
+        ```bash
+        # Just descriptions (for changelog generation)
+        jj log -r "ancestors(@)" --no-graph -T 'description'
+
+        # Compact one-line format
+        jj log -r "all()" -n 20 --no-graph -T 'commit_id.short() ++ " " ++ description.first_line()'
+
+        # Show only changed files (no diffs)
+        jj show @ --stat
+        jj show @ --name-only
         ```
 
     ## User Aliases
@@ -144,8 +227,28 @@
         If no lints are configured, `jj push` just pushes without running anything.
 
         ## Machine-Friendly Output
-        - Use `--no-pager` or pipe to `cat`
-        - Use `--color=never` when parsing output
+
+        When scripting or parsing jj output, always use these flags:
+
+        ```bash
+        # Essential for automation
+        --no-pager              # Prevent interactive pager (less)
+        --color=never           # Disable ANSI color codes
+        --quiet                 # Reduce verbosity
+
+        # Combine for clean, parseable output
+        jj log -n 20 --no-pager --color=never --no-graph
+        jj status --no-pager --color=never
+        jj diff --no-pager --color=never
+        ```
+
+        ## Configuration Locations
+
+        | Config | Location | Purpose |
+        |--------|----------|---------|
+        | User | `~/.jj/config.toml` | Global user settings (name, email, aliases) |
+        | Repo | `.jj/repo/config.toml` | Per-repository settings (push-lints, etc.) |
+        | VCS | `.jj-lint.toml` | Repository-configured lint commands (VCS-tracked) |
   '';
 
   conventional-commits = ''

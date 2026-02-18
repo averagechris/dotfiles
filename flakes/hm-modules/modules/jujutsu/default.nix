@@ -219,7 +219,18 @@ in {
 
         # Complete workflow: finish current change and push to remote
         # Equivalent to: jj new && jj tug && jj push
-        ship = ["new" "&&" "jj" "tug" "&&" "jj" "push"];
+        ship = with pkgs; let
+          script = writeShellApplication {
+            name = "jj-ship";
+            runtimeInputs = [jujutsu coreutils];
+            text = ''
+              set -euo pipefail
+              jj new
+              jj tug
+              jj push "$@"
+            '';
+          };
+        in ["util" "exec" "--" "${script}/bin/jj-ship"];
 
         # Push with pre-push lints (configurable per-repo)
         # Or skip lints entirely with: jj git push
