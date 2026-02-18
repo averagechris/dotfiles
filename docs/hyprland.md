@@ -125,6 +125,7 @@ The lock screen displays a blurred screenshot of your desktop with an overlay. K
 - **Time and date** displayed prominently at the top
 - **Password input** with asterisks (`*`) for better visibility
 - **Now playing** info (when music is playing)
+- **Fingerprint auth** when fprintd + PAM are enabled for hyprlock
 
 > **Note:** Since you use multiple keyboard layouts (Colemak-DH and QWERTY), typos can be confusing. The password field shows asterisks (`*`) instead of dots for better visibility.
 >
@@ -137,6 +138,16 @@ The lock screen displays a blurred screenshot of your desktop with an overlay. K
 | `Super+A, l` | Lock via Quick Actions submap |
 | Close laptop lid | Auto-lock (if configured) |
 | Idle timeout | Auto-lock via hypridle |
+
+### Fingerprint authentication
+
+If the host enables `fprintd` and the PAM `fprintAuth` toggles, fingerprint auth is available for:
+
+- **Hyprlock** (lock screen)
+- **ReGreet** (login/greeter session)
+- **sudo** (terminal elevation)
+
+On ThinkPads with Goodix sensors, enable the libfprint TOD driver (e.g. `services.fprintd.tod.driver = pkgs.libfprint-2-tod1-goodix;`).
 
 ## Idle & Locking
 

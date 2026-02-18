@@ -50,7 +50,12 @@
 
   # Fingerprint reader support
   services.fprintd.enable = true;
+  services.fprintd.tod.enable = true;
+  services.fprintd.tod.driver = pkgs.libfprint-2-tod1-goodix;
   security.pam.services.hyprlock.fprintAuth = true;
+  security.pam.services.greetd.fprintAuth = true;
+  security.pam.services.regreet.fprintAuth = true;
+  security.pam.services.sudo.fprintAuth = true;
 
   # Firmware updates
   services.fwupd.enable = true;
