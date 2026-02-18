@@ -24,10 +24,6 @@
       url = "github:hyprwm/Hyprland";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    hyprlock = {
-      url = "github:hyprwm/hyprlock";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     hypridle = {
       url = "github:hyprwm/hypridle";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -60,7 +56,9 @@
       inherit system;
       hostPath = ./configuration.nix;
       extraInputs = inputs;
-      extraOverlays = [inputs.nix-openclaw.overlays.default];
+      extraOverlays = [
+        inputs.nix-openclaw.overlays.default
+      ];
     };
 
     deploy.nodes.tater = lib.mkDeploy' self.nixosConfigurations.tater;

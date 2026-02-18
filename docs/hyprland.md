@@ -118,6 +118,26 @@ Submaps provide modal keybindings. Press `Super+<key>` to enter, `Escape` to exi
 | `XF86MonBrightness-` | Brightness down |
 | `Super+Shift+Ctrl+Alt+Space` | Toggle QWERTY/Colemak-DH layout (mega keychord) |
 
+## Lock Screen (Hyprlock)
+
+The lock screen displays a blurred screenshot of your desktop with an overlay. Key features:
+
+- **Time and date** displayed prominently at the top
+- **Password input** with asterisks (`*`) for better visibility
+- **Now playing** info (when music is playing)
+
+> **Note:** Since you use multiple keyboard layouts (Colemak-DH and QWERTY), typos can be confusing. The password field shows asterisks (`*`) instead of dots for better visibility.
+>
+> **Keyboard layout:** Layout switching does not work inside hyprlock (it's a secure lock screen). Make sure you're typing with the correct layout before locking. The Colemak-DH/QWERTY toggle (Shift+Space) only works when Hyprland is running, not during authentication.
+
+### Activating the Lock Screen
+
+| Method | Action |
+|--------|--------|
+| `Super+A, l` | Lock via Quick Actions submap |
+| Close laptop lid | Auto-lock (if configured) |
+| Idle timeout | Auto-lock via hypridle |
+
 ## Idle & Locking
 
 Hyprland uses **hypridle** for idle timeouts and **hyprlock** for locking. The Hypridle module exposes timeout settings so you can tune lock and power behavior for laptops.
