@@ -1,86 +1,87 @@
 {
   jj-vcs = ''
-    ---
-    name: jj-vcs
-    description: |
-      Jujutsu (jj) version control system reference. Use when working with jj repositories,
-      managing bookmarks, resolving conflicts, or drafting commit messages.
-    ---
+        ---
+        name: jj-vcs
+        description: |
+          Jujutsu (jj) version control system reference. Use when working with jj repositories,
+          managing bookmarks, resolving conflicts, or drafting commit messages.
+        ---
 
-    # Jujutsu (jj) VCS Skill
+        # Jujutsu (jj) VCS Skill
 
-    Use this skill when working with repositories managed by jj (Jujutsu).
-    Detect jj repos by checking for `.jj/` directory.
+        Use this skill when working with repositories managed by jj (Jujutsu).
+        Detect jj repos by checking for `.jj/` directory.
 
-    ## Key Concept: Working Copy
+        ## Key Concept: Working Copy
 
-    Unlike git, jj's **working copy IS a commit**. Every file change automatically
-    amends the current working copy commit. There's no staging area.
+        Unlike git, jj's **working copy IS a commit**. Every file change automatically
+        amends the current working copy commit. There's no staging area.
 
-    - `@` always refers to the working copy commit
-    - `@-` is the parent of the working copy
-    - Changes are saved automatically as you edit files
+        - `@` always refers to the working copy commit
+        - `@-` is the parent of the working copy
+        - Changes are saved automatically as you edit files
 
     ## Typical Workflow
 
     1. **Work on current change** - Edit files, they're auto-saved to `@`
     2. **Describe when ready** - `jj describe -m "feat: ..."` to set the message
-    3. **Finish and push** - `jj new && jj tug && jj push`
+    3. **Finish and push** - `jj ship`
+       - Equivalent to: `jj new && jj tug && jj push`
        - `jj new` creates empty change on top, making described change `@-`
        - `jj tug` moves the bookmark to `@-` (the finished change)
        - `jj push` runs lints and pushes the bookmark to remote
 
-    ### Iterative Squash Pattern
+        ### Iterative Squash Pattern
 
-    For building up a change incrementally:
-    1. Have a described parent change you're building
-    2. Work in a new empty change on top (`jj new`)
-    3. Repeatedly `jj squash` to fold work into parent
-    4. Abandon the empty working copy or keep iterating
+        For building up a change incrementally:
+        1. Have a described parent change you're building
+        2. Work in a new empty change on top (`jj new`)
+        3. Repeatedly `jj squash` to fold work into parent
+        4. Abandon the empty working copy or keep iterating
 
-    ### WIP Changes
+        ### WIP Changes
 
-    It's fine to leave changes undescribed or with "WIP" while iterating.
-    Describe them properly before pushing.
+        It's fine to leave changes undescribed or with "WIP" while iterating.
+        Describe them properly before pushing.
 
-    ## Safety Rules
+        ## Safety Rules
 
-    ### Autonomous Actions (Safe to Run Without Asking)
+        ### Autonomous Actions (Safe to Run Without Asking)
 
-    **Creating new work** - These are safe because they don't modify existing commits:
-    - `jj new` - create a new empty change on top of current
-    - `jj describe` - set message for the current working copy commit (`@`)
-    - `jj bookmark set <name>` - create a new bookmark on `@` (only when creating new)
+        **Creating new work** - These are safe because they don't modify existing commits:
+        - `jj new` - create a new empty change on top of current
+        - `jj describe` - set message for the current working copy commit (`@`)
+        - `jj bookmark set <name>` - create a new bookmark on `@` (only when creating new)
 
-    ### Always Ask Before Running
+        ### Always Ask Before Running
 
-    **Modifying existing history** - These can "smash" previous work:
-    - `jj squash` - fold changes into parent (modifies existing commit)
-    - `jj split` - split a change into multiple (modifies existing commit)
-    - `jj abandon` - abandon a change (loss of work possible)
-    - `jj bookmark move/delete` - moving existing bookmarks (changes history)
-    - `jj bookmark set <name> -r <rev>` - moving bookmark to specific revision
-    - `jj describe -r <rev>` - describing a non-working-copy revision
-    - `jj git push` - push to remote (irreversible)
-    - `jj resolve` - resolve conflicts (can lose work if wrong)
-    - `jj undo` - undo last operation
-    - `jj commit` - commit with message in one step
+        **Modifying existing history** - These can "smash" previous work:
+        - `jj squash` - fold changes into parent (modifies existing commit)
+        - `jj split` - split a change into multiple (modifies existing commit)
+        - `jj abandon` - abandon a change (loss of work possible)
+        - `jj bookmark move/delete` - moving existing bookmarks (changes history)
+        - `jj bookmark set <name> -r <rev>` - moving bookmark to specific revision
+        - `jj describe -r <rev>` - describing a non-working-copy revision
+        - `jj git push` - push to remote (irreversible)
+        - `jj resolve` - resolve conflicts (can lose work if wrong)
+        - `jj undo` - undo last operation
+        - `jj commit` - commit with message in one step
 
-    ### Safe to Run (Read-Only)
-    - `jj diff`, `jj log`, `jj status`, `jj show`, `jj files`
-    - `jj bookmark list`, `jj config`, `jj op log`, `jj resolve --list`
-    - `jj tug` - move closest ancestor bookmark to parent (user convenience alias)
+        ### Safe to Run (Read-Only)
+        - `jj diff`, `jj log`, `jj status`, `jj show`, `jj files`
+        - `jj bookmark list`, `jj config`, `jj op log`, `jj resolve --list`
+        - `jj tug` - move closest ancestor bookmark to parent (user convenience alias)
 
-    ## Common Commands
+        ## Common Commands
 
-    ```bash
-    jj diff --from "trunk()"  # Diff from trunk/main
-    jj log -n 20              # Recent history
-    jj status                 # Workspace status
-    jj show <rev>:path        # Preview file at revision
-    jj bookmark list          # List bookmarks
-    jj op log                 # Operation history (for undo)
-    ```
+        ```bash
+        jj diff --from "trunk()"  # Diff from trunk/main
+        jj log -n 20              # Recent history
+        jj status                 # Workspace status
+        jj show <rev>:path        # Preview file at revision
+        jj bookmark list          # List bookmarks
+        jj op log                 # Operation history (for undo)
+        ```
 
     ## User Aliases
 
@@ -90,57 +91,61 @@
     - `jj ll` - log ancestors and descendants of current change
     - `jj lint` - run repo-configured lints (without pushing)
     - `jj push` - run repo-configured lints, then push (see below)
+    - `jj ship` - complete workflow: new + tug + push (finish and ship your change)
 
     ## Bookmark Workflow
 
     ```bash
-    # Finishing a change and pushing
+    # Finishing a change and pushing (one-step workflow)
+    jj ship                             # Complete: new + tug + push
+
+    # Or do it step by step:
     jj new && jj tug                    # Finish change, move bookmark to @-
     jj push                             # Run lints and push (preferred)
     jj git push                         # Push directly, skip lints
 
-    # Manual bookmark management
-    jj bookmark set <name>              # Create/move bookmark to @
-    jj bookmark set <name> -r @-        # Move bookmark to parent
-    jj git push --bookmark <name>       # Push specific bookmark
-    ```
+        # Manual bookmark management
+        jj bookmark set <name>              # Create/move bookmark to @
+        jj bookmark set <name> -r @-        # Move bookmark to parent
+        jj git push --bookmark <name>       # Push specific bookmark
+        ```
 
-    ## Commit Message Style
-    Use Conventional Commits: `type(scope): short summary`
+        ## Commit Message Style
+        Use Conventional Commits: `type(scope): short summary`
 
-    Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore
+        Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore
 
-    Example: `jj describe -m "feat(auth): add OAuth2 support"`
+        Example: `jj describe -m "feat(auth): add OAuth2 support"`
 
-    ## Colocated Workflow (jj + git)
-    - jj manages git refs automatically
-    - Use `jj git fetch` instead of `git fetch`
-    - Use `jj push` (with lints) or `jj git push` (without lints)
-    - Avoid raw git commands; they may desync jj
+        ## Colocated Workflow (jj + git)
+        - jj manages git refs automatically
+        - Use `jj git fetch` instead of `git fetch`
+        - Use `jj push` (with lints) or `jj git push` (without lints)
+        - Avoid raw git commands; they may desync jj
 
-    ## Pre-Push Lints
+        ## Pre-Push Lints
 
-    The `jj push` alias runs lints before pushing. Configure per-repo in `.jj/repo/config.toml`:
+        The `jj push` alias runs lints before pushing. Configure per-repo in `.jj/repo/config.toml`:
 
-    ```toml
-    [dotfiles]
-    push-lints = ["alejandra --check .", "statix check"]
-    ```
+        ```toml
+        [dotfiles]
+        push-lints = ["alejandra --check .", "statix check"]
+        ```
 
-    Examples for other project types:
-    ```toml
-    # Rust
-    push-lints = ["cargo fmt --check", "cargo clippy"]
+        Examples for other project types:
+        ```toml
+        # Rust
+        push-lints = ["cargo fmt --check", "cargo clippy"]
 
-    # Python
-    push-lints = ["ruff check .", "ruff format --check ."]
-    ```
+        # Python
+        push-lints = ["ruff check .", "ruff format --check ."]
+        ```
 
-    If no lints are configured, `jj push` just pushes without running anything.
+        If no lints are configured, `jj push` just pushes without running anything.
 
-    ## Machine-Friendly Output
-    - Use `--no-pager` or pipe to `cat`
-    - Use `--color=never` when parsing output
+        ## Machine-Friendly Output
+        - Use `--no-pager` or pipe to `cat`
+        - Use `--color=never` when parsing output
   '';
 
   conventional-commits = ''

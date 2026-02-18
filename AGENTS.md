@@ -138,6 +138,7 @@ push-lints = ["alejandra --check .", "statix check"]
 
 - `jj lint` - run lints without pushing
 - `jj push` - run lints, then push if they pass
+- `jj ship` - complete workflow (new + tug + push) to finish and push in one step
 - `jj git push` - push directly, skip lints
 
 ## Naming Conventions

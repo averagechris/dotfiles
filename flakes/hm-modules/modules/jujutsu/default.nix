@@ -217,6 +217,10 @@ in {
           };
         in ["util" "exec" "--" "${script}/bin/jj-lint"];
 
+        # Complete workflow: finish current change and push to remote
+        # Equivalent to: jj new && jj tug && jj push
+        ship = ["new" "&&" "jj" "tug" "&&" "jj" "push"];
+
         # Push with pre-push lints (configurable per-repo)
         # Or skip lints entirely with: jj git push
         # Configure lints in .jj-lint.toml (VCS-tracked) or repo config (.jj/repo/config.toml)
