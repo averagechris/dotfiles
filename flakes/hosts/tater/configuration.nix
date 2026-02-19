@@ -52,7 +52,10 @@
   services.fprintd.enable = true;
   services.fprintd.tod.enable = true;
   services.fprintd.tod.driver = pkgs.libfprint-2-tod1-goodix;
-  security.pam.services.hyprlock.fprintAuth = true;
+  security.pam.services.hyprlock = {
+    fprintAuth = false;
+    unixAuth = true;
+  };
   security.pam.services.greetd.fprintAuth = true;
   security.pam.services.regreet.fprintAuth = true;
   security.pam.services.sudo.fprintAuth = true;
@@ -147,6 +150,8 @@
     # Use the unified Hyprland workstation configuration
     dotfiles.hyprland-workstation.enable = true;
     dotfiles.hyprland-workstation.terminal = "ghostty";
+
+    programs.hyprlock.settings.auth.fingerprint.enabled = true;
 
     # Prefer Hypridle + Hyprlock (disable swayidle/swaylock)
     dotfiles.gui.swayidle.enable = false;

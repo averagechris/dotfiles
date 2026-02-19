@@ -141,11 +141,13 @@ The lock screen displays a blurred screenshot of your desktop with an overlay. K
 
 ### Fingerprint authentication
 
-If the host enables `fprintd` and the PAM `fprintAuth` toggles, fingerprint auth is available for:
+If the host enables `fprintd` and fingerprint auth is configured, you can unlock with either fingerprint or password. In this setup:
 
-- **Hyprlock** (lock screen)
+- **Hyprlock** uses Hyprlock's `auth.fingerprint.enabled` for parallel fingerprint auth (keeps PAM password fallback via `unixAuth`).
 - **ReGreet** (login/greeter session)
 - **sudo** (terminal elevation)
+
+Password entry remains available; ensure the PAM service enables `unixAuth` for password fallback when needed.
 
 On ThinkPads with Goodix sensors, enable the libfprint TOD driver (e.g. `services.fprintd.tod.driver = pkgs.libfprint-2-tod1-goodix;`).
 
