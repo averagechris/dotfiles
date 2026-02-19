@@ -218,19 +218,175 @@ in {
         in ["util" "exec" "--" "${script}/bin/jj-lint"];
 
         # Complete workflow: finish current change and push to remote
-        # Equivalent to: jj new && jj tug && jj push
         ship = with pkgs; let
           script = writeShellApplication {
             name = "jj-ship";
-            runtimeInputs = [jujutsu coreutils];
+            runtimeInputs = [jujutsu coreutils gawk gnugrep];
             text = ''
               set -euo pipefail
-              jj new
-              jj tug
-              jj push "$@"
+
+              bookmark_input=""
+              bookmark=""
+              remote_ref=""
+              push_args=()
+
+              while [ "$#" -gt 0 ]; do
+                case "$1" in
+                  -b|--bookmark)
+                    [ "$#" -ge 2 ] || { echo "Missing value for $1" >&2; exit 1; }
+                    bookmark_input="$2"
+                    shift 2
+                    ;;
+                  --bookmark=*)
+                    bookmark_input="''${1#*=}"
+                    shift
+                    ;;
+                  --)
+                    shift
+                    push_args+=("$@")
+                    break
+                    ;;
+                  *)
+                    push_args+=("$1")
+                    shift
+                    ;;
+                esac
+              done
+
+              has_changes=0
+              if jj diff --summary --color=never | grep -q '[^[:space:]]'; then
+                has_changes=1
+              fi
+
+              if [ "$has_changes" -eq 1 ]; then
+                jj new
+              fi
+
+              target="@-"
+
+              if [ -z "$bookmark_input" ]; then
+                bookmark="$(jj log -r "heads(ancestors($target) & bookmarks())" -n 1 --no-graph --color=never -T "bookmarks" | awk '{print $1}')"
+                if [ -z "$bookmark" ]; then
+                  echo "No ancestor bookmark found. Use --bookmark <name> or create one with: jj bookmark set <name> -r $target" >&2
+                  exit 1
+                fi
+                remote_ref="''${bookmark}@origin"
+              else
+                if echo "$bookmark_input" | grep -q '@'; then
+                  bookmark="''${bookmark_input%@*}"
+                  remote_ref="$bookmark_input"
+                else
+                  bookmark="$bookmark_input"
+                  remote_ref="''${bookmark}@origin"
+                fi
+                if [ -z "$bookmark" ]; then
+                  echo "Invalid bookmark value: $bookmark_input" >&2
+                  exit 1
+                fi
+              fi
+
+              target_id="$(jj log -r "$target" --no-graph --color=never -T "commit_id")"
+              bookmark_id="$(jj log -r "$bookmark" --no-graph --color=never -T "commit_id" 2>/dev/null || true)"
+
+              if [ -z "$bookmark_id" ] || [ "$bookmark_id" != "$target_id" ]; then
+                jj bookmark set "$bookmark" -r "$target"
+              fi
+
+              if ! printf '%s\0' "''${push_args[@]}" | grep -q -- '--bookmark'; then
+                push_args=(--bookmark "$bookmark" "''${push_args[@]}")
+              fi
+
+              if jj log -r "$remote_ref" --no-graph --color=never -T "commit_id" >/dev/null 2>&1; then
+                if jj log -r "''${bookmark}..''${remote_ref}" -n 1 --no-graph --color=never -T "commit_id" | grep -q .; then
+                  echo "Remote '$remote_ref' has new commits. Fetch and rebase before shipping:" >&2
+                  echo "  jj git fetch && jj rebase -d ''${remote_ref}" >&2
+                  exit 1
+                fi
+
+                if ! jj log -r "''${remote_ref}..''${bookmark}" -n 1 --no-graph --color=never -T "commit_id" | grep -q .; then
+                  echo "Nothing to push for bookmark '$bookmark'." >&2
+                  exit 0
+                fi
+              fi
+
+              jj push "''${push_args[@]}"
             '';
           };
         in ["util" "exec" "--" "${script}/bin/jj-ship"];
+
+        # Sync with upstream: fetch and rebase onto closest ancestor bookmark's remote
+        sync = with pkgs; let
+          script = writeShellApplication {
+            name = "jj-sync";
+            runtimeInputs = [jujutsu coreutils gawk gnugrep];
+            text = ''
+              set -euo pipefail
+
+              bookmark_input=""
+              bookmark=""
+              remote_ref=""
+              rebase_args=()
+
+              while [ "$#" -gt 0 ]; do
+                case "$1" in
+                  -b|--bookmark)
+                    [ "$#" -ge 2 ] || { echo "Missing value for $1" >&2; exit 1; }
+                    bookmark_input="$2"
+                    shift 2
+                    ;;
+                  --bookmark=*)
+                    bookmark_input="''${1#*=}"
+                    shift
+                    ;;
+                  --)
+                    shift
+                    rebase_args+=("$@")
+                    break
+                    ;;
+                  *)
+                    rebase_args+=("$1")
+                    shift
+                    ;;
+                esac
+              done
+
+              if [ -z "$bookmark_input" ]; then
+                bookmark="$(jj log -r "heads(ancestors(@) & bookmarks())" -n 1 --no-graph --color=never -T "bookmarks" | awk '{print $1}')"
+                if [ -z "$bookmark" ]; then
+                  echo "No ancestor bookmark found. Use --bookmark <name> or create one with: jj bookmark set <name> -r @" >&2
+                  exit 1
+                fi
+                remote_ref="''${bookmark}@origin"
+              else
+                if echo "$bookmark_input" | grep -q '@'; then
+                  bookmark="''${bookmark_input%@*}"
+                  remote_ref="$bookmark_input"
+                else
+                  bookmark="$bookmark_input"
+                  remote_ref="''${bookmark}@origin"
+                fi
+                if [ -z "$bookmark" ]; then
+                  echo "Invalid bookmark value: $bookmark_input" >&2
+                  exit 1
+                fi
+              fi
+
+              remote="origin"
+              if echo "$remote_ref" | grep -q '@'; then
+                remote="''${remote_ref#*@}"
+              fi
+
+              jj git fetch "$remote"
+
+              if ! jj log -r "$remote_ref" --no-graph --color=never -T "commit_id" >/dev/null 2>&1; then
+                echo "Remote ref '$remote_ref' not found after fetch." >&2
+                exit 1
+              fi
+
+              jj rebase -d "$remote_ref" "''${rebase_args[@]}"
+            '';
+          };
+        in ["util" "exec" "--" "${script}/bin/jj-sync"];
 
         # Push with pre-push lints (configurable per-repo)
         # Or skip lints entirely with: jj git push

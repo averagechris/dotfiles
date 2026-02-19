@@ -26,9 +26,8 @@
     1. **Work on current change** - Edit files, they're auto-saved to `@`
     2. **Describe when ready** - `jj describe -m "feat: ..."` to set the message
     3. **Finish and push** - `jj ship`
-       - Equivalent to: `jj new && jj tug && jj push`
-       - `jj new` creates empty change on top, making described change `@-`
-       - `jj tug` moves the bookmark to `@-` (the finished change)
+       - Smart workflow: creates a new change only when the working copy has changes
+       - Moves the closest ancestor bookmark to the finished change (or use `--bookmark <name>`)
        - `jj push` runs lints and pushes the bookmark to remote
 
         ### Iterative Squash Pattern
@@ -174,13 +173,18 @@
     - `jj ll` - log ancestors and descendants of current change
     - `jj lint` - run repo-configured lints (without pushing)
     - `jj push` - run repo-configured lints, then push (see below)
-    - `jj ship` - complete workflow: new + tug + push (finish and ship your change)
+    - `jj ship` - finish and push current work (smart: skips new/tug when already empty)
+    - `jj sync` - fetch and rebase onto closest ancestor bookmark's remote
 
     ## Bookmark Workflow
 
     ```bash
     # Finishing a change and pushing (one-step workflow)
-    jj ship                             # Complete: new + tug + push
+    jj ship                             # Finish and push using closest ancestor bookmark
+    jj ship --bookmark main             # Force a specific bookmark
+    jj ship --bookmark main@origin      # Use an explicit remote ref
+    jj sync                             # Fetch and rebase onto closest ancestor bookmark's remote
+    jj sync --bookmark main             # Sync against a specific bookmark
 
     # Or do it step by step:
     jj new && jj tug                    # Finish change, move bookmark to @-
