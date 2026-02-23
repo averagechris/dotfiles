@@ -176,26 +176,98 @@
     - `jj ship` - finish and push current work (smart: skips new/tug when already empty)
     - `jj sync` - fetch and rebase onto closest ancestor bookmark's remote
 
-    ## Bookmark Workflow
+        ## Bookmark Workflow
 
-    ```bash
-    # Finishing a change and pushing (one-step workflow)
-    jj ship                             # Finish and push using closest ancestor bookmark
-    jj ship --bookmark main             # Force a specific bookmark
-    jj ship --bookmark main@origin      # Use an explicit remote ref
-    jj sync                             # Fetch and rebase onto closest ancestor bookmark's remote
-    jj sync --bookmark main             # Sync against a specific bookmark
+        ```bash
+        # Finishing a change and pushing (one-step workflow)
+        jj ship                             # Finish and push using closest ancestor bookmark
+        jj ship --bookmark main             # Force a specific bookmark
+        jj ship --bookmark main@origin      # Use an explicit remote ref
+        jj sync                             # Fetch and rebase onto closest ancestor bookmark's remote
+        jj sync --bookmark main             # Sync against a specific bookmark
 
-    # Or do it step by step:
-    jj new && jj tug                    # Finish change, move bookmark to @-
-    jj push                             # Run lints and push (preferred)
-    jj git push                         # Push directly, skip lints
+        # Or do it step by step:
+        jj new && jj tug                    # Finish change, move bookmark to @-
+        jj push                             # Run lints and push (preferred)
+        jj git push                         # Push directly, skip lints
 
-        # Manual bookmark management
-        jj bookmark set <name>              # Create/move bookmark to @
-        jj bookmark set <name> -r @-        # Move bookmark to parent
-        jj git push --bookmark <name>       # Push specific bookmark
+            # Manual bookmark management
+            jj bookmark set <name>              # Create/move bookmark to @
+            jj bookmark set <name> -r @-        # Move bookmark to parent
+            jj git push --bookmark <name>       # Push specific bookmark
+            ```
+
+        ## Bookmark Display Notation
+
+        In `jj log` and `jj bookmark list` output, the `*` suffix on a bookmark name
+        is **display notation only** — it means the bookmark is ahead of its remote
+        tracking ref (i.e. has unpushed commits). It is NOT a literal bookmark name.
+
         ```
+        ○  tsumztmr  main*   # "main*" means main is ahead of @origin — NOT a bookmark called "main*"
+        ◆  pyplxumy  main@origin
+        ```
+
+        ## Conflicted Bookmarks
+
+        > **Note:** This is distinct from a *change conflict* (where file contents
+        > conflict due to incompatible edits). A conflicted bookmark is purely a
+        > ref-tracking issue — the files themselves are fine.
+
+        A bookmark becomes **conflicted** when two divergent commits both claim it
+        (e.g. a commit made via raw git moves the ref independently of jj's tracking).
+        `jj bookmark list` shows it as:
+
+        ```
+        main (conflicted):
+          + abc1234 some commit
+          + def5678 another commit
+          @origin: def5678 another commit
+        ```
+
+        **Do not blindly pick one tip and discard the other — that loses work.**
+
+        Instead, inspect both tips with `jj show <rev>` and determine their relationship:
+
+        1. **Preferred: rebase to form linear history.** If both tips contain real work,
+           rebase the newer/local change on top of the other so nothing is lost:
+           ```bash
+           jj rebase -r <local-tip> -d <other-tip>
+           jj bookmark set main -r <local-tip>   # after rebase, use the new commit ID
+           ```
+
+        2. **Only discard a tip if you are certain it contains no new work** (e.g. it's
+           a duplicate, an empty commit, or already incorporated elsewhere).
+           ```bash
+           jj bookmark set main -r <correct-rev>
+           ```
+
+        3. **If unsure, ask the user** before resolving — show them both tips and their
+           contents so they can decide.
+
+        ### Rogue `main*` Bookmark
+
+        In rare cases a literal bookmark named `main*` (with an asterisk) can be
+        created when a conflicted bookmark state is mishandled. Git rejects it with:
+
+        ```
+        fatal: invalid refspec '...:refs/heads/main*'
+        ```
+
+        **Diagnose:**
+        ```bash
+        jj bookmark list --all-remotes   # Look for a bookmark literally named "main*"
+        ```
+
+        **Fix:**
+        ```bash
+        jj bookmark delete 'main*'       # Quote the name to avoid shell glob expansion
+        jj bookmark set main -r <rev>    # Restore main if it was also deleted (see below)
+        ```
+
+        > **Warning:** `jj bookmark delete` will delete ALL bookmarks pointing to the
+        > same revision. If `main` and `main*` point to the same commit, both get
+        > deleted. Restore with `jj bookmark set main -r <rev>` immediately after.
 
         ## Commit Message Style
         Use Conventional Commits: `type(scope): short summary`
