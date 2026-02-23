@@ -20,6 +20,20 @@
       bash:
         "*": "ask"
         "alejandra*": "allow"
+        "awk*": "ask"
+        "cat*": "allow"
+        "echo*": "allow"
+        "fd*": "allow"
+        "find*": "allow"
+        "grep*": "allow"
+        "head*": "allow"
+        "ls*": "allow"
+        "rg*": "allow"
+        "sed*": "allow"
+        "sort*": "allow"
+        "tail*": "allow"
+        "wc*": "allow"
+        "which*": "allow"
         "cargo build*": "allow"
         "cargo test*": "allow"
         "cargo clippy*": "allow"
@@ -47,6 +61,10 @@
         "jj split*": "ask"
         "jj squash*": "ask"
         "jj status*": "allow"
+        "jj lint*": "allow"
+        "jj rebase*": "ask"
+        "jj ship*": "ask"
+        "jj sync*": "ask"
         "jj tug*": "allow"
         "jj undo*": "ask"
         "just *": "allow"
@@ -56,6 +74,12 @@
         "nix flake check*": "allow"
         "nix flake show*": "allow"
         "nix-instantiate*": "allow"
+        "nix-store*": "allow"
+        "nix path-info*": "allow"
+        "nix why-depends*": "allow"
+        "nix search*": "allow"
+        "nix show-derivation*": "allow"
+        "nix run*": "ask"
         "nixos-rebuild build*": "allow"
         "darwin-rebuild build*": "allow"
         "pre-commit*": "allow"
@@ -70,18 +94,10 @@
 
     You are the Build primary agent. Use this agent for full development and code change workflows.
 
-    - Use Tab to cycle primary agents and `@<subagent>` to invoke subagents.
-    - Prefer `jj` for repositories managed with the `jj` VCS. Use `jj diff --from "trunk()"` to detect change scope, `jj log -n 50` for history, `jj status` to check workspace state, and `jj show <rev>:path` to preview files at a revision.
-    - When proposing mutating `jj` commands (for example `jj describe`, `jj commit`, `jj split`, `jj squash`) draft the exact command and request explicit user approval before running. Do not run mutating `jj` commands without permission.
-    - When executing shell commands, include the exact command and its full output (stdout and stderr) in your response. Redact secrets and do not read files under `secrets/` or files ending with `.age` without explicit permission.
+    - In repositories managed by `jj`, prefer `jj` over git commands. Load the `jj-vcs` skill for guidance.
+    - Mutating `jj` commands (`jj rebase`, `jj squash`, `jj split`, `jj ship`, `jj git push`, etc.) require explicit user approval — draft the exact command and ask before running.
+    - Include the exact command and its full output (stdout and stderr) when executing shell commands. Redact secrets and do not read files under `secrets/` or files ending with `.age` without explicit permission.
     - Prefer non-interactive/no-color flags when available to avoid pagers and ANSI codes.
-
-    Recommended workflow:
-    1. `jj diff --from "trunk()"` — detect change scope
-    2. `jj log -n 20` — gather context
-    3. Inspect files with `jj show trunk():path/to/file` or `jj status`
-    4. Draft a `jj describe` message in Conventional-Commit style: `type(scope): short summary`
-    5. Ask user for approval to run the drafted `jj` command
   '';
 
   plan = ''
@@ -122,16 +138,8 @@
 
     You are the Plan primary agent. Focus on analysis, planning, and proposing changes without making edits.
 
-    - Use Tab to cycle primary agents and `@<subagent>` to invoke subagents.
-    - Prefer `jj` for repositories managed with the `jj` VCS.
+    - In repositories managed by `jj`, prefer `jj` over git commands.
     - Do NOT run mutating commands. Draft recommended commands with exact strings and ask for permission.
-    - Provide structured outputs: Summary -> Rationale -> Suggested commands -> Expected effect -> Tests to run.
-
-    When analyzing code:
-    1. Understand the current state via `jj diff --from "trunk()"` and `jj log`
-    2. Identify affected modules and their dependencies
-    3. Propose a step-by-step implementation plan
-    4. List potential risks and mitigation strategies
-    5. Suggest tests to validate the changes
+    - Structure outputs to match the task — at minimum: what you found, what you propose, and what the risks are.
   '';
 }
