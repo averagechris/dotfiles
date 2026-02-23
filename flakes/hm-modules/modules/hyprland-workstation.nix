@@ -54,6 +54,32 @@ in {
     dotfiles.wezterm.enable = mkIf (cfg.terminal == "wezterm") (mkDefault true);
     programs.alacritty.enable = mkIf (cfg.terminal == "alacritty") (mkDefault true);
 
+    # Wire the selected terminal into dotfiles.gui.terminal so that
+    # window manager keybindings (e.g. Super+T in Hyprland) launch the
+    # correct emulator rather than always defaulting to kitty.
+    dotfiles.gui.terminal = mkMerge [
+      (mkIf (cfg.terminal == "ghostty") {
+        package = pkgs.ghostty;
+        args = [];
+        binPath = "${pkgs.ghostty}/bin/ghostty";
+      })
+      (mkIf (cfg.terminal == "kitty") {
+        inherit (config.programs.kitty) package;
+        args = ["--single-instance" "--instance-group=0" "--listen-on=unix:/tmp/main-kitty-socket"];
+        binPath = "${config.programs.kitty.package}/bin/kitty --single-instance --instance-group=0 --listen-on=unix:/tmp/main-kitty-socket";
+      })
+      (mkIf (cfg.terminal == "wezterm") {
+        package = pkgs.wezterm;
+        args = [];
+        binPath = "${pkgs.wezterm}/bin/wezterm";
+      })
+      (mkIf (cfg.terminal == "alacritty") {
+        package = pkgs.alacritty;
+        args = [];
+        binPath = "${pkgs.alacritty}/bin/alacritty";
+      })
+    ];
+
     # Common packages for Hyprland desktop
     home.packages = with pkgs; [
       # Clipboard
