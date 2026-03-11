@@ -223,7 +223,7 @@
     programs.waybar.enable = false;
     programs.windsurf.enable = false; # this is overlayed into windsurf
 
-    home.packages = with pkgs; [raycast postman];
+    home.packages = with pkgs; [raycast postman gh];
   };
 
   fonts.packages = [pkgs.nerd-fonts.droid-sans-mono];
