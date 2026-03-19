@@ -13,4 +13,6 @@
 
 See [docs/troubleshooting/](/docs/troubleshooting/) for common issues and solutions, including:
 
+- [GPG Agent Lock / keyboxd Timeout](/docs/troubleshooting/gpg-agent-lock.md)
 - [Home Manager App Management Permission Fails on macOS](/docs/troubleshooting/home-manager-app-management.md)
+- [MT7925e Network Instability on tater](/docs/troubleshooting/mt7925e-network-instability.md)

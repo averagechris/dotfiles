@@ -168,6 +168,14 @@ If you see "waiting for lock" errors or timeouts when signing with jj or git:
 
 The dotfiles now include an automatic cleanup service that runs on login to prevent this issue.
 
+If the cleanup service is failing, check:
+
+```bash
+systemctl --user --no-pager --full status gpg-agent-cleanup.service
+```
+
+If the status shows an `EXEC` failure for `pkill`, rebuild and switch your system or Home Manager configuration so the updated cleanup unit is installed.
+
 ### "No secret key" Error
 
 If you see this error when committing:

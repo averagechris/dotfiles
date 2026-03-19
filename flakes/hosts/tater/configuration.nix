@@ -74,7 +74,13 @@
       START_CHARGE_THRESH_BAT0 = 75;
       STOP_CHARGE_THRESH_BAT0 = 80;
       WIFI_PWR_ON_AC = "off";
-      WIFI_PWR_ON_BAT = "on";
+      # MT7925e on Linux still appears to have intermittent disconnect/recovery
+      # issues on some kernel + linux-firmware combinations, especially around
+      # power saving / roaming / higher-band behavior. Keep Wi-Fi powersave off
+      # on battery as a mitigation until this host remains stable across newer
+      # nixpkgs/linux-firmware updates and firmware updates, at which point we
+      # can retest and consider removing this override.
+      WIFI_PWR_ON_BAT = "off";
     };
   };
 

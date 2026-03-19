@@ -1,12 +1,13 @@
 # Anyrun Launcher
 
-Anyrun is the primary application launcher for Hyprland. It provides fast app search, command execution, a calculator, and symbol/emoji lookup with a compact, Raycast-style UI.
+Anyrun is the primary application launcher for Hyprland. It provides fast app search, shell command execution with inline output, a calculator, and symbol/emoji lookup with a compact, Raycast-style UI.
 
 ## Usage
 
 - **Open launcher**: `Super+Space`
 - **Search apps**: type the app name
 - **Run commands**: prefix with `>` (shell plugin)
+- **See command output**: the shell plugin is configured to run commands via `bash -lc`, so stdout/stderr can be shown directly in Anyrun results
 - **Calculator**: type expressions (rink plugin)
 - **Symbols/emoji**: type keywords (symbols plugin)
 
@@ -38,20 +39,24 @@ anyrun daemon
 
 ## Desktop entries
 
-The applications plugin reads desktop files from `XDG_DATA_DIRS`. This configuration sets:
+The applications plugin reads desktop files from `XDG_DATA_DIRS`. Both the Home Manager session and the Hyprland session environment set:
 
 ```
-XDG_DATA_DIRS=${config.home.profileDirectory}/share:/nix/var/nix/profiles/default/share
+XDG_DATA_DIRS=$HOME/.nix-profile/share:${config.home.profileDirectory}/share:/nix/var/nix/profiles/default/share:/run/current-system/sw/share
 ```
 
-so Anyrun can see your installed applications in `/etc/profiles/per-user/<user>/share/applications`.
+so Anyrun can see desktop entries from:
+
+- `~/.nix-profile/share/applications` for apps installed via `nix profile add ...`
+- `/etc/profiles/per-user/<user>/share/applications` via the Home Manager profile
+- `/run/current-system/sw/share/applications` for system-installed applications
 
 ## Plugins
 
 The current plugin set is:
 
 - **applications**: app and desktop entry search
-- **shell**: command execution
+- **shell**: command execution with inline stdout/stderr output in the launcher
 - **rink**: calculator
 - **symbols**: emoji and symbol search
 

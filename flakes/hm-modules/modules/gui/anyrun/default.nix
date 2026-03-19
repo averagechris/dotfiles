@@ -14,6 +14,7 @@
   cfg = config.dotfiles.anyrun;
   inherit (config.dotfiles.gui.hyprland.theme) colors;
   subtleHex = lib.removePrefix "#" colors.subtle;
+  terminalBin = config.dotfiles.gui.terminal.package;
 
   # Get anyrun packages from flake input if available
   hasAnyrunInput = inputs ? anyrun;
@@ -57,6 +58,15 @@ in {
         ignoreExclusiveZones = false;
         layer = "overlay";
       };
+
+      extraConfigFiles."shell.ron".text = ''
+        Config(
+          prefix: ">",
+          shell: ["${pkgs.bash}/bin/bash", "-lc"],
+          placeholder: "Run shell command",
+          show_icon: true,
+        )
+      '';
 
       # Main styling - clean and minimal
       extraCss = ''
@@ -144,11 +154,15 @@ in {
           desktop_actions: true,
           max_entries: 8,
           terminal: Some(Terminal(
-            command: "ghostty",
+            command: "${terminalBin}/bin/${terminalBin.meta.mainProgram}",
             args: "-e {}",
           )),
         )
       '';
+    };
+
+    home.sessionVariables = {
+      XDG_DATA_DIRS = lib.mkDefault "${config.home.homeDirectory}/.nix-profile/share:${config.home.profileDirectory}/share:/nix/var/nix/profiles/default/share:/run/current-system/sw/share";
     };
   };
 }

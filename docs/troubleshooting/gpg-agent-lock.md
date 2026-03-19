@@ -53,6 +53,20 @@ This service:
 
 After rebuilding your system, this will happen automatically on each login.
 
+If `gpg-agent-cleanup.service` itself is failing, check its status:
+
+```bash
+systemctl --user --no-pager --full status gpg-agent-cleanup.service
+```
+
+If you see an error like:
+
+```text
+Failed at step EXEC spawning .../bin/pkill: No such file or directory
+```
+
+then your currently installed user unit still has the old broken cleanup command. Rebuild and switch your Home Manager or NixOS configuration so the fixed unit from `flakes/hm-modules/modules/gpg.nix` is installed.
+
 ## Manual Fix (If systemd service fails)
 
 If the issue persists:
@@ -76,6 +90,12 @@ To verify the cleanup service is enabled:
 
 ```bash
 systemctl --user status gpg-agent-cleanup.service
+```
+
+To verify the installed unit is valid before or after rebuilding:
+
+```bash
+systemd-analyze --user verify ~/.config/systemd/user/gpg-agent-cleanup.service
 ```
 
 ## Related Files

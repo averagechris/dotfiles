@@ -228,6 +228,7 @@ See `docs/troubleshooting/` for common issues and solutions:
 
 - **Sudo/setuid broken (`nobody:nogroup` ownership)**: If `sudo` fails with permission errors and `/run/wrappers/bin/sudo` is owned by `nobody:nogroup`, see `docs/troubleshooting/sudo-setuid-nobody-nogroup.md`. This typically occurs when NixOS was installed from within a user namespace.
 - **GPG agent lock / keyboxd timeout**: If jj or git fails with "waiting for lock" errors, see `docs/troubleshooting/gpg-agent-lock.md`. The cleanup service should run automatically on login.
+- **MT7925e Wi-Fi instability on tater**: If `tater` randomly loses connectivity and only recovers after a reboot, see `docs/troubleshooting/mt7925e-network-instability.md` for mitigation details, log collection, and non-reboot recovery steps.
 
 ## Host-Specific Notes
 

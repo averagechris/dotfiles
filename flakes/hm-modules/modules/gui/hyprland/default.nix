@@ -50,7 +50,7 @@ in {
       settings = {
         env = [
           "GDK_BACKEND,wayland"
-          "XDG_DATA_DIRS,${config.home.profileDirectory}/share:/nix/var/nix/profiles/default/share"
+          "XDG_DATA_DIRS,${config.home.homeDirectory}/.nix-profile/share:${config.home.profileDirectory}/share:/nix/var/nix/profiles/default/share:/run/current-system/sw/share"
           "XCURSOR_SIZE,24"
           "HYPRCURSOR_SIZE,24"
         ];
