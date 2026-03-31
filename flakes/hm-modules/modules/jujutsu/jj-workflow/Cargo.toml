@@ -1,0 +1,16 @@
+[package]
+name = "jj-workflow"
+version = "0.1.0"
+edition = "2021"
+authors = ["Chris Cummings"]
+description = "Workflow helpers for jj ship and jj sync"
+license = "MIT"
+
+[dependencies]
+anyhow = "1.0"
+which = "8.0"
+
+[profile.release]
+opt-level = 3
+lto = true
+strip = true

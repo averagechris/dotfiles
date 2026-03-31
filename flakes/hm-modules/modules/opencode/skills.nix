@@ -27,7 +27,8 @@
     2. **Describe when ready** - `jj describe -m "feat: ..."` to set the message
     3. **Finish and push** - `jj ship`
        - Smart workflow: creates a new change only when the working copy has changes
-       - Moves the closest ancestor bookmark to the finished change (or use `--bookmark <name>`)
+       - Prefers the nearest non-integration bookmark (`develop`/`main`/`master` are treated as integration bookmarks)
+       - Warns and opens a picker if bookmark or remote selection is ambiguous
        - `jj push` runs lints and pushes the bookmark to remote
 
         ### Iterative Squash Pattern
@@ -174,17 +175,18 @@
     - `jj lint` - run repo-configured lints (without pushing)
     - `jj push` - run repo-configured lints, then push (see below)
     - `jj ship` - finish and push current work (smart: skips new/tug when already empty)
-    - `jj sync` - fetch and rebase onto closest ancestor bookmark's remote
+    - `jj sync` - fetch and rebase onto `develop`/`dev`, else `main`/`master`/`trunk`, else `release*`, with `trunk()` as a fallback
 
         ## Bookmark Workflow
 
-        ```bash
-        # Finishing a change and pushing (one-step workflow)
-        jj ship                             # Finish and push using closest ancestor bookmark
-        jj ship --bookmark main             # Force a specific bookmark
-        jj ship --bookmark main@origin      # Use an explicit remote ref
-        jj sync                             # Fetch and rebase onto closest ancestor bookmark's remote
-        jj sync --bookmark main             # Sync against a specific bookmark
+    ```bash
+    # Finishing a change and pushing (one-step workflow)
+    jj ship                             # Finish and push using the nearest feature bookmark
+    jj ship --bookmark main             # Force a specific bookmark
+    jj ship --bookmark main@origin      # Use an explicit remote ref
+    jj sync                             # Fetch and rebase onto develop/dev/main/master/trunk/release*
+    jj sync --onto main                 # Override the inferred sync base explicitly
+    jj sync --bookmark main             # Sync against a specific bookmark
 
         # Or do it step by step:
         jj new && jj tug                    # Finish change, move bookmark to @-
@@ -193,11 +195,15 @@
 
             # Manual bookmark management
             jj bookmark set <name>              # Create/move bookmark to @
-            jj bookmark set <name> -r @-        # Move bookmark to parent
-            jj git push --bookmark <name>       # Push specific bookmark
-            ```
+        jj bookmark set <name> -r @-        # Move bookmark to parent
+        jj git push --bookmark <name>       # Push specific bookmark
+        ```
 
-        ## Bookmark Display Notation
+    `jj ship` and `jj sync` are implemented by the embedded `jj-workflow` Rust helper in
+    `flakes/hm-modules/modules/jujutsu/jj-workflow/` because the bookmark/remote resolution logic
+    outgrew shell aliases.
+
+    ## Bookmark Display Notation
 
         In `jj log` and `jj bookmark list` output, the `*` suffix on a bookmark name
         is **display notation only** — it means the bookmark is ahead of its remote

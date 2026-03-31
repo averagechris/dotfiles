@@ -12,8 +12,9 @@
 
     Follow the repo's commit conventions (check AGENTS.md, CONTRIBUTING.md).
     Default to Conventional Commits: `type(scope): short summary`
+    If working in the context of an issue tracker (for example Jira, Linear, GitHub Issues, etc.), append a suffix in the form ` [<ticket_number>]` when the ticket number is known.
 
-    Output the exact command for user approval:
+    Suggest the next command to run (OpenCode will handle approval if needed):
     - jj: `jj describe -m "..."`
     - git: `git commit -m "..."`
   '';

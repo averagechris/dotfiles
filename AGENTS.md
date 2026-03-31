@@ -138,8 +138,12 @@ push-lints = ["alejandra --check .", "statix check"]
 
 - `jj lint` - run lints without pushing
 - `jj push` - run lints, then push if they pass
-- `jj ship` - complete workflow (new + tug + push) to finish and push in one step
+- `jj ship` - finish and push current work; prefers the nearest feature bookmark and warns/picks on ambiguity
+- `jj sync` - fetch, then rebase onto `develop`/`dev`, else `main`/`master`/`trunk`, else `release*`, with `trunk()` as a fallback
+- `jj sync --onto main` - override the inferred sync base explicitly (works with any revset)
 - `jj git push` - push directly, skip lints
+
+`jj ship` and `jj sync` are implemented by the embedded `jj-workflow` Rust helper in `flakes/hm-modules/modules/jujutsu/jj-workflow/` because the branch/remote resolution logic outgrew shell aliases.
 
 ## Naming Conventions
 

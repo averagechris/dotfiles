@@ -22,10 +22,10 @@ __pycache__/
 /result
 /result-*
 flakes/hosts/*/result
+flakes/hm-modules/**/target
 hosts/coniguration.nix.bak
 .chris.just
 *.qcow2
 .ropeproject
-hm_modules/helix-terminal-tools/target
 flakes/hm-modules/modules/gui/wallpapers/*.png
 flakes/hm-modules/modules/gui/wallpapers/*.jpg
