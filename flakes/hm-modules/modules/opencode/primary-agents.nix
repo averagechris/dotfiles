@@ -4,7 +4,7 @@
     description: Build agent - full development and code change workflows
     mode: primary
     temperature: 0.0
-    maxSteps: 50
+    maxSteps: 120
     tools:
       bash: true
       write: true
@@ -34,12 +34,8 @@
         "tail*": "allow"
         "wc*": "allow"
         "which*": "allow"
-        "cargo build*": "allow"
-        "cargo test*": "allow"
-        "cargo clippy*": "allow"
-        "cargo publish*": "deny"
-        "cargo*": "ask"
-        "git *": "deny"
+        "cargo*": "allow"
+        "git *": "ask"
         "jj abandon*": "ask"
         "jj bookmark delete*": "ask"
         "jj bookmark list*": "allow"
@@ -69,17 +65,9 @@
         "jj undo*": "ask"
         "just *": "allow"
         "mypy*": "allow"
-        "nix build*": "allow"
-        "nix eval*": "allow"
-        "nix flake check*": "allow"
-        "nix flake show*": "allow"
+        "nix*": "allow"
         "nix-instantiate*": "allow"
         "nix-store*": "allow"
-        "nix path-info*": "allow"
-        "nix why-depends*": "allow"
-        "nix search*": "allow"
-        "nix show-derivation*": "allow"
-        "nix run*": "ask"
         "nixos-rebuild build*": "allow"
         "darwin-rebuild build*": "allow"
         "pre-commit*": "allow"
@@ -93,11 +81,7 @@
     ---
 
     You are the Build primary agent. Use this agent for full development and code change workflows.
-
-    - In repositories managed by `jj`, prefer `jj` over git commands. Load the `jj-vcs` skill for guidance.
-    - Mutating `jj` commands (`jj rebase`, `jj squash`, `jj split`, `jj ship`, `jj git push`, etc.) should only be run when the user's intent is clear. Rely on OpenCode's approval UI for the actual approval step, and avoid redundant follow-up permission questions when the user already clearly asked you to do the work. Ask again only if the intended mutation, target, or risk is genuinely ambiguous.
-    - Summarize shell command results concisely by default. Include exact commands or full stdout/stderr only when the user asks, when approval is needed for a mutating command, or when the raw output is necessary to understand a failure. Redact secrets and do not read files under `secrets/` or files ending with `.age` without explicit permission.
-    - Prefer non-interactive/no-color flags when available to avoid pagers and ANSI codes.
+    In repositories managed by `jj`, prefer `jj` over git commands. Load the `jj-vcs` skill for guidance.
   '';
 
   plan = ''
@@ -105,7 +89,7 @@
     description: Plan agent - analysis and planning (read-only)
     mode: primary
     temperature: 0.0
-    maxSteps: 30
+    maxSteps: 50
     tools:
       bash: true
       write: false
@@ -119,6 +103,19 @@
     permission:
       bash:
         "*": "deny"
+        "cat*": "allow"
+        "echo*": "allow"
+        "fd*": "allow"
+        "find*": "allow"
+        "grep*": "allow"
+        "head*": "allow"
+        "ls*": "allow"
+        "rg*": "allow"
+        "sort*": "allow"
+        "tail*": "allow"
+        "wc*": "allow"
+        "which*": "allow"
+        "cargo*": "allow"
         "jj bookmark list*": "allow"
         "jj config*": "allow"
         "jj diff*": "allow"
@@ -139,7 +136,6 @@
     You are the Plan primary agent. Focus on analysis, planning, and proposing changes without making edits.
 
     - In repositories managed by `jj`, prefer `jj` over git commands.
-    - Do NOT run mutating commands. Recommend the next command or action clearly, but rely on OpenCode's approval UI instead of manual command-approval formatting.
     - Structure outputs to match the task — at minimum: what you found, what you propose, and what the risks are.
   '';
 }
