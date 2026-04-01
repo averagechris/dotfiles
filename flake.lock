@@ -13798,6 +13798,31 @@
         "type": "github"
       }
     },
+    "linear-cli": {
+      "inputs": {
+        "flake-utils": [
+          "suremac",
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "suremac",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1775150264,
+        "narHash": "sha256-H6OIS1tDp+4GdVQw2N/VImF20OvdXE1lmzIXc1j8PxQ=",
+        "owner": "~averagechris",
+        "repo": "linear-cli",
+        "rev": "06580e66d323efb51fc5d43238b132b062913b1f",
+        "type": "sourcehut"
+      },
+      "original": {
+        "owner": "~averagechris",
+        "repo": "linear-cli",
+        "type": "sourcehut"
+      }
+    },
     "mac-app-util": {
       "inputs": {
         "cl-nix-lite": "cl-nix-lite",
@@ -18502,6 +18527,7 @@
           "base-lib",
           "home-manager"
         ],
+        "linear-cli": "linear-cli",
         "mac-app-util": [
           "suremac",
           "base-lib",

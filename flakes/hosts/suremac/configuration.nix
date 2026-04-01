@@ -223,7 +223,10 @@
     programs.waybar.enable = false;
     programs.windsurf.enable = false; # this is overlayed into windsurf
 
-    home.packages = with pkgs; [gh];
+    home.packages = with pkgs; [
+      gh
+      inputs.linear-cli.packages.${pkgs.stdenv.hostPlatform.system}.linear-cli-bundled
+    ];
   };
 
   fonts.packages = [pkgs.nerd-fonts.droid-sans-mono];

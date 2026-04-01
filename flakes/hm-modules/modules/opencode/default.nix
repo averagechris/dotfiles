@@ -1,5 +1,6 @@
 {
   config,
+  inputs,
   lib,
   pkgs,
   ...
@@ -40,13 +41,15 @@ in {
         # SKILLS - Reusable knowledge for agents
         # ============================================================================
 
-        skills = import ./skills.nix;
+        skills =
+          (import ./skills.nix)
+          // (inputs.linear-cli.lib.opencodeSkills or {});
 
         # ============================================================================
         # SETTINGS - OpenCode configuration (written to config.json)
         # ============================================================================
 
-        settings = import ./settings.nix;
+        settings = import ./settings.nix {inherit lib pkgs;};
       };
 
       # Runtime dependencies for MCP servers
