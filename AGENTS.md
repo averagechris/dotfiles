@@ -195,7 +195,7 @@ push-lints = ["alejandra --check .", "statix check"]
 
 ### jj-VCS Skill Sync
 
-**Important**: If you modify any jj configuration in this repository (e.g., `.jj-lint.toml`, `.jj/repo/config.toml`, aliases, or lint commands), you **must** update the `jj-vcs` skill accordingly. The skill is defined in `flakes/hm-modules/modules/opencode/skills.nix` and deployed via home-manager to `~/.config/opencode/skill/jj-vcs/SKILL.md`.
+**Important**: If you modify any jj configuration in this repository (e.g., `.jj-lint.toml`, `.jj/repo/config.toml`, aliases, or lint commands), you **must** update the `jj-vcs` skill accordingly. The skill is defined in `flakes/hm-modules/modules/opencode/skills.nix` and deployed via home-manager to `~/.config/opencode/skills/jj-vcs/SKILL.md`.
 
 ## Changelog Policy
 

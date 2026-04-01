@@ -24,8 +24,9 @@ in {
     # Base opencode configuration (always applied when programs.opencode.enable = true)
     {
       programs.opencode = {
-        # Global skills are now defined as SKILL.md files in ~/.config/opencode/skill/
-        # See the skill directory for jj-vcs and nix-dotfiles skills
+        # Global skills are sourced from repo-managed SKILL.md files under
+        # flakes/hm-modules/modules/opencode/skills/ and deployed to
+        # ~/.config/opencode/skills/.
 
         agents = (import ./primary-agents.nix) // (import ./subagents.nix);
 
