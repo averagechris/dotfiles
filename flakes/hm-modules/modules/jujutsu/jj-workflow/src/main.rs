@@ -44,11 +44,12 @@ fn print_usage(program: &OsStr) {
     );
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, PartialEq, Eq)]
 struct ParsedArgs {
     bookmark_input: Option<String>,
     remote_input: Option<String>,
     onto: Option<String>,
+    help: bool,
     passthrough: Vec<OsString>,
 }
 
@@ -101,6 +102,11 @@ fn parse_common_args(args: Vec<OsString>) -> Result<ParsedArgs> {
             continue;
         }
 
+        if arg == OsStr::new("-h") || arg == OsStr::new("--help") {
+            parsed.help = true;
+            continue;
+        }
+
         parsed.passthrough.push(arg);
     }
 
@@ -123,12 +129,18 @@ fn os_to_string(value: OsString) -> Result<String> {
 }
 
 fn run_ship(mut args: ParsedArgs) -> Result<()> {
-    let mut target = "@".to_string();
-
-    if has_working_copy_changes()? {
-        run_jj_status(["new"])?;
-        target = "@-".to_string();
+    if args.help {
+        print_ship_usage();
+        return Ok(());
     }
+
+    let plan = ship_plan(has_working_copy_changes()?);
+
+    if plan.create_new_working_copy {
+        run_jj_status(["new"])?;
+    }
+
+    let target = plan.target_rev.to_string();
 
     let bookmark = if let Some(bookmark_input) = args.bookmark_input.take() {
         if let Some((bookmark, remote)) = split_bookmark_remote(&bookmark_input) {
@@ -147,12 +159,20 @@ fn run_ship(mut args: ParsedArgs) -> Result<()> {
         bail!("bookmark cannot be empty");
     }
 
+    let target_id = commit_id(&target)?
+        .ok_or_else(|| anyhow!("no parent change to ship from the current working copy"))?;
+
+    if commit_is_empty(&target)? {
+        bail!(
+            "refusing to ship empty target {target}. Create or select a non-empty change, or pass --bookmark <name> for the intended change"
+        );
+    }
+
     let remote = resolve_bookmark_remote(&bookmark, args.remote_input.as_deref())?;
-    let target_id =
-        commit_id(&target)?.ok_or_else(|| anyhow!("target revision not found: {target}"))?;
     let bookmark_id = commit_id(&bookmark)?;
 
-    if bookmark_id.as_deref() != Some(target_id.as_str()) {
+    let bookmark_changed = bookmark_id.as_deref() != Some(target_id.as_str());
+    if bookmark_changed {
         run_jj_status(["bookmark", "set", bookmark.as_str(), "-r", target.as_str()])?;
     }
 
@@ -164,10 +184,54 @@ fn run_ship(mut args: ParsedArgs) -> Result<()> {
         OsString::from(&remote),
     ];
     push_args.extend(args.passthrough);
-    run_jj_status_os(push_args)
+
+    if let Err(push_err) = run_jj_status_os(push_args) {
+        if bookmark_changed {
+            if let Err(rollback_err) = rollback_bookmark(&bookmark, bookmark_id.as_deref()) {
+                let recovery_hint = bookmark_id
+                    .as_deref()
+                    .map(|target| format!("jj bookmark set {bookmark} -r {target}"))
+                    .unwrap_or_else(|| format!("jj bookmark forget {bookmark}"));
+                bail!(
+                    "{push_err}\nAlso failed to restore bookmark {bookmark}: {rollback_err:#}\nManual recovery: {recovery_hint}"
+                );
+            }
+
+            bail!(
+                "{push_err}\nRolled back local bookmark {bookmark} to its previous target after the failed push."
+            );
+        }
+
+        return Err(push_err);
+    }
+
+    Ok(())
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct ShipPlan {
+    create_new_working_copy: bool,
+    target_rev: &'static str,
+}
+
+fn ship_plan(has_working_copy_changes: bool) -> ShipPlan {
+    // `jj ship` should always ship the parent of the working copy. If the working
+    // copy still has file changes, create a fresh empty working copy first so the
+    // finished change moves to `@-`. If the working copy is already empty (for
+    // example after `jj new`), ship `@-` directly instead of pushing an empty
+    // working-copy commit to an integration bookmark.
+    ShipPlan {
+        create_new_working_copy: has_working_copy_changes,
+        target_rev: "@-",
+    }
 }
 
 fn run_sync(mut args: ParsedArgs) -> Result<()> {
+    if args.help {
+        print_sync_usage();
+        return Ok(());
+    }
+
     let base_rev = if let Some(onto) = args.onto.take() {
         onto
     } else if let Some(bookmark_input) = args.bookmark_input.take() {
@@ -209,6 +273,10 @@ fn resolve_ship_bookmark(target_rev: &str) -> Result<String> {
     let revset = format!("heads(ancestors({target_rev}) & bookmarks())");
     let candidates = bookmark_names_for_revset(&revset)?;
 
+    choose_ship_bookmark(candidates, target_rev)
+}
+
+fn choose_ship_bookmark(candidates: Vec<String>, target_rev: &str) -> Result<String> {
     if candidates.is_empty() {
         bail!(
             "no ancestor bookmark found. Use --bookmark <name> or create one with: jj bookmark set <name> -r {target_rev}"
@@ -227,14 +295,16 @@ fn resolve_ship_bookmark(target_rev: &str) -> Result<String> {
         );
     }
 
-    eprintln!(
-        "Warning: no feature bookmark found near {target_rev}; falling back to an integration bookmark."
+    if integration_candidates.is_empty() {
+        bail!(
+            "no ship bookmark candidates found near {target_rev}. Use --bookmark <name> to ship an explicit bookmark."
+        );
+    }
+
+    bail!(
+        "no nearby feature bookmark found for {target_rev}; refusing to fall back to integration bookmarks {}. Re-run with --bookmark <name> if you really want to ship one of them.",
+        integration_candidates.join(", ")
     );
-    pick_option(
-        "Ship bookmark",
-        &integration_candidates,
-        "Re-run with --bookmark <name> or --remote <name>.",
-    )
 }
 
 fn resolve_bookmark_remote(bookmark: &str, explicit_remote: Option<&str>) -> Result<String> {
@@ -329,27 +399,18 @@ fn bookmark_remotes(bookmark: &str) -> Result<Vec<String>> {
         "bookmark",
         "list",
         "--all-remotes",
-        "--color=never",
         bookmark,
+        "--color=never",
+        "-T",
+        "if(self.remote(), self.remote() ++ \"\\n\", \"\")",
     ])?;
-    let mut remotes = Vec::new();
-
-    for line in output.stdout.lines() {
-        let trimmed = line.trim_start();
-        if !trimmed.starts_with('@') {
-            continue;
-        }
-
-        let Some((remote, _)) = trimmed[1..].split_once(':') else {
-            continue;
-        };
-
-        if remote != "git" && !remote.is_empty() {
-            remotes.push(remote.to_string());
-        }
-    }
-
-    Ok(remotes)
+    Ok(output
+        .stdout
+        .lines()
+        .map(str::trim)
+        .filter(|remote| !remote.is_empty() && *remote != "git")
+        .map(std::string::ToString::to_string)
+        .collect())
 }
 
 fn git_remotes() -> Result<Vec<String>> {
@@ -387,6 +448,37 @@ fn commit_id(revset: &str) -> Result<Option<String>> {
     }
 }
 
+fn commit_is_empty(revset: &str) -> Result<bool> {
+    let output = run_jj_capture_allow_failure([
+        "log",
+        "-r",
+        revset,
+        "-n",
+        "1",
+        "--no-graph",
+        "--color=never",
+        "-T",
+        "empty",
+    ])?;
+
+    if !output.status.success() {
+        return Ok(false);
+    }
+
+    match output.stdout.trim() {
+        "true" => Ok(true),
+        "false" | "" => Ok(false),
+        other => bail!("unexpected empty-state output for {revset}: {other}"),
+    }
+}
+
+fn rollback_bookmark(bookmark: &str, previous_target: Option<&str>) -> Result<()> {
+    match previous_target {
+        Some(target) => run_jj_status(["bookmark", "set", bookmark, "-r", target]),
+        None => run_jj_status(["bookmark", "forget", bookmark]),
+    }
+}
+
 fn split_bookmark_remote(bookmark: &str) -> Option<(&str, &str)> {
     let (bookmark, remote) = bookmark.split_once('@')?;
     if bookmark.is_empty() || remote.is_empty() {
@@ -403,6 +495,18 @@ fn is_integration_bookmark(bookmark: &str) -> bool {
 
 fn is_release_bookmark(bookmark: &str) -> bool {
     bookmark == "release" || bookmark.starts_with("release/") || bookmark.starts_with("release-")
+}
+
+fn print_ship_usage() {
+    eprintln!(
+        "Usage:\n  jj ship [-b|--bookmark <bookmark>] [--remote <remote>] [-- <jj push args...>]\n\nShips the parent of the working copy. Refuses empty targets and will not fall back to integration bookmarks unless you choose one explicitly with --bookmark."
+    );
+}
+
+fn print_sync_usage() {
+    eprintln!(
+        "Usage:\n  jj sync [-b|--bookmark <bookmark>] [--remote <remote>] [--onto <revset>] [-- <jj rebase args...>]"
+    );
 }
 
 fn sync_base_candidates(bookmarks: &[String]) -> Option<Vec<String>> {
@@ -564,7 +668,11 @@ struct JjOutput {
 
 #[cfg(test)]
 mod tests {
-    use super::{is_integration_bookmark, sync_base_candidates};
+    use super::{
+        choose_ship_bookmark, is_integration_bookmark, parse_common_args, ship_plan,
+        sync_base_candidates, ParsedArgs, ShipPlan,
+    };
+    use std::ffi::OsString;
 
     fn strings(values: &[&str]) -> Vec<String> {
         values.iter().map(|value| (*value).to_string()).collect()
@@ -607,5 +715,57 @@ mod tests {
         }
 
         assert!(!is_integration_bookmark("feature/foo"));
+    }
+
+    #[test]
+    fn ship_parsing_recognizes_help_without_passthrough() {
+        let parsed = parse_common_args(vec![OsString::from("--help")]).unwrap();
+        assert_eq!(
+            parsed,
+            ParsedArgs {
+                help: true,
+                ..ParsedArgs::default()
+            }
+        );
+    }
+
+    #[test]
+    fn ship_bookmark_selection_refuses_integration_fallback() {
+        let err = choose_ship_bookmark(strings(&["main"]), "@-").unwrap_err();
+        assert!(
+            err.to_string()
+                .contains("refusing to fall back to integration bookmarks main"),
+            "unexpected error: {err:#}"
+        );
+    }
+
+    #[test]
+    fn ship_bookmark_selection_prefers_feature_bookmarks() {
+        assert_eq!(
+            choose_ship_bookmark(strings(&["main", "feature/foo"]), "@-").unwrap(),
+            "feature/foo"
+        );
+    }
+
+    #[test]
+    fn ship_creates_new_working_copy_before_shipping_current_change() {
+        assert_eq!(
+            ship_plan(true),
+            ShipPlan {
+                create_new_working_copy: true,
+                target_rev: "@-",
+            }
+        );
+    }
+
+    #[test]
+    fn ship_uses_parent_change_when_working_copy_is_already_empty() {
+        assert_eq!(
+            ship_plan(false),
+            ShipPlan {
+                create_new_working_copy: false,
+                target_rev: "@-",
+            }
+        );
     }
 }

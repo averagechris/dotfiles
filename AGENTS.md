@@ -138,7 +138,7 @@ push-lints = ["alejandra --check .", "statix check"]
 
 - `jj lint` - run lints without pushing
 - `jj push` - run lints, then push if they pass
-- `jj ship` - finish and push current work; prefers the nearest feature bookmark and warns/picks on ambiguity
+- `jj ship` - finish and push current work; ships the parent of the working copy so an already-empty `@` (for example after `jj new`) does not get pushed to `main`, refuses empty targets, and requires `--bookmark` instead of silently falling back to integration bookmarks
 - `jj sync` - fetch, then rebase onto `develop`/`dev`, else `main`/`master`/`trunk`, else `release*`, with `trunk()` as a fallback
 - `jj sync --onto main` - override the inferred sync base explicitly (works with any revset)
 - `jj git push` - push directly, skip lints

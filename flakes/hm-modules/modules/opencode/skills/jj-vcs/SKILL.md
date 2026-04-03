@@ -37,7 +37,10 @@ Useful iteration pattern:
 
 ### `jj ship`
 - creates a new empty working copy only if needed
+- ships the parent of the working copy, so an already-empty `@` (for example after `jj new`) does not get pushed
 - prefers the nearest non-integration bookmark
+- refuses empty targets by default
+- requires `--bookmark` if only integration bookmarks are nearby instead of silently falling back
 - treats `develop`, `dev`, `main`, `master`, `trunk`, and `release*` as integration bookmarks
 - warns / opens a picker if bookmark or remote choice is ambiguous
 

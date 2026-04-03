@@ -106,7 +106,7 @@
           yj # for parsing .jj-lint.toml
           nil # nix language server
           nixd
-          nodePackages.bash-language-server
+          pkgs."bash-language-server"
           self.outputs.packages.${system}.agenix
           deploy-rs.packages.${system}.deploy-rs
 

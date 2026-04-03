@@ -225,7 +225,7 @@
 
     home.packages = with pkgs; [
       gh
-      inputs.linear-cli.packages.${pkgs.stdenv.hostPlatform.system}.linear-cli-bundled
+      inputs.linear-cli.packages.${pkgs.stdenv.hostPlatform.system}.linear-bundled
     ];
   };
 

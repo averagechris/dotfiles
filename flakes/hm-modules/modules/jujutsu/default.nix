@@ -244,7 +244,10 @@ in {
           };
         in ["util" "exec" "--" "${script}/bin/jj-lint"];
 
-        # Complete workflow: finish current change and push to remote
+        # Complete workflow: finish current change and push the parent of the
+        # working copy to remote so an already-empty `@` does not get shipped.
+        # Refuses empty targets and requires an explicit --bookmark instead of
+        # silently falling back to integration bookmarks.
         ship = ["util" "exec" "--" "${jjWorkflow}/bin/jj-workflow" "ship"];
 
         # Sync with upstream: fetch, then rebase onto the integration bookmark
