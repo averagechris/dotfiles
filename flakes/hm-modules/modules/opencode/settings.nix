@@ -11,6 +11,18 @@
       enabled = false;
     };
 
+    # CircleCI - Pipeline, workflow, and build insights
+    # Requires CIRCLECI_TOKEN in the environment when enabled.
+    circleci = {
+      type = "local";
+      command = [
+        (lib.getExe' pkgs.nodejs "npx")
+        "-y"
+        "@circleci/mcp-server-circleci@latest"
+      ];
+      enabled = false;
+    };
+
     datadog = {
       type = "remote";
       url = "https://mcp.datadoghq.com/api/unstable/mcp-server/mcp?toolsets=all";
@@ -27,6 +39,14 @@
     github = {
       type = "remote";
       url = "https://api.githubcopilot.com/mcp/";
+      enabled = false;
+    };
+
+    # Notion - Hosted remote MCP with OAuth support
+    notion = {
+      type = "remote";
+      url = "https://mcp.notion.com/mcp";
+      oauth = {};
       enabled = false;
     };
 
