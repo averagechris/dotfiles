@@ -21,9 +21,9 @@
       description = "JavaScript runtime";
     }
     {
-      package = python3;
+      package = python313;
       name = "python3";
-      description = "Python runtime";
+      description = "Python 3.13 runtime";
     }
     {
       package = ripgrep;
@@ -77,12 +77,23 @@ in {
       defaultText = lib.literalExpression ''        with pkgs; [
                 { package = jujutsu; name = "jj"; description = "Jujutsu VCS"; }
                 { package = nodejs; name = "nodejs"; description = "JavaScript runtime"; }
-                { package = python3; name = "python3"; description = "Python runtime"; }
+                { package = python313; name = "python3"; description = "Python 3.13 runtime"; }
                 { package = ripgrep; name = "rg"; description = "fast code search"; }
               ]'';
       description = ''
         Host-specific OpenCode agent tools and their prompt metadata. These are
         appended to the module's built-in default tool list.
+      '';
+    };
+
+    agentSupportPackages = lib.mkOption {
+      type = lib.types.listOf lib.types.package;
+      default = [];
+      example = lib.literalExpression ''with pkgs; [ python313Packages.databricks-sql-connector ]'';
+      description = ''
+        Extra packages installed for OpenCode agents without mentioning them in
+        the generated runtime note. Use this for implicit runtime dependencies
+        that support a visible tool.
       '';
     };
   };
@@ -118,7 +129,7 @@ in {
         settings = import ./settings.nix {inherit lib pkgs;};
       };
 
-      home.packages = map (tool: tool.package) installedAgentTools;
+      home.packages = (map (tool: tool.package) installedAgentTools) ++ cfg.agentSupportPackages;
     }
 
     # OpenRouter API key configuration (only when openrouterApiKeyFile is set)

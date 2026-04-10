@@ -214,6 +214,9 @@
       }
     ];
     programs.opencode.enable = true;
+    dotfiles.opencode.agentSupportPackages = with pkgs; [
+      python313Packages.databricks-sql-connector
+    ];
     dotfiles.opencode.agentTools = with pkgs; [
       {
         package = databricks-cli;

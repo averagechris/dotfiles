@@ -20,6 +20,8 @@ Agent-exposed tools and MCPs are configured separately:
 
 - `dotfiles.opencode.agentTools` installs CLI tools into `home.packages` and
   mentions them in the primary agent runtime note.
+- `dotfiles.opencode.agentSupportPackages` installs supporting packages into
+  `home.packages` without mentioning them in the runtime note.
 - `programs.opencode.settings.mcp` configures MCP servers in OpenCode itself;
   these are integrations the agent can use when enabled, but they are not part
   of the runtime-note tool list by default.
@@ -30,7 +32,7 @@ By default, all OpenCode-enabled hosts install:
 
 - `jj` - Jujutsu VCS
 - `nodejs` - JavaScript runtime
-- `python3` - Python runtime
+- `python3` - Python 3.13 runtime
 - `rg` - fast code search
 
 These come from the module's built-in default tool list:
@@ -39,7 +41,7 @@ These come from the module's built-in default tool list:
 [
   { package = jujutsu; name = "jj"; description = "Jujutsu VCS"; }
   { package = nodejs; name = "nodejs"; description = "JavaScript runtime"; }
-  { package = python3; name = "python3"; description = "Python runtime"; }
+  { package = python313; name = "python3"; description = "Python 3.13 runtime"; }
   { package = ripgrep; name = "rg"; description = "fast code search"; }
 ]
 ```
@@ -60,6 +62,10 @@ agents on particular hosts. For example, `suremac` adds Databricks CLI,
 GitHub CLI, Rodney, Showboat, and the Linear CLI:
 
 ```nix
+dotfiles.opencode.agentSupportPackages = with pkgs; [
+  python313Packages.databricks-sql-connector
+];
+
 dotfiles.opencode.agentTools = with pkgs; [
   { package = databricks-cli; name = "databricks-cli"; }
   { package = gh; name = "gh"; description = "GitHub CLI"; }
@@ -78,9 +84,13 @@ example:
 
 > Your runtime is a macOS environment. By default, your environment includes
 > these additional tools: jj (Jujutsu VCS), nodejs (JavaScript runtime),
-> python3 (Python runtime), rg (fast code search), databricks-cli, gh (GitHub CLI), rodney (Chrome automation CLI),
+> python3 (Python 3.13 runtime), rg (fast code search), databricks-cli,
+> gh (GitHub CLI), rodney (Chrome automation CLI),
 > showboat (work documentation CLI), linear (Linear CLI). The project local dev
 > shell may provide additional tooling.
+
+Use `agentSupportPackages` for dependencies that a visible tool needs under the
+hood but that the agent does not need to call directly.
 
 ## MCP integrations
 
