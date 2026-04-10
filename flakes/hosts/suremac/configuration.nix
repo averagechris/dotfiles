@@ -238,7 +238,7 @@
         description = "work documentation CLI";
       }
       {
-        package = inputs.linear-cli.packages.${pkgs.stdenv.hostPlatform.system}.homebrew-artifact;
+        package = inputs.linear-cli.packages.${pkgs.stdenv.hostPlatform.system}.linear;
         name = "linear";
         description = "Linear CLI";
       }

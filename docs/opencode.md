@@ -108,6 +108,20 @@ All MCP servers are defined in `flakes/hm-modules/modules/opencode/settings.nix`
 | `serena` | local | disabled | Launched via `uvx` from the upstream repository |
 | `sentry` | remote | disabled | Hosted Sentry MCP endpoint using OAuth |
 
+## Repo-managed skills
+
+This repo also ships a small set of local skills for common tool-specific
+workflows. Current examples include:
+
+- `jj-vcs`
+- `linear-cli`
+- `databricks-cli`
+
+The `databricks-cli` skill explains an important CLI detail: there is no
+top-level `databricks sql` subcommand in the current official CLI. Agents
+should use `queries`, `query-history`, `warehouses`, `psql`, or `databricks api`
+depending on the task.
+
 ## OpenRouter API key
 
 To provide an API key non-interactively, set:
