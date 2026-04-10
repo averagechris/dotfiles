@@ -214,6 +214,32 @@
       }
     ];
     programs.opencode.enable = true;
+    dotfiles.opencode.agentTools = with pkgs; [
+      {
+        package = databricks-cli;
+        name = "databricks-cli";
+      }
+      {
+        package = gh;
+        name = "gh";
+        description = "GitHub CLI";
+      }
+      {
+        package = pkgs.rodney;
+        name = "rodney";
+        description = "Chrome automation CLI";
+      }
+      {
+        package = pkgs.showboat;
+        name = "showboat";
+        description = "work documentation CLI";
+      }
+      {
+        package = inputs.linear-cli.packages.${pkgs.stdenv.hostPlatform.system}.homebrew-artifact;
+        name = "linear";
+        description = "Linear CLI";
+      }
+    ];
 
     # programs.firefox.package = pkgs.firefox-devedition-bin;
     programs.firefox.enable = false;
@@ -222,11 +248,6 @@
     programs.signal.enable = false;
     programs.waybar.enable = false;
     programs.windsurf.enable = false; # this is overlayed into windsurf
-
-    home.packages = with pkgs; [
-      gh
-      inputs.linear-cli.packages.${pkgs.stdenv.hostPlatform.system}.linear-bundled
-    ];
   };
 
   fonts.packages = [pkgs.nerd-fonts.droid-sans-mono];

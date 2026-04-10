@@ -60,6 +60,7 @@
               then extraInputs.titlecase.packages.${system}.default
               else inputs.titlecase.packages.${system}.default;
           })
+          inputs.self.overlays.default
         ]
         ++ extraOverlays;
     };
@@ -106,6 +107,7 @@
             then extraInputs.titlecase.packages.${system}.default
             else inputs.titlecase.packages.${system}.default;
         })
+        inputs.self.overlays.default
       ];
     };
   in

@@ -5,7 +5,40 @@
   pkgs,
   ...
 }: let
+  systemName =
+    if pkgs.stdenv.hostPlatform.isDarwin
+    then "macOS"
+    else "NixOS";
+  defaultAgentTools = with pkgs; [
+    {
+      package = jujutsu;
+      name = "jj";
+      description = "Jujutsu VCS";
+    }
+    {
+      package = nodejs;
+      name = "nodejs";
+      description = "JavaScript runtime";
+    }
+    {
+      package = python3;
+      name = "python3";
+      description = "Python runtime";
+    }
+    {
+      package = ripgrep;
+      name = "rg";
+      description = "fast code search";
+    }
+  ];
   cfg = config.dotfiles.opencode;
+  renderToolNote = tool:
+    if tool.description == null
+    then tool.name
+    else "${tool.name} (${tool.description})";
+  installedAgentTools = defaultAgentTools ++ cfg.agentTools;
+  agentToolNote = lib.concatStringsSep ", " (map renderToolNote installedAgentTools);
+  runtimeNote = "Your runtime is a ${systemName} environment. By default, your environment includes these additional tools: ${agentToolNote}. The project local dev shell may provide additional tooling.";
 in {
   options.dotfiles.opencode = {
     openrouterApiKeyFile = lib.mkOption {
@@ -19,6 +52,39 @@ in {
       '';
       example = "/run/agenix/openrouter-api-key";
     };
+
+    agentTools = lib.mkOption {
+      type = lib.types.listOf (lib.types.submodule ({...}: {
+        options = {
+          package = lib.mkOption {
+            type = lib.types.package;
+            description = "Package to install for OpenCode agents.";
+          };
+
+          name = lib.mkOption {
+            type = lib.types.str;
+            description = "Short package or command name to mention in the agent prompt.";
+          };
+
+          description = lib.mkOption {
+            type = lib.types.nullOr lib.types.str;
+            default = null;
+            description = "Extremely brief purpose note for the prompt when the tool name is not obvious.";
+          };
+        };
+      }));
+      default = [];
+      defaultText = lib.literalExpression ''        with pkgs; [
+                { package = jujutsu; name = "jj"; description = "Jujutsu VCS"; }
+                { package = nodejs; name = "nodejs"; description = "JavaScript runtime"; }
+                { package = python3; name = "python3"; description = "Python runtime"; }
+                { package = ripgrep; name = "rg"; description = "fast code search"; }
+              ]'';
+      description = ''
+        Host-specific OpenCode agent tools and their prompt metadata. These are
+        appended to the module's built-in default tool list.
+      '';
+    };
   };
 
   config = lib.mkMerge [
@@ -29,7 +95,7 @@ in {
         # flakes/hm-modules/modules/opencode/skills/ and deployed to
         # ~/.config/opencode/skills/.
 
-        agents = (import ./primary-agents.nix) // (import ./subagents.nix);
+        agents = import ./primary-agents.nix {inherit runtimeNote;};
 
         # ============================================================================
         # CUSTOM COMMANDS - Run with /command-name
@@ -52,10 +118,7 @@ in {
         settings = import ./settings.nix {inherit lib pkgs;};
       };
 
-      # Runtime dependencies for MCP servers
-      home.packages = with pkgs; [
-        playwright-mcp # Official Microsoft Playwright MCP server for browser automation
-      ];
+      home.packages = map (tool: tool.package) installedAgentTools;
     }
 
     # OpenRouter API key configuration (only when openrouterApiKeyFile is set)

@@ -5,6 +5,60 @@
   titlecase,
 }: {
   default = final: prev: {
+    rodney = prev.buildGoModule rec {
+      pname = "rodney";
+      version = "0.4.0";
+
+      src = prev.fetchFromGitHub {
+        owner = "simonw";
+        repo = pname;
+        rev = "9e7ae93900bcb5316d02623706bc8861feec836f";
+        hash = "sha256-/iGsaMfK8zeUkTXwU63mAAb4VpsllG87EH8ycoFZs5k=";
+      };
+
+      vendorHash = "sha256-h4U43W3hLoF+p25/jNRaW8okeEzAZQEmKtwB5l4kGW4=";
+
+      subPackages = ["."];
+
+      doCheck = false;
+
+      meta = with prev.lib; {
+        description = "CLI for interacting with Chrome from agents and scripts";
+        homepage = "https://github.com/simonw/rodney";
+        license = licenses.asl20;
+        mainProgram = "rodney";
+        platforms = platforms.unix;
+      };
+    };
+
+    showboat = prev.buildGoModule rec {
+      pname = "showboat";
+      version = "0.6.1";
+
+      src = prev.fetchFromGitHub {
+        owner = "simonw";
+        repo = pname;
+        rev = "d531261b8faf0c388b02c7891d50f1f47c3e2b52";
+        hash = "sha256-yYK6j6j7OgLABHLOSKlzNnm2AWzM2Ig76RJypBsBnkI=";
+      };
+
+      vendorHash = "sha256-mGKxBRU5TPgdmiSx0DHEd0Ys8gsVD/YdBfbDdSVpC3U=";
+
+      ldflags = ["-X main.version=${version}"];
+
+      subPackages = ["."];
+
+      doCheck = false;
+
+      meta = with prev.lib; {
+        description = "CLI for creating executable documents that capture agent work";
+        homepage = "https://github.com/simonw/showboat";
+        license = licenses.asl20;
+        mainProgram = "showboat";
+        platforms = platforms.unix;
+      };
+    };
+
     # Patch for nix-openclaw to add ConditionEnvironment to node systemd service
     # This prevents home-manager activation timeouts
     nix-openclaw =

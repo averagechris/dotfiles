@@ -23,6 +23,17 @@
       enabled = false;
     };
 
+    chrome-dev-tools = {
+      type = "local";
+      command = [
+        (lib.getExe' pkgs.nodejs "npx")
+        "-y"
+        "chrome-devtools-mcp@latest"
+        "--autoConnect"
+      ];
+      enabled = false;
+    };
+
     datadog = {
       type = "remote";
       url = "https://mcp.datadoghq.com/api/unstable/mcp-server/mcp?toolsets=all";
@@ -39,6 +50,17 @@
     github = {
       type = "remote";
       url = "https://api.githubcopilot.com/mcp/";
+      enabled = false;
+    };
+
+    # Playwright - Browser automation MCP server
+    playwright = {
+      type = "local";
+      command = [
+        (lib.getExe' pkgs.nodejs "npx")
+        "-y"
+        "@playwright/mcp@latest"
+      ];
       enabled = false;
     };
 
