@@ -13810,11 +13810,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1775539540,
-        "narHash": "sha256-co0qutgo75sevHaSlD7PvPIl6hlqvtc1AeXEKzAPT+k=",
+        "lastModified": 1775850785,
+        "narHash": "sha256-8R4Ny6U0x8eP6BlS19gLoXv6adpTLOtWr5NokTgDRSM=",
         "owner": "~averagechris",
         "repo": "linear-cli",
-        "rev": "269467005a20851e560009ed5d4bf1982f214972",
+        "rev": "3724e01fc36fe120f774662133f66cd5eafcf12a",
         "type": "sourcehut"
       },
       "original": {
