@@ -177,6 +177,7 @@
     programs.opencode.enable = true;
     dotfiles.opencode.openrouterApiKeyFile = "/run/agenix/openrouter-api-key";
     programs.meganz.enable = true;
+    programs.helium.enable = true;
 
     # GPG configuration with automatic key import
     dotfiles.gpg.enable = true;

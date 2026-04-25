@@ -3,6 +3,7 @@
 ## Configuration
 
 - [anyrun](/docs/anyrun.md) - Anyrun launcher configuration and usage
+- [helium](/docs/helium.md) - Helium browser packaging and configuration on NixOS
 - [hyprland](/docs/hyprland.md) - Hyprland window manager configuration, keybindings, and features
 - [nixos](/docs/nixos.md) - General NixOS configuration notes
 - [opencode](/docs/opencode.md) - OpenCode module configuration, skills, and MCP integrations

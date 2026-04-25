@@ -9,6 +9,13 @@
     if pkgs.stdenv.hostPlatform.isDarwin
     then "macOS"
     else "NixOS";
+  nodejsCommandPackage = pkgs.writeShellApplication {
+    name = "nodejs";
+    runtimeInputs = [pkgs.nodejs];
+    text = ''
+      exec node "$@"
+    '';
+  };
   defaultAgentTools = with pkgs; [
     {
       package = jujutsu;
@@ -16,7 +23,7 @@
       description = "Jujutsu VCS";
     }
     {
-      package = nodejs;
+      package = nodejsCommandPackage;
       name = "nodejs";
       description = "JavaScript runtime";
     }
@@ -76,7 +83,7 @@ in {
       default = [];
       defaultText = lib.literalExpression ''        with pkgs; [
                 { package = jujutsu; name = "jj"; description = "Jujutsu VCS"; }
-                { package = nodejs; name = "nodejs"; description = "JavaScript runtime"; }
+                { package = <nodejs-wrapper-package>; name = "nodejs"; description = "JavaScript runtime"; }
                 { package = python313; name = "python3"; description = "Python 3.13 runtime"; }
                 { package = ripgrep; name = "rg"; description = "fast code search"; }
               ]'';

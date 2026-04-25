@@ -12,6 +12,7 @@ in
       ./alacritty.nix
       ./cosmic-portal-workarounds.nix
       ./zoom.nix
+      ./helium.nix
       ./firefox.nix
       ./linux_desktop.nix
       ./hyprland
