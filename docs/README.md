@@ -9,6 +9,7 @@
 - [opencode](/docs/opencode.md) - OpenCode module configuration, skills, and MCP integrations
 - [gpg-signing](/docs/gpg-signing.md) - GPG signing setup for git and jj commits with agenix
 - [shell](/docs/shell.md) - Shell module configuration and PATH precedence
+- [suremac](/docs/suremac.md) - macOS host settings, including Spaces desktop shortcuts
 
 ## Troubleshooting
 

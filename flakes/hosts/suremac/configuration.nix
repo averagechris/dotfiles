@@ -182,6 +182,27 @@
     defaults.spaces = {
       spans-displays = false;
     };
+    defaults.CustomUserPreferences."com.apple.symbolichotkeys" = {
+      AppleSymbolicHotKeys = {
+        # Mission Control: move left/right a Space. Keep these enabled so
+        # keyboard-synthesizing tools like Logi Options can use stable arrow
+        # shortcuts instead of layout-sensitive letter shortcuts.
+        "79" = {
+          enabled = true;
+          value = {
+            type = "standard";
+            parameters = [65535 123 262144]; # Control + Left Arrow
+          };
+        };
+        "81" = {
+          enabled = true;
+          value = {
+            type = "standard";
+            parameters = [65535 124 262144]; # Control + Right Arrow
+          };
+        };
+      };
+    };
     defaults.trackpad = {
       ActuationStrength = 1;
       Clicking = true;
@@ -221,6 +242,12 @@
       gpg.enable = true;
     };
     dotfiles.gui.enable = true;
+    dotfiles.macosHotkeys.enable = true;
+    dotfiles.gui.terminal = {
+      package = lib.mkDefault pkgs.wezterm;
+      args = lib.mkDefault [];
+      binPath = lib.mkDefault "${pkgs.wezterm}/bin/wezterm";
+    };
     programs.git.settings = {
       user.name = "Chris Cummings";
       user.email = "chris.cummings@sureapp.com";

@@ -17,6 +17,7 @@ in
       ./linux_desktop.nix
       ./hyprland
       ./kitty.nix
+      ./macos-hotkeys.nix
       ./zed.nix
       ./windsurf.nix
       ./wezterm
