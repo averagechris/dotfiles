@@ -188,6 +188,5 @@ in {
       "text/html" = ["helium.desktop"];
       "application/xhtml+xml" = ["helium.desktop"];
     };
-
   };
 }

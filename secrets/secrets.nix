@@ -22,6 +22,7 @@ in {
 
   # Shared secrets (accessible from all machines)
   "openrouter-api-key.age".publicKeys = all-keys;
+  "circleci-token.age".publicKeys = all-keys;
   "gpg-private-key.age".publicKeys = all-keys;
   "gpg-key-id.age".publicKeys = all-keys;
 

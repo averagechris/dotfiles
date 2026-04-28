@@ -60,6 +60,18 @@ in {
       example = "/run/agenix/openrouter-api-key";
     };
 
+    circleciTokenFile = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      description = ''
+        Path to a file containing the CircleCI API token.
+        When set, the CIRCLECI_TOKEN environment variable will be exported in
+        the shell, allowing CircleCI CLI and OpenCode CircleCI integrations to
+        authenticate non-interactively.
+      '';
+      example = "/run/agenix/circleci-token";
+    };
+
     agentTools = lib.mkOption {
       type = lib.types.listOf (lib.types.submodule ({...}: {
         options = {
@@ -154,6 +166,25 @@ in {
         # OpenRouter API key for opencode (set by dotfiles.opencode.openrouterApiKeyFile)
         if [[ -r "${cfg.openrouterApiKeyFile}" ]]; then
           export OPENROUTER_API_KEY="$(cat "${cfg.openrouterApiKeyFile}")"
+        fi
+      '';
+    })
+
+    # CircleCI token configuration (only when circleciTokenFile is set)
+    (lib.mkIf (cfg.circleciTokenFile != null) {
+      # Export CIRCLECI_TOKEN in shell initialization
+      # Using initContent/initExtra to read the file at shell startup time
+      programs.zsh.initContent = lib.mkAfter ''
+        # CircleCI token for opencode (set by dotfiles.opencode.circleciTokenFile)
+        if [[ -r "${cfg.circleciTokenFile}" ]]; then
+          export CIRCLECI_TOKEN="$(cat "${cfg.circleciTokenFile}")"
+        fi
+      '';
+
+      programs.bash.initExtra = lib.mkAfter ''
+        # CircleCI token for opencode (set by dotfiles.opencode.circleciTokenFile)
+        if [[ -r "${cfg.circleciTokenFile}" ]]; then
+          export CIRCLECI_TOKEN="$(cat "${cfg.circleciTokenFile}")"
         fi
       '';
     })

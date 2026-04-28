@@ -9,6 +9,7 @@ This repository manages OpenCode through the home-manager module at `flakes/hm-m
 - repo-managed skills deployed into `~/.config/opencode/skills/`
 - MCP server definitions written into the generated OpenCode config
 - optional `OPENROUTER_API_KEY` shell export via `dotfiles.opencode.openrouterApiKeyFile`
+- optional `CIRCLECI_TOKEN` shell export via `dotfiles.opencode.circleciTokenFile`
 - agent-specific runtime packages and prompt metadata exposed via `dotfiles.opencode.agentTools`
 
 ## Agent-exposed tools
@@ -58,8 +59,10 @@ module combines those with the built-in default tool list.
 ### Host-specific additions
 
 Use `dotfiles.opencode.agentTools` for tools that should only be available to
-agents on particular hosts. For example, `suremac` adds Databricks CLI,
-GitHub CLI, Rodney, Showboat, and the Linear CLI:
+agents on particular hosts. For example, `suremac` adds the CircleCI CLI,
+Databricks CLI, GitHub CLI, Rodney, Showboat, and the Linear CLI. On Darwin,
+this host-specific list avoids relying on unrelated system packages for agent
+workflows:
 
 ```nix
 dotfiles.opencode.agentSupportPackages = with pkgs; [
@@ -67,6 +70,7 @@ dotfiles.opencode.agentSupportPackages = with pkgs; [
 ];
 
 dotfiles.opencode.agentTools = with pkgs; [
+  { package = circleci-cli; name = "circleci"; description = "CircleCI CLI"; }
   { package = databricks-cli; name = "databricks-cli"; }
   { package = gh; name = "gh"; description = "GitHub CLI"; }
   { package = rodney; name = "rodney"; description = "Chrome automation CLI"; }
@@ -84,8 +88,9 @@ example:
 
 > Your runtime is a macOS environment. By default, your environment includes
 > these additional tools: jj (Jujutsu VCS), nodejs (JavaScript runtime),
-> python3 (Python 3.13 runtime), rg (fast code search), databricks-cli,
-> gh (GitHub CLI), rodney (Chrome automation CLI),
+> python3 (Python 3.13 runtime), rg (fast code search),
+> circleci (CircleCI CLI), databricks-cli, gh (GitHub CLI), rodney
+> (Chrome automation CLI),
 > showboat (work documentation CLI), linear (Linear CLI). The project local dev
 > shell may provide additional tooling.
 
@@ -131,3 +136,17 @@ dotfiles.opencode.openrouterApiKeyFile = "/run/agenix/openrouter-api-key";
 ```
 
 The module exports `OPENROUTER_API_KEY` from that file in both Bash and Zsh shell initialization.
+
+## CircleCI token
+
+To provide a CircleCI token non-interactively, set:
+
+```nix
+dotfiles.opencode.circleciTokenFile = "/run/agenix/circleci-token";
+```
+
+The module exports `CIRCLECI_TOKEN` from that file in both Bash and Zsh shell initialization. This supports the `circleci` CLI and the optional OpenCode CircleCI MCP integration when enabled.
+
+On `suremac`, this relies on nix-darwin agenix secret materialization. The host
+config sets explicit `age.identityPaths` for the user's SSH keys so Darwin can
+decrypt shared secrets into `/run/agenix/` during activation.

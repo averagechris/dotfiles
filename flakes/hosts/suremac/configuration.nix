@@ -1,14 +1,36 @@
 {
+  config,
   pkgs,
   inputs,
   lib,
   overlays,
   ...
 }: {
+  age.identityPaths = ["/Users/chris/.ssh/id_ed25519" "/Users/chris/.ssh/id_rsa"];
+
+  age.secrets = {
+    circleci-token = {
+      file = ../../../secrets/circleci-token.age;
+      owner = "chris";
+      mode = "0400";
+    };
+
+    gpg-private-key = {
+      file = ../../../secrets/gpg-private-key.age;
+      owner = "chris";
+      mode = "0400";
+    };
+
+    gpg-key-id = {
+      file = ../../../secrets/gpg-key-id.age;
+      owner = "chris";
+      mode = "0400";
+    };
+  };
+
   nixpkgs.config.allowUnfree = true;
   environment.systemPackages = with pkgs; [
     git
-    nix-prefetch-scripts
     neovim
     which
   ];
@@ -214,10 +236,16 @@
       }
     ];
     programs.opencode.enable = true;
+    dotfiles.opencode.circleciTokenFile = "/run/agenix/circleci-token";
     dotfiles.opencode.agentSupportPackages = with pkgs; [
       python313Packages.databricks-sql-connector
     ];
     dotfiles.opencode.agentTools = with pkgs; [
+      {
+        package = circleci-cli;
+        name = "circleci";
+        description = "CircleCI CLI";
+      }
       {
         package = databricks-cli;
         name = "databricks-cli";
