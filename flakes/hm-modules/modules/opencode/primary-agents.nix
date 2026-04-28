@@ -2,21 +2,16 @@
   build = ''
     ---
     description: Build agent - full development and code change workflows
-    mode: primary
+    mode: all
     temperature: 0.0
-    maxSteps: 120
-    tools:
-      bash: true
-      write: true
-      edit: true
-      read: true
-      glob: true
-      grep: true
-      list: true
-      patch: true
-      webfetch: true
-      skill: true
+    steps: 120
     permission:
+      read: "allow"
+      edit: "allow"
+      glob: "allow"
+      grep: "allow"
+      list: "allow"
+      webfetch: "allow"
       bash:
         "*": "ask"
         "alejandra*": "allow"
@@ -35,34 +30,17 @@
         "wc*": "allow"
         "which*": "allow"
         "cargo*": "allow"
-        "git *": "ask"
+        "gh *": "allow"
+        "gh auth*": "ask"
+        "gh org*": "ask"
+        "gh issue*": "ask"
+        "gh repo*": "ask"
+        "jj *": "allow"
         "jj abandon*": "ask"
         "jj bookmark delete*": "ask"
-        "jj bookmark list*": "allow"
         "jj bookmark move*": "ask"
         "jj bookmark set*": "ask"
         "jj commit*": "ask"
-        "jj config*": "allow"
-        "jj describe*": "allow"
-        "jj diff*": "allow"
-        "jj files*": "allow"
-        "jj git fetch*": "ask"
-        "jj git push*": "ask"
-        "jj log*": "allow"
-        "jj new*": "allow"
-        "jj op log*": "allow"
-        "jj resolve --list*": "allow"
-        "jj resolve*": "ask"
-        "jj show*": "allow"
-        "jj split*": "ask"
-        "jj squash*": "ask"
-        "jj status*": "allow"
-        "jj lint*": "allow"
-        "jj rebase*": "ask"
-        "jj ship*": "ask"
-        "jj sync*": "ask"
-        "jj tug*": "allow"
-        "jj undo*": "ask"
         "just *": "allow"
         "mypy*": "allow"
         "nix*": "allow"
@@ -77,7 +55,9 @@
       skill:
         "*": "allow"
       task:
-        "*": "allow"
+        "*": "deny"
+        "build": "allow"
+        "explore": "allow"
     ---
 
     You are the Build primary agent. Use this agent for full development and code change workflows.
@@ -90,18 +70,14 @@
     description: Plan agent - analysis and planning (read-only)
     mode: primary
     temperature: 0.0
-    maxSteps: 50
-    tools:
-      bash: true
-      write: false
-      edit: false
-      read: true
-      glob: true
-      grep: true
-      list: true
-      webfetch: true
-      skill: true
+    steps: 50
     permission:
+      read: "allow"
+      edit: "deny"
+      glob: "allow"
+      grep: "allow"
+      list: "allow"
+      webfetch: "allow"
       bash:
         "*": "deny"
         "cat*": "allow"
@@ -131,7 +107,9 @@
       skill:
         "*": "allow"
       task:
-        "*": "allow"
+        "*": "deny"
+        "build": "allow"
+        "explore": "allow"
     ---
 
     You are the Plan primary agent. Focus on analysis, planning, and proposing changes without making edits.
