@@ -35,6 +35,7 @@
         "gh org*": "ask"
         "gh issue*": "ask"
         "gh repo*": "ask"
+        "linear *": "allow"
         "jj *": "allow"
         "jj abandon*": "ask"
         "jj bookmark delete*": "ask"
@@ -52,6 +53,8 @@
         "pytest*": "allow"
         "ruff*": "allow"
         "statix*": "allow"
+        "surecraft *": "allow"
+        "surecraft-*": "allow"
       skill:
         "*": "allow"
       task:

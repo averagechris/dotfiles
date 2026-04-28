@@ -119,8 +119,21 @@ This repo also ships a small set of local skills for common tool-specific
 workflows. Current examples include:
 
 - `jj-vcs`
+- `changes-review-core`
+- `github-pr-review`
 - `linear-cli`
 - `databricks-cli`
+
+The PR review workflow is split into a reusable core review skill plus a
+GitHub-specific wrapper. Supporting custom tools live under `.opencode/tools/`
+and currently include:
+
+- `review-artifact-generate` - draft artifact bootstrapper from GitHub metadata and diff text
+- `review-artifact-write` - strict artifact validation and temp-file persistence
+- `review-artifact-render` - compact terminal digest renderer for persisted artifacts
+- `review-github-post` - explicit-confirmation batched GitHub review submission
+
+See [opencode-pr-review](/docs/opencode-pr-review.md) for the full workflow and design notes.
 
 The `databricks-cli` skill explains an important CLI detail: there is no
 top-level `databricks sql` subcommand in the current official CLI. Agents
