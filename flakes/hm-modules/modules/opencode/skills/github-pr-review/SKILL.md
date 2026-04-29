@@ -15,16 +15,20 @@ This skill is a GitHub-specific wrapper around `changes-review-core`.
 - Accept a GitHub PR URL as the normal entry point.
 - Use the `gh` CLI for GitHub metadata and review actions.
 - Keep the workflow terminal-first.
-- Surface any existing PR explainer link when present, but do not depend on it.
+- Detect, fetch, and use any existing PR explainer link as supporting context,
+  while verifying its claims against code/diff/local checkout.
 - Include a reviewer-oriented walkthrough that helps the user understand the
   changes before asking them to approve or post comments.
+- Include an explicit adversarial review pass that pressure-tests assumptions,
+  alternatives, and long-term policy/API implications.
 - Draft comments first and only post when explicitly requested.
 - Default to local PR checkout unless the user explicitly says not to.
 - Treat `review-artifact-generate`, `review-artifact-write`,
   `review-artifact-render`, and `review-github-post` as OpenCode tools, not
   shell commands.
-- When local checkout is used in a `jj` repo, prefer `jj` for local change
-  inspection and branch/bookmark workflows.
+- When local inspection is used in a `jj` repo, prefer `jj` for workspace,
+  status, log, show, and diff operations. Avoid git commands unless the user
+  explicitly asks for git or no practical `jj`/`gh` alternative exists.
 - Only treat local code as review evidence after verifying that the checked-out
   revision matches the PR head SHA.
 
@@ -44,8 +48,9 @@ Useful optional input:
 
 1. Parse the PR URL.
 2. Use `gh` to fetch PR metadata and changed-code context.
-3. By default, attempt to check out the PR locally unless the user explicitly
-   opts out.
+3. By default, attempt to inspect the PR locally unless the user explicitly opts
+   out. In jj-managed repositories, use `jj` for workspace inspection and avoid
+   git-based checkout commands by default.
 4. Verify the local checkout against the PR head SHA before using local reads as
    review evidence.
 5. Prefer generating a draft artifact JSON payload with
@@ -59,8 +64,10 @@ Useful optional input:
    - PR body
    - linked issue or ticket references when available
    - commit history and commit messages
-7. Detect whether the PR body includes a link to an existing PR explainer or
-   similar review artifact and surface it in the digest.
+7. Detect whether the PR body or comments include a link to an existing PR
+   explainer, especially `pr-visual-explainer` blocks. Fetch the explainer and
+   use it as supporting context for the walkthrough and file tour, but verify
+   its claims against the code/diff/local checkout.
 8. Inspect locally using repo-native tools, preferring `jj` when the local repo
    is jj-managed.
 9. Use remote GitHub metadata and diff as supporting context and as a cross-check
@@ -69,13 +76,14 @@ Useful optional input:
    when needed.
 11. Produce a human change walkthrough before comment triage so the user can
     understand the PR rather than only seeing defects.
-12. Persist the structured review artifact via the `review-artifact-write` tool.
-13. Build a compact terminal digest and draft posting plan from the artifact via
+12. Run an adversarial review pass before finalizing findings.
+13. Persist the structured review artifact via the `review-artifact-write` tool.
+14. Build a compact terminal digest and draft posting plan from the artifact via
     the `review-artifact-render` tool.
-14. After evidence is stable, the walkthrough is presented, and the digest is
+15. After evidence is stable, the walkthrough is presented, and the digest is
     ready, use the `functions.question` tool to work through candidate comments
     with the user.
-15. Only if explicitly requested after that review loop, publish the review with
+16. Only if explicitly requested after that review loop, publish the review with
      the `review-github-post` tool, passing an explicit final review state.
 
 ### Tool invocation rule
@@ -103,6 +111,22 @@ Use `gh` to gather, at minimum:
 - commits
 - diff / patch context
 - existing review state and discussion context when relevant
+- PR explainer links from the PR body or comments when present
+
+### PR explainer handling
+
+If the PR contains a visual explainer link or similar generated explainer:
+
+- fetch it with `webfetch` when available, or with `gh`/HTTP tooling if needed
+- extract the change summary, sequence/data-flow diagrams, file grouping, and
+  stated risk areas
+- use it to seed the walkthrough and identify review-order hotspots
+- explicitly verify important explainer claims against the diff/local code
+- mention in the digest which explainer claims were useful and which were not
+  independently verified
+
+The explainer is a map, not evidence. Code, tests, and diff/local checkout remain
+the source of truth.
 
 When available, also gather linked issue or ticket references. If the issue
 system appears to be Linear or another supported tracker and the relevant tools
@@ -121,11 +145,32 @@ Only skip local checkout when:
 If local checkout fails or is unavailable, continue in explicit remote-only
 degraded mode.
 
-If local checkout is used:
+If local inspection is used:
 
-- prefer `jj` in jj-managed repos
+- prefer `jj` in jj-managed repos for `status`, `log`, `show`, `diff`, bookmark,
+  and workspace checks
+- do not run git commands in jj-managed repos unless the user explicitly asks
+  for git or there is no practical `jj`/`gh` alternative
+- do not use `gh pr checkout` in jj-managed repos as a default path because it
+  mutates git refs/worktree behind jj; use remote diff/metadata plus verified
+  local files instead, or explain and ask before a checkout/switch
 - use local diff/log/show tools to inspect context more deeply
 - avoid mutating VCS state more than needed for inspection
+
+### jj review command preferences
+
+In a jj-managed repository (`.jj/` present), use these before reaching for git:
+
+- workspace status: `jj status`
+- commit graph/context: `jj log`
+- change details: `jj show <rev>`
+- local diff: `jj diff -r <rev>` or `jj diff --from <base> --to <head>` when a
+  local rev is available
+- bookmarks/remotes: `jj bookmark list`
+
+Use `gh pr view` and `gh pr diff` for remote PR metadata and patch text. Only
+use git commands if explicitly requested by the user or after explaining why jj
+cannot do the needed operation safely.
 
 ### Evidence integrity rule
 
@@ -221,6 +266,36 @@ Use this shape:
 Keep it compact by default. If the user asks to understand a specific area,
 pause the review flow and drill into that area before finalizing comments.
 
+### Adversarial review pass
+
+After the walkthrough and before finalizing comments, switch into adversarial
+review mode. Be intentionally skeptical and try to falsify the PR's approach.
+This is not about being harsh; it is about surfacing better designs and hidden
+risks.
+
+Ask and answer, concretely:
+
+1. **Wrong problem?** Does the PR solve the symptom instead of the underlying
+   product/security/API problem?
+2. **Narrower fix?** What is the smallest safer change that would satisfy the
+   intent?
+3. **Alternative designs?** Name 2-3 plausible alternatives and their tradeoffs.
+4. **Policy/API commitment?** What long-term authorization, API, schema, or
+   operational policy is this PR introducing?
+5. **Other paths?** What other endpoints, commands, jobs, or repositories can
+   exercise the same behavior without touching the changed lines?
+6. **Failure modes?** What happens if the central assumption is wrong? Who gets
+   unauthorized access, broken output, bad data, or operational toil?
+7. **Test blind spots?** Which behavior looks covered but is only indirectly or
+   accidentally exercised?
+
+Include a short **Adversarial pressure-test** section in the terminal digest with:
+
+- best alternative approach
+- key assumption to verify
+- strongest reason to accept the current approach
+- strongest reason to request a change
+
 ### Terminal digest sections
 
 1. **PR summary**
@@ -234,24 +309,40 @@ pause the review flow and drill into that area before finalizing comments.
    - what the PR claims to do
    - any mismatch risk between stated intent and implementation
 
-3. **Change hotspots**
+3. **PR explainer context**
+   - explainer URL when present
+   - useful explainer claims
+   - claims that still needed code verification
+
+4. **Change walkthrough**
+   - review-order file tour
+   - important data/control flow
+   - user-visible or API behavior changes
+
+5. **Adversarial pressure-test**
+   - best alternative approach
+   - key assumption to verify
+   - strongest reason to accept current approach
+   - strongest reason to ask for changes
+
+6. **Change hotspots**
    - high-risk files or areas
    - files likely to deserve inline comments
 
-4. **Review findings**
+7. **Review findings**
    - grouped by severity and target
    - reference file paths and line ranges
    - avoid large code dumps
    - allow small selected excerpts only when especially useful
 
-5. **Draft posting plan**
+8. **Draft posting plan**
     - proposed inline comments
     - proposed top-level review text
     - recommended review state: `comment`, `approve`, or `request changes`
     - reminder that final review state must be confirmed by the user
     - current per-comment triage state when comment triage has already happened
 
-6. **External explainer**
+9. **External explainer**
    - if an explainer link exists, surface it clearly as supplemental context
 
 ## Posting behavior

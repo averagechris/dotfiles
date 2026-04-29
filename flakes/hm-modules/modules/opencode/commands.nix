@@ -19,31 +19,50 @@
 
     1. Use `gh` to fetch the PR metadata needed for the
        `review-artifact-generate` tool.
-    2. By default, attempt to check out the PR locally unless the user
-       explicitly says not to.
-    3. Verify the local checkout matches the PR head SHA before treating local
+    2. By default, attempt to inspect the PR locally unless the user explicitly
+       says not to. If the repository has `.jj/`, load `jj-vcs` and prefer `jj`
+       for workspace/status/log/show/diff operations. Do not use git commands in
+       jj-managed repositories unless the user explicitly asks for git or there
+       is no practical jj/gh alternative.
+    3. If local checkout is needed in a jj repo, avoid `gh pr checkout` unless
+       the user approves git-based mutation. Prefer non-destructive inspection:
+       `gh pr diff`, `gh pr view`, `jj status`, `jj log`, `jj show`, and local
+       file reads from a verified worktree. If a checkout/revision switch is
+       unavoidable, explain the jj-safe plan first.
+    4. Verify the local checkout/worktree matches the PR head SHA before treating local
        code as review evidence.
-    4. Use `gh pr diff` to fetch the unified diff text.
-    5. Pass the PR metadata JSON, diff text, and an explicit local repo path
+    5. Detect PR explainer links in the PR body or comments, including
+       `pr-visual-explainer` blocks. Fetch and use the explainer as supporting
+       context for the walkthrough and review-order file tour. Do not treat it
+       as authoritative; verify claims against code/diff/local checkout.
+    6. Use `gh pr diff` to fetch the unified diff text.
+    7. Pass the PR metadata JSON, diff text, and an explicit local repo path
        when local checkout context is available into the
        `review-artifact-generate` tool.
-    6. Review and refine the generated artifact using `changes-review-core`.
-    7. Produce a human change walkthrough before comment triage. Explain the PR
+    8. Review and refine the generated artifact using `changes-review-core`.
+    9. Produce a human change walkthrough before comment triage. Explain the PR
        as a reviewer-oriented tour, not just a defect list:
        - what changed and why, in dependency / execution order
        - the main files or modules and how data flows between them
        - behavior changes, API or CLI surface changes, and test coverage
        - risk areas and what evidence supports or reduces each risk
        - 2-5 suggested deep-dive questions the user can ask next
-    8. Persist the refined artifact with the `review-artifact-write` tool.
-    9. Render the default terminal digest with the `review-artifact-render` tool.
-    10. Use the `functions.question` tool to work through every candidate
+    10. Run an explicit adversarial review pass before finalizing findings. Be
+       intentionally skeptical and ask: what simpler design could solve this,
+       what policy/API is being introduced, what other call paths exercise it,
+       what hidden assumptions could be wrong, what failures would be expensive,
+       and what alternative implementation would reduce risk? Include the best
+       alternatives/tradeoffs in the digest even when they do not become
+       comments.
+    11. Persist the refined artifact with the `review-artifact-write` tool.
+    12. Render the default terminal digest with the `review-artifact-render` tool.
+    13. Use the `functions.question` tool to work through every candidate
         comment with the user after the evidence is stable. For each candidate
         comment, offer explicit choices: approve as-is, refine wording, change
         severity/target, convert inline/top-level, reject/drop, or hold for
         later. Apply the user's choices to the artifact before posting.
-    11. Stop there unless the user explicitly asks to post.
-    12. If the user explicitly asks to post, call the `review-github-post` tool
+    14. Stop there unless the user explicitly asks to post.
+    15. If the user explicitly asks to post, call the `review-github-post` tool
         with the artifact path and an explicit final review state. Do not craft
         a separate `gh api` review payload unless the user explicitly forbids
         the posting tool.
@@ -58,10 +77,12 @@
 
     1. PR summary and stated intent
     2. linked issue or ticket context when available
-    3. walkthrough of the changes in review order
-    4. change hotspots and risky files
-    5. findings classified by severity and comment target
-    6. a complete draft posting plan with:
+    3. PR explainer context when available, with code-verified caveats
+    4. walkthrough of the changes in review order
+    5. adversarial pressure-test: assumptions, alternatives, and tradeoffs
+    6. change hotspots and risky files
+    7. findings classified by severity and comment target
+    8. a complete draft posting plan with:
        - inline comments
        - top-level review text
        - suggested final review state

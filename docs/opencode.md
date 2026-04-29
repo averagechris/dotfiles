@@ -131,9 +131,13 @@ workflows. Current examples include:
 - `databricks-cli`
 
 The PR review workflow is split into a reusable core review skill plus a
-GitHub-specific wrapper. Supporting custom tools live under `.opencode/tools/`
-and are installed through `programs.opencode.tools`, so OpenCode can also load
-them globally from `~/.config/opencode/tools/`. They currently include:
+GitHub-specific wrapper. Supporting custom tools live under `.opencode/tools/`.
+They are installed globally through `programs.opencode.tools`, then materialized
+as writable files in `~/.config/opencode/tools/` so TypeScript imports resolve
+from the user config directory instead of `/nix/store`. The module also writes a
+minimal `~/.config/opencode/package.json` declaring `@opencode-ai/plugin`; this
+lets OpenCode populate `~/.config/opencode/node_modules` before importing custom
+tools. The tools currently include:
 
 - `review-artifact-generate` - draft artifact bootstrapper from GitHub metadata and diff text
 - `review-artifact-write` - strict artifact validation and temp-file persistence

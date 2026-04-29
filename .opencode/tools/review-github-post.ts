@@ -1,5 +1,7 @@
 import { tool } from "@opencode-ai/plugin"
-import { readFile } from "node:fs/promises"
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
+import { tmpdir } from "node:os"
+import path from "node:path"
 
 type ReviewLocation = {
   file: string
@@ -124,12 +126,21 @@ export default tool({
       ...(commitId ? { commit_id: commitId } : {}),
     }
 
-    const result = await Bun.$`
-      gh api \
-        --method POST \
-        repos/${owner}/${repo}/pulls/${pullNumber}/reviews \
-        --input -
-    `.stdin(JSON.stringify(payload)).text()
+    const dir = await mkdtemp(path.join(tmpdir(), "opencode-review-post-"))
+    const inputPath = path.join(dir, "payload.json")
+
+    let result = ""
+    try {
+      await writeFile(inputPath, JSON.stringify(payload), "utf8")
+      result = await Bun.$`
+        gh api \
+          --method POST \
+          repos/${owner}/${repo}/pulls/${pullNumber}/reviews \
+          --input ${inputPath}
+      `.text()
+    } finally {
+      await rm(dir, { force: true, recursive: true })
+    }
 
     return JSON.stringify(
       {

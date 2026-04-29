@@ -40,6 +40,12 @@
   ];
   cfg = config.dotfiles.opencode;
   reviewToolsPath = ../../../../.opencode/tools;
+  opencodeNpmVersion = builtins.head (lib.splitString "+" (lib.getVersion pkgs.opencode));
+  opencodePackageJson = builtins.toJSON {
+    dependencies = {
+      "@opencode-ai/plugin" = opencodeNpmVersion;
+    };
+  };
   opencodePackage =
     if pkgs.stdenv.hostPlatform.isLinux
     then
@@ -150,8 +156,10 @@ in {
 
         commands = import ./commands.nix;
 
-        # Repo-managed PR review helpers. Use the home-manager OpenCode tools
-        # option so these are installed as first-class OpenCode custom tools.
+        # Repo-managed PR review helpers. The Home Manager OpenCode module
+        # registers these as first-class custom tools; the activation hook below
+        # replaces the store symlink with real files so TypeScript import
+        # resolution can find ~/.config/opencode/node_modules.
         tools = reviewToolsPath;
 
         # ============================================================================
@@ -170,6 +178,25 @@ in {
       };
 
       home.packages = (map (tool: tool.package) installedAgentTools) ++ cfg.agentSupportPackages;
+
+      # Custom tools import @opencode-ai/plugin. OpenCode waits for dependencies
+      # before importing tools, but the current Nix-packaged build only reifies
+      # dependencies already declared in the config directory. Declare the plugin
+      # here so ~/.config/opencode/node_modules is populated on Linux and Darwin.
+      xdg.configFile."opencode/package.json".text = opencodePackageJson;
+
+      # Project-local OpenCode tools are only visible when opencode is launched
+      # from this dotfiles checkout. `programs.opencode.tools` registers the
+      # tools with OpenCode, then this activation materializes them as real files
+      # (not symlinks into /nix/store) so TypeScript tool imports resolve against
+      # ~/.config/opencode/node_modules.
+      home.activation.install-opencode-review-tools = lib.hm.dag.entryAfter ["writeBoundary"] ''
+        target="${config.home.homeDirectory}/.config/opencode/tools"
+        ${pkgs.coreutils}/bin/rm -rf "$target"
+        ${pkgs.coreutils}/bin/mkdir -p "$(${pkgs.coreutils}/bin/dirname "$target")"
+        ${pkgs.coreutils}/bin/cp -R "${reviewToolsPath}" "$target"
+        ${pkgs.coreutils}/bin/chmod -R u+w "$target"
+      '';
     }
 
     # OpenRouter API key configuration (only when openrouterApiKeyFile is set)

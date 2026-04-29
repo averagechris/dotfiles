@@ -65,6 +65,13 @@ them with `type`, `command -v`, or `--help` in Bash. If the tools are missing,
 the workflow should stop and report that the review tools are not loaded rather
 than inventing a shell-based fallback artifact.
 
+The dotfiles module installs these tools into the global
+`~/.config/opencode/tools/` directory as real files rather than `/nix/store`
+symlinks, and declares `@opencode-ai/plugin` in
+`~/.config/opencode/package.json`. This keeps OpenCode's dependency reification
+and TypeScript module resolution pointed at the writable user config directory on
+both Linux and Darwin.
+
 The preferred terminal presentation layer is the companion
 `review-artifact-render` tool.
 
@@ -101,15 +108,18 @@ The current intended GitHub review flow is:
 1. fetch PR metadata with `gh`
 2. check out the PR locally by default unless the user opts out
 3. verify the local checkout matches the PR head SHA
-4. fetch unified diff text with `gh pr diff`
-5. generate a draft artifact JSON payload with `review-artifact-generate`
-6. refine the artifact with deeper analysis as needed
-7. present a human walkthrough of the changes before comment triage
-8. persist it with `review-artifact-write`
-9. render it with `review-artifact-render`
-10. use the `functions.question` tool to triage candidate comments with the user
-11. persist the triaged artifact if comments changed
-12. only post after explicit confirmation using `review-github-post`
+4. detect and fetch PR explainer links when present, especially
+   `pr-visual-explainer` blocks
+5. fetch unified diff text with `gh pr diff`
+6. generate a draft artifact JSON payload with `review-artifact-generate`
+7. refine the artifact with deeper analysis as needed
+8. present a human walkthrough of the changes before comment triage
+9. run an adversarial review pass over assumptions, alternatives, and tradeoffs
+10. persist it with `review-artifact-write`
+11. render it with `review-artifact-render`
+12. use the `functions.question` tool to triage candidate comments with the user
+13. persist the triaged artifact if comments changed
+14. only post after explicit confirmation using `review-github-post`
 
 The generator is intentionally conservative:
 
@@ -140,6 +150,9 @@ The renderer reads the persisted artifact by path and produces a default digest
 view focused on:
 
 - summary
+- PR explainer context when available
+- change walkthrough
+- adversarial pressure-test
 - hotspots
 - findings
 - draft posting plan
@@ -164,6 +177,12 @@ Only skip local checkout when:
 
 When local checkout is used in a jj-managed repo, the workflow should prefer
 `jj` for local inspection.
+
+In jj-managed repositories, agents should not default to git commands for review
+inspection. Prefer `jj status`, `jj log`, `jj show`, `jj diff`, and
+`jj bookmark list`, plus `gh pr view` / `gh pr diff` for remote PR metadata and
+patch text. Avoid `gh pr checkout` by default because it mutates git
+refs/worktrees behind jj; ask before using a git-based checkout path.
 
 Local code should not be used as review evidence until the checked-out revision
 is verified against the PR head SHA.
@@ -213,6 +232,12 @@ cover the change story, file tour in execution/dependency order, main data or
 control flow, behavior surface, test confidence, and suggested follow-up deep
 dives.
 
+The workflow should also include an explicit adversarial review pass before
+comment triage. It should ask whether the PR solves the right problem, whether a
+narrower fix exists, what alternative designs would reduce risk, what long-term
+authorization/API/schema policy is being introduced, what other code paths can
+exercise the behavior, and which tests provide false confidence.
+
 Typical outcomes per comment:
 
 - approve as-is
@@ -238,8 +263,10 @@ The first implementation focuses on a structured terminal digest rather than a
 custom HTML view.
 
 If a PR already contains a link to an existing explainer artifact, the workflow
-should surface it as supplemental context, but the review flow itself remains
-terminal-native.
+should fetch and use it as supplemental context for the walkthrough and hotspot
+ordering. The explainer is not authoritative: verify important claims against
+the diff or local checkout, and note any useful-but-unverified explainer claims
+in the digest.
 
 To keep token usage under control, the terminal digest should stay compact:
 
