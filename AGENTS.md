@@ -75,6 +75,7 @@ darwin-rebuild switch --flake .#suremac
 See [docs/README.md](/docs/README.md) for documentation index, including:
 - [nixos.md](/docs/nixos.md) - General NixOS configuration notes
 - [gpg-signing.md](/docs/gpg-signing.md) - GPG signing setup for git and jj commits with agenix
+- [opencode-pr-review.md](/docs/opencode-pr-review.md) - OpenCode PR review workflow, artifact tools, and posting flow
 
 See `docs/troubleshooting/` for common issues and solutions.
 
@@ -196,6 +197,10 @@ push-lints = ["alejandra --check .", "statix check"]
 ### jj-VCS Skill Sync
 
 **Important**: If you modify any jj configuration in this repository (e.g., `.jj-lint.toml`, `.jj/repo/config.toml`, aliases, or lint commands), you **must** update the `jj-vcs` skill accordingly. The skill is defined in `flakes/hm-modules/modules/opencode/skills.nix` and deployed via home-manager to `~/.config/opencode/skills/jj-vcs/SKILL.md`.
+
+## OpenCode PR Review Workflow
+
+The `/review-pr` command and `github-pr-review` / `changes-review-core` skills are repo-managed in `flakes/hm-modules/modules/opencode/`. The artifact helpers (`review-artifact-generate`, `review-artifact-write`, `review-artifact-render`, and `review-github-post`) are OpenCode tools, not shell executables. Do not probe them with `type` or `command -v`; call them as tools. The module deploys `.opencode/tools` into `~/.config/opencode/tools` so the review workflow is available outside this dotfiles checkout. PR reviews must include a compact walkthrough of the changes before comment triage, then walk each candidate comment through approve/refine/change placement/drop/hold decisions before posting.
 
 ## Changelog Policy
 

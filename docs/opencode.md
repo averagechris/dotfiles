@@ -104,11 +104,11 @@ All MCP servers are defined in `flakes/hm-modules/modules/opencode/settings.nix`
 | MCP server | Type | Default | Notes |
 |------------|------|---------|-------|
 | `context7` | remote | disabled | Documentation lookup |
-| `circleci` | local | disabled | Launches `@circleci/mcp-server-circleci` via `npx`; requires `CIRCLECI_TOKEN` when enabled |
+| `circleci` | local | disabled | Launches `@circleci/mcp-server-circleci` via the module's Node-aware `npx` wrapper; requires `CIRCLECI_TOKEN` when enabled |
 | `datadog` | remote | disabled | Datadog MCP endpoint |
 | `gh-grep` | remote | disabled | GitHub code search via Grep |
 | `github` | remote | disabled | GitHub Copilot MCP endpoint |
-| `playwright` | local | disabled | Launches `@playwright/mcp` via `npx` for browser automation |
+| `playwright` | local | disabled | Launches `@playwright/mcp` via the module's Node-aware `npx` wrapper for browser automation |
 | `notion` | remote | disabled | Hosted Notion MCP endpoint using OAuth |
 | `serena` | local | disabled | Launched via `uvx` from the upstream repository |
 | `sentry` | remote | disabled | Hosted Sentry MCP endpoint using OAuth |
@@ -159,6 +159,11 @@ dotfiles.opencode.circleciTokenFile = "/run/agenix/circleci-token";
 ```
 
 The module exports `CIRCLECI_TOKEN` from that file in both Bash and Zsh shell initialization. This supports the `circleci` CLI and the optional OpenCode CircleCI MCP integration when enabled.
+
+Local MCP servers that are distributed as npm packages use a repo-managed
+`opencode-npx-mcp` wrapper instead of calling the Nix store `npx` executable
+directly. The wrapper puts `node` on `PATH` for the MCP child process, which is
+required because npm's `npx` launcher uses `/usr/bin/env node` internally.
 
 On `suremac`, this relies on nix-darwin agenix secret materialization. The host
 config sets explicit `age.identityPaths` for the user's SSH keys so Darwin can

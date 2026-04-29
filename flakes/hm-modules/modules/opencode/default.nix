@@ -39,6 +39,7 @@
     }
   ];
   cfg = config.dotfiles.opencode;
+  reviewToolsPath = ../../../../.opencode/tools;
   renderToolNote = tool:
     if tool.description == null
     then tool.name
@@ -149,6 +150,11 @@ in {
       };
 
       home.packages = (map (tool: tool.package) installedAgentTools) ++ cfg.agentSupportPackages;
+
+      # Project-local OpenCode tools are only visible when opencode is launched
+      # from this dotfiles checkout. Deploy the repo-managed review tools into
+      # the user config as well so `/review-pr` can use them from any repository.
+      home.file.".config/opencode/tools".source = reviewToolsPath;
     }
 
     # OpenRouter API key configuration (only when openrouterApiKeyFile is set)

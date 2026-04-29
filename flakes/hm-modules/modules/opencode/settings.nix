@@ -1,7 +1,15 @@
 {
   lib,
   pkgs,
-}: {
+}: let
+  npxMcp = pkgs.writeShellApplication {
+    name = "opencode-npx-mcp";
+    runtimeInputs = [pkgs.nodejs];
+    text = ''
+      exec npx "$@"
+    '';
+  };
+in {
   # MCP Servers - External tool integrations
   mcp = {
     # Context7 - Search documentation for various tools and frameworks
@@ -16,7 +24,7 @@
     circleci = {
       type = "local";
       command = [
-        (lib.getExe' pkgs.nodejs "npx")
+        (lib.getExe npxMcp)
         "-y"
         "@circleci/mcp-server-circleci@latest"
       ];
@@ -26,7 +34,7 @@
     chrome-dev-tools = {
       type = "local";
       command = [
-        (lib.getExe' pkgs.nodejs "npx")
+        (lib.getExe npxMcp)
         "-y"
         "chrome-devtools-mcp@latest"
         "--autoConnect"
@@ -57,7 +65,7 @@
     playwright = {
       type = "local";
       command = [
-        (lib.getExe' pkgs.nodejs "npx")
+        (lib.getExe npxMcp)
         "-y"
         "@playwright/mcp@latest"
       ];
