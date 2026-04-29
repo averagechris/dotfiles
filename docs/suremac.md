@@ -51,3 +51,9 @@ falls back to `open about:blank`, which launches the system default browser.
 after applying the config, enable `skhd` in **System Settings → Privacy &
 Security → Accessibility** and restart the `skhd` launchd agent or log out and
 back in.
+
+## Raycast Configuration
+
+Raycast does not expose a stable declarative config file for aliases and
+hotkeys. Use Raycast's built-in sync for Raycast-managed configuration instead
+of committing `.rayconfig` exports to this repository.
