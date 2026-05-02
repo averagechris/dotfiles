@@ -48,6 +48,34 @@
 
   networking.hostName = "tater";
 
+  # MT7925e stability mitigations. Keep these host-local: this card has been
+  # prone to firmware/driver stalls on tater even after platform firmware
+  # updates. Prefer newer kernel fixes, avoid Wi-Fi powersave from both
+  # NetworkManager and TLP, and use iwd for Wi-Fi association.
+  boot.kernelPackages = pkgs.linuxPackages_latest;
+  networking.networkmanager = {
+    wifi = {
+      backend = "iwd";
+      powersave = false;
+    };
+  };
+  networking.wireless.iwd = {
+    enable = true;
+    settings = {
+      General = {
+        EnableNetworkConfiguration = false;
+      };
+      Settings = {
+        AutoConnect = true;
+      };
+    };
+  };
+  hardware.wirelessRegulatoryDatabase = true;
+  systemd.services.NetworkManager.serviceConfig = {
+    Restart = "always";
+    RestartSec = "3s";
+  };
+
   # Fingerprint reader support
   services.fprintd.enable = true;
   services.fprintd.tod.enable = true;
@@ -137,6 +165,62 @@
           RefuseManualStart = lib.mkForce true;
         };
       };
+    taterNetworkRecover = pkgs.writeShellApplication {
+      name = "tater-network-recover";
+      runtimeInputs = [pkgs.networkmanager pkgs.kmod pkgs.systemd pkgs.ripgrep];
+      text = ''
+        set -euo pipefail
+
+        iface="''${1:-wlp194s0}"
+
+        echo "== NetworkManager status =="
+        nmcli general status || true
+        nmcli device status || true
+
+        echo "== Recent relevant logs =="
+        journalctl -b --no-pager -n 120 \
+          | rg -i "mt7925|mt76|''${iface}|NetworkManager|firmware|timeout|reset|failed" || true
+
+        echo "== Bounce NetworkManager networking =="
+        nmcli networking off || true
+        sleep 3
+        nmcli networking on || true
+        sleep 5
+
+        if nmcli -t -f DEVICE,STATE device status | rg -q "^''${iface}:connected$"; then
+          echo "''${iface} is connected after NetworkManager bounce."
+          exit 0
+        fi
+
+        echo "== Reconnect Wi-Fi device =="
+        nmcli device disconnect "''${iface}" || true
+        sleep 3
+        nmcli device connect "''${iface}" || true
+        sleep 5
+
+        if nmcli -t -f DEVICE,STATE device status | rg -q "^''${iface}:connected$"; then
+          echo "''${iface} is connected after device reconnect."
+          exit 0
+        fi
+
+        echo "== Restart NetworkManager =="
+        sudo systemctl restart NetworkManager.service
+        sleep 5
+
+        if nmcli -t -f DEVICE,STATE device status | rg -q "^''${iface}:connected$"; then
+          echo "''${iface} is connected after NetworkManager restart."
+          exit 0
+        fi
+
+        echo "== Reload mt7925e driver stack =="
+        sudo modprobe -r mt7925e mt792x_lib mt76_connac_lib mt76 || true
+        sleep 3
+        sudo modprobe mt7925e
+        sleep 5
+        nmcli device wifi rescan || true
+        nmcli device status || true
+      '';
+    };
   in {
     # secrets are passed via _module.args in nixos-modules/modules/users/chris.nix
     home.stateVersion = "26.05";
@@ -183,7 +267,7 @@
     dotfiles.gpg.enable = true;
 
     # Bluetooth and network management
-    home.packages = [pkgs.overskride];
+    home.packages = [pkgs.overskride taterNetworkRecover];
     services.network-manager-applet.enable = true;
 
     # Openclaw configuration (minimal base config for nodes)
