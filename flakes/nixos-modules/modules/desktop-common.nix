@@ -6,7 +6,24 @@
 }: {
   nixpkgs.overlays = lib.attrValues overlays;
 
-  time.timeZone = "America/New_York";
+  time.timeZone = lib.mkDefault "America/Los_Angeles";
+
+  # Keep the system clock synchronized from internet NTP sources. This is
+  # especially useful on laptops after battery drain, suspend, or RTC drift.
+  services.timesyncd = {
+    enable = true;
+    servers = [
+      "time.cloudflare.com"
+      "time.google.com"
+      "pool.ntp.org"
+    ];
+    fallbackServers = [
+      "0.nixos.pool.ntp.org"
+      "1.nixos.pool.ntp.org"
+      "2.nixos.pool.ntp.org"
+      "3.nixos.pool.ntp.org"
+    ];
+  };
 
   hardware.graphics = {
     enable = true;

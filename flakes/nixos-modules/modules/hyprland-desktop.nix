@@ -193,6 +193,48 @@
     cp ${ewwGreetScss} $out/eww.scss
   '';
 
+  greetdFixDockedLidDisplays = pkgs.writeShellApplication {
+    name = "greetd-fix-docked-lid-displays";
+    runtimeInputs = [pkgs.coreutils pkgs.gnugrep pkgs.hyprland pkgs.jq];
+    text = ''
+      # Hyprland starts before any user-level kanshi service is available. When
+      # a laptop boots docked with the lid closed, the internal panel can remain
+      # the primary greeter output even though nobody can see it. If the lid is
+      # closed and at least one external monitor is present, disable eDP-* for
+      # the greetd session so ReGreet is forced onto the visible display.
+      for _ in $(seq 1 20); do
+        monitors_json="$(hyprctl monitors -j 2>/dev/null || true)"
+        if [ -n "$monitors_json" ] && printf '%s' "$monitors_json" | jq -e 'type == "array"' >/dev/null; then
+          break
+        fi
+        sleep 0.1
+      done
+
+      lid_closed=false
+      for lid_state in /proc/acpi/button/lid/*/state; do
+        if [ -r "$lid_state" ] && grep -qi 'closed' "$lid_state"; then
+          lid_closed=true
+          break
+        fi
+      done
+
+      if [ "$lid_closed" != true ]; then
+        exit 0
+      fi
+
+      external_count="$(printf '%s' "$monitors_json" | jq '[.[] | select(.name | test("^eDP-") | not)] | length')"
+      if [ "''${external_count:-0}" -eq 0 ]; then
+        exit 0
+      fi
+
+      printf '%s' "$monitors_json" \
+        | jq -r '.[] | select(.name | test("^eDP-")) | .name' \
+        | while IFS= read -r monitor; do
+          hyprctl keyword monitor "$monitor,disable" >/dev/null || true
+        done
+    '';
+  };
+
   # Hyprland configuration for the ReGreet session
   hyprlandGreetConfig = pkgs.writeText "greetd-hyprland-config" ''
     # ReGreet session - Fun and colorful theme
@@ -201,6 +243,7 @@
     env = HYPRCURSOR_SIZE,24
 
     # Run eww bar and ReGreet
+    exec-once = ${lib.getExe greetdFixDockedLidDisplays}
     exec-once = eww -c ${ewwGreetConfigDir} open bar
     exec-once = ${lib.getExe pkgs.regreet}; hyprctl dispatch exit
 
@@ -465,13 +508,8 @@ in {
         }
 
         button.login:hover {
-          background: linear-gradient(135deg, lighten(@accent, 10%), lighten(@accent2, 10%));
+          background: @accent2;
           box-shadow: 0 5px 25px alpha(@accent, 0.4);
-          transform: translateY(-2px);
-        }
-
-        button.login:active {
-          transform: translateY(0);
         }
 
         /* Power buttons */
@@ -545,18 +583,9 @@ in {
           margin-top: 12px;
         }
 
-        /* Fun animated gradient overlay */
+        /* Soft gradient overlay */
         .overlay-gradient {
-          background: linear-gradient(180deg,
-            transparent 0%,
-            alpha(@accent, 0.03) 50%,
-            transparent 100%);
-          animation: shimmer 8s ease-in-out infinite;
-        }
-
-        @keyframes shimmer {
-          0%, 100% { opacity: 0.5; }
-          50% { opacity: 1; }
+          background: alpha(@accent, 0.03);
         }
       '';
     };

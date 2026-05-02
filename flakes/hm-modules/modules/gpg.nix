@@ -31,6 +31,17 @@
 }: let
   cfg = config.dotfiles.gpg;
   hasSecrets = secrets ? gpg-private-key && secrets ? gpg-key-id;
+  gpgAgentRecover = pkgs.writeShellApplication {
+    name = "gpg-agent-recover";
+    runtimeInputs = [pkgs.gnupg pkgs.procps];
+    text = ''
+      set -euo pipefail
+
+      pkill -9 keyboxd 2>/dev/null || true
+      gpgconf --kill gpg-agent 2>/dev/null || true
+      gpgconf --launch gpg-agent 2>/dev/null || true
+    '';
+  };
 in
   with lib; {
     options.dotfiles.gpg = with dotfiles_lib.options; {
@@ -54,16 +65,21 @@ in
             # max-cache-ttl = 31536000 (1 year)
           };
 
-          # Clean stale GPG locks on startup to prevent hangs
-          # This fixes issues where keyboxd holds a stale lock after reboot
+          home.packages = [gpgAgentRecover];
+
+          # Clean stale keyboxd locks on startup to prevent hangs, but do not
+          # kill gpg-agent here. gpg-agent owns the passphrase cache, and Home
+          # Manager may start changed user services during a profile switch; an
+          # over-eager cleanup unit caused every switch to forget the cached GPG
+          # passphrase. If the agent itself is wedged, use gpg-agent-recover.
           systemd.user.services.gpg-agent-cleanup = {
             Unit = {
-              Description = "Clean stale GPG locks and restart agent";
+              Description = "Clean stale GPG keyboxd locks without dropping agent cache";
               After = ["graphical-session.target"];
             };
             Service = {
               Type = "oneshot";
-              ExecStart = "${pkgs.bash}/bin/bash -lc '${pkgs.procps}/bin/pkill -9 keyboxd 2>/dev/null || true; ${pkgs.gnupg}/bin/gpgconf --kill gpg-agent 2>/dev/null || true; ${pkgs.gnupg}/bin/gpgconf --launch gpg-agent 2>/dev/null || true'";
+              ExecStart = "${pkgs.bash}/bin/bash -lc '${pkgs.procps}/bin/pkill -9 keyboxd 2>/dev/null || true; ${pkgs.gnupg}/bin/gpgconf --launch gpg-agent 2>/dev/null || true'";
             };
             Install = {WantedBy = ["graphical-session.target"];};
           };

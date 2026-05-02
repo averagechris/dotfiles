@@ -193,6 +193,22 @@ You configure NixOs to work with the encrypted drive by adding it to the `config
 Add the following and feel free to un-comment any of the default stuff provided that
 makes sense, like the timezone setting etc.
 
+The shared desktop module sets `time.timeZone = lib.mkDefault "America/Los_Angeles"`
+and enables `systemd-timesyncd` with internet NTP servers (`time.cloudflare.com`,
+`time.google.com`, `pool.ntp.org`, plus NixOS pool fallbacks). After boot or
+network changes, check clock synchronization with:
+
+```shell
+timedatectl timesync-status
+timedatectl status
+```
+
+On laptops such as `tater`, `services.automatic-timezoned.enable = true` keeps
+the timezone location-aware while traveling. It uses geoclue2 to determine the
+current location and systemd-timedated to update the timezone. When this service
+is enabled, NixOS intentionally leaves `time.timeZone = null` so the runtime
+timezone can be managed dynamically rather than pinned by the declarative config.
+
 ```nix
 # in /mnt/etc/nixos/configuration.nix
 

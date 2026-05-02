@@ -11,14 +11,46 @@
     name = "disable-builtin-display-when-lid-closed";
     script = pkgs.writeShellApplication {
       inherit name;
-      runtimeInputs = [pkgs.coreutils];
+      runtimeInputs = [pkgs.coreutils pkgs.hyprland pkgs.jq pkgs.eww];
       text = ''
-        if grep open /proc/acpi/button/lid/LID0/state; then
-            hyprctl keyword monitor "eDP-1,preferred,auto,auto"
+        refresh_bars() {
+          if hyprctl monitors -j | jq -e '.[] | select(.name == "eDP-1")' >/dev/null; then
+            eww open bar-internal || true
+          else
+            eww close bar-internal || true
+          fi
+
+          if hyprctl monitors -j | jq -e '.[] | select(.name == "DP-2")' >/dev/null; then
+            eww open bar-external || true
+          else
+            eww close bar-external || true
+          fi
+        }
+
+        external_count="$(${pkgs.hyprland}/bin/hyprctl monitors -j | ${pkgs.jq}/bin/jq '[.[] | select(.name != "eDP-1")] | length')"
+
+        if grep -q open /proc/acpi/button/lid/LID0/state; then
+            hyprctl keyword monitor "eDP-1,preferred,auto,1"
+            refresh_bars
         else
-            if [[ "$(hyprctl monitors | grep -c Monitor)" != "1" ]]; then
+            if [[ "$external_count" -gt 0 ]]; then
                 hyprctl keyword monitor "eDP-1,disable"
+                refresh_bars
             fi
+        fi
+      '';
+    };
+  in "${script}/bin/${name}";
+  lockOnUndockedLidClose = let
+    name = "lock-on-undocked-lid-close";
+    script = pkgs.writeShellApplication {
+      inherit name;
+      runtimeInputs = [pkgs.coreutils pkgs.hyprland pkgs.jq];
+      text = ''
+        external_count="$(hyprctl monitors -j | jq '[.[] | select(.name != "eDP-1")] | length')"
+
+        if [[ "$external_count" -eq 0 ]]; then
+          hyprlock
         fi
       '';
     };
@@ -27,6 +59,14 @@ in {
   options.dotfiles.gui.hyprland = {
     enable = lib.mkEnableOption "Enable configured hyprland.";
     waybar.enable = dotfiles_lib.options.mkDefaultEnabledOption "Enable waybar with hyprland config";
+    overview = {
+      enable = lib.mkEnableOption "Hyprspace visual workspace overview";
+      package = lib.mkOption {
+        type = lib.types.nullOr lib.types.package;
+        default = null;
+        description = "Hyprspace plugin package built against the active Hyprland package.";
+      };
+    };
   };
 
   imports = [
@@ -46,7 +86,7 @@ in {
       inherit (cfg) enable;
       xwayland.enable = true;
       systemd.enable = true;
-      plugins = [];
+      plugins = lib.optionals (cfg.overview.enable && cfg.overview.package != null) [cfg.overview.package];
       settings = {
         env = [
           "GDK_BACKEND,wayland"
@@ -62,7 +102,22 @@ in {
           # Zen browser and Telegram are installed via nix profile
         ];
         monitor = [
-          ",preferred,auto,auto"
+          "eDP-1,preferred,auto,1"
+          ",preferred,auto,1"
+        ];
+        workspace = [
+          # Keep workspaces monitor-local when docked. If a monitor is absent,
+          # Hyprland still makes the workspace available on the remaining output.
+          "1, monitor:DP-2, default:true"
+          "2, monitor:DP-2"
+          "3, monitor:DP-2"
+          "4, monitor:DP-2"
+          "5, monitor:DP-2"
+          "6, monitor:eDP-1, default:true"
+          "7, monitor:eDP-1"
+          "8, monitor:eDP-1"
+          "9, monitor:eDP-1"
+          "10, monitor:eDP-1"
         ];
         input = {
           kb_layout = "us, us";
@@ -126,6 +181,30 @@ in {
           key_press_enables_dpms = true;
           animate_manual_resizes = true;
           animate_mouse_windowdragging = true;
+        };
+        "plugin:overview" = lib.mkIf cfg.overview.enable {
+          panelHeight = 220;
+          panelColor = "rgba(191724dd)";
+          panelBorderColor = "rgba(c4a7e7ee)";
+          panelBorderWidth = 2;
+          onBottom = true;
+          workspaceMargin = 12;
+          workspaceActiveBackground = "rgba(26233add)";
+          workspaceInactiveBackground = "rgba(1f1d2edd)";
+          workspaceActiveBorder = "rgba(9ccfd8ff)";
+          workspaceInactiveBorder = "rgba(6e6a86aa)";
+          workspaceBorderSize = 2;
+          centerAligned = true;
+          dragAlpha = 0.85;
+          autoDrag = true;
+          autoScroll = true;
+          exitOnClick = true;
+          switchOnDrop = true;
+          exitOnSwitch = true;
+          showEmptyWorkspace = true;
+          showNewWorkspace = false;
+          showSpecialWorkspace = false;
+          exitKey = "Escape";
         };
         "$mainMod" = "SUPER";
         "$dashKey" = 20; # the literal - key
@@ -201,6 +280,11 @@ in {
             "0, workspace, 10"
             "+ALT, m, workspace, e-1"
             "+ALT, i, workspace, e+1"
+            (
+              if cfg.overview.enable
+              then "O, overview:toggle, all"
+              else "O, exec, hyprland-workspace-overview"
+            )
 
             # Scroll through existing workspaces with mainMod + scroll
             "mouse_right, workspace, e+1"
@@ -235,7 +319,7 @@ in {
           ];
         bindl = [
           ",switch:Lid Switch, exec, ${toggleDisplayWithLid}"
-          ",switch:on:Lid Switch, exec, hyprlock"
+          ",switch:on:Lid Switch, exec, ${lockOnUndockedLidClose}"
           ",switch:off:Lid Switch, exec, hyprctl dispatch dpms on"
         ];
         bindm = [
@@ -397,6 +481,7 @@ in {
           │  MOD+Shift+0        Move window to workspace 10                             │
           │  MOD+Alt+M          Previous workspace                                      │
           │  MOD+Alt+I          Next workspace                                          │
+          │  MOD+O              Toggle visual workspace overview                         │
           │  MOD+Scroll         Scroll through workspaces                               │
           │                                                                             │
           ├─────────────────────────────────────────────────────────────────────────────┤
@@ -447,6 +532,57 @@ in {
           │                                                                             │
           └─────────────────────────────────────────────────────────────────────────────┘
           INNEREOF
+        '';
+      })
+      (writeShellApplication {
+        name = "hyprland-workspace-overview";
+        runtimeInputs = [pkgs.coreutils pkgs.hyprland pkgs.jq pkgs.wofi];
+        text = ''
+          #!/usr/bin/env bash
+          set -euo pipefail
+
+          workspaces_json="$(hyprctl workspaces -j)"
+          clients_json="$(hyprctl clients -j)"
+          active_json="$(hyprctl activeworkspace -j)"
+          active_id="$(jq -r '.id' <<< "$active_json")"
+
+          choices="$({
+            for ws in {1..10}; do
+              jq -rn \
+                --argjson workspaces "$workspaces_json" \
+                --argjson clients "$clients_json" \
+                --argjson ws "$ws" \
+                --argjson active "$active_id" '
+                  def workspace: $workspaces[]? | select(.id == $ws);
+                  def client_count: [$clients[]? | select(.workspace.id == $ws)] | length;
+                  def titles: [$clients[]? | select(.workspace.id == $ws) | (.title // .class // "window")][0:3] | join(" • ");
+                  "go \($ws)\t" +
+                  (if $ws == $active then "●" else "○" end) +
+                  " workspace \($ws)" +
+                  (workspace.monitor as $monitor | if $monitor then " · " + $monitor else "" end) +
+                  " · " + (client_count | tostring) + " windows" +
+                  (titles as $titles | if $titles == "" then "" else " · " + $titles end),
+                  "move \($ws)\t󰁌 move active window → workspace \($ws)"
+                '
+            done
+          })"
+
+          selection="$(printf '%s\n' "$choices" | wofi --dmenu --prompt "Workspace overview" --width 760 --height 520 --insensitive || true)"
+          [[ -n "$selection" ]] || exit 0
+
+          action="''${selection%%$'\t'*}"
+          verb="''${action%% *}"
+          ws="''${action#* }"
+
+          case "$verb" in
+            go)
+              hyprctl dispatch workspace "$ws"
+              ;;
+            move)
+              hyprctl dispatch movetoworkspace "$ws"
+              hyprctl dispatch workspace "$ws"
+              ;;
+          esac
         '';
       })
       (writeShellApplication {

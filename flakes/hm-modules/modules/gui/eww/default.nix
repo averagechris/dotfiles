@@ -25,6 +25,28 @@
     highlightMed = "#44415a";
     highlightHigh = "#56526e";
   };
+  ewwOpenBars = pkgs.writeShellApplication {
+    name = "eww-open-bars";
+    runtimeInputs = [pkgs.eww pkgs.hyprland pkgs.jq];
+    text = ''
+      set -euo pipefail
+
+      eww daemon || true
+      sleep 0.2
+
+      if hyprctl monitors -j | jq -e '.[] | select(.name == "eDP-1")' >/dev/null; then
+        eww open bar-internal || true
+      else
+        eww close bar-internal || true
+      fi
+
+      if hyprctl monitors -j | jq -e '.[] | select(.name == "DP-2")' >/dev/null; then
+        eww open bar-external || true
+      else
+        eww close bar-external || true
+      fi
+    '';
+  };
 in {
   options.dotfiles.eww = {
     enable = lib.mkEnableOption "Eww bar and widgets";
@@ -48,11 +70,13 @@ in {
       networkmanagerapplet # provides nm-connection-editor
       bluez
       overskride # Bluetooth GUI
+      ewwOpenBars
     ];
 
     # Ensure eww starts with Hyprland
     wayland.windowManager.hyprland.settings.exec-once = lib.mkIf config.dotfiles.gui.hyprland.enable [
-      "eww open bar"
+      "eww daemon"
+      "eww-open-bars"
     ];
   };
 }

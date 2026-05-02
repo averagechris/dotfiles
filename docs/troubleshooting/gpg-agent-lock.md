@@ -49,7 +49,9 @@ The dotfiles now include a systemd service that automatically cleans stale GPG l
 
 This service:
 1. Kills any stale `keyboxd` processes
-2. Restarts `gpg-agent` to ensure a clean state
+2. Launches `gpg-agent` if needed
+
+It intentionally does **not** kill `gpg-agent` during normal login/profile switches, because `gpg-agent` owns the in-memory passphrase cache. Killing it would force a new passphrase prompt after every switch.
 
 After rebuilding your system, this will happen automatically on each login.
 
@@ -69,20 +71,13 @@ then your currently installed user unit still has the old broken cleanup command
 
 ## Manual Fix (If systemd service fails)
 
-If the issue persists:
+If the issue persists and you are willing to lose the current passphrase cache:
 
 ```bash
-# Check for lock files (rarely needed)
-ls -la ~/.gnupg/*.lock 2>/dev/null
-
-# Kill all GPG-related processes
-pkill -9 gpg-agent
-pkill -9 keyboxd
-pkill -9 scdaemon
-
-# Start fresh
-gpgconf --launch gpg-agent
+gpg-agent-recover
 ```
+
+This kills stale `keyboxd`, restarts `gpg-agent`, and relaunches it.
 
 ## Verification
 

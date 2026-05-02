@@ -1,5 +1,6 @@
 {
   inputs,
+  lib,
   pkgs,
   ...
 }: {
@@ -25,6 +26,14 @@
 
   # Enable Hyprland desktop environment
   dotfiles.hyprland-desktop.enable = true;
+  # Hyprspace is a Hyprland plugin and must be loaded by the exact Hyprland
+  # build it was compiled against. Use the pinned tater Hyprland input for the
+  # system session package as well as the Home Manager config below.
+  programs.hyprland.package = inputs.hyprland.packages.${pkgs.system}.hyprland;
+  xdg.portal.extraPortals = lib.mkForce [
+    inputs.hyprland.packages.${pkgs.system}.xdg-desktop-portal-hyprland
+    pkgs.xdg-desktop-portal-gtk
+  ];
 
   # Agenix secrets
   age.secrets.openrouter-api-key = {
@@ -86,12 +95,30 @@
   };
   security.pam.services.greetd.fprintAuth = true;
   security.pam.services.regreet.fprintAuth = true;
-  security.pam.services.sudo.fprintAuth = true;
+  # In clamshell mode the fingerprint reader is physically unavailable, and
+  # sudo's PAM stack waits for fingerprint auth before accepting a password.
+  # Keep fingerprints for login/unlock paths but make terminal elevation prompt
+  # for the password immediately.
+  security.pam.services.sudo.fprintAuth = false;
 
   # Firmware updates
   services.fwupd.enable = true;
 
+  # Keep the laptop timezone in sync with the current location when traveling.
+  # The desktop-common Los Angeles timezone is only the offline/default value;
+  # automatic-timezoned updates it through geoclue + systemd-timedated once the
+  # laptop has network/location data after landing somewhere else.
+  services.automatic-timezoned.enable = true;
+
   # Power management for ThinkPad
+  services.logind.settings.Login = {
+    # Let Hyprland handle lid-close locking/display changes. When docked with an
+    # external monitor, keep the machine awake for clamshell mode.
+    HandleLidSwitch = "suspend";
+    HandleLidSwitchExternalPower = "ignore";
+    HandleLidSwitchDocked = "ignore";
+  };
+
   services.tlp = {
     enable = true;
     settings = {
@@ -221,6 +248,170 @@
         nmcli device status || true
       '';
     };
+    taterHomeClamshell = pkgs.writeShellApplication {
+      name = "tater-home-clamshell";
+      runtimeInputs = [pkgs.hyprland];
+      text = ''
+        set -euo pipefail
+
+        hyprctl keyword monitor "DP-2,3840x2160@60,0x0,1"
+        hyprctl keyword monitor "eDP-1,disable"
+      '';
+    };
+    taterHomeOpen = pkgs.writeShellApplication {
+      name = "tater-home-open";
+      runtimeInputs = [pkgs.hyprland];
+      text = ''
+        set -euo pipefail
+
+        hyprctl keyword monitor "eDP-1,1920x1200@60,0x640,1.5"
+        hyprctl keyword monitor "DP-2,3840x2160@60,1280x0,1"
+      '';
+    };
+    taterHomeToggle = pkgs.writeShellApplication {
+      name = "tater-home-toggle";
+      runtimeInputs = [pkgs.hyprland pkgs.jq pkgs.libnotify pkgs.eww];
+      text = ''
+        set -euo pipefail
+
+        refresh_bars() {
+          eww daemon || true
+          sleep 0.2
+
+          if hyprctl monitors -j | jq -e '.[] | select(.name == "eDP-1")' >/dev/null; then
+            eww open bar-internal || true
+          else
+            eww close bar-internal || true
+          fi
+
+          if hyprctl monitors -j | jq -e '.[] | select(.name == "DP-2")' >/dev/null; then
+            eww open bar-external || true
+          else
+            eww close bar-external || true
+          fi
+        }
+
+        if hyprctl monitors -j | jq -e '.[] | select(.name == "DP-2" and .model == "DELL U4320Q")' >/dev/null; then
+          if hyprctl monitors -j | jq -e '.[] | select(.name == "eDP-1" and .disabled == false)' >/dev/null; then
+            hyprctl keyword monitor "DP-2,3840x2160@60,0x0,1"
+            hyprctl keyword monitor "eDP-1,disable"
+            refresh_bars
+            notify-send "Home display" "Laptop panel off; using Dell only" || true
+          else
+            hyprctl keyword monitor "eDP-1,1920x1200@60,0x640,1.5"
+            hyprctl keyword monitor "DP-2,3840x2160@60,1280x0,1"
+            refresh_bars
+            notify-send "Home display" "Laptop panel on with Dell" || true
+          fi
+        else
+          notify-send "Home display" "Dell U4320Q is not connected on DP-2" || true
+          exit 1
+        fi
+      '';
+    };
+    taterDesktopDoctor = pkgs.writeShellApplication {
+      name = "tater-desktop-doctor";
+      runtimeInputs = [pkgs.coreutils pkgs.eww pkgs.hyprland pkgs.jq pkgs.kmod pkgs.networkmanager pkgs.ripgrep pkgs.systemd];
+      text = ''
+        set -uo pipefail
+
+        failures=0
+        warnings=0
+
+        pass() { printf 'PASS  %s\n' "$*"; }
+        warn() { printf 'WARN  %s\n' "$*"; warnings=$((warnings + 1)); }
+        fail() { printf 'FAIL  %s\n' "$*"; failures=$((failures + 1)); }
+        have() { command -v "$1" >/dev/null 2>&1; }
+        active() { systemctl "$1" is-active --quiet "$2"; }
+
+        echo "== Session =="
+        if [[ -n "''${HYPRLAND_INSTANCE_SIGNATURE:-}" ]] && hyprctl monitors -j >/tmp/tater-doctor-monitors.json 2>/dev/null; then
+          pass "Hyprland IPC is available"
+        else
+          fail "Hyprland IPC is not available; run this inside the Hyprland session"
+          printf '\nSummary: %d failure(s), %d warning(s)\n' "$failures" "$warnings"
+          exit 1
+        fi
+
+        if active --user hypridle.service; then pass "hypridle user service is active"; else warn "hypridle user service is not active"; fi
+        if active --user kanshi.service; then pass "kanshi user service is active"; else warn "kanshi user service is not active"; fi
+
+        echo
+        echo "== Login and auth plumbing =="
+        if active --system greetd.service; then pass "greetd system service is active"; else fail "greetd system service is not active"; fi
+        if rg -q '^Hyprland$' /etc/greetd/environments 2>/dev/null; then pass "Hyprland is listed in greetd environments"; else fail "Hyprland is missing from /etc/greetd/environments"; fi
+        if active --system fprintd.service; then pass "fprintd system service is active"; else warn "fprintd system service is not active yet; it may be socket/dbus activated"; fi
+
+        echo
+        echo "== Network and Wi-Fi stability =="
+        if active --system NetworkManager.service; then pass "NetworkManager is active"; else fail "NetworkManager is not active"; fi
+        if active --system iwd.service; then pass "iwd is active for NetworkManager Wi-Fi backend"; else warn "iwd is not active"; fi
+        if nmcli -t -f DEVICE,TYPE,STATE device status | rg -q '^[^:]+:wifi:connected$'; then
+          pass "Wi-Fi is connected"
+        else
+          warn "No connected Wi-Fi device found"
+        fi
+        if lsmod | rg -q '^mt7925e\b'; then pass "mt7925e driver is loaded"; else warn "mt7925e driver is not currently loaded"; fi
+
+        echo
+        echo "== Displays =="
+        if jq -e '.[] | select(.name == "eDP-1")' /tmp/tater-doctor-monitors.json >/dev/null; then
+          pass "Internal panel eDP-1 is present/enabled"
+        else
+          warn "Internal panel eDP-1 is not present/enabled; expected in clamshell mode"
+        fi
+        if jq -e '.[] | select(.name == "DP-2" and .model == "DELL U4320Q" and .serial == "1LTJW13")' /tmp/tater-doctor-monitors.json >/dev/null; then
+          pass "Home Dell U4320Q is detected on DP-2"
+          if jq -e '.[] | select(.name == "DP-2" and .width == 3840 and .height == 2160 and .scale == 1)' /tmp/tater-doctor-monitors.json >/dev/null; then
+            pass "Home Dell is using 3840x2160 scale 1"
+          else
+            fail "Home Dell is not at expected 3840x2160 scale 1"
+          fi
+        else
+          warn "Home Dell U4320Q is not detected on DP-2"
+        fi
+
+        echo
+        echo "== Workspaces =="
+        if hyprctl workspaces -j >/tmp/tater-doctor-workspaces.json 2>/dev/null; then
+          for ws in 1 2 3 4 5; do
+            if jq -e --argjson ws "$ws" '.[] | select(.id == $ws and .monitor == "DP-2")' /tmp/tater-doctor-workspaces.json >/dev/null; then
+              pass "Workspace $ws is on DP-2"
+            else
+              warn "Workspace $ws is not currently on DP-2; it may not exist until visited"
+            fi
+          done
+          if jq -e '.[] | select(.name == "eDP-1")' /tmp/tater-doctor-monitors.json >/dev/null; then
+            for ws in 6 7 8 9 10; do
+              if jq -e --argjson ws "$ws" '.[] | select(.id == $ws and .monitor == "eDP-1")' /tmp/tater-doctor-workspaces.json >/dev/null; then
+                pass "Workspace $ws is on eDP-1"
+              else
+                warn "Workspace $ws is not currently on eDP-1; it may not exist until visited"
+              fi
+            done
+          fi
+        else
+          fail "Could not query Hyprland workspaces"
+        fi
+
+        echo
+        echo "== Eww bars =="
+        if have eww && eww active-windows >/tmp/tater-doctor-eww.txt 2>/dev/null; then
+          if jq -e '.[] | select(.name == "eDP-1")' /tmp/tater-doctor-monitors.json >/dev/null; then
+            if rg -q 'bar-internal' /tmp/tater-doctor-eww.txt; then pass "Internal Eww bar is open"; else fail "Internal Eww bar is not open while eDP-1 is enabled"; fi
+          fi
+          if jq -e '.[] | select(.name == "DP-2")' /tmp/tater-doctor-monitors.json >/dev/null; then
+            if rg -q 'bar-external' /tmp/tater-doctor-eww.txt; then pass "External Eww bar is open"; else fail "External Eww bar is not open while DP-2 is enabled"; fi
+          fi
+        else
+          warn "Could not query Eww active windows"
+        fi
+
+        echo
+        printf 'Summary: %d failure(s), %d warning(s)\n' "$failures" "$warnings"
+        if [[ "$failures" -gt 0 ]]; then exit 1; fi
+      '';
+    };
   in {
     # secrets are passed via _module.args in nixos-modules/modules/users/chris.nix
     home.stateVersion = "26.05";
@@ -255,6 +446,81 @@
 
     # Disable waybar when using eww
     dotfiles.gui.hyprland.waybar.enable = false;
+    wayland.windowManager.hyprland.package = inputs.hyprland.packages.${pkgs.system}.hyprland;
+    dotfiles.gui.hyprland.overview = {
+      # Keep Hyprspace disabled for now. A missing overview dispatcher after
+      # reboot means the compositor started without the plugin, and the pinned
+      # plugin path has proven unstable enough to push Hyprland into safe mode.
+      # Super+O still opens the script-backed overview/move menu from the shared
+      # Hyprland module.
+      enable = false;
+      package = null;
+    };
+
+    # Docking polish: kanshi keeps monitor layouts deterministic as USB-C/HDMI
+    # displays appear and disappear. The Dell 43" profiles are the preferred
+    # home clamshell mode: close the lid, disable eDP-1, and use only the big
+    # external display. The final wildcard profile remains a sane fallback for
+    # unknown monitors when the lid is open.
+    services.kanshi = {
+      enable = true;
+      settings = let
+        mkDell43HomeProfile = criteria: {
+          profile.name = "home-dell-43-${builtins.replaceStrings [" " "." "*"] ["-" "" "any"] criteria}";
+          profile.outputs = [
+            {
+              criteria = "eDP-1";
+              status = "disable";
+            }
+            {
+              inherit criteria;
+              status = "enable";
+              mode = "3840x2160@60Hz";
+              position = "0,0";
+              scale = 1.0;
+            }
+          ];
+        };
+      in [
+        {
+          profile.name = "undocked";
+          profile.outputs = [
+            {
+              criteria = "eDP-1";
+              status = "enable";
+              mode = "1920x1200@60Hz";
+              position = "0,0";
+              scale = 1.5;
+            }
+          ];
+        }
+        # Home Dell 43". The first entry is the exact monitor currently on the
+        # desk; the wildcard U4320Q entry catches the same model via another
+        # dock/cable if the serial ever reports differently.
+        (mkDell43HomeProfile "Dell Inc. DELL U4320Q 1LTJW13")
+        (mkDell43HomeProfile "Dell Inc. DELL U4323QE *")
+        (mkDell43HomeProfile "Dell Inc. DELL U4320Q *")
+        (mkDell43HomeProfile "Dell Inc. DELL P4317Q *")
+        {
+          profile.name = "docked-wildcard";
+          profile.outputs = [
+            {
+              criteria = "eDP-1";
+              status = "enable";
+              mode = "1920x1200@60Hz";
+              position = "0,720";
+              scale = 1.5;
+            }
+            {
+              criteria = "*";
+              status = "enable";
+              position = "1440,0";
+              scale = 1.0;
+            }
+          ];
+        }
+      ];
+    };
 
     # Additional tools
     dotfiles.shell.yazi.enable = true;
@@ -267,7 +533,7 @@
     dotfiles.gpg.enable = true;
 
     # Bluetooth and network management
-    home.packages = [pkgs.overskride taterNetworkRecover];
+    home.packages = [pkgs.overskride taterNetworkRecover taterHomeClamshell taterHomeOpen taterHomeToggle taterDesktopDoctor];
     services.network-manager-applet.enable = true;
 
     # Openclaw configuration (minimal base config for nodes)

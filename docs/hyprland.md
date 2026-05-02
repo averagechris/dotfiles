@@ -43,7 +43,21 @@ Hyprland is a modern Wayland compositor with GPU acceleration, smooth animations
 | `Super+Shift+0` | Move window to workspace 10 |
 | `Super+Alt+M` | Previous workspace |
 | `Super+Alt+I` | Next workspace |
+| `Super+O` | Open the workspace overview / move menu |
 | `Super+Scroll` | Scroll through workspaces |
+
+### Workspace Overview
+
+`Super+O` opens the script-backed workspace overview / move menu. This fallback is intentionally used on tater while Hyprspace is disabled: after reboot, Hyprland can start without the plugin dispatcher (`overview:toggle`), and the plugin path has been unstable enough to trigger Hyprland safe mode.
+
+Hyprspace remains available as an option in the shared module for future retesting. If re-enabled, it must be compiled against the exact active Hyprland build because Hyprland plugins depend on internal compositor headers. Update Hyprland and Hyprspace together and verify a full tater system build before enabling it again.
+
+| Action | Behavior |
+|--------|----------|
+| `Super+O` | Open the workspace overview / move menu |
+| Select a workspace | Switch to that workspace |
+| Select a move target while a window is focused | Move the focused window to that workspace |
+| `Escape` | Close the menu |
 
 ### Submaps (Modal Modes)
 
@@ -126,6 +140,7 @@ The lock screen displays a blurred screenshot of your desktop with an overlay. K
 - **Password input** with asterisks (`*`) for better visibility
 - **Now playing** info (when music is playing)
 - **Fingerprint auth** when fprintd + PAM are enabled for hyprlock
+- **Fingerprint hint text** so laptop unlock makes it clear that touching the sensor and typing the password are both valid paths.
 
 > **Note:** Since you use multiple keyboard layouts (Colemak-DH and QWERTY), typos can be confusing. The password field shows asterisks (`*`) instead of dots for better visibility.
 >
@@ -145,9 +160,10 @@ If the host enables `fprintd` and fingerprint auth is configured, you can unlock
 
 - **Hyprlock** uses Hyprlock's `auth.fingerprint.enabled` for parallel fingerprint auth (keeps PAM password fallback via `unixAuth`).
 - **ReGreet** (login/greeter session)
-- **sudo** (terminal elevation)
 
 Password entry remains available; ensure the PAM service enables `unixAuth` for password fallback when needed.
+
+`sudo` intentionally uses password-first authentication on tater. In clamshell mode the ThinkPad fingerprint sensor is physically unavailable, and PAM fingerprint auth blocks password entry until the sensor attempt times out. Disabling `security.pam.services.sudo.fprintAuth` makes terminal elevation prompt for the password immediately while keeping fingerprints for login and lock-screen flows.
 
 On ThinkPads with Goodix sensors, enable the libfprint TOD driver (e.g. `services.fprintd.tod.driver = pkgs.libfprint-2-tod1-goodix;`).
 
@@ -182,6 +198,61 @@ dotfiles.hypridle.timeouts = {
 ```
 
 > Note: hibernate requires working swap. If hibernation is not configured, set `hibernate = 0` and use `suspend` instead.
+
+## Laptop, Docking, and External Monitors
+
+The shared Hyprland config has conservative monitor defaults:
+
+| Output | Default behavior |
+|--------|------------------|
+| `eDP-1` | Preferred mode, automatic position, scale `1` unless the host overrides it |
+| Any other monitor | Preferred mode, automatic position, scale `1` |
+
+On tater, `kanshi` adds host-specific docking profiles:
+
+| Profile | Behavior |
+|---------|----------|
+| `undocked` | Use the ThinkPad panel at `1920x1200@60Hz`, scale `1.5` |
+| `home-dell-43-*` | Preferred home clamshell mode for the exact `Dell Inc. DELL U4320Q 1LTJW13` and known/likely Dell 43" model strings: disable `eDP-1` and use the Dell at `3840x2160@60Hz`, scale `1.0` |
+| `docked-wildcard` | Generic fallback for unknown monitors: keep the laptop panel enabled below the external monitor and place the external display to the right at scale `1.0` |
+
+Tater also provides manual home layout commands for when you want to override the automatic clamshell preference without editing the Nix config:
+
+| Command | Behavior |
+|---------|----------|
+| `tater-home-clamshell` | Home Dell only: `DP-2` at `3840x2160@60Hz`, disable `eDP-1` |
+| `tater-home-open` | Home Dell plus laptop panel: Dell at `3840x2160@60Hz`, laptop panel enabled below/left at `1920x1200@60Hz`, scale `1.5` |
+| `tater-home-toggle` | Toggle between the two layouts above and send a desktop notification |
+
+Use `tater-home-open` after opening the lid if you want the internal display on as a secondary panel while still using the 43" Dell as the main workspace area.
+
+When the Dell is connected on tater, the Eww bar shows a display toggle next to the keyboard indicator:
+
+| Indicator | Meaning |
+|-----------|---------|
+| `󰍹` | Dell-only clamshell mode; click to enable the laptop panel |
+| `󰌢+󰍹` | Dell plus laptop panel; click to return to Dell-only clamshell |
+
+The Eww bar opens by monitor name on both displays when both are active. Workspace buttons are monitor-local:
+
+| Monitor | Workspaces |
+|---------|------------|
+| Home Dell (`DP-2`) | `1`-`5` |
+| Laptop panel (`eDP-1`) | `6`-`10` |
+
+When the laptop panel is disabled, the internal-display bar closes with that output and the Dell bar remains active. Lid-close/open and the tater home display toggle both refresh Eww bars after changing monitors, so the panel should not get stranded on the wrong output.
+
+Lid handling is split between systemd-logind and Hyprland:
+
+- On battery with no dock, logind may still suspend on lid close.
+- On external power or with a dock/display, logind ignores the lid so clamshell mode can work.
+- Hyprland disables `eDP-1` on lid close when another monitor is present, but does not lock in that docked/clamshell case. If no external monitor is connected, lid close still locks before the normal logind suspend path.
+- The tater home Dell profiles also disable `eDP-1` declaratively in kanshi, so closing the lid at home leaves only the 43" monitor active.
+- Opening the lid re-enables `eDP-1` and wakes displays with DPMS.
+
+The greetd/ReGreet Hyprland session has its own early display fix because user-level kanshi is not running at the login screen. During greetd startup, if the lid is closed and any external monitor is present, the greeter disables `eDP-*` so ReGreet is forced onto the visible docked display instead of rendering only on the built-in panel.
+
+If a particular monitor needs exact refresh/scale/position, add a more specific tater `services.kanshi.settings` profile using the monitor model/serial from `hyprctl monitors`.
 
 ## Application Integration
 

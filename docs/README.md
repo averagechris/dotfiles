@@ -11,6 +11,7 @@
 - [gpg-signing](/docs/gpg-signing.md) - GPG signing setup for git and jj commits with agenix
 - [shell](/docs/shell.md) - Shell module configuration and PATH precedence
 - [suremac](/docs/suremac.md) - macOS host settings, including Spaces desktop shortcuts
+- [tater desktop testing](/docs/tater-desktop-testing.md) - Static and runtime checks for tater's Hyprland, greetd, Eww, display, and Wi-Fi setup
 
 ## Troubleshooting
 

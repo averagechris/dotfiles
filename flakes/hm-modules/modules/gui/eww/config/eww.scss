@@ -121,6 +121,26 @@ $highlight-high: #56526e;
   font-weight: bold;
 }
 
+.home-display {
+  color: $foam;
+  padding: 0 8px;
+  border-radius: 4px;
+  font-weight: bold;
+
+  &.open {
+    color: $gold;
+  }
+
+  &.clamshell {
+    color: $foam;
+  }
+
+  &:hover {
+    background: $overlay;
+    color: $text;
+  }
+}
+
 .submap {
   color: $gold;
   padding: 0 12px;

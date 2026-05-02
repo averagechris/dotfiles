@@ -134,6 +134,7 @@ To add GPG signing to a new machine:
 - **GPG agent caches the passphrase for 7 days** - you only need to enter it once per week
 - The key persists in the GPG keyring across rebuilds
 - The key ID is read from agenix on each rebuild
+- Profile switches should preserve the in-memory passphrase cache; the automatic cleanup service avoids killing `gpg-agent` because that daemon owns the cache.
 
 ### Passphrase Caching
 
@@ -146,6 +147,8 @@ This means:
 - Each time you use it, the 7-day timer resets
 - Maximum cache time is 1 year
 - You can change these values in `flakes/nixos-modules/modules/users/chris.nix`
+
+Unlike macOS Keychain, this setup does not persist the GPG passphrase itself to disk. On Linux, the normal GPG model is an in-memory `gpg-agent` cache. The dotfiles optimize for keeping that agent alive across rebuilds/profile switches while still providing a manual recovery command for the rare stale-lock case.
 
 To test the caching:
 ```bash
@@ -166,7 +169,7 @@ If you see "waiting for lock" errors or timeouts when signing with jj or git:
 
 **Solution**: See [GPG Agent Lock Troubleshooting Guide](../troubleshooting/gpg-agent-lock.md)
 
-The dotfiles now include an automatic cleanup service that runs on login to prevent this issue.
+The dotfiles include an automatic cleanup service that kills stale `keyboxd` processes on login without killing `gpg-agent`, preserving the passphrase cache across profile switches.
 
 If the cleanup service is failing, check:
 
@@ -175,6 +178,14 @@ systemctl --user --no-pager --full status gpg-agent-cleanup.service
 ```
 
 If the status shows an `EXEC` failure for `pkill`, rebuild and switch your system or Home Manager configuration so the updated cleanup unit is installed.
+
+If GPG is still wedged and you are willing to lose the current passphrase cache, run:
+
+```bash
+gpg-agent-recover
+```
+
+This kills stale `keyboxd`, restarts `gpg-agent`, and relaunches it. Your next signing operation will prompt for the passphrase again.
 
 ### "No secret key" Error
 

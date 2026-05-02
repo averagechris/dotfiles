@@ -12,10 +12,15 @@
 (defpoll wifi-ssid :interval "10s" "nmcli -t -f active,ssid dev wifi | grep '^yes' | cut -d':' -f2 || echo 'Disconnected'")
 (defpoll bluetooth-connected :interval "10s" "bluetoothctl info 2>/dev/null | grep -q 'Connected: yes' && echo true || echo false")
 (defpoll keyboard-layout :interval "2s" "hyprctl devices -j 2>/dev/null | jq -r '.keyboards[] | select(.main == true) | .active_keymap' | cut -d'(' -f2 | cut -d')' -f1 || echo 'us'")
+(defpoll home-display-state :interval "2s" "command -v tater-home-toggle >/dev/null && hyprctl monitors -j 2>/dev/null | jq -r 'if any(.[]; .name == \"DP-2\" and .model == \"DELL U4320Q\") then if any(.[]; .name == \"eDP-1\" and (.disabled | not)) then \"open\" else \"clamshell\" end else \"absent\" end' || echo absent")
 
 ; Workspaces (updated via hyprland IPC)
 (deflisten workspaces :initial "[1]" "scripts/workspaces.sh")
 (deflisten active-workspace :initial "1" "scripts/active-workspace.sh")
+(deflisten workspaces-internal :initial "[1]" "scripts/workspaces.sh eDP-1")
+(deflisten active-workspace-internal :initial "1" "scripts/active-workspace.sh eDP-1")
+(deflisten workspaces-external :initial "[6]" "scripts/workspaces.sh DP-2")
+(deflisten active-workspace-external :initial "6" "scripts/active-workspace.sh DP-2")
 (deflisten current-submap :initial "" "scripts/submap.sh")
 
 ; Media
@@ -24,10 +29,10 @@
 (defpoll media-status :interval "1s" "playerctl status 2>/dev/null || echo 'Stopped'")
 
 ; Widgets
-(defwidget workspaces-widget []
+(defwidget workspaces-widget [items active]
   (box :class "workspaces" :orientation "h" :space-evenly false
-    (for ws in workspaces
-      (button :class {ws == active-workspace ? "workspace active" : "workspace"}
+    (for ws in items
+      (button :class {ws == active ? "workspace active" : "workspace"}
               :onclick "hyprctl dispatch workspace ${ws}"
         ws))))
 
@@ -98,7 +103,14 @@
        :tooltip "Keyboard layout"
     (label :text {keyboard-layout == "us" ? "󰌌 US" :
                   keyboard-layout == "basic" ? "󰌌 QW" :
-                  keyboard-layout == "colemak_dh" ? "󰌌 CM" : "󰌌 ${keyboard-layout}"})))
+                   keyboard-layout == "colemak_dh" ? "󰌌 CM" : "󰌌 ${keyboard-layout}"})))
+
+(defwidget home-display-widget []
+  (button :class "home-display ${home-display-state}"
+          :visible {home-display-state != "absent"}
+          :onclick "tater-home-toggle"
+          :tooltip {home-display-state == "open" ? "Dell + laptop panel active; click for Dell-only clamshell" : "Dell-only clamshell active; click to enable laptop panel"}
+    {home-display-state == "open" ? "󰌢+󰍹" : "󰍹"}))
 
 (defwidget media-widget []
   (box :class "media ${media-status}" :orientation "h" :space-evenly false
@@ -113,9 +125,9 @@
   (button :class "power" :onclick "scripts/power-menu.sh" "󰐥"))
 
 ; Bar sections
-(defwidget left []
+(defwidget left [items active]
   (box :class "left" :orientation "h" :space-evenly false :halign "start"
-    (workspaces-widget)
+    (workspaces-widget :items items :active active)
     (submap-widget)))
 
 (defwidget center []
@@ -125,6 +137,7 @@
 (defwidget right []
   (box :class "right" :orientation "h" :space-evenly false :halign "end"
     (keyboard-widget)
+    (home-display-widget)
     (network-widget)
     (bluetooth-widget)
     (brightness-widget)
@@ -134,17 +147,25 @@
     (clock)
     (power-button)))
 
-(defwidget bar []
+(defwidget bar [items active]
   (centerbox :class "bar"
-    (left)
+    (left :items items :active active)
     (center)
     (right)))
 
 ; Windows
-(defwindow bar
-  :monitor 0
+(defwindow bar-internal
+  :monitor "eDP-1"
   :geometry (geometry :x "0%" :y "4px" :width "99%" :height "32px" :anchor "top center")
   :stacking "fg"
   :exclusive true
   :focusable false
-  (bar))
+  (bar :items workspaces-internal :active active-workspace-internal))
+
+(defwindow bar-external
+  :monitor "DP-2"
+  :geometry (geometry :x "0%" :y "4px" :width "99%" :height "32px" :anchor "top center")
+  :stacking "fg"
+  :exclusive true
+  :focusable false
+  (bar :items workspaces-external :active active-workspace-external))

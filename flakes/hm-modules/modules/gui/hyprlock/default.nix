@@ -74,12 +74,23 @@ in {
             valign = "center";
           }
           {
+            # Auth hint. Hosts with fingerprint enabled can touch the sensor;
+            # password remains visible as the reliable fallback.
+            text = "󰈷 Touch fingerprint sensor or type password";
+            color = "rgb(196, 167, 231)";
+            font_size = 14;
+            font_family = "Inter";
+            position = "0, -155";
+            halign = "center";
+            valign = "center";
+          }
+          {
             # Now playing (optional)
             text = "cmd[update:1000] playerctl metadata --format '{{artist}} - {{title}}' 2>/dev/null";
             color = "rgb(144, 140, 170)";
             font_size = 14;
             font_family = "Inter";
-            position = "0, -180";
+            position = "0, -205";
             halign = "center";
             valign = "center";
           }

@@ -2,9 +2,14 @@
 # Get Hyprland workspaces
 
 get_workspaces() {
+  monitor="${1:-}"
   # Filter out special workspaces (like scratchpad which has ID -98)
   # Only include regular workspaces with positive IDs
-  hyprctl workspaces -j | jq -c '[.[].id | select(. >= 0)] | sort'
+  if [[ -n "$monitor" ]]; then
+    hyprctl workspaces -j | jq -c --arg monitor "$monitor" '[.[] | select(.monitor == $monitor) | .id | select(. >= 0)] | sort'
+  else
+    hyprctl workspaces -j | jq -c '[.[].id | select(. >= 0)] | sort'
+  fi
 }
 
 # Initial output

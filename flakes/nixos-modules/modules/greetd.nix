@@ -6,10 +6,10 @@
   hyprlandGreetConfig = pkgs.writeText "greetd-hyprland-config" ''
     env=GDK_BACKEND,wayland
     env=XCURSOR_SIZE,24
-    exec=${lib.getExe pkgs.greetd.gtkgreet} -l; hyprtcl dispatch exit
+    exec=${lib.getExe pkgs.greetd.gtkgreet} -l; hyprctl dispatch exit
     bind=SUPER+SHIFT,Q,exec,systemctl poweroff
     bind=SUPER+SHIFT,R,exec,systemctl reboot
-    bind=SUPER,R,exec,${lib.getExe pkgs.greetd.gtkgreet} -l; hyprtcl dispatch exit
+    bind=SUPER,R,exec,${lib.getExe pkgs.greetd.gtkgreet} -l; hyprctl dispatch exit
     bind=SUPER+SHIFT+CTRL+ALT,SPACE,exec,hyprctl switchxkblayout at-translated-set-2-keyboard next
 
     input {
