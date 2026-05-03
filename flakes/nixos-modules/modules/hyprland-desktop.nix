@@ -599,6 +599,15 @@ in {
       };
     };
 
+    # ReGreet reads this list to decide what command to launch after a
+    # successful login. Without it, password auth succeeds but the selected
+    # session can immediately exit and bounce back to the greeter.
+    environment.etc."greetd/environments".text = ''
+      Hyprland
+      zsh
+      bash
+    '';
+
     # Ensure systemd logs don't overlap with greetd
     boot.kernelParams = [
       "console=tty1"

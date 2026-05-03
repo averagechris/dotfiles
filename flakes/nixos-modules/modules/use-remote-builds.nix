@@ -36,6 +36,7 @@
       }
       {
         hostName = "thorny";
+        sshUser = "chris";
         system = "x86_64-linux";
         maxJobs = 16;
         speedFactor = 4;

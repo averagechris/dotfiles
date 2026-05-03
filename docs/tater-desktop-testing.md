@@ -39,7 +39,9 @@ The doctor checks the live system state:
 
 - Hyprland IPC is reachable.
 - `hypridle`, `kanshi`, `greetd`, NetworkManager, and iwd are active where expected.
-- `/etc/greetd/environments` lists Hyprland.
+- `/etc/greetd/environments` lists Hyprland so ReGreet launches the intended
+  user session after successful authentication instead of bouncing back to the
+  greeter.
 - Fingerprint service plumbing is available.
 - Wi-Fi is connected and the `mt7925e` driver is loaded.
 - The home Dell U4320Q is detected on `DP-2` at `3840x2160` scale `1` when connected.
