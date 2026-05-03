@@ -8,6 +8,7 @@
     inputs.nixos-modules.nixosModules.desktopCommon
     inputs.nixos-modules.nixosModules.sudoDeploy
     inputs.nixos-modules.nixosModules.tailscale
+    inputs.nixos-modules.nixosModules.useRemoteBuilds
     inputs.nixos-modules.nixosModules.users.chrisMinimal
     inputs.nixos-modules.nixosModules.homeAssistant
     inputs.nixos-hardware.nixosModules.system76

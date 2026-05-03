@@ -12,6 +12,7 @@
     inputs.nixos-modules.nixosModules.networking
     inputs.nixos-modules.nixosModules.sound
     inputs.nixos-modules.nixosModules.tailscale
+    inputs.nixos-modules.nixosModules.useRemoteBuilds
     inputs.nixos-modules.nixosModules.virtualization
     inputs.nixos-modules.nixosModules.users.chris
     inputs.nixos-modules.nixosModules.cosmicDesktop

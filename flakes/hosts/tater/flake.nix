@@ -147,7 +147,7 @@
       # usable while still allowing intentional policy changes in one obvious
       # place.
       assert_eq "NetworkManager uses iwd for Wi-Fi" ${builtins.toJSON cfg.networking.networkmanager.wifi.backend} iwd
-      assert_eq "NetworkManager Wi-Fi powersave disabled" ${bool (cfg.networking.networkmanager.wifi.powersave == false)} true
+      assert_eq "NetworkManager Wi-Fi powersave disabled" ${bool (! cfg.networking.networkmanager.wifi.powersave)} true
       assert_eq "iwd enabled" ${bool cfg.networking.wireless.iwd.enable} true
       assert_eq "TLP Wi-Fi powersave off on battery" ${builtins.toJSON cfg.services.tlp.settings.WIFI_PWR_ON_BAT} off
       assert_eq "NetworkManager restarts on failure" ${builtins.toJSON cfg.systemd.services.NetworkManager.serviceConfig.Restart} always

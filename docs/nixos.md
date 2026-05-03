@@ -3,6 +3,18 @@
 This is based on the installation guide in the [nixos manual](https://nixos.org/manual/nixos/stable/index.html#version-21-05)
 supplemented with the tips in [this fantastic blog post](https://qfpl.io/posts/installing-nixos/).
 
+## Shared CLI tools
+
+All NixOS hosts import `nixosModules.common`, which installs common Nix and
+editing tools including `nh` and `nix-output-monitor` (`nom`).
+
+- `nom` is a more readable progress UI for Nix commands:
+  `nom build .#pkg`, `nom develop`, `nom shell nixpkgs#ripgrep`.
+- `nh` wraps common NixOS workflows:
+  `nh os build .`, `nh os test .`, `nh os switch .`.
+
+The Darwin host also installs these tools directly in its host configuration.
+
 ## Create installation media
 
 > Any iso provided by the [NixOS Download Page](https://nixos.org/nixos/download.html)

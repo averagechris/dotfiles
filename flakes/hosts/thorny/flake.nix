@@ -20,6 +20,24 @@
       url = "sourcehut:~averagechris/starship-jj";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    hyprland = {
+      # Match tater's pinned Hyprland so the shared workstation config and
+      # portal behavior stay consistent between daily GUI machines.
+      url = "github:hyprwm/Hyprland/0002f148c9a4fe421a9d33c0faa5528cdc411e62";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    Hyprspace = {
+      url = "github:KZDKM/Hyprspace";
+      inputs.hyprland.follows = "hyprland";
+    };
+    hypridle = {
+      url = "github:hyprwm/hypridle";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    anyrun = {
+      url = "github:anyrun-org/anyrun";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = inputs @ {

@@ -40,7 +40,9 @@
 
   environment.systemPackages = with pkgs; [
     git
+    nh
     nix-index
+    nix-output-monitor
     nix-prefetch-scripts
     neovim
     which

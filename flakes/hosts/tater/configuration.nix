@@ -42,6 +42,7 @@ in {
     inputs.nixos-modules.nixosModules.networking
     inputs.nixos-modules.nixosModules.sound
     inputs.nixos-modules.nixosModules.tailscale
+    inputs.nixos-modules.nixosModules.useRemoteBuilds
     inputs.nixos-modules.nixosModules.virtualization
     inputs.nixos-modules.nixosModules.users.chris
     inputs.nixos-modules.nixosModules.hyprlandDesktop
@@ -450,6 +451,18 @@ in {
         if [[ "$failures" -gt 0 ]]; then exit 1; fi
       '';
     };
+    thornyStatus = pkgs.writeShellApplication {
+      name = "thorny-status-remote";
+      runtimeInputs = [pkgs.openssh];
+      text = ''
+        set -euo pipefail
+
+        host="''${1:-thorny}"
+        shift || true
+
+        exec ssh -t "$host" thorny-status "$@"
+      '';
+    };
   in {
     # secrets are passed via _module.args in nixos-modules/modules/users/chris.nix
     home.stateVersion = "26.05";
@@ -571,7 +584,7 @@ in {
     dotfiles.gpg.enable = true;
 
     # Bluetooth and network management
-    home.packages = [pkgs.overskride taterNetworkRecover taterHomeClamshell taterHomeOpen taterHomeToggle taterDesktopDoctor];
+    home.packages = [pkgs.overskride taterNetworkRecover taterHomeClamshell taterHomeOpen taterHomeToggle taterDesktopDoctor thornyStatus];
     services.network-manager-applet.enable = true;
 
     # Openclaw configuration (minimal base config for nodes)
