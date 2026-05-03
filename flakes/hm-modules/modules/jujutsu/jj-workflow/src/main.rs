@@ -40,7 +40,7 @@ fn run() -> Result<()> {
 fn print_usage(program: &OsStr) {
     let name = program.to_string_lossy();
     eprintln!(
-        "Usage:\n  {name} ship [-b|--bookmark <bookmark>] [--remote <remote>] [-- <jj push args...>]\n  {name} sync [-b|--bookmark <bookmark>] [--remote <remote>] [--onto <revset>] [-- <jj rebase args...>]"
+        "Usage:\n  {name} ship [-b|--bookmark <bookmark>] [--remote <remote>] [-- <jj git push args...>]\n  {name} sync [-b|--bookmark <bookmark>] [--remote <remote>] [--onto <revset>] [-- <jj rebase args...>]"
     );
 }
 
@@ -134,6 +134,12 @@ fn run_ship(mut args: ParsedArgs) -> Result<()> {
         return Ok(());
     }
 
+    // Run lints before changing bookmarks. The `jj push` alias also runs lints,
+    // but doing it there means a lint failure can leave an integration bookmark
+    // moved locally and then require manual recovery. Ship should fail early
+    // while the repo graph is still untouched.
+    run_jj_status(["lint"])?;
+
     let plan = ship_plan(has_working_copy_changes()?);
 
     if plan.create_new_working_copy {
@@ -177,6 +183,7 @@ fn run_ship(mut args: ParsedArgs) -> Result<()> {
     }
 
     let mut push_args = vec![
+        OsString::from("git"),
         OsString::from("push"),
         OsString::from("--bookmark"),
         OsString::from(&bookmark),
@@ -474,7 +481,14 @@ fn commit_is_empty(revset: &str) -> Result<bool> {
 
 fn rollback_bookmark(bookmark: &str, previous_target: Option<&str>) -> Result<()> {
     match previous_target {
-        Some(target) => run_jj_status(["bookmark", "set", bookmark, "-r", target]),
+        Some(target) => run_jj_status([
+            "bookmark",
+            "set",
+            bookmark,
+            "-r",
+            target,
+            "--allow-backwards",
+        ]),
         None => run_jj_status(["bookmark", "forget", bookmark]),
     }
 }
@@ -499,7 +513,7 @@ fn is_release_bookmark(bookmark: &str) -> bool {
 
 fn print_ship_usage() {
     eprintln!(
-        "Usage:\n  jj ship [-b|--bookmark <bookmark>] [--remote <remote>] [-- <jj push args...>]\n\nShips the parent of the working copy. Refuses empty targets and will not fall back to integration bookmarks unless you choose one explicitly with --bookmark."
+        "Usage:\n  jj ship [-b|--bookmark <bookmark>] [--remote <remote>] [-- <jj git push args...>]\n\nRuns jj lint, then ships the parent of the working copy. Refuses empty targets and will not fall back to integration bookmarks unless you choose one explicitly with --bookmark."
     );
 }
 

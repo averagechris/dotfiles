@@ -36,6 +36,7 @@ Useful iteration pattern:
 - `jj sync --onto <revset>` - override inferred sync base
 
 ### `jj ship`
+- runs `jj lint` before moving bookmarks, so lint failures leave the graph/bookmarks untouched
 - creates a new empty working copy only if needed
 - ships the parent of the working copy, so an already-empty `@` (for example after `jj new`) does not get pushed
 - prefers the nearest non-integration bookmark
@@ -43,6 +44,7 @@ Useful iteration pattern:
 - requires `--bookmark` if only integration bookmarks are nearby instead of silently falling back
 - treats `develop`, `dev`, `main`, `master`, `trunk`, and `release*` as integration bookmarks
 - warns / opens a picker if bookmark or remote choice is ambiguous
+- pushes with `jj git push` after lints pass to avoid running the same lint set twice
 
 ### `jj sync`
 - fetches first

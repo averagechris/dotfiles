@@ -8,16 +8,30 @@
       url = "github:nix-community/home-manager/master";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    helix = {
+      url = "github:helix-editor/helix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    starship-jj = {
+      url = "sourcehut:~averagechris/starship-jj";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    linear-cli = {
+      url = "sourcehut:~averagechris/linear-cli";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+    };
     base-lib = {
       url = "path:../base-lib";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
-  outputs = {
+  outputs = inputs @ {
     nixpkgs,
     flake-utils,
     home-manager,
+    base-lib,
     ...
   }:
     {
@@ -65,7 +79,15 @@
       };
     }
     // flake-utils.lib.eachDefaultSystem (system: let
-      pkgs = nixpkgs.legacyPackages.${system};
+      pkgs = import nixpkgs {
+        inherit system;
+        config.allowUnfree = true;
+        overlays = [
+          (_final: _prev: {
+            titlecase = base-lib.inputs.titlecase.packages.${system}.default;
+          })
+        ];
+      };
       inherit (pkgs.stdenv) isLinux;
       # Provide dotfiles_lib that modules expect (normally provided by base-lib)
       dotfiles_lib = {
@@ -91,7 +113,7 @@
             testConfig = home-manager.lib.homeManagerConfiguration {
               inherit pkgs;
               extraSpecialArgs = {
-                inherit dotfiles_lib system;
+                inherit dotfiles_lib inputs system;
                 # Provide empty secrets for modules that optionally use agenix secrets
                 secrets = {};
               };
