@@ -1,9 +1,41 @@
 {
+  config,
   inputs,
   lib,
   pkgs,
   ...
-}: {
+}: let
+  skipFingerprintWhenLidClosed = pkgs.writeShellApplication {
+    name = "skip-fingerprint-when-lid-closed";
+    runtimeInputs = [pkgs.gnugrep];
+    text = ''
+      for lid_state in /proc/acpi/button/lid/*/state; do
+        if [ -r "$lid_state" ] && grep -qi 'closed' "$lid_state"; then
+          exit 0
+        fi
+      done
+
+      exit 1
+    '';
+  };
+
+  mkLidAwareFingerprintPam = serviceName: {
+    fprintAuth = true;
+    rules.auth.skip-fprintd-when-lid-closed = {
+      # If the lid is closed, skip the next auth rule, which is the built-in
+      # pam_fprintd rule. This avoids the greeter blocking on an inaccessible
+      # fingerprint reader in docked clamshell mode while preserving fingerprint
+      # login when the laptop is open.
+      order = config.security.pam.services.${serviceName}.rules.auth.fprintd.order - 1;
+      control = "[success=1 default=ignore]";
+      modulePath = "${config.security.pam.package}/lib/security/pam_exec.so";
+      args = [
+        "quiet"
+        "${lib.getExe skipFingerprintWhenLidClosed}"
+      ];
+    };
+  };
+in {
   imports = [
     inputs.nixos-modules.nixosModules.common
     inputs.nixos-modules.nixosModules.desktopCommon
@@ -93,8 +125,8 @@
     fprintAuth = false;
     unixAuth = true;
   };
-  security.pam.services.greetd.fprintAuth = true;
-  security.pam.services.regreet.fprintAuth = true;
+  security.pam.services.greetd = mkLidAwareFingerprintPam "greetd";
+  security.pam.services.regreet = mkLidAwareFingerprintPam "regreet";
   # In clamshell mode the fingerprint reader is physically unavailable, and
   # sudo's PAM stack waits for fingerprint auth before accepting a password.
   # Keep fingerprints for login/unlock paths but make terminal elevation prompt
@@ -122,10 +154,16 @@
   services.tlp = {
     enable = true;
     settings = {
-      CPU_SCALING_GOVERNOR_ON_AC = "performance";
+      # Keep AC performance responsive without pinning the CPU in the most
+      # aggressive profile. The previous performance/performance pairing caused
+      # frequent fan ramp-ups during bursty desktop workloads on the T14s.
+      CPU_SCALING_GOVERNOR_ON_AC = "schedutil";
       CPU_SCALING_GOVERNOR_ON_BAT = "powersave";
-      CPU_ENERGY_PERF_POLICY_ON_AC = "performance";
+      CPU_ENERGY_PERF_POLICY_ON_AC = "balance_performance";
       CPU_ENERGY_PERF_POLICY_ON_BAT = "power";
+      PLATFORM_PROFILE_ON_AC = "balanced";
+      PLATFORM_PROFILE_ON_BAT = "low-power";
+      CPU_BOOST_ON_BAT = 0;
       START_CHARGE_THRESH_BAT0 = 75;
       STOP_CHARGE_THRESH_BAT0 = 80;
       WIFI_PWR_ON_AC = "off";

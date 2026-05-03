@@ -159,7 +159,7 @@ The lock screen displays a blurred screenshot of your desktop with an overlay. K
 If the host enables `fprintd` and fingerprint auth is configured, you can unlock with either fingerprint or password. In this setup:
 
 - **Hyprlock** uses Hyprlock's `auth.fingerprint.enabled` for parallel fingerprint auth (keeps PAM password fallback via `unixAuth`).
-- **ReGreet** (login/greeter session)
+- **ReGreet** (login/greeter session) uses lid-aware PAM fingerprint auth on tater. When the lid is open, fingerprint login is available. When the lid is closed, a small `pam_exec` guard skips `pam_fprintd` so clamshell login immediately falls back to password entry instead of waiting on an inaccessible fingerprint sensor.
 
 Password entry remains available; ensure the PAM service enables `unixAuth` for password fallback when needed.
 
