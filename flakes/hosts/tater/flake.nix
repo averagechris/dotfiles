@@ -158,18 +158,26 @@
       # clamshell mode, and the core desktop daemons must be enabled.
       assert_eq "logind ignores lid while docked" ${builtins.toJSON cfg.services.logind.settings.Login.HandleLidSwitchDocked} ignore
       assert_eq "logind ignores lid on external power" ${builtins.toJSON cfg.services.logind.settings.Login.HandleLidSwitchExternalPower} ignore
+      assert_eq "systemd enables suspend-then-hibernate" ${builtins.toJSON cfg.systemd.sleep.settings.Sleep.AllowSuspendThenHibernate} yes
+      assert_eq "systemd hibernates after one suspended hour" ${builtins.toJSON cfg.systemd.sleep.settings.Sleep.HibernateDelaySec} 1h
       assert_eq "Hyprland system module enabled" ${bool cfg.programs.hyprland.enable} true
       assert_eq "kanshi enabled for chris" ${bool hm.services.kanshi.enable} true
       assert_eq "hypridle enabled for chris" ${bool hm.services.hypridle.enable} true
       assert_eq "hyprlock enabled for chris" ${bool hm.programs.hyprlock.enable} true
+      listener_json='${builtins.toJSON hm.services.hypridle.settings.listener}'
+      assert_contains "hypridle has home clamshell helper" "$listener_json" tater-home-docked
+      assert_contains "hypridle has home clamshell suspend" "$listener_json" 3600
+      assert_contains "hypridle uses suspend-then-hibernate" "$listener_json" suspend-then-hibernate
+      assert_contains "hypridle honors shared idle inhibit" "$listener_json" dotfiles-idle-inhibit
 
       echo "== Source-level desktop tripwires =="
       # Why this matters: these names are integration points between separate
       # tools (Eww, Hyprland, kanshi, helper commands). Grepping them is more
       # appropriate than over-modeling the UI in Nix. If the policy changes,
       # update these few integration tripwires with the new names.
-      rg -n 'tater-home-toggle|tater-home-open|tater-home-clamshell|tater-network-recover|tater-desktop-doctor' "$tater"
+      rg -n 'tater-home-toggle|tater-home-open|tater-home-clamshell|tater-home-docked|dotfiles-idle-inhibit|tater-network-recover|tater-desktop-doctor' "$tater" "$root/flakes/hm-modules/modules/gui/hypridle/default.nix"
       rg -n 'lock-on-undocked-lid-close|disable-builtin-display-when-lid-closed' "$root/flakes/hm-modules/modules/gui/hyprland/default.nix"
+      rg -n 'idle-inhibit-widget|dotfiles-idle-inhibit' "$eww" "$root/flakes/hm-modules/modules/gui/eww/config/eww.scss"
       rg -n 'bar-internal|bar-external' "$eww" "$ewwModule"
       rg -n ':monitor "eDP-1"' "$eww"
       rg -n ':monitor "DP-2"' "$eww"

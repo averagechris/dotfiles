@@ -151,6 +151,10 @@ in {
     HandleLidSwitchExternalPower = "ignore";
     HandleLidSwitchDocked = "ignore";
   };
+  systemd.sleep.settings.Sleep = {
+    AllowSuspendThenHibernate = "yes";
+    HibernateDelaySec = "1h";
+  };
 
   services.tlp = {
     enable = true;
@@ -351,6 +355,46 @@ in {
         fi
       '';
     };
+    taterHomeDocked = pkgs.writeShellApplication {
+      name = "tater-home-docked";
+      runtimeInputs = [pkgs.hyprland pkgs.jq];
+      text = ''
+        set -euo pipefail
+
+        monitors=$(hyprctl monitors -j)
+
+        # Home clamshell mode means the known desk monitor is active and the
+        # laptop panel is not enabled. Keep open-lid docked use on the normal
+        # laptop idle policy so travel/temporary-desk behavior stays conservative.
+        if ! jq -e '.[] | select(.name == "DP-2" and (.model == "DELL U4320Q" or .model == "DELL U4323QE" or .model == "DELL P4317Q"))' <<<"$monitors" >/dev/null; then
+          exit 1
+        fi
+
+        if jq -e '.[] | select(.name == "eDP-1" and ((.disabled // false) | not))' <<<"$monitors" >/dev/null; then
+          exit 1
+        fi
+      '';
+    };
+    taterDimScreen = pkgs.writeShellApplication {
+      name = "tater-dim-screen";
+      runtimeInputs = [pkgs.brightnessctl pkgs.coreutils];
+      text = ''
+        current=$(brightnessctl g)
+        max=$(brightnessctl m)
+
+        if [ -z "$current" ] || [ -z "$max" ] || [ "$max" -le 0 ]; then
+          exit 0
+        fi
+
+        # Dim relative to current brightness (about 30%), never increase.
+        target=$((current / 3))
+        if [ "$target" -lt 1 ]; then
+          target=1
+        fi
+
+        brightnessctl -s set "$target"
+      '';
+    };
     taterDesktopDoctor = pkgs.writeShellApplication {
       name = "tater-desktop-doctor";
       runtimeInputs = [pkgs.coreutils config.programs.eww.package pkgs.hyprland pkgs.jq pkgs.kmod pkgs.networkmanager pkgs.ripgrep pkgs.systemd];
@@ -498,6 +542,57 @@ in {
       suspend = 420;
       hibernate = 1200;
     };
+    services.hypridle.settings.listener = let
+      homeDocked = lib.getExe taterHomeDocked;
+      dimScreen = lib.getExe taterDimScreen;
+      idleInhibit = "dotfiles-idle-inhibit";
+    in
+      lib.mkForce [
+        {
+          # Dim screen: same behavior in every posture.
+          timeout = 120;
+          on-timeout = "if ! ${idleInhibit} active; then ${dimScreen}; fi";
+          on-resume = "${pkgs.brightnessctl}/bin/brightnessctl -r";
+        }
+        {
+          # Laptop/travel lock policy. Home clamshell gets a longer timer below.
+          timeout = 300;
+          on-timeout = "if ! ${idleInhibit} active && ! ${homeDocked}; then loginctl lock-session; fi";
+        }
+        {
+          # Laptop/travel display-off policy. In home clamshell, keep the desk
+          # display awake until just after the 10-minute lock.
+          timeout = 360;
+          on-timeout = "if ! ${idleInhibit} active && ! ${homeDocked}; then hyprctl dispatch dpms off; fi";
+          on-resume = "hyprctl dispatch dpms on";
+        }
+        {
+          # Laptop/travel suspend policy.
+          timeout = 420;
+          on-timeout = "if ! ${idleInhibit} active && ! ${homeDocked}; then systemctl suspend-then-hibernate; fi";
+        }
+        {
+          # Laptop/travel hibernate policy.
+          timeout = 1200;
+          on-timeout = "if ! ${idleInhibit} active && ! ${homeDocked}; then systemctl hibernate; fi";
+        }
+        {
+          # Home clamshell lock policy.
+          timeout = 600;
+          on-timeout = "if ! ${idleInhibit} active && ${homeDocked}; then loginctl lock-session; fi";
+        }
+        {
+          # Home clamshell display-off policy.
+          timeout = 660;
+          on-timeout = "if ! ${idleInhibit} active && ${homeDocked}; then hyprctl dispatch dpms off; fi";
+          on-resume = "hyprctl dispatch dpms on";
+        }
+        {
+          # Home clamshell suspend policy.
+          timeout = 3600;
+          on-timeout = "if ! ${idleInhibit} active && ${homeDocked}; then systemctl suspend-then-hibernate; fi";
+        }
+      ];
 
     # Disable waybar when using eww
     dotfiles.gui.hyprland.waybar.enable = false;
@@ -588,7 +683,7 @@ in {
     dotfiles.gpg.enable = true;
 
     # Bluetooth and network management
-    home.packages = [pkgs.overskride taterNetworkRecover taterHomeClamshell taterHomeOpen taterHomeToggle taterDesktopDoctor thornyStatus];
+    home.packages = [pkgs.overskride taterNetworkRecover taterHomeClamshell taterHomeOpen taterHomeToggle taterHomeDocked taterDesktopDoctor thornyStatus];
     services.network-manager-applet.enable = true;
 
     # Openclaw configuration (minimal base config for nodes)

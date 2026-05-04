@@ -14,6 +14,7 @@
 (defpoll bluetooth-connected :interval "10s" "bluetoothctl info 2>/dev/null | grep -q 'Connected: yes' && echo true || echo false")
 (defpoll keyboard-layout :interval "2s" "hyprctl devices -j 2>/dev/null | jq -r '.keyboards[] | select(.main == true) | .active_keymap' | cut -d'(' -f2 | cut -d')' -f1 || echo 'us'")
 (defpoll home-display-state :interval "2s" "command -v tater-home-toggle >/dev/null && hyprctl monitors -j 2>/dev/null | jq -r 'if any(.[]; .name == \"DP-2\" and .model == \"DELL U4320Q\") then if any(.[]; .name == \"eDP-1\" and (.disabled | not)) then \"open\" else \"clamshell\" end else \"absent\" end' || echo absent")
+(defpoll idle-inhibit-state :interval "2s" "command -v dotfiles-idle-inhibit >/dev/null && dotfiles-idle-inhibit status || echo unavailable")
 
 ; Workspaces (updated via hyprland IPC)
 (deflisten workspaces :initial "[1]" "scripts/workspaces.sh")
@@ -118,6 +119,13 @@
           :tooltip {home-display-state == "open" ? "Dell + laptop panel active; click for Dell-only clamshell" : "Dell-only clamshell active; click to enable laptop panel"}
     {home-display-state == "open" ? "󰌢+󰍹" : "󰍹"}))
 
+(defwidget idle-inhibit-widget []
+  (button :class "idle-inhibit ${idle-inhibit-state}"
+          :visible {idle-inhibit-state != "unavailable"}
+          :onclick "dotfiles-idle-inhibit toggle"
+          :tooltip {idle-inhibit-state == "active" ? "Idle lock/sleep inhibited for the current power/lid/display state; click to clear" : "Click to prevent automatic dim, lock, display-off, suspend, and hibernate until power/lid/display state changes"}
+    {idle-inhibit-state == "active" ? "󰅶" : "󰾪"}))
+
 (defwidget media-widget []
   (box :class "media ${media-status}" :orientation "h" :space-evenly false
        :visible {media-title != ""}
@@ -144,6 +152,7 @@
   (box :class "right" :orientation "h" :space-evenly false :halign "end"
     (keyboard-widget)
     (home-display-widget)
+    (idle-inhibit-widget)
     (network-widget)
     (bluetooth-widget)
     (brightness-widget)

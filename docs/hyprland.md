@@ -183,6 +183,41 @@ The dim action is **relative to your current brightness** (it never increases br
 | `dotfiles.hypridle.timeouts.suspend` | Seconds before suspending (set `0` to disable) |
 | `dotfiles.hypridle.timeouts.hibernate` | Seconds before hibernating (set `0` to disable) |
 
+### Temporary idle inhibit
+
+The shared Hypridle module installs `dotfiles-idle-inhibit` by default via
+`dotfiles.hypridle.idleInhibit.enable = true`. It is meant for laptops and other
+Hyprland systems where you sometimes want to run a long task without the normal
+dim/lock/DPMS/suspend/hibernate routine.
+
+Commands:
+
+```bash
+dotfiles-idle-inhibit status   # active or inactive
+dotfiles-idle-inhibit toggle   # enable/disable for the current posture
+dotfiles-idle-inhibit clear    # clear manually
+```
+
+When active, the default Hypridle listeners skip dimming, locking, display-off,
+suspend, and hibernate. The inhibit is stored under `XDG_RUNTIME_DIR`, so it does
+not survive logout/reboot. It is also tied to the current runtime posture:
+
+- AC/mains state
+- lid state, when available
+- Hyprland monitor layout
+
+If any of those change, the next status check automatically clears the inhibit.
+This prevents accidentally carrying a no-lock state from one context into
+another, such as unplugging a laptop or closing the lid before travel.
+
+The Eww bar includes a reusable idle-inhibit widget whenever
+`dotfiles-idle-inhibit` is available:
+
+| Icon | State | Action |
+| --- | --- | --- |
+| `󰾪` | Normal idle policy | Click to inhibit idle automation for the current posture. |
+| `󰅶` | Idle automation inhibited | Click to clear manually. |
+
 ### Suggested laptop timings
 
 For a battery-friendly setup:

@@ -21,6 +21,68 @@ Relevant TLP settings:
 `services.thermald.enable = true` remains enabled as an additional thermal
 management layer.
 
+## Idle, lock, and sleep policy
+
+`tater` uses Hypridle + Hyprlock for session idling. The host keeps the
+conservative laptop/travel timers when the machine is undocked, using the laptop
+panel, or docked somewhere other than the known home display:
+
+| Action | Laptop / travel timeout |
+| --- | ---: |
+| Dim panel | 2 minutes |
+| Lock session | 5 minutes |
+| Turn displays off | 6 minutes |
+| Suspend, then hibernate | 7 minutes |
+| Direct hibernate fallback while still awake | 20 minutes |
+
+Home clamshell mode is detected by `tater-home-docked`, which checks Hyprland for
+one of the known home Dell monitors on `DP-2` (`DELL U4320Q`, `DELL U4323QE`, or
+`DELL P4317Q`) and verifies that the internal `eDP-1` panel is not enabled. In
+that posture, Hypridle keeps the quick laptop timers from firing and uses a more
+desktop-like policy instead:
+
+| Action | Home clamshell timeout |
+| --- | ---: |
+| Dim panel | 2 minutes |
+| Lock session | 10 minutes |
+| Turn displays off | 11 minutes |
+| Suspend, then hibernate | 1 hour |
+| Direct hibernate fallback while still awake | disabled by the home-clamshell guard |
+
+The suspend action uses `systemctl suspend-then-hibernate`, with systemd sleep
+configured for `HibernateDelaySec=1h`. This matters for travel: if the laptop is
+already suspended and then gets unplugged and put into a bag without opening the
+lid or logging in, the user Hypridle timers are no longer running, but systemd's
+wake timer should still wake the machine after one hour of suspend and transition
+it to hibernate for better battery conservation.
+
+### Temporary idle inhibit
+
+The Eww bar shows an idle-inhibit button on `tater`:
+
+| Icon | State | Action |
+| --- | --- | --- |
+| `󰾪` | Idle automation is normal | Click to inhibit automatic dim, lock, display-off, suspend, and hibernate. |
+| `󰅶` | Idle automation is inhibited | Click to clear the inhibit manually. |
+
+The shared helper is `dotfiles-idle-inhibit`. It stores the inhibit only for the
+current runtime posture, represented by AC power state, lid state, and active
+Hyprland monitor layout. If any of those change — for example plugging in,
+unplugging, opening or closing the lid, or changing dock/display state — the next
+status check automatically clears the inhibit and normal Hypridle policy resumes.
+This makes it useful for “keep this long task running while I walk around”
+without accidentally carrying the no-lock state into travel or clamshell use.
+
+Useful runtime checks:
+
+```bash
+tater-home-docked && echo home-clamshell || echo laptop-or-away
+dotfiles-idle-inhibit status
+dotfiles-idle-inhibit toggle
+systemctl --user status hypridle.service
+systemctl suspend-then-hibernate
+```
+
 ## Iteration notes
 
 If fans are still too loud on AC, try these in order:

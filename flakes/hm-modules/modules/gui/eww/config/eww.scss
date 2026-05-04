@@ -154,6 +154,23 @@ $highlight-high: #56526e;
   }
 }
 
+.idle-inhibit {
+  color: $muted;
+  padding: 0 8px;
+  border-radius: 4px;
+  font-weight: bold;
+
+  &.active {
+    color: $gold;
+    background: $overlay;
+  }
+
+  &:hover {
+    background: $overlay;
+    color: $text;
+  }
+}
+
 .submap {
   color: $gold;
   padding: 0 12px;
