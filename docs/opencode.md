@@ -7,10 +7,16 @@ This repository manages OpenCode through the home-manager module at `flakes/hm-m
 - custom primary and sub-agents
 - repo-managed slash commands
 - repo-managed skills deployed into `~/.config/opencode/skills/`
+- repo-managed custom tools deployed into `~/.config/opencode/tools/`
 - MCP server definitions written into the generated OpenCode config
 - optional `OPENROUTER_API_KEY` shell export via `dotfiles.opencode.openrouterApiKeyFile`
 - optional `CIRCLECI_TOKEN` shell export via `dotfiles.opencode.circleciTokenFile`
 - agent-specific runtime packages and prompt metadata exposed via `dotfiles.opencode.agentTools`
+
+On Linux, the module wraps the OpenCode package with `LD_LIBRARY_PATH` pointing
+at `stdenv.cc.cc.lib`. This makes OpenCode's native file-watcher binding able to
+find `libstdc++.so.6` on NixOS. Without the wrapper, OpenCode may log or surface
+startup failures while loading project or global files, including custom tools.
 
 ## Agent-exposed tools
 
@@ -126,7 +132,8 @@ workflows. Current examples include:
 
 The PR review workflow is split into a reusable core review skill plus a
 GitHub-specific wrapper. Supporting custom tools live under `.opencode/tools/`
-and currently include:
+and are installed through `programs.opencode.tools`, so OpenCode can also load
+them globally from `~/.config/opencode/tools/`. They currently include:
 
 - `review-artifact-generate` - draft artifact bootstrapper from GitHub metadata and diff text
 - `review-artifact-write` - strict artifact validation and temp-file persistence

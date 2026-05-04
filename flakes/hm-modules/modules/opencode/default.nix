@@ -40,6 +40,20 @@
   ];
   cfg = config.dotfiles.opencode;
   reviewToolsPath = ../../../../.opencode/tools;
+  opencodePackage =
+    if pkgs.stdenv.hostPlatform.isLinux
+    then
+      pkgs.symlinkJoin {
+        inherit (pkgs.opencode) meta;
+        name = "${lib.getName pkgs.opencode}-wrapped-${lib.getVersion pkgs.opencode}";
+        paths = [pkgs.opencode];
+        nativeBuildInputs = [pkgs.makeWrapper];
+        postBuild = ''
+          wrapProgram $out/bin/opencode \
+            --prefix LD_LIBRARY_PATH : ${lib.makeLibraryPath [pkgs.stdenv.cc.cc.lib]}
+        '';
+      }
+    else pkgs.opencode;
   renderToolNote = tool:
     if tool.description == null
     then tool.name
@@ -122,6 +136,8 @@ in {
     # Base opencode configuration (always applied when programs.opencode.enable = true)
     {
       programs.opencode = {
+        package = lib.mkDefault opencodePackage;
+
         # Global skills are sourced from repo-managed SKILL.md files under
         # flakes/hm-modules/modules/opencode/skills/ and deployed to
         # ~/.config/opencode/skills/.
@@ -133,6 +149,10 @@ in {
         # ============================================================================
 
         commands = import ./commands.nix;
+
+        # Repo-managed PR review helpers. Use the home-manager OpenCode tools
+        # option so these are installed as first-class OpenCode custom tools.
+        tools = reviewToolsPath;
 
         # ============================================================================
         # SKILLS - Reusable knowledge for agents
@@ -150,11 +170,6 @@ in {
       };
 
       home.packages = (map (tool: tool.package) installedAgentTools) ++ cfg.agentSupportPackages;
-
-      # Project-local OpenCode tools are only visible when opencode is launched
-      # from this dotfiles checkout. Deploy the repo-managed review tools into
-      # the user config as well so `/review-pr` can use them from any repository.
-      home.file.".config/opencode/tools".source = reviewToolsPath;
     }
 
     # OpenRouter API key configuration (only when openrouterApiKeyFile is set)

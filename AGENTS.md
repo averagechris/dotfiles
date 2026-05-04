@@ -200,7 +200,7 @@ push-lints = ["alejandra --check .", "statix check"]
 
 ## OpenCode PR Review Workflow
 
-The `/review-pr` command and `github-pr-review` / `changes-review-core` skills are repo-managed in `flakes/hm-modules/modules/opencode/`. The artifact helpers (`review-artifact-generate`, `review-artifact-write`, `review-artifact-render`, and `review-github-post`) are OpenCode tools, not shell executables. Do not probe them with `type` or `command -v`; call them as tools. The module deploys `.opencode/tools` into `~/.config/opencode/tools` so the review workflow is available outside this dotfiles checkout. PR reviews must include a compact walkthrough of the changes before comment triage, then walk each candidate comment through approve/refine/change placement/drop/hold decisions before posting.
+The `/review-pr` command and `github-pr-review` / `changes-review-core` skills are repo-managed in `flakes/hm-modules/modules/opencode/`. The artifact helpers (`review-artifact-generate`, `review-artifact-write`, `review-artifact-render`, and `review-github-post`) are OpenCode tools, not shell executables. Do not probe them with `type` or `command -v`; call them as tools. The module deploys `.opencode/tools` into `~/.config/opencode/tools` via `programs.opencode.tools` so the review workflow is available outside this dotfiles checkout. On Linux the module wraps OpenCode with `stdenv.cc.cc.lib` in `LD_LIBRARY_PATH` so native file-watcher bindings can find `libstdc++.so.6` when loading tools and project files. PR reviews must include a compact walkthrough of the changes before comment triage, then walk each candidate comment through approve/refine/change placement/drop/hold decisions before posting.
 
 ## Changelog Policy
 
