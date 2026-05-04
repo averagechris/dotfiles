@@ -17,6 +17,7 @@ in
       ./gitui
       ./neovim
       ./shell-modules/calibre-utils.nix
+      ./shell-modules/audio-output.nix
       ./shell-modules/fzf.nix
       ./shell-modules/lazygit.nix
       ./shell-modules/less.nix
@@ -93,6 +94,7 @@ in
       programs.zsh.oh-my-zsh.enable = lib.mkDefault true;
       programs.jq.enable = lib.mkDefault true;
       dotfiles.yazi.enable = lib.mkDefault true;
+      dotfiles.audioOutput.enable = lib.mkDefault isLinux;
 
       programs.ripgrep = {
         enable = lib.mkDefault true;

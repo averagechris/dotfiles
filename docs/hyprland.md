@@ -320,6 +320,25 @@ Ensure `socat` is installed and the submap script is executable:
 chmod +x ~/.config/eww/scripts/submap.sh
 ```
 
+### Eww commands cannot connect to the daemon
+
+The home-manager Eww module installs an `eww` wrapper that normalizes
+`XDG_RUNTIME_DIR` and `XDG_CONFIG_HOME` before invoking Eww, and points commands
+at `~/.config/eww-stable`. Eww derives its IPC socket from those values plus the
+canonical config directory, so a missing/different environment or a
+generation-specific Home Manager config symlink can make `eww state`,
+`eww active-windows`, and other CLI commands look for a different daemon than the
+Hyprland-started bar is using.
+
+If commands still cannot connect after switching to the updated configuration,
+restart the user daemon once from inside Hyprland:
+
+```bash
+eww kill
+eww daemon
+eww-open-bars
+```
+
 ### Keybindings help not opening
 
 Verify the script is in your PATH:

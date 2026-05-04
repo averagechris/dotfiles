@@ -3,6 +3,7 @@
 ## Configuration
 
 - [anyrun](/docs/anyrun.md) - Anyrun launcher configuration and usage
+- [audio](/docs/audio.md) - PipeWire/WirePlumber output priority, helper commands, and Eww controls
 - [helium](/docs/helium.md) - Helium browser packaging and configuration on NixOS
 - [hyprland](/docs/hyprland.md) - Hyprland window manager configuration, keybindings, and features
 - [nixos](/docs/nixos.md) - General NixOS configuration notes

@@ -8,6 +8,7 @@
 (defpoll battery-status :interval "30s" "cat /sys/class/power_supply/BAT0/status 2>/dev/null || echo 'Full'")
 (defpoll volume :interval "1s" "pamixer --get-volume 2>/dev/null || echo 0")
 (defpoll volume-muted :interval "1s" "pamixer --get-mute 2>/dev/null || echo false")
+(defpoll audio-output :interval "2s" "audio-output eww-label 2>/dev/null || echo '󰕾 OUT'")
 (defpoll brightness :interval "1s" "brightnessctl -m | cut -d',' -f4 | tr -d '%' 2>/dev/null || echo 100")
 (defpoll wifi-ssid :interval "10s" "nmcli -t -f active,ssid dev wifi | grep '^yes' | cut -d':' -f2 || echo 'Disconnected'")
 (defpoll bluetooth-connected :interval "10s" "bluetoothctl info 2>/dev/null | grep -q 'Connected: yes' && echo true || echo false")
@@ -66,14 +67,19 @@
 
 (defwidget volume-widget []
   (eventbox :onclick "pamixer -t"
+            :onrightclick "audio-output menu"
             :onscroll "scripts/volume-scroll.sh {}"
     (box :class "volume ${volume-muted == 'true' ? 'muted' : ''}" 
-         :orientation "h" :space-evenly false
-         :tooltip "Volume: ${volume}%"
+          :orientation "h" :space-evenly false
+          :tooltip "Volume: ${volume}% — left click mute, right click cycle output, scroll adjust"
       (label :text {volume-muted == "true" ? "󰝟" : 
-                    volume < 30 ? "󰕿" : 
-                    volume < 70 ? "󰖀" : "󰕾"})
-      (label :text "${volume}%"))))
+                     volume < 30 ? "󰕿" : 
+                     volume < 70 ? "󰖀" : "󰕾"})
+      (label :text "${volume}%")
+      (button :class "audio-output"
+              :onclick "audio-output cycle"
+              :tooltip "Output: ${audio-output} — click to cycle, right-click to choose output"
+        audio-output))))
 
 (defwidget brightness-widget []
   (eventbox :onscroll "scripts/brightness-scroll.sh {}"

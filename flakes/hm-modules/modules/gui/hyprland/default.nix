@@ -430,7 +430,6 @@ in {
       grimblast
       swaynotificationcenter
       btop
-      eww
       hyprlock
       # Custom scripts
       (writeShellApplication {

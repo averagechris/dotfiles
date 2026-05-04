@@ -25,9 +25,34 @@
     highlightMed = "#44415a";
     highlightHigh = "#56526e";
   };
+  eww = pkgs.writeShellApplication {
+    name = "eww";
+    runtimeInputs = [pkgs.coreutils];
+    text = ''
+      set -euo pipefail
+
+      # Eww derives its daemon socket from both XDG_RUNTIME_DIR and the
+      # canonical config directory.  Some launch paths (for example commands
+      # run outside the login shell's imported environment) can miss one of
+      # these variables, which makes the CLI look for a different daemon than
+      # the Hyprland-started bar is using.
+      export XDG_RUNTIME_DIR="''${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+      export XDG_CONFIG_HOME="''${XDG_CONFIG_HOME:-$HOME/.config}"
+
+      for arg in "$@"; do
+        case "$arg" in
+          -c|--config|--config=*)
+            exec ${lib.getExe pkgs.eww} "$@"
+            ;;
+        esac
+      done
+
+      exec ${lib.getExe pkgs.eww} --config "$XDG_CONFIG_HOME/eww-stable" "$@"
+    '';
+  };
   ewwOpenBars = pkgs.writeShellApplication {
     name = "eww-open-bars";
-    runtimeInputs = [pkgs.eww pkgs.hyprland pkgs.jq];
+    runtimeInputs = [eww pkgs.hyprland pkgs.jq];
     text = ''
       set -euo pipefail
 
@@ -55,8 +80,22 @@ in {
   config = lib.mkIf cfg.enable {
     programs.eww = {
       enable = true;
-      package = pkgs.eww;
+      package = eww;
       configDir = ./config;
+    };
+
+    # Eww hashes the canonical config directory path into its daemon socket.
+    # The default Home Manager configDir is a symlink to a generation-specific
+    # store path, so the socket changes after every activation while the old
+    # Hyprland-started daemon keeps running.  Keep the wrapper pointed at a
+    # stable real directory with symlinked file contents instead.
+    xdg.configFile = {
+      "eww-stable/eww.yuck".source = ./config/eww.yuck;
+      "eww-stable/eww.scss".source = ./config/eww.scss;
+      "eww-stable/scripts" = {
+        source = ./config/scripts;
+        recursive = true;
+      };
     };
 
     # Scripts for eww widgets

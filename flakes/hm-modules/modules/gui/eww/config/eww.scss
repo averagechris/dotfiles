@@ -86,6 +86,19 @@ $highlight-high: #56526e;
   label:first-child {
     margin-right: 4px;
   }
+
+  .audio-output {
+    color: $foam;
+    margin-left: 6px;
+    padding: 0 4px;
+    border-radius: 4px;
+    font-weight: bold;
+
+    &:hover {
+      background: $overlay;
+      color: $text;
+    }
+  }
 }
 
 .brightness {
