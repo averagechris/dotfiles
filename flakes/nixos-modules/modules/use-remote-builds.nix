@@ -37,6 +37,7 @@
       {
         hostName = "thorny";
         sshUser = "chris";
+        sshKey = "/etc/ssh/ssh_host_ed25519_key";
         system = "x86_64-linux";
         maxJobs = 16;
         speedFactor = 4;

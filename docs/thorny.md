@@ -67,6 +67,14 @@ Because the clients use their system SSH host key as the builder identity,
 If another machine should use `thorny`, add its system key to that set and
 import `nixosModules.useRemoteBuilds` on the client.
 
+The client `nix.buildMachines` entry sets `sshKey =
+"/etc/ssh/ssh_host_ed25519_key"` directly, so the Nix daemon does not depend on
+root's SSH config to pick the right identity. If a client can SSH as your normal
+user but remote builds fail with `Permission denied (publickey,keyboard-interactive)`,
+compare `/etc/ssh/ssh_host_ed25519_key.pub` on the client with
+`sshKeys.usesRemoteBuilders` and rebuild/switch `thorny` after adding the missing
+system key.
+
 The client module intentionally does not include old/offline x86_64 builders.
 If `thorny` is asleep, offline, or unreachable from bad Wi-Fi, Nix should fail
 the SSH attempt quickly and continue with local builds instead of waiting on a

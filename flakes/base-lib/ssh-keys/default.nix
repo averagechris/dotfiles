@@ -4,9 +4,10 @@ rec {
   chris.trap = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIO1u2+EqAzFOidZ+b0dixultkTyvIsOXZJsiG+/kDpJm chris@trap";
   chris.suremac = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILz1u19VoCC/jj2lL34CmHwKAtIGt2clyMbZU8Cz4q14 chris.cummings@sureapp.com";
   system.thelio = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDOiCjIMganzY45qiHFEO2NqkXz2mWsSEmq3zIoRJsiA root@nixos";
+  system.tater = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBq8+MKDCaI81h80Q0xqch/jnJLaScTjpy0/LfpNQerv root@tater";
   system.xps = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAy30vzaxmqc08+NcYYA7LflDqoZNdRoyVXVJ2H9p2Xp root@xps-nixos";
   system.trap = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBNAyh1GNkiHi8eButk+acXT8E4LiKaLWq0jmJmQjwsk root@trap";
   usesRemoteBuilders = {
-    inherit (system) thelio xps;
+    inherit (system) tater thelio trap xps;
   };
 }
