@@ -54,6 +54,6 @@
       extraInputs = inputs;
     };
 
-    deploy.nodes.thorny = lib.mkDeploy' self.nixosConfigurations.thorny;
+    deploy.nodes.thorny = lib.mkDeploy self.nixosConfigurations.thorny;
   };
 }

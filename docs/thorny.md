@@ -162,3 +162,28 @@ nix run .#deploy -- .#thorny
 
 This relies on SSH access as `chris`; `chris` is in `wheel`, and wheel sudo does
 not require a password on this deployable builder host.
+
+If deploy-rs prints `Interactive sudo is enabled` or prompts for `(sudo for
+thorny) Password:`, check that `flakes/hosts/thorny/flake.nix` uses
+`lib.mkDeploy`, not `lib.mkDeploy'`. The primed helper is reserved for hosts
+that intentionally need interactive sudo during deployment.
+
+## Remote builder smoke test
+
+To prove that the active client is actually scheduling work on `thorny`, use a
+fresh/unique derivation and disable local builds:
+
+```bash
+nix build --impure --no-link --max-jobs 0 -L --expr '
+with import <nixpkgs> {};
+runCommand "remote-builder-smoke-${toString builtins.currentTime}" {} "printf ok > $out"'
+```
+
+Expected output includes `building ... on 'ssh://chris@thorny'` and then copies
+the resulting store path back from `ssh://chris@thorny`.
+
+Do **not** use `--rebuild` as the remote-builder smoke test. `--rebuild` is a
+local output check for an already-built derivation; with `--max-jobs 0` it can
+fail with `local builds are disabled` even when remote builders are configured
+and working. Use a unique derivation like the smoke command above when you need
+to force a real remote build.
