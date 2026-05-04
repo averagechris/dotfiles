@@ -11,18 +11,18 @@
     name = "disable-builtin-display-when-lid-closed";
     script = pkgs.writeShellApplication {
       inherit name;
-      runtimeInputs = [pkgs.coreutils pkgs.hyprland pkgs.jq pkgs.eww];
+      runtimeInputs = [pkgs.coreutils pkgs.hyprland pkgs.jq config.programs.eww.package];
       text = ''
         refresh_bars() {
-          if hyprctl monitors -j | jq -e '.[] | select(.name == "eDP-1")' >/dev/null; then
-            eww open bar-internal || true
-          else
-            eww close bar-internal || true
-          fi
-
+          # Keep exactly one bar open, matching eww-open-bars' startup policy.
           if hyprctl monitors -j | jq -e '.[] | select(.name == "DP-2")' >/dev/null; then
             eww open bar-external || true
+            eww close bar-internal || true
+          elif hyprctl monitors -j | jq -e '.[] | select(.name == "eDP-1")' >/dev/null; then
+            eww open bar-internal || true
+            eww close bar-external || true
           else
+            eww close bar-internal || true
             eww close bar-external || true
           fi
         }

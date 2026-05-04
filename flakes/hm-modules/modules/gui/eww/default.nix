@@ -59,15 +59,16 @@
       eww daemon || true
       sleep 0.2
 
-      if hyprctl monitors -j | jq -e '.[] | select(.name == "eDP-1")' >/dev/null; then
-        eww open bar-internal || true
-      else
-        eww close bar-internal || true
-      fi
-
+      # Keep exactly one bar open.  When docked at the home Dell, prefer the
+      # external display; otherwise fall back to the laptop panel.
       if hyprctl monitors -j | jq -e '.[] | select(.name == "DP-2")' >/dev/null; then
         eww open bar-external || true
+        eww close bar-internal || true
+      elif hyprctl monitors -j | jq -e '.[] | select(.name == "eDP-1")' >/dev/null; then
+        eww open bar-internal || true
+        eww close bar-external || true
       else
+        eww close bar-internal || true
         eww close bar-external || true
       fi
     '';

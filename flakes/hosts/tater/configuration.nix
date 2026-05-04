@@ -207,7 +207,11 @@ in {
 
   users.users.chris.extraGroups = ["libvirtd" "podman"];
 
-  home-manager.users.chris = {lib, ...}: let
+  home-manager.users.chris = {
+    config,
+    lib,
+    ...
+  }: let
     # GUI services that require a display and will hang during activation
     # These get RefuseManualStart=yes so sd-switch skips them, but they still
     # start normally via graphical-session.target when you log in
@@ -309,7 +313,7 @@ in {
     };
     taterHomeToggle = pkgs.writeShellApplication {
       name = "tater-home-toggle";
-      runtimeInputs = [pkgs.hyprland pkgs.jq pkgs.libnotify pkgs.eww];
+      runtimeInputs = [pkgs.hyprland pkgs.jq pkgs.libnotify config.programs.eww.package];
       text = ''
         set -euo pipefail
 
@@ -317,15 +321,14 @@ in {
           eww daemon || true
           sleep 0.2
 
-          if hyprctl monitors -j | jq -e '.[] | select(.name == "eDP-1")' >/dev/null; then
-            eww open bar-internal || true
-          else
-            eww close bar-internal || true
-          fi
-
           if hyprctl monitors -j | jq -e '.[] | select(.name == "DP-2")' >/dev/null; then
             eww open bar-external || true
+            eww close bar-internal || true
+          elif hyprctl monitors -j | jq -e '.[] | select(.name == "eDP-1")' >/dev/null; then
+            eww open bar-internal || true
+            eww close bar-external || true
           else
+            eww close bar-internal || true
             eww close bar-external || true
           fi
         }
@@ -350,7 +353,7 @@ in {
     };
     taterDesktopDoctor = pkgs.writeShellApplication {
       name = "tater-desktop-doctor";
-      runtimeInputs = [pkgs.coreutils pkgs.eww pkgs.hyprland pkgs.jq pkgs.kmod pkgs.networkmanager pkgs.ripgrep pkgs.systemd];
+      runtimeInputs = [pkgs.coreutils config.programs.eww.package pkgs.hyprland pkgs.jq pkgs.kmod pkgs.networkmanager pkgs.ripgrep pkgs.systemd];
       text = ''
         set -uo pipefail
 
@@ -436,11 +439,12 @@ in {
         echo
         echo "== Eww bars =="
         if have eww && eww active-windows >/tmp/tater-doctor-eww.txt 2>/dev/null; then
-          if jq -e '.[] | select(.name == "eDP-1")' /tmp/tater-doctor-monitors.json >/dev/null; then
-            if rg -q 'bar-internal' /tmp/tater-doctor-eww.txt; then pass "Internal Eww bar is open"; else fail "Internal Eww bar is not open while eDP-1 is enabled"; fi
-          fi
           if jq -e '.[] | select(.name == "DP-2")' /tmp/tater-doctor-monitors.json >/dev/null; then
             if rg -q 'bar-external' /tmp/tater-doctor-eww.txt; then pass "External Eww bar is open"; else fail "External Eww bar is not open while DP-2 is enabled"; fi
+            if rg -q 'bar-internal' /tmp/tater-doctor-eww.txt; then fail "Internal Eww bar is also open while DP-2 is active"; else pass "Internal Eww bar is closed while DP-2 is active"; fi
+          elif jq -e '.[] | select(.name == "eDP-1")' /tmp/tater-doctor-monitors.json >/dev/null; then
+            if rg -q 'bar-internal' /tmp/tater-doctor-eww.txt; then pass "Internal Eww bar is open"; else fail "Internal Eww bar is not open while eDP-1 is enabled"; fi
+            if rg -q 'bar-external' /tmp/tater-doctor-eww.txt; then fail "External Eww bar is open without DP-2"; else pass "External Eww bar is closed without DP-2"; fi
           fi
         else
           warn "Could not query Eww active windows"

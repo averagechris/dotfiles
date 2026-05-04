@@ -233,14 +233,14 @@ When the Dell is connected on tater, the Eww bar shows a display toggle next to 
 | `󰍹` | Dell-only clamshell mode; click to enable the laptop panel |
 | `󰌢+󰍹` | Dell plus laptop panel; click to return to Dell-only clamshell |
 
-The Eww bar opens by monitor name on both displays when both are active. Workspace buttons are monitor-local:
+The Eww bar opens by monitor name but keeps only one bar visible. When the home Dell (`DP-2`) is connected, the bar stays on that external display; otherwise it falls back to the laptop panel (`eDP-1`). Workspace buttons are monitor-local for whichever bar is active:
 
 | Monitor | Workspaces |
 |---------|------------|
 | Home Dell (`DP-2`) | `1`-`5` |
 | Laptop panel (`eDP-1`) | `6`-`10` |
 
-When the laptop panel is disabled, the internal-display bar closes with that output and the Dell bar remains active. Lid-close/open and the tater home display toggle both refresh Eww bars after changing monitors, so the panel should not get stranded on the wrong output.
+When the laptop panel is disabled, the internal-display bar closes with that output and the Dell bar remains active. When both displays are active, the internal-display bar is closed so there is not a duplicate bar on the laptop panel. Lid-close/open and the tater home display toggle both refresh Eww bars after changing monitors, so the panel should not get stranded on the wrong output.
 
 Lid handling is split between systemd-logind and Hyprland:
 
@@ -329,6 +329,12 @@ canonical config directory, so a missing/different environment or a
 generation-specific Home Manager config symlink can make `eww state`,
 `eww active-windows`, and other CLI commands look for a different daemon than the
 Hyprland-started bar is using.
+
+All user-session helpers that touch Eww should use the Home Manager wrapper
+from `programs.eww.package`, not raw `pkgs.eww`. Using raw Eww can start or
+query a second daemon for `~/.config/eww` while Hyprland is managing the stable
+`~/.config/eww-stable` daemon, which can look like duplicate bars even with only
+one active monitor.
 
 If commands still cannot connect after switching to the updated configuration,
 restart the user daemon once from inside Hyprland:
