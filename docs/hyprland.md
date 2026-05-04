@@ -255,6 +255,7 @@ Tater also provides manual home layout commands for when you want to override th
 
 | Command | Behavior |
 |---------|----------|
+| `tater-display-refresh` | Reconcile the current display state after dock/undock/lid changes: if no external monitor is enabled, force-enable `eDP-1`, wake DPMS, and reopen the correct Eww bar |
 | `tater-home-clamshell` | Home Dell only: `DP-2` at `3840x2160@60Hz`, disable `eDP-1` |
 | `tater-home-open` | Home Dell plus laptop panel: Dell at `3840x2160@60Hz`, laptop panel enabled below/left at `1920x1200@60Hz`, scale `1.5` |
 | `tater-home-toggle` | Toggle between the two layouts above and send a desktop notification |
@@ -268,14 +269,16 @@ When the Dell is connected on tater, the Eww bar shows a display toggle next to 
 | `󰍹` | Dell-only clamshell mode; click to enable the laptop panel |
 | `󰌢+󰍹` | Dell plus laptop panel; click to return to Dell-only clamshell |
 
-The Eww bar opens by monitor name but keeps only one bar visible. When the home Dell (`DP-2`) is connected, the bar stays on that external display; otherwise it falls back to the laptop panel (`eDP-1`). Workspace buttons are monitor-local for whichever bar is active:
+The Eww bar opens by monitor name but keeps only one bar visible. When the home Dell (`DP-2`) is connected and enabled, the bar stays on that external display; otherwise it falls back to the laptop panel (`eDP-1`). Workspace buttons are monitor-local for whichever bar is active:
 
 | Monitor | Workspaces |
 |---------|------------|
 | Home Dell (`DP-2`) | `1`-`5` |
 | Laptop panel (`eDP-1`) | `6`-`10` |
 
-When the laptop panel is disabled, the internal-display bar closes with that output and the Dell bar remains active. When both displays are active, the internal-display bar is closed so there is not a duplicate bar on the laptop panel. Lid-close/open and the tater home display toggle both refresh Eww bars after changing monitors, so the panel should not get stranded on the wrong output.
+When the laptop panel is disabled, the internal-display bar closes with that output and the Dell bar remains active. When both displays are active, the internal-display bar is closed so there is not a duplicate bar on the laptop panel. Lid-close/open, the tater home display toggle, and every tater kanshi profile run `tater-display-refresh` after changing monitors, so the panel should not get stranded on a disabled or unplugged output.
+
+Undocking from home clamshell mode has an extra fail-safe: if the dock/external output disappears while `eDP-1` is still disabled, `tater-display-refresh` forces the ThinkPad panel back on at `1920x1200@60Hz` and scale `1.5`, wakes DPMS, then opens `bar-internal`. This is intended to make the physical unplug/open-lid path converge without a manual `tater-home-open` or Eww restart.
 
 Lid handling is split between systemd-logind and Hyprland:
 

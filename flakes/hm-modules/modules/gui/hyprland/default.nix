@@ -15,10 +15,10 @@
       text = ''
         refresh_bars() {
           # Keep exactly one bar open, matching eww-open-bars' startup policy.
-          if hyprctl monitors -j | jq -e '.[] | select(.name == "DP-2")' >/dev/null; then
+          if hyprctl monitors -j | jq -e '.[] | select(.name == "DP-2" and (((.disabled // false) | not)))' >/dev/null; then
             eww open bar-external || true
             eww close bar-internal || true
-          elif hyprctl monitors -j | jq -e '.[] | select(.name == "eDP-1")' >/dev/null; then
+          elif hyprctl monitors -j | jq -e '.[] | select(.name == "eDP-1" and (((.disabled // false) | not)))' >/dev/null; then
             eww open bar-internal || true
             eww close bar-external || true
           else
@@ -27,7 +27,7 @@
           fi
         }
 
-        external_count="$(${pkgs.hyprland}/bin/hyprctl monitors -j | ${pkgs.jq}/bin/jq '[.[] | select(.name != "eDP-1")] | length')"
+        external_count="$(${pkgs.hyprland}/bin/hyprctl monitors -j | ${pkgs.jq}/bin/jq '[.[] | select(.name != "eDP-1" and (((.disabled // false) | not)))] | length')"
 
         if grep -q open /proc/acpi/button/lid/LID0/state; then
             hyprctl keyword monitor "eDP-1,preferred,auto,1"

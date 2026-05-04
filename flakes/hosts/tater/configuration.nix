@@ -295,50 +295,90 @@ in {
         nmcli device status || true
       '';
     };
+    taterDisplayRefresh = pkgs.writeShellApplication {
+      name = "tater-display-refresh";
+      runtimeInputs = [pkgs.coreutils config.programs.eww.package pkgs.hyprland pkgs.jq];
+      text = ''
+        set -euo pipefail
+
+        monitors_json() {
+          hyprctl monitors -j 2>/dev/null || printf '[]\n'
+        }
+
+        has_enabled_monitor() {
+          local name="$1"
+          monitors_json | jq -e --arg name "$name" '.[] | select(.name == $name and (((.disabled // false) | not)))' >/dev/null
+        }
+
+        enabled_external_count() {
+          monitors_json | jq '[.[] | select(.name != "eDP-1" and (((.disabled // false) | not)))] | length'
+        }
+
+        # If tater was unplugged while the home clamshell profile had eDP-1
+        # disabled, Hyprland can briefly have no enabled output for Eww to bind
+        # to.  Make the laptop panel the fail-safe whenever no external monitor
+        # is currently enabled; kanshi still owns the normal steady-state layout.
+        if [[ "$(enabled_external_count)" -eq 0 ]]; then
+          hyprctl keyword monitor "eDP-1,1920x1200@60,0x0,1.5" || true
+          hyprctl dispatch dpms on || true
+        fi
+
+        for _ in 1 2 3 4 5; do
+          if has_enabled_monitor DP-2 || has_enabled_monitor eDP-1; then
+            break
+          fi
+          sleep 0.2
+        done
+
+        eww daemon || true
+        sleep 0.2
+
+        if has_enabled_monitor DP-2; then
+          eww open bar-external || true
+          eww close bar-internal || true
+        elif has_enabled_monitor eDP-1; then
+          eww open bar-internal || true
+          eww close bar-external || true
+        else
+          eww close bar-internal || true
+          eww close bar-external || true
+        fi
+      '';
+    };
     taterHomeClamshell = pkgs.writeShellApplication {
       name = "tater-home-clamshell";
-      runtimeInputs = [pkgs.hyprland];
+      runtimeInputs = [pkgs.hyprland taterDisplayRefresh];
       text = ''
         set -euo pipefail
 
         hyprctl keyword monitor "DP-2,3840x2160@60,0x0,1"
         hyprctl keyword monitor "eDP-1,disable"
+        tater-display-refresh
       '';
     };
     taterHomeOpen = pkgs.writeShellApplication {
       name = "tater-home-open";
-      runtimeInputs = [pkgs.hyprland];
+      runtimeInputs = [pkgs.hyprland taterDisplayRefresh];
       text = ''
         set -euo pipefail
 
         hyprctl keyword monitor "eDP-1,1920x1200@60,0x640,1.5"
         hyprctl keyword monitor "DP-2,3840x2160@60,1280x0,1"
+        tater-display-refresh
       '';
     };
     taterHomeToggle = pkgs.writeShellApplication {
       name = "tater-home-toggle";
-      runtimeInputs = [pkgs.hyprland pkgs.jq pkgs.libnotify config.programs.eww.package];
+      runtimeInputs = [pkgs.hyprland pkgs.jq pkgs.libnotify taterDisplayRefresh];
       text = ''
         set -euo pipefail
 
         refresh_bars() {
-          eww daemon || true
-          sleep 0.2
-
-          if hyprctl monitors -j | jq -e '.[] | select(.name == "DP-2")' >/dev/null; then
-            eww open bar-external || true
-            eww close bar-internal || true
-          elif hyprctl monitors -j | jq -e '.[] | select(.name == "eDP-1")' >/dev/null; then
-            eww open bar-internal || true
-            eww close bar-external || true
-          else
-            eww close bar-internal || true
-            eww close bar-external || true
-          fi
+          tater-display-refresh
         }
 
-        if hyprctl monitors -j | jq -e '.[] | select(.name == "DP-2" and .model == "DELL U4320Q")' >/dev/null; then
-          if hyprctl monitors -j | jq -e '.[] | select(.name == "eDP-1" and .disabled == false)' >/dev/null; then
+        if hyprctl monitors -j | jq -e '.[] | select(.name == "DP-2" and .model == "DELL U4320Q" and (((.disabled // false) | not)))' >/dev/null; then
+          if hyprctl monitors -j | jq -e '.[] | select(.name == "eDP-1" and (((.disabled // false) | not)))' >/dev/null; then
             hyprctl keyword monitor "DP-2,3840x2160@60,0x0,1"
             hyprctl keyword monitor "eDP-1,disable"
             refresh_bars
@@ -370,7 +410,7 @@ in {
           exit 1
         fi
 
-        if jq -e '.[] | select(.name == "eDP-1" and ((.disabled // false) | not))' <<<"$monitors" >/dev/null; then
+        if jq -e '.[] | select(.name == "eDP-1" and (((.disabled // false) | not)))' <<<"$monitors" >/dev/null; then
           exit 1
         fi
       '';
@@ -441,12 +481,12 @@ in {
 
         echo
         echo "== Displays =="
-        if jq -e '.[] | select(.name == "eDP-1")' /tmp/tater-doctor-monitors.json >/dev/null; then
+        if jq -e '.[] | select(.name == "eDP-1" and (((.disabled // false) | not)))' /tmp/tater-doctor-monitors.json >/dev/null; then
           pass "Internal panel eDP-1 is present/enabled"
         else
           warn "Internal panel eDP-1 is not present/enabled; expected in clamshell mode"
         fi
-        if jq -e '.[] | select(.name == "DP-2" and .model == "DELL U4320Q" and .serial == "1LTJW13")' /tmp/tater-doctor-monitors.json >/dev/null; then
+        if jq -e '.[] | select(.name == "DP-2" and .model == "DELL U4320Q" and .serial == "1LTJW13" and (((.disabled // false) | not)))' /tmp/tater-doctor-monitors.json >/dev/null; then
           pass "Home Dell U4320Q is detected on DP-2"
           if jq -e '.[] | select(.name == "DP-2" and .width == 3840 and .height == 2160 and .scale == 1)' /tmp/tater-doctor-monitors.json >/dev/null; then
             pass "Home Dell is using 3840x2160 scale 1"
@@ -467,7 +507,7 @@ in {
               warn "Workspace $ws is not currently on DP-2; it may not exist until visited"
             fi
           done
-          if jq -e '.[] | select(.name == "eDP-1")' /tmp/tater-doctor-monitors.json >/dev/null; then
+          if jq -e '.[] | select(.name == "eDP-1" and (((.disabled // false) | not)))' /tmp/tater-doctor-monitors.json >/dev/null; then
             for ws in 6 7 8 9 10; do
               if jq -e --argjson ws "$ws" '.[] | select(.id == $ws and .monitor == "eDP-1")' /tmp/tater-doctor-workspaces.json >/dev/null; then
                 pass "Workspace $ws is on eDP-1"
@@ -483,10 +523,10 @@ in {
         echo
         echo "== Eww bars =="
         if have eww && eww active-windows >/tmp/tater-doctor-eww.txt 2>/dev/null; then
-          if jq -e '.[] | select(.name == "DP-2")' /tmp/tater-doctor-monitors.json >/dev/null; then
+          if jq -e '.[] | select(.name == "DP-2" and (((.disabled // false) | not)))' /tmp/tater-doctor-monitors.json >/dev/null; then
             if rg -q 'bar-external' /tmp/tater-doctor-eww.txt; then pass "External Eww bar is open"; else fail "External Eww bar is not open while DP-2 is enabled"; fi
             if rg -q 'bar-internal' /tmp/tater-doctor-eww.txt; then fail "Internal Eww bar is also open while DP-2 is active"; else pass "Internal Eww bar is closed while DP-2 is active"; fi
-          elif jq -e '.[] | select(.name == "eDP-1")' /tmp/tater-doctor-monitors.json >/dev/null; then
+          elif jq -e '.[] | select(.name == "eDP-1" and (((.disabled // false) | not)))' /tmp/tater-doctor-monitors.json >/dev/null; then
             if rg -q 'bar-internal' /tmp/tater-doctor-eww.txt; then pass "Internal Eww bar is open"; else fail "Internal Eww bar is not open while eDP-1 is enabled"; fi
             if rg -q 'bar-external' /tmp/tater-doctor-eww.txt; then fail "External Eww bar is open without DP-2"; else pass "External Eww bar is closed without DP-2"; fi
           fi
@@ -617,6 +657,9 @@ in {
       settings = let
         mkDell43HomeProfile = criteria: {
           profile.name = "home-dell-43-${builtins.replaceStrings [" " "." "*"] ["-" "" "any"] criteria}";
+          profile.exec = [
+            (lib.getExe taterDisplayRefresh)
+          ];
           profile.outputs = [
             {
               criteria = "eDP-1";
@@ -634,6 +677,9 @@ in {
       in [
         {
           profile.name = "undocked";
+          profile.exec = [
+            (lib.getExe taterDisplayRefresh)
+          ];
           profile.outputs = [
             {
               criteria = "eDP-1";
@@ -653,6 +699,9 @@ in {
         (mkDell43HomeProfile "Dell Inc. DELL P4317Q *")
         {
           profile.name = "docked-wildcard";
+          profile.exec = [
+            (lib.getExe taterDisplayRefresh)
+          ];
           profile.outputs = [
             {
               criteria = "eDP-1";
@@ -683,7 +732,7 @@ in {
     dotfiles.gpg.enable = true;
 
     # Bluetooth and network management
-    home.packages = [pkgs.overskride taterNetworkRecover taterHomeClamshell taterHomeOpen taterHomeToggle taterHomeDocked taterDesktopDoctor thornyStatus];
+    home.packages = [pkgs.overskride taterNetworkRecover taterDisplayRefresh taterHomeClamshell taterHomeOpen taterHomeToggle taterHomeDocked taterDesktopDoctor thornyStatus];
     services.network-manager-applet.enable = true;
 
     # Openclaw configuration (minimal base config for nodes)

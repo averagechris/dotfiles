@@ -13,7 +13,7 @@
 (defpoll wifi-ssid :interval "10s" "nmcli -t -f active,ssid dev wifi | grep '^yes' | cut -d':' -f2 || echo 'Disconnected'")
 (defpoll bluetooth-connected :interval "10s" "bluetoothctl info 2>/dev/null | grep -q 'Connected: yes' && echo true || echo false")
 (defpoll keyboard-layout :interval "2s" "hyprctl devices -j 2>/dev/null | jq -r '.keyboards[] | select(.main == true) | .active_keymap' | cut -d'(' -f2 | cut -d')' -f1 || echo 'us'")
-(defpoll home-display-state :interval "2s" "command -v tater-home-toggle >/dev/null && hyprctl monitors -j 2>/dev/null | jq -r 'if any(.[]; .name == \"DP-2\" and .model == \"DELL U4320Q\") then if any(.[]; .name == \"eDP-1\" and (.disabled | not)) then \"open\" else \"clamshell\" end else \"absent\" end' || echo absent")
+(defpoll home-display-state :interval "2s" "command -v tater-home-toggle >/dev/null && hyprctl monitors -j 2>/dev/null | jq -r 'if any(.[]; .name == \"DP-2\" and .model == \"DELL U4320Q\" and ((.disabled // false) | not)) then if any(.[]; .name == \"eDP-1\" and ((.disabled // false) | not)) then \"open\" else \"clamshell\" end else \"absent\" end' || echo absent")
 (defpoll idle-inhibit-state :interval "2s" "command -v dotfiles-idle-inhibit >/dev/null && dotfiles-idle-inhibit status || echo unavailable")
 
 ; Workspaces (updated via hyprland IPC)

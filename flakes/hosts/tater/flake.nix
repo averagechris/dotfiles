@@ -175,7 +175,7 @@
       # tools (Eww, Hyprland, kanshi, helper commands). Grepping them is more
       # appropriate than over-modeling the UI in Nix. If the policy changes,
       # update these few integration tripwires with the new names.
-      rg -n 'tater-home-toggle|tater-home-open|tater-home-clamshell|tater-home-docked|dotfiles-idle-inhibit|tater-network-recover|tater-desktop-doctor' "$tater" "$root/flakes/hm-modules/modules/gui/hypridle/default.nix"
+      rg -n 'tater-home-toggle|tater-home-open|tater-home-clamshell|tater-home-docked|tater-display-refresh|dotfiles-idle-inhibit|tater-network-recover|tater-desktop-doctor' "$tater" "$root/flakes/hm-modules/modules/gui/hypridle/default.nix"
       rg -n 'lock-on-undocked-lid-close|disable-builtin-display-when-lid-closed' "$root/flakes/hm-modules/modules/gui/hyprland/default.nix"
       rg -n 'idle-inhibit-widget|dotfiles-idle-inhibit' "$eww" "$root/flakes/hm-modules/modules/gui/eww/config/eww.scss"
       rg -n 'bar-internal|bar-external' "$eww" "$ewwModule"
