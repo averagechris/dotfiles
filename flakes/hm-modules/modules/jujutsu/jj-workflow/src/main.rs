@@ -1,4 +1,5 @@
 use anyhow::{anyhow, bail, Context, Result};
+use serde_json::json;
 use std::env;
 use std::ffi::{OsStr, OsString};
 use std::fs;
@@ -26,6 +27,7 @@ fn run() -> Result<()> {
     };
 
     match command.to_string_lossy().as_ref() {
+        "lint" => run_lint(args.collect()),
         "ship" => run_ship(parse_common_args(args.collect())?),
         "sync" => run_sync(parse_common_args(args.collect())?),
         "ws" | "workspace" => run_ws(args.collect()),
@@ -43,7 +45,7 @@ fn run() -> Result<()> {
 fn print_usage(program: &OsStr) {
     let name = program.to_string_lossy();
     eprintln!(
-        "Usage:\n  {name} ship [-b|--bookmark <bookmark>] [--remote <remote>] [-- <jj git push args...>]\n  {name} sync [-b|--bookmark <bookmark>] [--remote <remote>] [--onto <revset>] [-- <jj rebase args...>]\n  {name} ws <add|list|path|forget|prune|root> ..."
+        "Usage:\n  {name} lint [onboard ...]\n  {name} ship [-b|--bookmark <bookmark>] [--remote <remote>] [-- <jj git push args...>]\n  {name} sync [-b|--bookmark <bookmark>] [--remote <remote>] [--onto <revset>] [-- <jj rebase args...>]\n  {name} ws <add|list|path|forget|prune|root> ..."
     );
 }
 
@@ -260,6 +262,89 @@ fn ship_plan(has_working_copy_changes: bool) -> ShipPlan {
         create_new_working_copy: has_working_copy_changes,
         target_rev: "@-",
     }
+}
+
+fn run_lint(args: Vec<OsString>) -> Result<()> {
+    if args.first().map(|arg| arg == "onboard").unwrap_or(false) {
+        return run_lint_onboard(args.into_iter().skip(1).collect());
+    }
+
+    if args.iter().any(|arg| arg == "-h" || arg == "--help") {
+        print_lint_usage();
+        return Ok(());
+    }
+
+    let repo = jj_root()?;
+    let commands = configured_lints(&repo)?;
+    if commands.is_empty() {
+        println!("No lints configured. Run: jj lint onboard --print");
+        return Ok(());
+    }
+
+    let mut failures = Vec::new();
+    for command in commands {
+        let name = command.split_whitespace().next().unwrap_or(&command);
+        let output = Command::new("sh")
+            .arg("-lc")
+            .arg(&command)
+            .current_dir(&repo)
+            .output()
+            .with_context(|| format!("failed to run lint command: {command}"))?;
+        if output.status.success() {
+            println!("{name}...Passed");
+        } else {
+            println!("{name}...Failed");
+            failures.push((command, output));
+        }
+    }
+
+    if !failures.is_empty() {
+        println!();
+        for (command, output) in failures {
+            println!("==> {command}");
+            print!("{}", String::from_utf8_lossy(&output.stdout));
+            eprint!("{}", String::from_utf8_lossy(&output.stderr));
+            println!();
+        }
+        bail!("one or more lint commands failed");
+    }
+
+    Ok(())
+}
+
+fn run_lint_onboard(args: Vec<OsString>) -> Result<()> {
+    let mut mode = "print";
+    let mut selection: Option<Vec<usize>> = None;
+    for arg in args {
+        let arg = arg.to_string_lossy();
+        match arg.as_ref() {
+            "--print" => mode = "print",
+            "--json" => mode = "json",
+            "--write" => mode = "write",
+            "--local" => mode = "local",
+            "--preview" => mode = "preview",
+            other if other.starts_with("--select=") => {
+                selection = Some(parse_lint_selection(other.trim_start_matches("--select="))?);
+            }
+            "-h" | "--help" => {
+                print_lint_onboard_usage();
+                return Ok(());
+            }
+            other => bail!("unknown jj lint onboard option: {other}"),
+        }
+    }
+
+    let repo = jj_root()?;
+    let report = lint_onboard_report(&repo)?;
+    match mode {
+        "print" => print_lint_onboard_report(&report),
+        "json" => println!("{}", lint_onboard_json(&report)),
+        "preview" => preview_lint_config(&report, selection.as_deref())?,
+        "write" => write_tracked_lint_config(&repo, &report, selection.as_deref())?,
+        "local" => write_local_lint_config(&report, selection.as_deref())?,
+        _ => unreachable!(),
+    }
+    Ok(())
 }
 
 fn run_sync(mut args: ParsedArgs) -> Result<()> {
@@ -1177,6 +1262,917 @@ fn has_working_copy_changes() -> Result<bool> {
     Ok(!output.stdout.trim().is_empty())
 }
 
+#[derive(Debug, Clone)]
+struct LintSuggestion {
+    command: String,
+    source: String,
+    reason: String,
+}
+
+#[derive(Debug, Clone)]
+struct LintOnboardReport {
+    suggestions: Vec<LintSuggestion>,
+    inspect: Vec<String>,
+}
+
+fn jj_root() -> Result<PathBuf> {
+    let output = run_jj_capture(["root"])?;
+    Ok(PathBuf::from(output.stdout.trim()))
+}
+
+fn configured_lints(repo: &Path) -> Result<Vec<String>> {
+    let lint_file = repo.join(".jj-lint.toml");
+    if lint_file.exists() {
+        return Ok(parse_lints_toml(&fs::read_to_string(lint_file)?));
+    }
+    let output = run_jj_capture_allow_failure(["config", "get", "dotfiles.push-lints"])?;
+    if output.status.success() {
+        return Ok(parse_config_string_array(&output.stdout));
+    }
+    Ok(Vec::new())
+}
+
+fn parse_lints_toml(input: &str) -> Vec<String> {
+    input
+        .lines()
+        .find_map(|line| {
+            let trimmed = line.trim_start();
+            trimmed
+                .strip_prefix("lints")
+                .and_then(|rest| rest.trim_start().strip_prefix('='))
+        })
+        .map(|rest| parse_config_string_array(&format!("{rest}\n{input}")))
+        .unwrap_or_default()
+}
+
+fn parse_config_string_array(input: &str) -> Vec<String> {
+    let mut out = Vec::new();
+    let mut in_string = false;
+    let mut escaped = false;
+    let mut current = String::new();
+    for ch in input.chars() {
+        if escaped {
+            current.push(ch);
+            escaped = false;
+            continue;
+        }
+        match ch {
+            '\\' if in_string => escaped = true,
+            '"' => {
+                if in_string {
+                    out.push(current.clone());
+                    current.clear();
+                }
+                in_string = !in_string;
+            }
+            _ if in_string => current.push(ch),
+            _ => {}
+        }
+    }
+    out
+}
+
+fn lint_onboard_report(repo: &Path) -> Result<LintOnboardReport> {
+    let mut report = LintOnboardReport {
+        suggestions: Vec::new(),
+        inspect: Vec::new(),
+    };
+    detect_package_json(repo, &mut report)?;
+    detect_python(repo, &mut report)?;
+    if repo.join("Cargo.toml").exists() {
+        add_lint(
+            &mut report,
+            "cargo fmt --check",
+            "Cargo.toml",
+            "Rust format check",
+        );
+        add_lint(
+            &mut report,
+            "cargo clippy --workspace --all-targets -- -D warnings",
+            "Cargo.toml",
+            "Rust clippy workspace check",
+        );
+        add_lint(
+            &mut report,
+            "cargo test --workspace",
+            "Cargo.toml",
+            "Rust workspace test suite",
+        );
+    }
+    if repo.join("flake.nix").exists() {
+        add_lint(
+            &mut report,
+            "nix flake check",
+            "flake.nix",
+            "Nix flake validation",
+        );
+    }
+    add_inspect_if_exists(
+        repo,
+        &mut report,
+        ".pre-commit-config.yaml",
+        ".pre-commit-config.yaml -> consider pre-commit run --all-files or equivalent commands",
+    );
+    if repo.join(".husky").exists() {
+        report.inspect.push(".husky/ -> inspect pre-commit/pre-push hooks; replace staged hooks with all-files commands".to_string());
+    }
+    if is_executable_file(&repo.join("lint")) {
+        add_lint(
+            &mut report,
+            "./lint",
+            "executable root lint script",
+            "project-provided lint entrypoint",
+        );
+    }
+    if is_executable_file(&repo.join("ci/check")) {
+        add_lint(
+            &mut report,
+            "ci/check",
+            "executable ci/check script",
+            "project-provided CI check entrypoint",
+        );
+    }
+    for script in [
+        "scripts/check",
+        "scripts/lint",
+        "scripts/test",
+        "scripts/coverage",
+        "tools/check",
+        "tools/lint",
+        "bin/check",
+        "bin/lint",
+    ] {
+        let path = repo.join(script);
+        if path.is_file() {
+            if script.ends_with("/lint") {
+                report.inspect.push(format!(
+                    "{script} -> inspect before adding; lint scripts may auto-fix"
+                ));
+            } else if script.ends_with("/coverage") {
+                report.inspect.push(format!(
+                    "{script} -> inspect before adding; coverage can be slower than normal tests"
+                ));
+            } else {
+                add_lint(
+                    &mut report,
+                    script,
+                    "project script entrypoint",
+                    "project-provided validation entrypoint",
+                );
+            }
+        }
+    }
+    if any_exists(repo, &["lefthook.yml", "lefthook.yaml"]) {
+        report
+            .inspect
+            .push("lefthook config -> inspect lefthook run pre-commit/pre-push".to_string());
+    }
+    if any_exists(repo, &["Makefile", "makefile", "GNUmakefile"]) {
+        detect_makefile(repo, &mut report)?;
+        report.inspect.push(
+            "Makefile -> inspect make help, make lint, make test, make check, make ci".to_string(),
+        );
+    }
+    if any_exists(repo, &["justfile", "Justfile"]) {
+        report
+            .inspect
+            .push("justfile -> inspect just --list, just lint, just test, just check".to_string());
+    }
+    if any_exists(
+        repo,
+        &[
+            "compose.yaml",
+            "compose.yml",
+            "docker-compose.yaml",
+            "docker-compose.yml",
+        ],
+    ) {
+        report.inspect.push(
+            "Docker Compose -> look for docker compose run --rm test/app/web ... commands"
+                .to_string(),
+        );
+    }
+    add_inspect_if_exists(
+        repo,
+        &mut report,
+        "README.md",
+        "README.md -> search for test/lint/check/typecheck/docker compose/make/just/before pushing",
+    );
+    add_inspect_if_exists(
+        repo,
+        &mut report,
+        "CONTRIBUTING.md",
+        "CONTRIBUTING.md -> search for local validation and pre-push commands",
+    );
+    add_inspect_if_exists(
+        repo,
+        &mut report,
+        "CONTRIBUTING.rst",
+        "CONTRIBUTING.rst -> search for local validation and pre-push commands",
+    );
+    add_inspect_if_exists(
+        repo,
+        &mut report,
+        ".github/CONTRIBUTING.md",
+        ".github/CONTRIBUTING.md -> search for local validation and pre-push commands",
+    );
+    if repo.join(".github/workflows").exists() {
+        report.inspect.push(
+            ".github/workflows/ -> inspect CI run commands for local equivalents".to_string(),
+        );
+    }
+    if repo.join(".builds").exists() {
+        report
+            .inspect
+            .push(".builds/ -> inspect SourceHut CI commands for local equivalents".to_string());
+    }
+    if any_exists(repo, &[".build.yml", ".build.yaml"]) {
+        report.inspect.push(
+            ".build.yml/.build.yaml -> inspect SourceHut CI commands for local equivalents"
+                .to_string(),
+        );
+    }
+    add_inspect_if_exists(
+        repo,
+        &mut report,
+        ".gitlab-ci.yml",
+        ".gitlab-ci.yml -> inspect CI script commands for local equivalents",
+    );
+    prefer_aggregate_lints(&mut report);
+    Ok(report)
+}
+
+fn detect_makefile(repo: &Path, report: &mut LintOnboardReport) -> Result<()> {
+    let Some(path) = ["Makefile", "makefile", "GNUmakefile"]
+        .iter()
+        .map(|name| repo.join(name))
+        .find(|path| path.exists())
+    else {
+        return Ok(());
+    };
+    let contents = fs::read_to_string(path)?;
+    for target in makefile_targets(&contents) {
+        add_lint(
+            report,
+            &format!("make {target}"),
+            "Makefile target",
+            "project Makefile validation target",
+        );
+    }
+    Ok(())
+}
+
+fn detect_package_json(repo: &Path, report: &mut LintOnboardReport) -> Result<()> {
+    let path = repo.join("package.json");
+    if !path.exists() {
+        return Ok(());
+    }
+    let value: serde_json::Value = serde_json::from_str(&fs::read_to_string(path)?)?;
+    let scripts = value.get("scripts").and_then(|v| v.as_object());
+    let pm = if repo.join("pnpm-lock.yaml").exists() {
+        "pnpm"
+    } else if repo.join("yarn.lock").exists() {
+        "yarn"
+    } else if repo.join("bun.lock").exists() || repo.join("bun.lockb").exists() {
+        "bun run"
+    } else {
+        "npm run"
+    };
+    if let Some(scripts) = scripts {
+        for script in ["lint", "typecheck", "check", "test"] {
+            if scripts.contains_key(script) {
+                let command = if pm == "npm run" && script == "test" {
+                    "npm test".to_string()
+                } else {
+                    format!("{pm} {script}")
+                };
+                add_lint(
+                    report,
+                    &command,
+                    &format!("package.json scripts.{script}"),
+                    &format!("standard {script} script"),
+                );
+            }
+        }
+        let format_check = ["format:check", "format-check", "format:ci"]
+            .iter()
+            .find(|script| scripts.contains_key(**script));
+        if let Some(script) = format_check {
+            add_lint(
+                report,
+                &format!("{pm} {script}"),
+                &format!("package.json scripts.{script}"),
+                "check-only format script",
+            );
+        } else if let Some(format) = scripts.get("format").and_then(|value| value.as_str()) {
+            if is_check_only_format_script(format) {
+                add_lint(
+                    report,
+                    &format!("{pm} format"),
+                    "package.json scripts.format",
+                    "check-only format script",
+                );
+            } else {
+                report.inspect.push("package.json scripts.format -> inspect before adding; format scripts often mutate files. Prefer format:check/format-check/prettier --check/biome check when available".to_string());
+            }
+        }
+        for (script, value) in scripts {
+            if [
+                "lint",
+                "typecheck",
+                "check",
+                "test",
+                "format",
+                "format:check",
+                "format-check",
+                "format:ci",
+                "build",
+            ]
+            .contains(&script.as_str())
+            {
+                continue;
+            }
+            let Some(body) = value.as_str() else {
+                continue;
+            };
+            if is_safe_package_check_script(body) {
+                add_lint(
+                    report,
+                    &format!("{pm} {script}"),
+                    &format!("package.json scripts.{script}"),
+                    "check-like package script body",
+                );
+            }
+        }
+        if scripts.contains_key("build") {
+            report.inspect.push("package.json scripts.build -> inspect before adding; builds can be slow or require env".to_string());
+        }
+        if let Some(check) = scripts.get("check").and_then(|value| value.as_str()) {
+            for included in ["lint", "format", "typecheck", "test"] {
+                if check.contains(included) {
+                    report.inspect.push(format!(
+                        "package.json scripts.check includes {included}; avoid redundant jj lint entries if using the aggregate check script"
+                    ));
+                }
+            }
+        }
+        for aggregate in ["check", "test"] {
+            if let Some(value) = scripts.get(aggregate).and_then(|value| value.as_str()) {
+                let included = ["lint", "format", "typecheck", "test"]
+                    .into_iter()
+                    .filter(|name| *name != aggregate && value.contains(name))
+                    .collect::<Vec<_>>();
+                if !included.is_empty() {
+                    report.inspect.push(format!(
+                        "package.json scripts.{aggregate} appears to include {}; avoid redundant jj lint entries if using the aggregate script",
+                        included.join(", ")
+                    ));
+                }
+            }
+        }
+    }
+    if value.get("lint-staged").is_some() {
+        report.inspect.push(
+            "package.json lint-staged -> staged-file hook; prefer all-files equivalents for jj"
+                .to_string(),
+        );
+    }
+    Ok(())
+}
+
+fn detect_python(repo: &Path, report: &mut LintOnboardReport) -> Result<()> {
+    let pyproject = repo.join("pyproject.toml");
+    let tox_ini = repo.join("tox.ini");
+    let noxfile = repo.join("noxfile.py");
+    let is_python = pyproject.exists()
+        || tox_ini.exists()
+        || noxfile.exists()
+        || any_exists(repo, &["uv.lock", "poetry.lock", "pdm.lock", "hatch.toml"]);
+    if !is_python {
+        return Ok(());
+    }
+
+    report.inspect.push("Python project -> inspect pyproject.toml/tox/nox/pre-commit for canonical lint, typecheck, and test commands".to_string());
+
+    if pyproject.exists() {
+        let contents = fs::read_to_string(&pyproject)?;
+        let wrapper = python_runner(repo, &contents);
+        let ruff_may_fix = toml_bool_in_section(&contents, "tool.ruff", "fix").unwrap_or(false)
+            || toml_bool_in_section(&contents, "tool.ruff.lint", "fix").unwrap_or(false);
+        if contents.contains("[tool.ruff") {
+            if ruff_may_fix {
+                report.inspect.push("pyproject.toml tool.ruff fix=true -> inspect before adding ruff check; prefer a non-mutating wrapper or override".to_string());
+            } else {
+                add_lint(
+                    report,
+                    &format!("{wrapper}ruff check ."),
+                    "pyproject.toml tool.ruff",
+                    "Python ruff lint check",
+                );
+            }
+            add_lint(
+                report,
+                &format!("{wrapper}ruff format --check ."),
+                "pyproject.toml tool.ruff",
+                "Python ruff format check",
+            );
+        }
+        if contents.contains("[tool.mypy") {
+            add_lint(
+                report,
+                &format!("{wrapper}mypy"),
+                "pyproject.toml tool.mypy",
+                "Python mypy typecheck",
+            );
+        }
+        if contents.contains("[tool.pyright") {
+            add_lint(
+                report,
+                &format!("{wrapper}pyright"),
+                "pyproject.toml tool.pyright",
+                "Python pyright typecheck",
+            );
+        }
+        if contents.contains("[tool.pytest") || contents.contains("[tool.pytest.ini_options") {
+            add_lint(
+                report,
+                &format!("{wrapper}pytest"),
+                "pyproject.toml tool.pytest",
+                "Python pytest test suite",
+            );
+        }
+        if contents.contains("[tool.tox") {
+            report.inspect.push("pyproject.toml tool.tox -> inspect tox envs such as style, lint, linting, typing, typecheck, tests".to_string());
+            for env in python_tox_like_envs(&contents) {
+                add_lint(
+                    report,
+                    &format!("tox run -e {env}"),
+                    "pyproject.toml tool.tox",
+                    "Python tox validation env",
+                );
+            }
+        }
+        for group in [
+            "linting",
+            "typechecking",
+            "testing",
+            "tests",
+            "test",
+            "typecheck",
+            "dev",
+        ] {
+            if contents.contains(&format!("{group} ="))
+                || contents.contains(&format!("[dependency-groups.{group}]"))
+            {
+                report.inspect.push(format!("pyproject.toml dependency group '{group}' -> inspect for uv/pdm/poetry validation commands"));
+            }
+        }
+    }
+
+    if tox_ini.exists() {
+        let contents = fs::read_to_string(&tox_ini)?;
+        report.inspect.push(
+            "tox.ini -> inspect envlist/testenv commands for canonical validation".to_string(),
+        );
+        for env in tox_ini_envs(&contents) {
+            add_lint(
+                report,
+                &format!("tox run -e {env}"),
+                "tox.ini",
+                "Python tox validation env",
+            );
+        }
+    }
+
+    if noxfile.exists() {
+        let contents = fs::read_to_string(&noxfile)?;
+        report.inspect.push(
+            "noxfile.py -> inspect nox sessions for lint/typecheck/test commands".to_string(),
+        );
+        for session in nox_sessions(&contents) {
+            add_lint(
+                report,
+                &format!("nox -s {session}"),
+                "noxfile.py",
+                "Python nox validation session",
+            );
+        }
+    }
+
+    if any_exists(repo, &["uv.lock", "poetry.lock", "pdm.lock", "hatch.toml"]) {
+        report.inspect.push("Python lock/tool files -> commands may need uv run, poetry run, pdm run, or hatch run wrappers".to_string());
+    }
+
+    Ok(())
+}
+
+fn tox_ini_envs(contents: &str) -> Vec<String> {
+    let mut envs = Vec::new();
+    for line in contents.lines() {
+        let trimmed = line.trim();
+        if let Some(env) = trimmed
+            .strip_prefix("[testenv:")
+            .and_then(|rest| rest.strip_suffix(']'))
+        {
+            if is_validation_name(env) {
+                envs.push(env.to_string());
+            }
+        }
+        if let Some(rest) = trimmed.strip_prefix("envlist") {
+            if let Some((_, values)) = rest.split_once('=') {
+                for env in values.split(',').map(str::trim) {
+                    if is_validation_name(env) {
+                        envs.push(env.to_string());
+                    }
+                }
+            }
+        }
+    }
+    dedup(&mut envs);
+    envs
+}
+
+fn python_runner(repo: &Path, pyproject: &str) -> String {
+    if repo.join("uv.lock").exists() || pyproject.contains("[tool.uv") {
+        "uv run ".to_string()
+    } else if repo.join("pdm.lock").exists() || pyproject.contains("[tool.pdm") {
+        "pdm run ".to_string()
+    } else if repo.join("poetry.lock").exists() || pyproject.contains("[tool.poetry") {
+        "poetry run ".to_string()
+    } else if repo.join("hatch.toml").exists() || pyproject.contains("[tool.hatch") {
+        "hatch run ".to_string()
+    } else {
+        String::new()
+    }
+}
+
+fn python_tox_like_envs(contents: &str) -> Vec<String> {
+    let mut envs = Vec::new();
+    for line in contents.lines() {
+        let trimmed = line.trim();
+        if let Some(rest) = trimmed.strip_prefix("[tool.tox.env.") {
+            if let Some((env, _)) = rest.split_once(']') {
+                if is_validation_name(env) {
+                    envs.push(env.to_string());
+                }
+            }
+        }
+    }
+    dedup(&mut envs);
+    envs
+}
+
+fn nox_sessions(contents: &str) -> Vec<String> {
+    let mut sessions = Vec::new();
+    for line in contents.lines() {
+        let trimmed = line.trim_start();
+        if let Some(rest) = trimmed.strip_prefix("def ") {
+            if let Some((name, _)) = rest.split_once('(') {
+                if is_validation_name(name) {
+                    sessions.push(name.to_string());
+                }
+            }
+        }
+    }
+    dedup(&mut sessions);
+    sessions
+}
+
+fn is_validation_name(name: &str) -> bool {
+    matches!(
+        name,
+        "lint"
+            | "linting"
+            | "style"
+            | "typing"
+            | "typecheck"
+            | "test"
+            | "tests"
+            | "py"
+            | "black"
+            | "flake8"
+            | "isort"
+            | "zizmor"
+            | "pylint"
+            | "pre-commit"
+            | "docs"
+    ) || name.starts_with("lint-")
+        || name.starts_with("test-")
+        || name.starts_with("typing-")
+        || name.starts_with("py3")
+}
+
+fn makefile_targets(contents: &str) -> Vec<String> {
+    let mut targets = Vec::new();
+    for line in contents.lines() {
+        if line.starts_with(char::is_whitespace) || line.starts_with('.') || line.starts_with('#') {
+            continue;
+        }
+        let Some((target, rest)) = line.split_once(':') else {
+            continue;
+        };
+        if rest.trim_start().starts_with('=') || target.contains('%') || target.contains('$') {
+            continue;
+        }
+        for target in target.split_whitespace() {
+            if matches!(
+                target,
+                "lint"
+                    | "lint-python"
+                    | "lint-py"
+                    | "test"
+                    | "tests"
+                    | "typecheck"
+                    | "type-check"
+                    | "check"
+                    | "ci"
+            ) {
+                targets.push(target.to_string());
+            }
+        }
+    }
+    dedup(&mut targets);
+    targets
+}
+
+fn toml_bool_in_section(contents: &str, section: &str, key: &str) -> Option<bool> {
+    let mut in_section = false;
+    for line in contents.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with('[') && trimmed.ends_with(']') {
+            in_section = trimmed == format!("[{section}]");
+            continue;
+        }
+        if in_section {
+            if let Some((name, value)) = trimmed.split_once('=') {
+                if name.trim() == key {
+                    return match value.trim().split('#').next().unwrap_or("").trim() {
+                        "true" => Some(true),
+                        "false" => Some(false),
+                        _ => None,
+                    };
+                }
+            }
+        }
+    }
+    None
+}
+
+fn prefer_aggregate_lints(report: &mut LintOnboardReport) {
+    let has_aggregate = report.suggestions.iter().any(|lint| {
+        lint.command == "scripts/check"
+            || lint.command == "scripts/test"
+            || lint.command.starts_with("tox run -e ")
+            || lint.command.starts_with("nox -s ")
+            || lint.command.starts_with("make ")
+    });
+    if !has_aggregate {
+        return;
+    }
+    let primitive_suffixes = [
+        "ruff check .",
+        "ruff format --check .",
+        "mypy",
+        "pyright",
+        "pytest",
+    ];
+    let mut removed = Vec::new();
+    report.suggestions.retain(|lint| {
+        let is_primitive = primitive_suffixes
+            .iter()
+            .any(|suffix| lint.command == *suffix || lint.command.ends_with(&format!(" {suffix}")));
+        if is_primitive {
+            removed.push(lint.command.clone());
+        }
+        !is_primitive
+    });
+    if !removed.is_empty() {
+        dedup(&mut removed);
+        report.inspect.push(format!(
+            "Aggregate project commands found; demoted primitive Python tool commands to avoid redundant or mis-scoped lints: {}",
+            removed.join(", ")
+        ));
+    }
+}
+
+fn parse_lint_selection(input: &str) -> Result<Vec<usize>> {
+    let mut selected = Vec::new();
+    for part in input.split(',') {
+        let part = part.trim();
+        if part.is_empty() {
+            continue;
+        }
+        let index = part
+            .parse::<usize>()
+            .with_context(|| format!("invalid lint selection '{part}'"))?;
+        if index == 0 {
+            bail!("lint selections are 1-based; got 0");
+        }
+        selected.push(index);
+    }
+    if selected.is_empty() {
+        bail!("empty lint selection");
+    }
+    selected.sort_unstable();
+    selected.dedup();
+    Ok(selected)
+}
+
+fn selected_lints(
+    report: &LintOnboardReport,
+    selection: Option<&[usize]>,
+) -> Result<Vec<LintSuggestion>> {
+    match selection {
+        None => Ok(report.suggestions.clone()),
+        Some(selection) => {
+            let mut out = Vec::new();
+            for index in selection {
+                let Some(lint) = report.suggestions.get(index - 1) else {
+                    bail!(
+                        "lint selection {index} is out of range; run `jj lint onboard --print` to see numbered suggestions"
+                    );
+                };
+                out.push(lint.clone());
+            }
+            Ok(out)
+        }
+    }
+}
+
+fn preview_lint_config(report: &LintOnboardReport, selection: Option<&[usize]>) -> Result<()> {
+    let lints = selected_lints(report, selection)?;
+    if lints.is_empty() {
+        bail!("no suggested commands to preview. Inspect workflow hints first.");
+    }
+    print!("{}", lint_config_toml(&lints)?);
+    Ok(())
+}
+
+fn lint_config_toml(lints: &[LintSuggestion]) -> Result<String> {
+    let mut contents =
+        String::from("# Generated by jj lint onboard. Review before committing.\nlints = [\n");
+    for lint in lints {
+        contents.push_str(&format!("  {},\n", serde_json::to_string(&lint.command)?));
+    }
+    contents.push_str("]\n");
+    Ok(contents)
+}
+
+fn is_check_only_format_script(script: &str) -> bool {
+    let lower = script.to_ascii_lowercase();
+    (lower.contains("--check")
+        || lower.contains("--dry-run")
+        || lower.contains(" --list-different")
+        || lower.contains("biome check")
+        || lower.contains("format:check")
+        || lower.contains("format-check"))
+        && !lower.contains("--write")
+        && !lower.contains(" --fix")
+        && !lower.contains("--fix=")
+}
+
+fn is_safe_package_check_script(script: &str) -> bool {
+    let lower = script.to_ascii_lowercase();
+    let check_like = lower.contains("biome check")
+        || lower.contains("prettier --check")
+        || lower.contains("eslint") && !lower.contains("--fix")
+        || lower.contains("tsc --noemit");
+    let mutating = lower.contains("--write")
+        || lower.contains(" --fix")
+        || lower.contains("--fix=")
+        || lower.contains(" dev")
+        || lower.contains(" start")
+        || lower.contains(" serve")
+        || lower.contains(" deploy");
+    check_like && !mutating
+}
+
+fn add_lint(report: &mut LintOnboardReport, command: &str, source: &str, reason: &str) {
+    if report
+        .suggestions
+        .iter()
+        .any(|lint| lint.command == command)
+    {
+        return;
+    }
+    report.suggestions.push(LintSuggestion {
+        command: command.to_string(),
+        source: source.to_string(),
+        reason: reason.to_string(),
+    });
+}
+
+fn any_exists(repo: &Path, paths: &[&str]) -> bool {
+    paths.iter().any(|path| repo.join(path).exists())
+}
+
+fn is_executable_file(path: &Path) -> bool {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        path.metadata()
+            .map(|metadata| metadata.is_file() && metadata.permissions().mode() & 0o111 != 0)
+            .unwrap_or(false)
+    }
+    #[cfg(not(unix))]
+    {
+        path.is_file()
+    }
+}
+
+fn add_inspect_if_exists(repo: &Path, report: &mut LintOnboardReport, path: &str, message: &str) {
+    if repo.join(path).exists() {
+        report.inspect.push(message.to_string());
+    }
+}
+
+fn print_lint_onboard_report(report: &LintOnboardReport) {
+    println!("jj lint onboarding\n");
+    if report.suggestions.is_empty() {
+        println!("No high-confidence lint commands found automatically.\n");
+    } else {
+        println!("Suggested lints to include:");
+        for (index, lint) in report.suggestions.iter().enumerate() {
+            println!(
+                "  {}. {}\n      source: {}\n      reason: {}",
+                index + 1,
+                lint.command,
+                lint.source,
+                lint.reason
+            );
+        }
+        println!();
+    }
+    if !report.inspect.is_empty() {
+        println!("Inspect these project workflow sources:");
+        for item in &report.inspect {
+            println!("  - {item}");
+        }
+        println!();
+    }
+    println!("What to look for:\n  - package scripts: lint, typecheck, test, check, build\n  - Makefile targets: make lint, make test, make check, make ci\n  - Just recipes: just --list, just lint, just test, just check\n  - Docker Compose commands: docker compose run --rm test/app/web ...\n  - docs/CI mentions: test, lint, typecheck, validate, before pushing\n  - pre-commit/husky/lint-staged hooks to replace with all-files equivalents\n");
+    println!("Review before writing:\n  - Avoid watch/dev/server/deploy commands.\n  - Avoid staged-file-only hooks; jj has no staging area.\n  - Check whether tests require secrets, network, containers, or services.\n  - Decide whether config should be tracked (.jj-lint.toml) or local (.jj/repo/config.toml).\n");
+    println!("Next:\n  jj lint onboard --preview --select=1,3 # preview selected .jj-lint.toml\n  jj lint onboard --write                # write all suggestions to tracked .jj-lint.toml\n  jj lint onboard --write --select=1,3   # write selected numbered suggestions\n  jj lint onboard --local --select=2     # set selected lints in local dotfiles.push-lints\n  jj lint onboard --json                 # structured discovery output");
+}
+
+fn lint_onboard_json(report: &LintOnboardReport) -> serde_json::Value {
+    json!({
+        "suggested": report.suggestions.iter().map(|lint| json!({"command": lint.command, "source": lint.source, "reason": lint.reason})).collect::<Vec<_>>(),
+        "inspect": report.inspect,
+        "hints": [
+            "Inspect Makefile/justfile/Docker Compose/docs/CI for project-specific checks",
+            "Prefer deterministic all-files commands for jj lint",
+            "Avoid watch/dev/server/deploy commands",
+            "Use local config for personal/worktree-only setup"
+        ]
+    })
+}
+
+fn write_tracked_lint_config(
+    repo: &Path,
+    report: &LintOnboardReport,
+    selection: Option<&[usize]>,
+) -> Result<()> {
+    let lints = selected_lints(report, selection)?;
+    if lints.is_empty() {
+        bail!("no suggested commands to write. Inspect workflow hints first.");
+    }
+    let path = repo.join(".jj-lint.toml");
+    if path.exists() {
+        bail!("{} already exists; refusing to overwrite", path.display());
+    }
+    let contents = lint_config_toml(&lints)?;
+    fs::write(&path, contents)?;
+    println!("Wrote {}", path.display());
+    Ok(())
+}
+
+fn write_local_lint_config(report: &LintOnboardReport, selection: Option<&[usize]>) -> Result<()> {
+    let lints = selected_lints(report, selection)?;
+    if lints.is_empty() {
+        bail!("no suggested commands to write. Inspect workflow hints first.");
+    }
+    let commands = report
+        .suggestions
+        .iter()
+        .filter(|lint| {
+            lints
+                .iter()
+                .any(|selected| selected.command == lint.command)
+        })
+        .map(|lint| lint.command.clone())
+        .collect::<Vec<_>>();
+    run_jj_status_os(vec![
+        "config".into(),
+        "set".into(),
+        "--repo".into(),
+        "dotfiles.push-lints".into(),
+        serde_json::to_string(&commands)?.into(),
+    ])?;
+    println!("Set local repo config dotfiles.push-lints");
+    Ok(())
+}
+
 fn resolve_ship_bookmark(target_rev: &str) -> Result<String> {
     let revset = format!("heads(ancestors({target_rev}) & bookmarks())");
     let candidates = bookmark_names_for_revset(&revset)?;
@@ -1476,6 +2472,18 @@ fn print_ship_usage() {
     );
 }
 
+fn print_lint_usage() {
+    eprintln!(
+        "Usage:\n  jj lint\n  jj lint onboard [--print|--json|--preview|--write|--local] [--select=1,3]\n\nRuns configured lints from .jj-lint.toml or dotfiles.push-lints. Use `jj lint onboard --print` to discover candidate commands when none are configured. Use --select with --preview/--write/--local to preview or save only chosen numbered suggestions."
+    );
+}
+
+fn print_lint_onboard_usage() {
+    eprintln!(
+        "Usage:\n  jj lint onboard [--print|--json|--preview|--write|--local] [--select=1,3]\n\nDiscovers package scripts, Python pyproject/tox/nox, Makefile/justfile/Docker Compose/docs/CI hooks, and pre-commit replacement hints. Default is --print. Suggestions are numbered; pass --select=1,3 with --preview, --write, or --local to preview or persist only those commands."
+    );
+}
+
 fn print_sync_usage() {
     eprintln!(
         "Usage:\n  jj sync [-b|--bookmark <bookmark>] [--remote <remote>] [--onto <revset>] [-q|--quiet] [--json] [--noninteractive] [--fail-on-conflicts] [-- <jj rebase args...>]\n\nFetches, then rebases the current branch/stack onto one inferred integration base. Prefers remote integration bookmarks like main@origin. If multiple remote integration bookmarks exist, pass --remote/--bookmark/--onto or configure per-repo jj config dotfiles.sync.remote.\n\nAgent examples:\n  jj sync -q --fail-on-conflicts\n  jj sync --json --fail-on-conflicts\n  jj sync --json --fail-on-conflicts | jq -r '.base'\n  jj sync --bookmark main@origin -q --fail-on-conflicts"
@@ -1751,13 +2759,17 @@ struct JjOutput {
 #[cfg(test)]
 mod tests {
     use super::{
-        choose_ship_bookmark, choose_sync_base, fetch_remote_choice,
-        infer_remote_integration_bookmark_from, is_integration_bookmark, parse_common_args,
+        choose_ship_bookmark, choose_sync_base, configured_lints, fetch_remote_choice,
+        infer_remote_integration_bookmark_from, is_check_only_format_script,
+        is_integration_bookmark, is_safe_package_check_script, is_validation_name,
+        lint_config_toml, lint_onboard_json, lint_onboard_report, makefile_targets,
+        parse_common_args, parse_config_string_array, parse_lint_selection, parse_lints_toml,
         parse_toml_string_array, parse_ws_add_args, parse_ws_forget_args, parse_ws_path_args,
-        parse_ws_prune_args, run_sync, run_ws, ship_plan, stale_workspace_dirs,
-        sync_base_candidates, validate_ws_name, workspace_context_for_repo, FetchChoice,
-        ParsedArgs, ProjectGroup, ShipPlan, WsAddArgs, WsConfig, WsForgetArgs, WsPathArgs,
-        WsPruneArgs,
+        parse_ws_prune_args, python_runner, run_lint, run_lint_onboard, run_sync, run_ws,
+        selected_lints, ship_plan, stale_workspace_dirs, sync_base_candidates, validate_ws_name,
+        workspace_context_for_repo, write_tracked_lint_config, FetchChoice, LintOnboardReport,
+        LintSuggestion, ParsedArgs, ProjectGroup, ShipPlan, WsAddArgs, WsConfig, WsForgetArgs,
+        WsPathArgs, WsPruneArgs,
     };
     use std::env;
     use std::ffi::OsString;
@@ -2161,6 +3173,520 @@ mod tests {
     }
 
     #[test]
+    fn lint_config_parsing_reads_tracked_and_repo_arrays() {
+        assert_eq!(
+            parse_lints_toml("lints = [\n  \"cargo fmt --check\",\n  \"cargo test\",\n]\n"),
+            strings(&["cargo fmt --check", "cargo test"])
+        );
+        assert_eq!(
+            parse_config_string_array("[\"pnpm lint\",\"pnpm test\"]"),
+            strings(&["pnpm lint", "pnpm test"])
+        );
+        assert!(parse_lints_toml("not_lints = [\"nope\"]").is_empty());
+    }
+
+    #[test]
+    fn lint_onboard_helper_predicates_are_table_driven() {
+        for (script, expected) in [
+            ("prettier --check .", true),
+            ("prettier --list-different .", true),
+            ("biome check .", true),
+            ("ruff format --check .", true),
+            ("prettier --write .", false),
+            ("biome format --write .", false),
+            ("eslint --fix .", false),
+            ("turbo run format", false),
+        ] {
+            assert_eq!(
+                is_check_only_format_script(script),
+                expected,
+                "format script: {script}"
+            );
+        }
+
+        for (script, expected) in [
+            ("biome check", true),
+            ("prettier --check .", true),
+            ("tsc --noEmit", true),
+            ("eslint .", true),
+            ("eslint . --fix", false),
+            ("prettier --write .", false),
+            ("vite dev", false),
+            ("next start", false),
+            ("wrangler deploy", false),
+        ] {
+            assert_eq!(
+                is_safe_package_check_script(script),
+                expected,
+                "package script: {script}"
+            );
+        }
+
+        for (name, expected) in [
+            ("lint", true),
+            ("linting", true),
+            ("style", true),
+            ("typing", true),
+            ("typecheck", true),
+            ("test", true),
+            ("tests", true),
+            ("py", true),
+            ("py312", true),
+            ("black", true),
+            ("flake8", true),
+            ("isort", true),
+            ("zizmor", true),
+            ("pylint", true),
+            ("pre-commit", true),
+            ("docs", true),
+            ("serve", false),
+            ("dev", false),
+            ("release", false),
+        ] {
+            assert_eq!(
+                is_validation_name(name),
+                expected,
+                "validation name: {name}"
+            );
+        }
+    }
+
+    #[test]
+    fn lint_onboard_target_and_selection_helpers_are_table_driven() {
+        let makefile = "lint:\n\ntest tests:\n\ntypecheck type-check:\n\ncheck ci:\n\nall:\n\nserve:\n\n%.o:\n\nFOO := bar\n";
+        assert_eq!(
+            makefile_targets(makefile),
+            strings(&[
+                "check",
+                "ci",
+                "lint",
+                "test",
+                "tests",
+                "type-check",
+                "typecheck"
+            ])
+        );
+
+        for (input, expected) in [("1", vec![1]), ("1,3", vec![1, 3]), ("3,1,3", vec![1, 3])] {
+            assert_eq!(
+                parse_lint_selection(input).unwrap(),
+                expected,
+                "selection: {input}"
+            );
+        }
+        for input in ["0", "abc", ""] {
+            assert!(
+                parse_lint_selection(input).is_err(),
+                "selection should fail: {input}"
+            );
+        }
+    }
+
+    #[test]
+    fn lint_onboard_python_runner_priority_is_table_driven() {
+        for (name, files, pyproject, expected) in [
+            ("uv", vec!["uv.lock", "poetry.lock"], "", "uv run "),
+            ("pdm", vec!["pdm.lock"], "[tool.poetry]\n", "pdm run "),
+            ("poetry", vec!["poetry.lock"], "", "poetry run "),
+            ("hatch", vec!["hatch.toml"], "", "hatch run "),
+            ("none", Vec::new(), "", ""),
+        ] {
+            let root = named_tempdir(&format!("lint-runner-{name}"));
+            for file in files {
+                fs::write(root.join(file), "").unwrap();
+            }
+            assert_eq!(python_runner(&root, pyproject), expected, "runner: {name}");
+            let _ = fs::remove_dir_all(&root);
+        }
+    }
+
+    #[test]
+    fn lint_onboard_detects_package_scripts_and_package_manager() {
+        let root = named_tempdir("lint-package");
+        fs::write(
+            root.join("package.json"),
+            r#"{"scripts":{"lint":"eslint .","format":"prettier --write .","format:check":"prettier --check .","typecheck":"tsc --noEmit","check":"pnpm lint && pnpm format:check","test":"vitest","biome":"biome check","build":"vite build"},"lint-staged":{"*.ts":"eslint"}}"#,
+        )
+        .unwrap();
+        fs::write(root.join("pnpm-lock.yaml"), "lockfileVersion: '9'\n").unwrap();
+
+        let report = lint_onboard_report(&root).unwrap();
+        let commands = report
+            .suggestions
+            .iter()
+            .map(|lint| lint.command.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(
+            commands,
+            vec![
+                "pnpm lint",
+                "pnpm typecheck",
+                "pnpm check",
+                "pnpm test",
+                "pnpm format:check",
+                "pnpm biome"
+            ]
+        );
+        assert!(report
+            .inspect
+            .iter()
+            .any(|item| item.contains("scripts.build")));
+        assert!(report
+            .inspect
+            .iter()
+            .any(|item| item.contains("lint-staged")));
+        assert!(report
+            .inspect
+            .iter()
+            .any(|item| item.contains("scripts.check includes lint")));
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn lint_onboard_detects_rust_nix_and_workflow_hints() {
+        let root = named_tempdir("lint-workflows");
+        fs::create_dir_all(root.join(".github/workflows")).unwrap();
+        fs::create_dir_all(root.join(".husky")).unwrap();
+        for file in [
+            "Cargo.toml",
+            "flake.nix",
+            "Makefile",
+            "justfile",
+            "compose.yaml",
+            "README.md",
+            "CONTRIBUTING.md",
+            ".pre-commit-config.yaml",
+            "lefthook.yml",
+            ".gitlab-ci.yml",
+            ".build.yml",
+        ] {
+            fs::write(root.join(file), "# test\n").unwrap();
+        }
+
+        let report = lint_onboard_report(&root).unwrap();
+        let commands = report
+            .suggestions
+            .iter()
+            .map(|lint| lint.command.as_str())
+            .collect::<Vec<_>>();
+        assert!(commands.contains(&"cargo fmt --check"));
+        assert!(commands.contains(&"cargo clippy --workspace --all-targets -- -D warnings"));
+        assert!(commands.contains(&"cargo test --workspace"));
+        assert!(commands.contains(&"nix flake check"));
+        for needle in [
+            "Makefile",
+            "justfile",
+            "Docker Compose",
+            "README.md",
+            "CONTRIBUTING.md",
+            ".pre-commit-config.yaml",
+            ".husky",
+            "lefthook",
+            ".github/workflows",
+            ".gitlab-ci.yml",
+            ".build.yml",
+        ] {
+            assert!(
+                report.inspect.iter().any(|item| item.contains(needle)),
+                "missing inspect hint for {needle}: {:?}",
+                report.inspect
+            );
+        }
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn lint_onboard_json_contains_suggestions_and_hints() {
+        let report = LintOnboardReport {
+            suggestions: vec![LintSuggestion {
+                command: "pnpm lint".to_string(),
+                source: "package.json scripts.lint".to_string(),
+                reason: "standard lint script".to_string(),
+            }],
+            inspect: vec!["Makefile -> inspect make test".to_string()],
+        };
+        let value = lint_onboard_json(&report);
+        assert_eq!(value["suggested"][0]["command"], "pnpm lint");
+        assert_eq!(value["inspect"][0], "Makefile -> inspect make test");
+        assert!(value["hints"].as_array().unwrap().len() >= 3);
+    }
+
+    #[test]
+    fn lint_onboard_detects_project_lint_and_ci_check_scripts() {
+        let root = named_tempdir("lint-scripts");
+        fs::create_dir_all(root.join("ci")).unwrap();
+        fs::write(root.join("lint"), "#!/bin/sh\ntrue\n").unwrap();
+        fs::write(root.join("ci/check"), "#!/bin/sh\ntrue\n").unwrap();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            fs::set_permissions(root.join("lint"), fs::Permissions::from_mode(0o755)).unwrap();
+            fs::set_permissions(root.join("ci/check"), fs::Permissions::from_mode(0o755)).unwrap();
+        }
+
+        let report = lint_onboard_report(&root).unwrap();
+        let commands = report
+            .suggestions
+            .iter()
+            .map(|lint| lint.command.as_str())
+            .collect::<Vec<_>>();
+        assert!(commands.contains(&"./lint"));
+        assert!(commands.contains(&"ci/check"));
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn lint_onboard_detects_python_pyproject_tools() {
+        let root = named_tempdir("lint-python-pyproject");
+        fs::write(
+            root.join("pyproject.toml"),
+            r#"
+[tool.ruff]
+[tool.mypy]
+[tool.pyright]
+[tool.pytest.ini_options]
+[tool.tox.env.style]
+[tool.tox.env.typing]
+[dependency-groups]
+linting = []
+"#,
+        )
+        .unwrap();
+        fs::write(root.join("uv.lock"), "").unwrap();
+
+        let report = lint_onboard_report(&root).unwrap();
+        let commands = report
+            .suggestions
+            .iter()
+            .map(|lint| lint.command.as_str())
+            .collect::<Vec<_>>();
+        for expected in ["tox run -e style", "tox run -e typing"] {
+            assert!(
+                commands.contains(&expected),
+                "missing {expected}: {commands:?}"
+            );
+        }
+        for demoted in [
+            "uv run ruff check .",
+            "uv run ruff format --check .",
+            "uv run mypy",
+            "uv run pyright",
+            "uv run pytest",
+        ] {
+            assert!(
+                !commands.contains(&demoted),
+                "unexpected primitive {demoted}: {commands:?}"
+            );
+        }
+        assert!(report
+            .inspect
+            .iter()
+            .any(|item| item.contains("Python project")));
+        assert!(report.inspect.iter().any(|item| item.contains("uv run")));
+        assert!(report
+            .inspect
+            .iter()
+            .any(|item| item.contains("demoted primitive Python")));
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn lint_onboard_wraps_python_primitives_when_no_aggregate_exists() {
+        let root = named_tempdir("lint-python-wrapper");
+        fs::write(
+            root.join("pyproject.toml"),
+            "[tool.ruff]\n[tool.pytest.ini_options]\n[tool.uv]\n",
+        )
+        .unwrap();
+        fs::write(root.join("uv.lock"), "").unwrap();
+
+        let report = lint_onboard_report(&root).unwrap();
+        let commands = report
+            .suggestions
+            .iter()
+            .map(|lint| lint.command.as_str())
+            .collect::<Vec<_>>();
+        assert!(commands.contains(&"uv run ruff check ."));
+        assert!(commands.contains(&"uv run ruff format --check ."));
+        assert!(commands.contains(&"uv run pytest"));
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn lint_onboard_avoids_pyproject_tox_and_ruff_fix_false_positives() {
+        let root = named_tempdir("lint-python-false-positives");
+        fs::write(
+            root.join("pyproject.toml"),
+            r#"
+[tool.ruff]
+fix = true
+[tool.tox.env.style]
+commands = []
+[dependency-groups]
+tests = []
+"#,
+        )
+        .unwrap();
+
+        let report = lint_onboard_report(&root).unwrap();
+        let commands = report
+            .suggestions
+            .iter()
+            .map(|lint| lint.command.as_str())
+            .collect::<Vec<_>>();
+        assert!(commands.contains(&"tox run -e style"));
+        assert!(!commands.contains(&"tox run -e tests"));
+        assert!(!commands.contains(&"ruff check ."));
+        assert!(report.inspect.iter().any(|item| item.contains("fix=true")));
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn lint_onboard_selection_writes_chosen_commands() {
+        let root = named_tempdir("lint-selection");
+        let report = LintOnboardReport {
+            suggestions: vec![
+                LintSuggestion {
+                    command: "first".to_string(),
+                    source: "test".to_string(),
+                    reason: "test".to_string(),
+                },
+                LintSuggestion {
+                    command: "second".to_string(),
+                    source: "test".to_string(),
+                    reason: "test".to_string(),
+                },
+            ],
+            inspect: Vec::new(),
+        };
+        let selection = parse_lint_selection("2").unwrap();
+        write_tracked_lint_config(&root, &report, Some(&selection)).unwrap();
+        let written = fs::read_to_string(root.join(".jj-lint.toml")).unwrap();
+        assert!(!written.contains("first"));
+        assert!(written.contains("second"));
+        let preview =
+            lint_config_toml(&selected_lints(&report, Some(&selection)).unwrap()).unwrap();
+        assert!(!preview.contains("first"));
+        assert!(preview.contains("second"));
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn lint_onboard_detects_broader_tox_envs_and_skips_make_all() {
+        let root = named_tempdir("lint-broader-tox");
+        fs::write(
+            root.join("tox.ini"),
+            "[tox]\nenvlist = black, flake8, isort, zizmor, py, py312, docs\n[testenv:pre-commit]\ncommands = pre-commit run --all-files\n",
+        )
+        .unwrap();
+        fs::write(root.join("Makefile"), "all:\n\t@echo help\nlint:\n\ttrue\n").unwrap();
+        let report = lint_onboard_report(&root).unwrap();
+        let commands = report
+            .suggestions
+            .iter()
+            .map(|lint| lint.command.as_str())
+            .collect::<Vec<_>>();
+        for expected in [
+            "tox run -e black",
+            "tox run -e flake8",
+            "tox run -e isort",
+            "tox run -e zizmor",
+            "tox run -e py",
+            "tox run -e py312",
+            "tox run -e docs",
+            "tox run -e pre-commit",
+            "make lint",
+        ] {
+            assert!(
+                commands.contains(&expected),
+                "missing {expected}: {commands:?}"
+            );
+        }
+        assert!(!commands.contains(&"make all"));
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn lint_onboard_detects_python_tox_nox_and_script_entrypoints() {
+        let root = named_tempdir("lint-python-tox-nox");
+        fs::create_dir_all(root.join("scripts")).unwrap();
+        fs::write(
+            root.join("tox.ini"),
+            "[tox]\nenvlist = linting, py312\n[testenv:typing]\ncommands = mypy\n",
+        )
+        .unwrap();
+        fs::write(
+            root.join("noxfile.py"),
+            "def lint(session): pass\ndef tests(session): pass\n",
+        )
+        .unwrap();
+        fs::write(root.join("scripts/check"), "#!/bin/sh\ntrue\n").unwrap();
+        fs::write(root.join("scripts/lint"), "#!/bin/sh\nruff check --fix\n").unwrap();
+
+        let report = lint_onboard_report(&root).unwrap();
+        let commands = report
+            .suggestions
+            .iter()
+            .map(|lint| lint.command.as_str())
+            .collect::<Vec<_>>();
+        for expected in [
+            "tox run -e linting",
+            "tox run -e typing",
+            "nox -s lint",
+            "nox -s tests",
+            "scripts/check",
+        ] {
+            assert!(
+                commands.contains(&expected),
+                "missing {expected}: {commands:?}"
+            );
+        }
+        assert!(report
+            .inspect
+            .iter()
+            .any(|item| item.contains("scripts/lint")));
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn lint_onboard_write_tracked_refuses_overwrite_and_reads_back() {
+        let root = named_tempdir("lint-write");
+        let report = LintOnboardReport {
+            suggestions: vec![
+                LintSuggestion {
+                    command: "true".to_string(),
+                    source: "test".to_string(),
+                    reason: "test".to_string(),
+                },
+                LintSuggestion {
+                    command: "printf ok".to_string(),
+                    source: "test".to_string(),
+                    reason: "test".to_string(),
+                },
+            ],
+            inspect: Vec::new(),
+        };
+
+        write_tracked_lint_config(&root, &report, None).unwrap();
+        assert_eq!(
+            configured_lints(&root).unwrap(),
+            strings(&["true", "printf ok"])
+        );
+        assert!(write_tracked_lint_config(&root, &report, None).is_err());
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
     fn integration_adds_managed_workspace_at_canonical_path() {
         let _guard = INTEGRATION_LOCK.lock().unwrap();
         let root = named_tempdir("add");
@@ -2332,6 +3858,76 @@ mod tests {
             !parent_is_remote_main.trim().is_empty(),
             "expected @ to be rebased onto main@origin"
         );
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn integration_lint_onboard_writes_and_runs_package_lints() {
+        let _guard = INTEGRATION_LOCK.lock().unwrap();
+        let root = named_tempdir("lint-run");
+        run(Command::new("jj").arg("git").arg("init").arg(&root));
+        fs::write(
+            root.join("package.json"),
+            r#"{"scripts":{"lint":"true","test":"true"}}"#,
+        )
+        .unwrap();
+
+        let old = env::current_dir().unwrap();
+        env::set_current_dir(&root).unwrap();
+        run_lint_onboard(vec!["--write".into()]).unwrap();
+        assert_eq!(
+            configured_lints(&root).unwrap(),
+            strings(&["npm run lint", "npm test"])
+        );
+        run_lint(Vec::new()).unwrap();
+        env::set_current_dir(old).unwrap();
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn integration_lint_onboard_preview_select_does_not_write() {
+        let _guard = INTEGRATION_LOCK.lock().unwrap();
+        let root = named_tempdir("lint-preview");
+        run(Command::new("jj").arg("git").arg("init").arg(&root));
+        fs::write(
+            root.join("package.json"),
+            r#"{"scripts":{"lint":"true","typecheck":"true","test":"true"}}"#,
+        )
+        .unwrap();
+
+        let old = env::current_dir().unwrap();
+        env::set_current_dir(&root).unwrap();
+        run_lint_onboard(vec!["--preview".into(), "--select=1,3".into()]).unwrap();
+        env::set_current_dir(old).unwrap();
+
+        assert!(!root.join(".jj-lint.toml").exists());
+        assert!(configured_lints(&root).unwrap().is_empty());
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn integration_lint_onboard_local_select_sets_selected_lints() {
+        let _guard = INTEGRATION_LOCK.lock().unwrap();
+        let root = named_tempdir("lint-local-select");
+        run(Command::new("jj").arg("git").arg("init").arg(&root));
+        fs::write(
+            root.join("package.json"),
+            r#"{"scripts":{"lint":"true","typecheck":"true","test":"true"}}"#,
+        )
+        .unwrap();
+
+        let old = env::current_dir().unwrap();
+        env::set_current_dir(&root).unwrap();
+        run_lint_onboard(vec!["--local".into(), "--select=2".into()]).unwrap();
+        assert_eq!(
+            configured_lints(&root).unwrap(),
+            strings(&["npm run typecheck"])
+        );
+        env::set_current_dir(old).unwrap();
+        assert!(!root.join(".jj-lint.toml").exists());
 
         let _ = fs::remove_dir_all(&root);
     }

@@ -158,6 +158,13 @@ depending on the task.
 
 The jj skills recommend quiet/structured helper output for agents, especially
 `jj sync -q --fail-on-conflicts` and `jj sync --json --fail-on-conflicts`.
+When `jj lint` is not configured, agents should run `jj lint onboard --print`
+to discover numbered candidate package, Python pyproject/tox/nox, Makefile,
+justfile, Docker Compose, docs, CI, and pre-commit replacement workflows before
+skipping validation. If only some suggestions are appropriate, persist exactly
+those with `jj lint onboard --preview --select=1,3`, then persist with
+`jj lint onboard --local --select=1,3` or
+`jj lint onboard --write --select=1,3`.
 
 ## OpenRouter API key
 

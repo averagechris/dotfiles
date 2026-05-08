@@ -138,6 +138,9 @@ push-lints = ["alejandra --check .", "statix check"]
 ```
 
 - `jj lint` - run lints without pushing
+- `jj lint onboard --print` - discover numbered candidate lint/test commands when no `jj lint` config exists; inspect Makefile/justfile/Python pyproject/tox/nox/Docker Compose/docs/CI/pre-commit hooks and prefer all-files aggregate commands
+- `jj lint onboard --preview --select=1,3` - preview the `.jj-lint.toml` that would be generated for selected numbered suggestions
+- `jj lint onboard --write --select=1,3` / `jj lint onboard --local --select=1,3` - persist only selected onboarding suggestions to tracked `.jj-lint.toml` or per-repo `dotfiles.push-lints`
 - `jj push` - run lints, then push if they pass
 - `jj ship` - finish and push current work; runs `jj lint` before moving bookmarks, ships the parent of the working copy so an already-empty `@` (for example after `jj new`) does not get pushed to `main`, refuses empty targets, and requires `--bookmark` instead of silently falling back to integration bookmarks
 - `jj sync` - fetch, prefer a remote integration bookmark, infer one base from `develop`/`dev`, then `main`/`master`/`trunk`, then `release*`, then `trunk()`, and rebase the current branch/stack onto that base; agents should prefer `jj sync -q --fail-on-conflicts` or `jj sync --json --fail-on-conflicts` when structured output is needed

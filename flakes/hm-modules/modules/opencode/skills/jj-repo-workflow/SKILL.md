@@ -1,8 +1,8 @@
 ---
 name: jj-repo-workflow
 description: |
-  Repository-level jj aliases for checks, syncing, pushing, shipping, integration
-  bookmark behavior, and final handoff.
+  Repository-level jj aliases for checks, lint onboarding, syncing, pushing,
+  shipping, integration bookmark behavior, and final handoff.
 ---
 
 # jj Repo Workflow
@@ -25,6 +25,27 @@ jj ship --bookmark <b>  # finish/publish selected work; only when asked to ship/
 - Reads `.jj-lint.toml` first, then repo config `dotfiles.push-lints`.
 - Use after meaningful edits and before asking the user to review.
 - If a lint fails, fix the issue and rerun the smallest relevant check first if possible.
+- If no lints are configured, do not ignore it. Run:
+
+```bash
+jj lint onboard --print
+```
+
+Use onboarding output to discover project checks and pre-commit replacements. It reports high-confidence suggestions plus files to inspect: package scripts, Python pyproject/tox/nox, Makefile, justfile, Docker Compose, README/CONTRIBUTING, CI workflows, Husky/lint-staged/pre-commit/lefthook.
+
+Agent defaults:
+
+```bash
+jj lint onboard --print        # safe human-readable discovery
+jj lint onboard --json         # structured discovery
+jj lint onboard --local        # set per-repo local dotfiles.push-lints
+jj lint onboard --write        # write tracked .jj-lint.toml; ask first unless requested
+jj lint onboard --preview --select=1,3 # preview selected .jj-lint.toml
+jj lint onboard --local --select=1,3   # save only chosen numbered suggestions
+jj lint onboard --write --select=2     # write only chosen suggestions to .jj-lint.toml
+```
+
+Prefer deterministic all-files commands. Avoid watch/dev/server/deploy commands and staged-file-only hooks; jj has no staging area. For Docker/Make/Just/Python workflows, inspect whether commands require services, secrets, network, mutating fix modes, or slow container builds before adding them. Prefer aggregate project commands (`scripts/check`, `make lint`, `tox run -e linting`) over duplicated primitive tool commands when onboarding suggests both.
 
 ## `jj sync`
 
