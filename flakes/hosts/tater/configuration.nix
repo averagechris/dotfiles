@@ -829,6 +829,10 @@ in {
         Node tools." > $out/TOOLS.md
       '';
     in {
+      # python3 is already in the Home Manager profile; including Openclaw's
+      # bundled copy makes buildEnv collide on Python launchers like bin/idle.
+      excludeTools = ["python3"];
+
       # Required even for nodes to prevent activation script errors
       documents = documentsDir;
 

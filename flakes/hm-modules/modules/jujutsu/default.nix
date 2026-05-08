@@ -21,6 +21,20 @@
       makeWrapper
     ];
 
+    nativeCheckInputs = with pkgs; [
+      git
+      jujutsu
+      nodejs
+    ];
+
+    preCheck = ''
+      export HOME="$TMPDIR/home"
+      export XDG_CONFIG_HOME="$HOME/.config"
+      mkdir -p "$XDG_CONFIG_HOME"
+      jj config set --user user.name jj-workflow-tests
+      jj config set --user user.email jj-workflow-tests@example.invalid
+    '';
+
     postFixup = ''
       wrapProgram $out/bin/jj-workflow \
         --prefix PATH : ${lib.makeBinPath [

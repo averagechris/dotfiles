@@ -71,6 +71,15 @@ jj ws prune
 
 Agents/scripts should use `jj ws add -q`, `jj ws path <name>`, and `jj ws list`. Avoid `--pick`; it requires an interactive terminal.
 
+## Build-Time Test Environment
+
+The repo-managed `jj-workflow` helper runs its Rust test suite as part of the
+Nix package build. Integration tests shell out to `jj`, `git`, and `npm`, create
+temporary jj repositories, and push to a local bare Git remote. The package's
+check phase therefore provides those tools explicitly and sets an isolated
+`HOME`/`XDG_CONFIG_HOME` with test-only jj user identity so builds do not depend
+on the invoking user's configuration or Nix's default `/homeless-shelter` home.
+
 ## Help and Error Ergonomics
 
 Keep output concise and actionable:
