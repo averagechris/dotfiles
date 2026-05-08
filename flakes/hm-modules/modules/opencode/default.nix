@@ -28,14 +28,14 @@
       description = "JavaScript runtime";
     }
     {
-      package = python313;
+      package = python314;
       name = "python3";
-      description = "Python 3.13 runtime";
+      description = "Python 3.14 runtime";
     }
     {
       package = ripgrep;
       name = "rg";
-      description = "fast code search";
+      description = "fast text/code search";
     }
   ];
   cfg = config.dotfiles.opencode;

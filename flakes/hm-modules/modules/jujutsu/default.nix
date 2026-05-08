@@ -6,6 +6,7 @@
   ...
 }: let
   cfg = config.programs.jujutsu;
+  dotCfg = config.dotfiles.jujutsu;
   jjWorkflow = pkgs.rustPlatform.buildRustPackage {
     pname = "jj-workflow";
     version = "0.1.0";
@@ -25,6 +26,8 @@
         --prefix PATH : ${lib.makeBinPath [
         pkgs.fzf
         pkgs.jujutsu
+        pkgs.direnv
+        pkgs.docker
       ]}
     '';
 
@@ -34,6 +37,32 @@
     };
   };
 in {
+  options.dotfiles.jujutsu.workspaces = with lib; {
+    projectGroups = mkOption {
+      type = types.listOf (types.submodule {
+        options = {
+          path = mkOption {
+            type = types.str;
+            description = "Project group directory containing related jj repositories.";
+          };
+          workspaceDir = mkOption {
+            type = types.str;
+            default = "ws";
+            description = "Workspace namespace directory under the project group.";
+          };
+        };
+      });
+      default = [{path = "~/projects";}];
+      description = "Project groups used by the jj ws workflow helper.";
+    };
+
+    fetchRemote = mkOption {
+      type = types.nullOr types.str;
+      default = null;
+      description = "Remote to fetch for jj ws add when multiple remotes exist.";
+    };
+  };
+
   config.programs.jujutsu = lib.mkIf cfg.enable {
     settings = {
       user = {
@@ -253,6 +282,9 @@ in {
         # Sync with upstream: fetch, then rebase onto the integration bookmark
         sync = ["util" "exec" "--" "${jjWorkflow}/bin/jj-workflow" "sync"];
 
+        # Ergonomic Jujutsu workspace management.
+        ws = ["util" "exec" "--" "${jjWorkflow}/bin/jj-workflow" "ws"];
+
         # Push with pre-push lints (configurable per-repo)
         # Or skip lints entirely with: jj git push
         # Configure lints in .jj-lint.toml (VCS-tracked) or repo config (.jj/repo/config.toml)
@@ -371,6 +403,18 @@ in {
           };
         }
       ];
+      dotfiles.workspaces =
+        {
+          copy-envrc = "untracked";
+          direnv-allow = true;
+          docker-cleanup = "auto";
+          docker-remove-volumes = false;
+          picker = "fzf";
+          project-groups = map (group: "${group.path}:${group.workspaceDir}") dotCfg.workspaces.projectGroups;
+        }
+        // lib.optionalAttrs (dotCfg.workspaces.fetchRemote != null) {
+          fetch-remote = dotCfg.workspaces.fetchRemote;
+        };
       signing = lib.mkIf (!config.dotfiles.gpg.enable) {
         # When gpg module is not enabled, use the hardcoded signing key
         # When gpg module is enabled, it manages jj config during activation

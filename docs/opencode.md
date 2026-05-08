@@ -125,6 +125,10 @@ This repo also ships a small set of local skills for common tool-specific
 workflows. Current examples include:
 
 - `jj-vcs`
+- `jj-change-management`
+- `jj-conflict-resolution`
+- `jj-repo-workflow`
+- `jj-workspaces`
 - `changes-review-core`
 - `github-pr-review`
 - `linear-cli`
@@ -151,6 +155,9 @@ The `databricks-cli` skill explains an important CLI detail: there is no
 top-level `databricks sql` subcommand in the current official CLI. Agents
 should use `queries`, `query-history`, `warehouses`, `psql`, or `databricks api`
 depending on the task.
+
+The jj skills recommend quiet/structured helper output for agents, especially
+`jj sync -q --fail-on-conflicts` and `jj sync --json --fail-on-conflicts`.
 
 ## OpenRouter API key
 

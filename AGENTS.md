@@ -140,11 +140,16 @@ push-lints = ["alejandra --check .", "statix check"]
 - `jj lint` - run lints without pushing
 - `jj push` - run lints, then push if they pass
 - `jj ship` - finish and push current work; runs `jj lint` before moving bookmarks, ships the parent of the working copy so an already-empty `@` (for example after `jj new`) does not get pushed to `main`, refuses empty targets, and requires `--bookmark` instead of silently falling back to integration bookmarks
-- `jj sync` - fetch, then rebase onto `develop`/`dev`, else `main`/`master`/`trunk`, else `release*`, with `trunk()` as a fallback
+- `jj sync` - fetch, prefer a remote integration bookmark, infer one base from `develop`/`dev`, then `main`/`master`/`trunk`, then `release*`, then `trunk()`, and rebase the current branch/stack onto that base; agents should prefer `jj sync -q --fail-on-conflicts` or `jj sync --json --fail-on-conflicts` when structured output is needed
 - `jj sync --onto main` - override the inferred sync base explicitly (works with any revset)
+- `jj ws add <name> [-r <revset>] [-q]` - create a managed workspace at `<project-group>/<workspace-dir>/<repo-name>/<workspace-name>`; from a main checkout it bases on an inferred remote integration bookmark, and from another managed workspace it defaults to `@`
+- `jj ws list`, `jj ws path <name>`, `jj ws forget <name>`, `jj ws prune` - list, locate, safely forget/delete, and prune managed workspace directories; avoid `--pick` in agent/noninteractive contexts
+- `jj ws` - print concise workspace workflow usage
 - `jj git push` - push directly, skip lints
 
-`jj ship` and `jj sync` are implemented by the embedded `jj-workflow` Rust helper in `flakes/hm-modules/modules/jujutsu/jj-workflow/` because the branch/remote resolution logic outgrew shell aliases. After `jj ship` lints pass, it pushes with `jj git push` to avoid duplicate lint runs.
+`jj ship`, `jj sync`, and `jj ws` are implemented by the embedded `jj-workflow` Rust helper in `flakes/hm-modules/modules/jujutsu/jj-workflow/` because the branch/remote/workspace resolution logic outgrew shell aliases. `jj sync` can use per-repo jj config `dotfiles.sync.remote` when multiple remote integration bookmarks exist. After `jj ship` lints pass, it pushes with `jj git push` to avoid duplicate lint runs.
+
+Managed jj workspaces use `~/projects/ws/<repo>/<workspace>` on personal hosts. On `suremac`, both `~/projects/ws/<repo>/<workspace>` and `~/sureapp/ws/<repo>/<workspace>` are configured. If `jj ws add` copies an untracked `.envrc`, it also runs `direnv allow`; use `--no-envrc` or `--no-direnv` when that is undesirable. `jj ws forget` refuses non-empty work unless `--force` and runs `docker compose down --remove-orphans` when compose files are detected. Use `jj ws forget <name> --dry-run` before cleanup when safety is unclear.
 
 ## Naming Conventions
 
@@ -196,7 +201,13 @@ push-lints = ["alejandra --check .", "statix check"]
 
 ### jj-VCS Skill Sync
 
-**Important**: If you modify any jj configuration in this repository (e.g., `.jj-lint.toml`, `.jj/repo/config.toml`, aliases, or lint commands), you **must** update the `jj-vcs` skill accordingly. The skill is defined in `flakes/hm-modules/modules/opencode/skills.nix` and deployed via home-manager to `~/.config/opencode/skills/jj-vcs/SKILL.md`.
+**Important**: If you modify any jj configuration in this repository (e.g., `.jj-lint.toml`, `.jj/repo/config.toml`, aliases, lint commands, or workspace behavior), you **must** update the relevant repo-managed jj skill. The skills are defined in `flakes/hm-modules/modules/opencode/skills.nix` and deployed via home-manager to `~/.config/opencode/skills/`.
+
+- `jj-vcs` - short router when unsure which jj skill applies
+- `jj-change-management` - everyday status/diff/log/describe/split/squash/rebase/bookmark workflow
+- `jj-conflict-resolution` - conflict inspection, safe resolution, and recovery workflow
+- `jj-repo-workflow` - `jj lint`, `jj sync`, `jj push`, `jj ship`
+- `jj-workspaces` - `jj ws` workspace creation, path lookup, ticket workspaces, cleanup
 
 ## OpenCode PR Review Workflow
 

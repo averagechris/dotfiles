@@ -255,6 +255,10 @@
       user.email = "chris.cummings@sureapp.com";
     };
     programs.git.signing.signByDefault = true;
+    dotfiles.jujutsu.workspaces.projectGroups = [
+      {path = "~/projects";}
+      {path = "~/sureapp";}
+    ];
     programs.jujutsu.settings.scope = [
       {
         paths = ["~/sureapp/**"];

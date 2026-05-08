@@ -6,6 +6,7 @@
 - [audio](/docs/audio.md) - PipeWire/WirePlumber output priority, helper commands, and Eww controls
 - [helium](/docs/helium.md) - Helium browser packaging and configuration on NixOS
 - [hyprland](/docs/hyprland.md) - Hyprland window manager configuration, keybindings, and features
+- [jj workspaces](/docs/jj-workspaces.md) - Design decisions and implementation checklist for ergonomic jj workspace management
 - [nixos](/docs/nixos.md) - General NixOS configuration notes
 - [opencode](/docs/opencode.md) - OpenCode module configuration, skills, and MCP integrations
 - [opencode-pr-review](/docs/opencode-pr-review.md) - Design and usage notes for the OpenCode GitHub PR review workflow
