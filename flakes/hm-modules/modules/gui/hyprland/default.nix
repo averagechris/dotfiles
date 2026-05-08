@@ -14,16 +14,37 @@
       runtimeInputs = [pkgs.coreutils pkgs.hyprland pkgs.jq config.programs.eww.package];
       text = ''
         refresh_bars() {
+          external_bar_for_monitor() {
+            case "$1" in
+              DP-1) printf '%s\n' bar-external-dp1 ;;
+              DP-2) printf '%s\n' bar-external ;;
+              DP-3) printf '%s\n' bar-external-dp3 ;;
+              HDMI-A-1) printf '%s\n' bar-external-hdmi-a-1 ;;
+              HDMI-A-2) printf '%s\n' bar-external-hdmi-a-2 ;;
+              *) return 1 ;;
+            esac
+          }
+
+          close_external_bars() {
+            local keep="''${1:-}"
+            for bar in bar-external-dp1 bar-external bar-external-dp3 bar-external-hdmi-a-1 bar-external-hdmi-a-2; do
+              [[ "$bar" == "$keep" ]] && continue
+              eww close "$bar" || true
+            done
+          }
+
           # Keep exactly one bar open, matching eww-open-bars' startup policy.
-          if hyprctl monitors -j | jq -e '.[] | select(.name == "DP-2" and (((.disabled // false) | not)))' >/dev/null; then
-            eww open bar-external || true
+          external_monitor="$(hyprctl monitors -j | jq -r 'first(.[] | select(.name != "eDP-1" and (((.disabled // false) | not))) | .name) // empty')"
+          if [[ -n "$external_monitor" ]] && external_bar="$(external_bar_for_monitor "$external_monitor")"; then
+            eww open "$external_bar" || true
             eww close bar-internal || true
+            close_external_bars "$external_bar"
           elif hyprctl monitors -j | jq -e '.[] | select(.name == "eDP-1" and (((.disabled // false) | not)))' >/dev/null; then
             eww open bar-internal || true
-            eww close bar-external || true
+            close_external_bars
           else
             eww close bar-internal || true
-            eww close bar-external || true
+            close_external_bars
           fi
         }
 

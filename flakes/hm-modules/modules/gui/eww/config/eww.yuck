@@ -23,6 +23,14 @@
 (deflisten active-workspace-internal :initial "1" "scripts/active-workspace.sh eDP-1")
 (deflisten workspaces-external :initial "[6]" "scripts/workspaces.sh DP-2")
 (deflisten active-workspace-external :initial "6" "scripts/active-workspace.sh DP-2")
+(deflisten workspaces-external-dp1 :initial "[6]" "scripts/workspaces.sh DP-1")
+(deflisten active-workspace-external-dp1 :initial "6" "scripts/active-workspace.sh DP-1")
+(deflisten workspaces-external-dp3 :initial "[6]" "scripts/workspaces.sh DP-3")
+(deflisten active-workspace-external-dp3 :initial "6" "scripts/active-workspace.sh DP-3")
+(deflisten workspaces-external-hdmi-a-1 :initial "[6]" "scripts/workspaces.sh HDMI-A-1")
+(deflisten active-workspace-external-hdmi-a-1 :initial "6" "scripts/active-workspace.sh HDMI-A-1")
+(deflisten workspaces-external-hdmi-a-2 :initial "[6]" "scripts/workspaces.sh HDMI-A-2")
+(deflisten active-workspace-external-hdmi-a-2 :initial "6" "scripts/active-workspace.sh HDMI-A-2")
 (deflisten current-submap :initial "" "scripts/submap.sh")
 
 ; Media
@@ -184,3 +192,35 @@
   :exclusive true
   :focusable false
   (bar :items workspaces-external :active active-workspace-external))
+
+(defwindow bar-external-dp1
+  :monitor "DP-1"
+  :geometry (geometry :x "0%" :y "4px" :width "99%" :height "32px" :anchor "top center")
+  :stacking "fg"
+  :exclusive true
+  :focusable false
+  (bar :items workspaces-external-dp1 :active active-workspace-external-dp1))
+
+(defwindow bar-external-dp3
+  :monitor "DP-3"
+  :geometry (geometry :x "0%" :y "4px" :width "99%" :height "32px" :anchor "top center")
+  :stacking "fg"
+  :exclusive true
+  :focusable false
+  (bar :items workspaces-external-dp3 :active active-workspace-external-dp3))
+
+(defwindow bar-external-hdmi-a-1
+  :monitor "HDMI-A-1"
+  :geometry (geometry :x "0%" :y "4px" :width "99%" :height "32px" :anchor "top center")
+  :stacking "fg"
+  :exclusive true
+  :focusable false
+  (bar :items workspaces-external-hdmi-a-1 :active active-workspace-external-hdmi-a-1))
+
+(defwindow bar-external-hdmi-a-2
+  :monitor "HDMI-A-2"
+  :geometry (geometry :x "0%" :y "4px" :width "99%" :height "32px" :anchor "top center")
+  :stacking "fg"
+  :exclusive true
+  :focusable false
+  (bar :items workspaces-external-hdmi-a-2 :active active-workspace-external-hdmi-a-2))

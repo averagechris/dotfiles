@@ -314,6 +314,80 @@ in {
           monitors_json | jq '[.[] | select(.name != "eDP-1" and (((.disabled // false) | not)))] | length'
         }
 
+        enabled_external_monitor() {
+          monitors_json | jq -r 'first(.[] | select(.name != "eDP-1" and (((.disabled // false) | not))) | .name) // empty'
+        }
+
+        external_bar_for_monitor() {
+          case "$1" in
+            DP-1) printf '%s\n' bar-external-dp1 ;;
+            DP-2) printf '%s\n' bar-external ;;
+            DP-3) printf '%s\n' bar-external-dp3 ;;
+            HDMI-A-1) printf '%s\n' bar-external-hdmi-a-1 ;;
+            HDMI-A-2) printf '%s\n' bar-external-hdmi-a-2 ;;
+            *) return 1 ;;
+          esac
+        }
+
+        close_external_bars() {
+          local keep="''${1:-}"
+          for bar in bar-external-dp1 bar-external bar-external-dp3 bar-external-hdmi-a-1 bar-external-hdmi-a-2; do
+            [[ "$bar" == "$keep" ]] && continue
+            eww close "$bar" || true
+          done
+        }
+
+        orient_workspaces() {
+          local external_monitor="$1"
+
+          move_clients_from_workspace() {
+            local from="$1"
+            local to="$2"
+
+            hyprctl clients -j \
+              | jq -r --argjson from "$from" '.[] | select(.workspace.id == $from) | .address' \
+              | while read -r address; do
+                [[ -z "$address" ]] && continue
+                hyprctl dispatch movetoworkspacesilent "$to,address:$address" >/dev/null 2>&1 || true
+              done
+          }
+
+          if ! has_enabled_monitor eDP-1; then
+            # In clamshell/external-only mode, remap the laptop-oriented
+            # workspace range onto the external-oriented range so windows do not
+            # stay stranded on 6-10 after docking from an undocked session.
+            move_clients_from_workspace 6 1
+            move_clients_from_workspace 7 2
+            move_clients_from_workspace 8 3
+            move_clients_from_workspace 9 4
+            move_clients_from_workspace 10 5
+          fi
+
+          active_external_workspace="$(monitors_json | jq -r --arg monitor "$external_monitor" '.[] | select(.name == $monitor) | .activeWorkspace.id // empty')"
+          if [[ -n "$active_external_workspace" && "$active_external_workspace" -gt 10 ]]; then
+            move_clients_from_workspace "$active_external_workspace" 1
+          fi
+
+          for workspace in 1 2 3 4 5; do
+            hyprctl dispatch moveworkspacetomonitor "$workspace" "$external_monitor" >/dev/null 2>&1 || true
+          done
+
+          if has_enabled_monitor eDP-1; then
+            for workspace in 6 7 8 9 10; do
+              hyprctl dispatch moveworkspacetomonitor "$workspace" eDP-1 >/dev/null 2>&1 || true
+            done
+          fi
+
+          # When docking from an undocked session, Hyprland can leave focus on a
+          # higher-numbered transient workspace on the new external output. Move
+          # the external monitor back to the expected primary workspace range so
+          # the bar and keyboard shortcuts start from a predictable orientation.
+          if [[ -z "$active_external_workspace" || "$active_external_workspace" -lt 1 || "$active_external_workspace" -gt 5 ]]; then
+            hyprctl dispatch focusmonitor "$external_monitor" >/dev/null 2>&1 || true
+            hyprctl dispatch workspace 1 >/dev/null 2>&1 || true
+          fi
+        }
+
         # If tater was unplugged while the home clamshell profile had eDP-1
         # disabled, Hyprland can briefly have no enabled output for Eww to bind
         # to.  Make the laptop panel the fail-safe whenever no external monitor
@@ -333,15 +407,18 @@ in {
         eww daemon || true
         sleep 0.2
 
-        if has_enabled_monitor DP-2; then
-          eww open bar-external || true
+        external_monitor="$(enabled_external_monitor)"
+        if [[ -n "$external_monitor" ]] && external_bar="$(external_bar_for_monitor "$external_monitor")"; then
+          orient_workspaces "$external_monitor"
+          eww open "$external_bar" || true
           eww close bar-internal || true
+          close_external_bars "$external_bar"
         elif has_enabled_monitor eDP-1; then
           eww open bar-internal || true
-          eww close bar-external || true
+          close_external_bars
         else
           eww close bar-internal || true
-          eww close bar-external || true
+          close_external_bars
         fi
       '';
     };
