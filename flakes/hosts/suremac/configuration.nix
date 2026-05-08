@@ -184,6 +184,9 @@
     defaults.spaces = {
       spans-displays = false;
     };
+    defaults.CustomSystemPreferences."/Library/Preferences/com.apple.timezone.auto" = {
+      Active = true;
+    };
     defaults.CustomUserPreferences."com.apple.symbolichotkeys" = {
       AppleSymbolicHotKeys = {
         # Mission Control: move left/right a Space. Keep these enabled so
@@ -355,6 +358,11 @@
     };
   };
 
+  system.activationScripts.locationAwareTime.text = ''
+    echo "configuring location-aware time..." >&2
+    systemsetup -setusingnetworktime on >/dev/null 2>&1 || true
+  '';
+
   homebrew = {
     enable = false;
     casks = [
@@ -365,5 +373,7 @@
     ];
   };
 
-  time.timeZone = "America/New_York";
+  # Let macOS set the timezone from the current network-derived location instead
+  # of pinning this laptop to one coast in the declarative config.
+  time.timeZone = null;
 }

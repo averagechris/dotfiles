@@ -2,6 +2,18 @@
 
 `suremac` is the Darwin/macOS host configured in `flakes/hosts/suremac/`.
 
+## Time Zone
+
+`suremac` does not pin `time.timeZone` to a fixed IANA zone. Instead, the host
+leaves `time.timeZone = null`, enables macOS's automatic time zone preference
+(`com.apple.timezone.auto`), and turns on network time during activation. This
+lets macOS update the system time zone from the current location after the Mac
+has network/location data.
+
+If automatic time zone updates do not take effect after applying the config,
+check **System Settings → Privacy & Security → Location Services → System
+Services** and make sure time zone/location services are allowed.
+
 ## Spaces / Desktops
 
 Mission Control desktop switching is configured with stable Space ordering:

@@ -204,101 +204,11 @@ in {
         push = with pkgs; let
           script = writeShellApplication {
             name = "jj-push";
-            runtimeInputs = [jujutsu coreutils fd shellcheck alejandra statix gnused yj jq];
+            runtimeInputs = [jujutsu];
             text = ''
               set -euo pipefail
 
-              # Terminal width for formatting (default 80)
-              term_width="''${COLUMNS:-80}"
-
-              # Colors (disabled if not a tty)
-              if [ -t 1 ]; then
-                GREEN=$'\x1b[32m'
-                RED=$'\x1b[31m'
-                RESET=$'\x1b[0m'
-              else
-                GREEN=""
-                RED=""
-                RESET=""
-              fi
-
-              # Extract short name from command for display
-              get_lint_name() {
-                local cmd="$1"
-                echo "$cmd" | awk '{print $1}' | sed 's|.*/||'
-              }
-
-              # Print result line with dots (pre-commit style)
-              print_result() {
-                local name="$1"
-                local status="$2"
-                local name_len="''${#name}"
-                local visible_status_len=6
-                local dots_needed=$((term_width - name_len - visible_status_len - 1))
-                [ "$dots_needed" -lt 3 ] && dots_needed=3
-                local dots
-                dots=$(printf '%*s' "$dots_needed" "" | tr ' ' '.')
-                printf '%s%s%s\n' "$name" "$dots" "$status"
-              }
-
-              # Read lint commands from .jj-lint.toml (VCS-tracked) or fall back to repo config
-              cmds=()
-              repo_root="$(jj root 2>/dev/null || true)"
-              lint_file="''${repo_root}/.jj-lint.toml"
-
-              if [ -n "$repo_root" ] && [ -f "$lint_file" ]; then
-                # Parse lints from TOML file using yj (converts TOML to JSON)
-                while IFS= read -r cmd; do
-                  [ -n "$cmd" ] && cmds+=("$cmd")
-                done < <(yj -t < "$lint_file" | jq -r '.lints // empty | if type == "array" then .[] else empty end' 2>/dev/null || true)
-              fi
-
-              # Fall back to repo config if file doesn't exist or has no lints
-              if [ ''${#cmds[@]} -eq 0 ]; then
-                lints="$(jj config get dotfiles.push-lints 2>/dev/null || true)"
-                if [ -z "$lints" ]; then
-                  echo "No push lints configured (create .jj-lint.toml or set dotfiles.push-lints in repo config)"
-                  jj git push "$@"
-                  exit 0
-                fi
-                while IFS= read -r cmd; do
-                  cmd="$(echo "$cmd" | xargs)"
-                  [ -n "$cmd" ] && cmds+=("$cmd")
-                done < <(echo "$lints" | tr -d '[]"' | tr ',' '\n')
-              fi
-
-              if [ ''${#cmds[@]} -eq 0 ]; then
-                jj git push "$@"
-                exit 0
-              fi
-
-              failed=0
-              failed_cmds=()
-              outputs=()
-
-              for cmd in "''${cmds[@]}"; do
-                name="$(get_lint_name "$cmd")"
-                output=""
-                if output=$(eval "$cmd" 2>&1); then
-                  print_result "$name" "''${GREEN}Passed''${RESET}"
-                else
-                  print_result "$name" "''${RED}Failed''${RESET}"
-                  failed=1
-                  failed_cmds+=("$cmd")
-                  outputs+=("$output")
-                fi
-              done
-
-              # Print failure details at the end
-              if [ "$failed" -eq 1 ]; then
-                echo ""
-                for i in "''${!failed_cmds[@]}"; do
-                  echo "''${RED}==> ''${failed_cmds[$i]}''${RESET}"
-                  echo "''${outputs[$i]}"
-                  echo ""
-                done
-                exit 1
-              fi
+              ${jjWorkflow}/bin/jj-workflow lint
 
               echo ""
               echo "Lints passed! Pushing..."

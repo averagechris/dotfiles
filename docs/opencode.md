@@ -165,6 +165,8 @@ skipping validation. If only some suggestions are appropriate, persist exactly
 those with `jj lint onboard --preview --select=1,3`, then persist with
 `jj lint onboard --local --select=1,3` or
 `jj lint onboard --write --select=1,3`.
+Tracked `.jj-lint.toml` entries may be strings or `{ name, command }` tables;
+omit `name` to use the inferred display label.
 
 ## OpenRouter API key
 

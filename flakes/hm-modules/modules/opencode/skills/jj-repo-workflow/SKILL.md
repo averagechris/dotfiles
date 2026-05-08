@@ -23,6 +23,9 @@ jj ship --bookmark <b>  # finish/publish selected work; only when asked to ship/
 ## `jj lint`
 
 - Reads `.jj-lint.toml` first, then repo config `dotfiles.push-lints`.
+- `.jj-lint.toml` entries may be strings or `{ name, command }` tables; omit
+  `name` to use the inferred display label.
+- Runs configured commands with `sh -c` from the repo root.
 - Use after meaningful edits and before asking the user to review.
 - If a lint fails, fix the issue and rerun the smallest relevant check first if possible.
 - If no lints are configured, do not ignore it. Run:
@@ -97,7 +100,7 @@ After rebase, sync checks `conflicts()`. With `--fail-on-conflicts`, conflicts p
 
 ## `jj push`
 
-- Runs lints, then pushes.
+- Delegates to the same `jj-workflow lint` runner as `jj lint`, then pushes.
 - Use when the user says push/publish but does not need the full `ship` flow.
 - Skip lints only with explicit user instruction via `jj git push`.
 

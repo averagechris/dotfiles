@@ -131,11 +131,14 @@ The `jj push` alias automatically runs lints before pushing. Lints are configure
 ```toml
 # .jj-lint.toml
 lints = [
-  "alejandra --check .",
-  "statix check",
+  { name = "alejandra", command = "alejandra --check ." },
+  { name = "statix", command = "statix check" },
   "fd -e sh -e bash -e zsh -x shellcheck"
 ]
 ```
+
+Lint entries may be strings or inline tables with `name` and `command`; omit
+`name` to use the inferred display label.
 
 Alternatively, you can configure lints in the local repo config (not VCS-tracked):
 
@@ -158,7 +161,7 @@ push-lints = ["alejandra --check .", "statix check"]
 - `jj ws` - print concise workspace workflow usage
 - `jj git push` - push directly, skip lints
 
-`jj ship`, `jj sync`, and `jj ws` are implemented by the embedded `jj-workflow` Rust helper in `flakes/hm-modules/modules/jujutsu/jj-workflow/` because the branch/remote/workspace resolution logic outgrew shell aliases. `jj sync` can use per-repo jj config `dotfiles.sync.remote` when multiple remote integration bookmarks exist. After `jj ship` lints pass, it pushes with `jj git push` to avoid duplicate lint runs.
+`jj lint`, `jj ship`, `jj sync`, and `jj ws` are implemented by the embedded `jj-workflow` Rust helper in `flakes/hm-modules/modules/jujutsu/jj-workflow/` because the lint/onboarding, branch/remote, and workspace resolution logic outgrew shell aliases. `jj push` delegates lint execution to the same helper before pushing. `jj sync` can use per-repo jj config `dotfiles.sync.remote` when multiple remote integration bookmarks exist. After `jj ship` lints pass, it pushes with `jj git push` to avoid duplicate lint runs.
 
 Managed jj workspaces use `~/projects/ws/<repo>/<workspace>` on personal hosts. On `suremac`, both `~/projects/ws/<repo>/<workspace>` and `~/sureapp/ws/<repo>/<workspace>` are configured. If `jj ws add` copies an untracked `.envrc`, it also runs `direnv allow`; use `--no-envrc` or `--no-direnv` when that is undesirable. `jj ws forget` refuses non-empty work unless `--force` and runs `docker compose down --remove-orphans` when compose files are detected. Use `jj ws forget <name> --dry-run` before cleanup when safety is unclear.
 

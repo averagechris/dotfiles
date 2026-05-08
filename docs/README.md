@@ -13,7 +13,7 @@
 - [opencode-pr-review](/docs/opencode-pr-review.md) - Design and usage notes for the OpenCode GitHub PR review workflow
 - [gpg-signing](/docs/gpg-signing.md) - GPG signing setup for git and jj commits with agenix
 - [shell](/docs/shell.md) - Shell module configuration and PATH precedence
-- [suremac](/docs/suremac.md) - macOS host settings, including Spaces desktop shortcuts
+- [suremac](/docs/suremac.md) - macOS host settings, automatic time zone behavior, and Spaces desktop shortcuts
 - [tater desktop testing](/docs/tater-desktop-testing.md) - Static and runtime checks for tater's Hyprland, greetd, Eww, display, and Wi-Fi setup
 - [tater power and thermal tuning](/docs/tater-power-thermal.md) - ThinkPad T14s power, thermal, and fan-management tuning notes
 - [thorny / thelio-nixos](/docs/thorny.md) - System76 Thelio remote builder and Hyprland workstation notes

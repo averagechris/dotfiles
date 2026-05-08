@@ -282,10 +282,11 @@ fn run_lint(args: Vec<OsString>) -> Result<()> {
     }
 
     let mut failures = Vec::new();
-    for command in commands {
-        let name = command.split_whitespace().next().unwrap_or(&command);
+    for lint in commands {
+        let name = lint_display_name(&lint);
+        let command = lint.command;
         let output = Command::new("sh")
-            .arg("-lc")
+            .arg("-c")
             .arg(&command)
             .current_dir(&repo)
             .output()
@@ -1263,6 +1264,12 @@ fn has_working_copy_changes() -> Result<bool> {
 }
 
 #[derive(Debug, Clone)]
+struct LintCommand {
+    command: String,
+    name: Option<String>,
+}
+
+#[derive(Debug, Clone)]
 struct LintSuggestion {
     command: String,
     source: String,
@@ -1280,29 +1287,177 @@ fn jj_root() -> Result<PathBuf> {
     Ok(PathBuf::from(output.stdout.trim()))
 }
 
-fn configured_lints(repo: &Path) -> Result<Vec<String>> {
+fn configured_lints(repo: &Path) -> Result<Vec<LintCommand>> {
     let lint_file = repo.join(".jj-lint.toml");
     if lint_file.exists() {
         return Ok(parse_lints_toml(&fs::read_to_string(lint_file)?));
     }
     let output = run_jj_capture_allow_failure(["config", "get", "dotfiles.push-lints"])?;
     if output.status.success() {
-        return Ok(parse_config_string_array(&output.stdout));
+        return Ok(parse_config_string_array(&output.stdout)
+            .into_iter()
+            .map(|command| LintCommand {
+                command,
+                name: None,
+            })
+            .collect());
     }
     Ok(Vec::new())
 }
 
-fn parse_lints_toml(input: &str) -> Vec<String> {
-    input
-        .lines()
-        .find_map(|line| {
-            let trimmed = line.trim_start();
-            trimmed
-                .strip_prefix("lints")
-                .and_then(|rest| rest.trim_start().strip_prefix('='))
-        })
-        .map(|rest| parse_config_string_array(&format!("{rest}\n{input}")))
-        .unwrap_or_default()
+fn lint_display_name(lint: &LintCommand) -> String {
+    lint.name
+        .clone()
+        .unwrap_or_else(|| infer_lint_name(&lint.command))
+}
+
+fn parse_lints_toml(input: &str) -> Vec<LintCommand> {
+    let Some(array) = extract_toml_array(input, "lints") else {
+        return Vec::new();
+    };
+    split_top_level_items(array)
+        .into_iter()
+        .filter_map(|item| parse_lint_config_item(&item))
+        .collect()
+}
+
+fn extract_toml_array<'a>(input: &'a str, key: &str) -> Option<&'a str> {
+    for (line_start, line) in input.lines().scan(0, |offset, line| {
+        let start = *offset;
+        *offset += line.len() + 1;
+        Some((start, line))
+    }) {
+        let trimmed = line.trim_start();
+        if trimmed.starts_with('#') || !trimmed.starts_with(key) {
+            continue;
+        }
+        let rest = trimmed.strip_prefix(key)?.trim_start();
+        let rest = rest.strip_prefix('=')?.trim_start();
+        let bracket_in_line = rest.find('[')?;
+        let start = line_start + line.find(rest).unwrap_or(0) + bracket_in_line;
+        return matching_bracket_contents(input, start, '[', ']');
+    }
+    None
+}
+
+fn matching_bracket_contents(input: &str, start: usize, open: char, close: char) -> Option<&str> {
+    let mut in_string = false;
+    let mut escaped = false;
+    let mut depth = 0usize;
+    for (offset, ch) in input[start..].char_indices() {
+        if escaped {
+            escaped = false;
+            continue;
+        }
+        match ch {
+            '\\' if in_string => escaped = true,
+            '"' => in_string = !in_string,
+            _ if in_string => {}
+            ch if ch == open => depth += 1,
+            ch if ch == close => {
+                depth = depth.saturating_sub(1);
+                if depth == 0 {
+                    return Some(&input[start + 1..start + offset]);
+                }
+            }
+            _ => {}
+        }
+    }
+    None
+}
+
+fn split_top_level_items(input: &str) -> Vec<String> {
+    let mut items = Vec::new();
+    let mut in_string = false;
+    let mut escaped = false;
+    let mut in_comment = false;
+    let mut brace_depth = 0usize;
+    let mut bracket_depth = 0usize;
+    let mut current = String::new();
+    for ch in input.chars() {
+        if in_comment {
+            if ch == '\n' {
+                in_comment = false;
+            }
+            continue;
+        }
+        if escaped {
+            current.push(ch);
+            escaped = false;
+            continue;
+        }
+        match ch {
+            '\\' if in_string => {
+                current.push(ch);
+                escaped = true;
+            }
+            '"' => {
+                current.push(ch);
+                in_string = !in_string;
+            }
+            _ if in_string => current.push(ch),
+            '#' => in_comment = true,
+            '{' => {
+                brace_depth += 1;
+                current.push(ch);
+            }
+            '}' => {
+                brace_depth = brace_depth.saturating_sub(1);
+                current.push(ch);
+            }
+            '[' => {
+                bracket_depth += 1;
+                current.push(ch);
+            }
+            ']' => {
+                bracket_depth = bracket_depth.saturating_sub(1);
+                current.push(ch);
+            }
+            ',' if brace_depth == 0 && bracket_depth == 0 => {
+                let item = current.trim();
+                if !item.is_empty() {
+                    items.push(item.to_string());
+                }
+                current.clear();
+            }
+            _ => current.push(ch),
+        }
+    }
+    let item = current.trim();
+    if !item.is_empty() {
+        items.push(item.to_string());
+    }
+    items
+}
+
+fn parse_lint_config_item(item: &str) -> Option<LintCommand> {
+    let trimmed = item.trim();
+    if trimmed.starts_with('"') {
+        return parse_toml_string(trimmed).map(|command| LintCommand {
+            command,
+            name: None,
+        });
+    }
+    let table = trimmed.strip_prefix('{')?.strip_suffix('}')?;
+    let mut command = None;
+    let mut name = None;
+    for field in split_top_level_items(table) {
+        let Some((key, value)) = field.split_once('=') else {
+            continue;
+        };
+        let key = key.trim();
+        let value = value.trim();
+        match key {
+            "command" => command = parse_toml_string(value),
+            "name" => name = parse_toml_string(value),
+            _ => {}
+        }
+    }
+    command.map(|command| LintCommand { command, name })
+}
+
+fn parse_toml_string(input: &str) -> Option<String> {
+    parse_config_string_array(input).into_iter().next()
 }
 
 fn parse_config_string_array(input: &str) -> Vec<String> {
@@ -2012,7 +2167,11 @@ fn lint_config_toml(lints: &[LintSuggestion]) -> Result<String> {
     let mut contents =
         String::from("# Generated by jj lint onboard. Review before committing.\nlints = [\n");
     for lint in lints {
-        contents.push_str(&format!("  {},\n", serde_json::to_string(&lint.command)?));
+        contents.push_str(&format!(
+            "  {{ name = {}, command = {} }},\n",
+            serde_json::to_string(&infer_lint_name(&lint.command))?,
+            serde_json::to_string(&lint.command)?
+        ));
     }
     contents.push_str("]\n");
     Ok(contents)
@@ -2045,6 +2204,207 @@ fn is_safe_package_check_script(script: &str) -> bool {
         || lower.contains(" serve")
         || lower.contains(" deploy");
     check_like && !mutating
+}
+
+fn infer_lint_name(command: &str) -> String {
+    let tokens = shell_words(command);
+    if tokens.is_empty() {
+        return command.trim().to_string();
+    }
+
+    if tokens.iter().any(|token| token == "shellcheck") {
+        return "shellcheck".to_string();
+    }
+
+    let tokens = strip_env_assignments(&tokens);
+    if tokens.is_empty() {
+        return command.trim().to_string();
+    }
+
+    match tokens[0].as_str() {
+        "uv" | "poetry" | "pdm" | "hatch" if tokens.get(1).map(String::as_str) == Some("run") => {
+            infer_wrapped_tool(&tokens[2..]).unwrap_or_else(|| format_tool_args(&tokens, 2))
+        }
+        "cargo" => infer_cargo_name(&tokens),
+        "npm" => infer_npm_name(&tokens),
+        "pnpm" | "yarn" | "bun" => infer_package_manager_name(&tokens),
+        "npx" => infer_wrapped_tool(&tokens[1..]).unwrap_or_else(|| format_tool_args(&tokens, 2)),
+        "tox" if tokens.get(1).map(String::as_str) == Some("run") => env_flag_name("tox", &tokens),
+        "nox" => env_flag_name("nox", &tokens),
+        "make" | "just" => format_tool_args(&tokens, 2),
+        "nix" if tokens.get(1).map(String::as_str) == Some("flake") => format_tool_args(&tokens, 3),
+        "docker" if tokens.get(1).map(String::as_str) == Some("compose") => {
+            infer_docker_compose_name(&tokens)
+        }
+        _ => infer_wrapped_tool(tokens).unwrap_or_else(|| format_tool_args(tokens, 2)),
+    }
+}
+
+fn infer_cargo_name(tokens: &[String]) -> String {
+    if tokens.get(1).map(String::as_str) == Some("nextest") {
+        return format_tool_args(tokens, 3);
+    }
+    format_tool_args(tokens, 2)
+}
+
+fn infer_npm_name(tokens: &[String]) -> String {
+    match tokens.get(1).map(String::as_str) {
+        Some("run") | Some("run-script") => tokens
+            .get(2)
+            .map(|script| format!("npm {script}"))
+            .unwrap_or_else(|| "npm run".to_string()),
+        Some("test") | Some("t") => "npm test".to_string(),
+        Some("exec") => infer_wrapped_tool(&tokens[2..]).unwrap_or_else(|| "npm exec".to_string()),
+        _ => format_tool_args(tokens, 2),
+    }
+}
+
+fn infer_package_manager_name(tokens: &[String]) -> String {
+    let pm = tokens[0].as_str();
+    match tokens.get(1).map(String::as_str) {
+        Some("run") => tokens
+            .get(2)
+            .map(|script| format!("{pm} {script}"))
+            .unwrap_or_else(|| format!("{pm} run")),
+        Some("exec") | Some("dlx") => {
+            infer_wrapped_tool(&tokens[2..]).unwrap_or_else(|| format!("{pm} exec"))
+        }
+        Some(script) if !script.starts_with('-') => format!("{pm} {script}"),
+        _ => pm.to_string(),
+    }
+}
+
+fn infer_wrapped_tool(tokens: &[String]) -> Option<String> {
+    if tokens.is_empty() {
+        return None;
+    }
+    let tokens = strip_leading_flags(tokens);
+    if tokens.is_empty() {
+        return None;
+    }
+    if tokens[0] == "python" || tokens[0] == "python3" {
+        if tokens.get(1).map(String::as_str) == Some("-m") {
+            return tokens
+                .get(2)
+                .map(|module| python_module_name(module, &tokens[3..]));
+        }
+    }
+    Some(tool_specific_name(tokens))
+}
+
+fn tool_specific_name(tokens: &[String]) -> String {
+    match tokens[0].as_str() {
+        "ruff" => format_tool_args(tokens, 3),
+        "eslint" | "prettier" | "biome" | "mypy" | "pyright" | "pytest" | "vitest" | "jest"
+        | "tsc" | "zizmor" | "black" | "isort" | "flake8" | "pylint" | "alejandra" | "statix"
+        | "shellcheck" => format_tool_args(tokens, 2),
+        _ => format_tool_args(tokens, 2),
+    }
+}
+
+fn python_module_name(module: &str, rest: &[String]) -> String {
+    let mut tokens = vec![module.to_string()];
+    tokens.extend(rest.iter().cloned());
+    tool_specific_name(&tokens)
+}
+
+fn env_flag_name(prefix: &str, tokens: &[String]) -> String {
+    if let Some(index) = tokens
+        .iter()
+        .position(|token| token == "-e" || token == "-s")
+    {
+        if let Some(env) = tokens.get(index + 1) {
+            return format!("{prefix} {env}");
+        }
+    }
+    format_tool_args(tokens, 2)
+}
+
+fn infer_docker_compose_name(tokens: &[String]) -> String {
+    if let Some(index) = tokens
+        .iter()
+        .position(|token| matches!(token.as_str(), "run" | "exec"))
+    {
+        let mut idx = index + 1;
+        while tokens
+            .get(idx)
+            .map(|token| token.starts_with('-'))
+            .unwrap_or(false)
+        {
+            idx += 1;
+        }
+        if let Some(service) = tokens.get(idx) {
+            if let Some(tool) = infer_wrapped_tool(&tokens[idx + 1..]) {
+                return format!("compose {service} {tool}");
+            }
+            return format!("compose {service}");
+        }
+    }
+    format_tool_args(tokens, 3)
+}
+
+fn strip_env_assignments(tokens: &[String]) -> &[String] {
+    let mut index = 0;
+    while tokens
+        .get(index)
+        .map(|token| token.contains('=') && !token.starts_with('-'))
+        .unwrap_or(false)
+    {
+        index += 1;
+    }
+    &tokens[index..]
+}
+
+fn strip_leading_flags(tokens: &[String]) -> &[String] {
+    let mut index = 0;
+    while tokens
+        .get(index)
+        .map(|token| token.starts_with('-'))
+        .unwrap_or(false)
+    {
+        index += 1;
+    }
+    &tokens[index..]
+}
+
+fn format_tool_args(tokens: &[String], max_tokens: usize) -> String {
+    tokens
+        .iter()
+        .filter(|token| !token.starts_with('-') && *token != ".")
+        .take(max_tokens)
+        .cloned()
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+fn shell_words(command: &str) -> Vec<String> {
+    let mut words = Vec::new();
+    let mut current = String::new();
+    let mut quote: Option<char> = None;
+    let mut escaped = false;
+    for ch in command.chars() {
+        if escaped {
+            current.push(ch);
+            escaped = false;
+            continue;
+        }
+        match ch {
+            '\\' if quote != Some('\'') => escaped = true,
+            '\'' | '"' if quote == Some(ch) => quote = None,
+            '\'' | '"' if quote.is_none() => quote = Some(ch),
+            ch if ch.is_whitespace() && quote.is_none() => {
+                if !current.is_empty() {
+                    words.push(current.clone());
+                    current.clear();
+                }
+            }
+            _ => current.push(ch),
+        }
+    }
+    if !current.is_empty() {
+        words.push(current);
+    }
+    words
 }
 
 fn add_lint(report: &mut LintOnboardReport, command: &str, source: &str, reason: &str) {
@@ -2094,9 +2454,10 @@ fn print_lint_onboard_report(report: &LintOnboardReport) {
         println!("Suggested lints to include:");
         for (index, lint) in report.suggestions.iter().enumerate() {
             println!(
-                "  {}. {}\n      source: {}\n      reason: {}",
+                "  {}. {}\n      name: {}\n      source: {}\n      reason: {}",
                 index + 1,
                 lint.command,
+                infer_lint_name(&lint.command),
                 lint.source,
                 lint.reason
             );
@@ -2117,7 +2478,7 @@ fn print_lint_onboard_report(report: &LintOnboardReport) {
 
 fn lint_onboard_json(report: &LintOnboardReport) -> serde_json::Value {
     json!({
-        "suggested": report.suggestions.iter().map(|lint| json!({"command": lint.command, "source": lint.source, "reason": lint.reason})).collect::<Vec<_>>(),
+        "suggested": report.suggestions.iter().map(|lint| json!({"name": infer_lint_name(&lint.command), "command": lint.command, "source": lint.source, "reason": lint.reason})).collect::<Vec<_>>(),
         "inspect": report.inspect,
         "hints": [
             "Inspect Makefile/justfile/Docker Compose/docs/CI for project-specific checks",
@@ -2474,7 +2835,7 @@ fn print_ship_usage() {
 
 fn print_lint_usage() {
     eprintln!(
-        "Usage:\n  jj lint\n  jj lint onboard [--print|--json|--preview|--write|--local] [--select=1,3]\n\nRuns configured lints from .jj-lint.toml or dotfiles.push-lints. Use `jj lint onboard --print` to discover candidate commands when none are configured. Use --select with --preview/--write/--local to preview or save only chosen numbered suggestions."
+        "Usage:\n  jj lint\n  jj lint onboard [--print|--json|--preview|--write|--local] [--select=1,3]\n\nRuns configured lints from .jj-lint.toml or dotfiles.push-lints. .jj-lint.toml entries may be strings or {{ name, command }} tables; unnamed entries get inferred labels. Use `jj lint onboard --print` to discover candidate commands when none are configured. Use --select with --preview/--write/--local to preview or save only chosen numbered suggestions."
     );
 }
 
@@ -2760,16 +3121,16 @@ struct JjOutput {
 mod tests {
     use super::{
         choose_ship_bookmark, choose_sync_base, configured_lints, fetch_remote_choice,
-        infer_remote_integration_bookmark_from, is_check_only_format_script,
+        infer_lint_name, infer_remote_integration_bookmark_from, is_check_only_format_script,
         is_integration_bookmark, is_safe_package_check_script, is_validation_name,
-        lint_config_toml, lint_onboard_json, lint_onboard_report, makefile_targets,
-        parse_common_args, parse_config_string_array, parse_lint_selection, parse_lints_toml,
-        parse_toml_string_array, parse_ws_add_args, parse_ws_forget_args, parse_ws_path_args,
-        parse_ws_prune_args, python_runner, run_lint, run_lint_onboard, run_sync, run_ws,
-        selected_lints, ship_plan, stale_workspace_dirs, sync_base_candidates, validate_ws_name,
-        workspace_context_for_repo, write_tracked_lint_config, FetchChoice, LintOnboardReport,
-        LintSuggestion, ParsedArgs, ProjectGroup, ShipPlan, WsAddArgs, WsConfig, WsForgetArgs,
-        WsPathArgs, WsPruneArgs,
+        lint_config_toml, lint_display_name, lint_onboard_json, lint_onboard_report,
+        makefile_targets, parse_common_args, parse_config_string_array, parse_lint_selection,
+        parse_lints_toml, parse_toml_string_array, parse_ws_add_args, parse_ws_forget_args,
+        parse_ws_path_args, parse_ws_prune_args, python_runner, run_lint, run_lint_onboard,
+        run_sync, run_ws, selected_lints, ship_plan, stale_workspace_dirs, sync_base_candidates,
+        validate_ws_name, workspace_context_for_repo, write_tracked_lint_config, FetchChoice,
+        LintCommand, LintOnboardReport, LintSuggestion, ParsedArgs, ProjectGroup, ShipPlan,
+        WsAddArgs, WsConfig, WsForgetArgs, WsPathArgs, WsPruneArgs,
     };
     use std::env;
     use std::ffi::OsString;
@@ -2782,6 +3143,10 @@ mod tests {
 
     fn strings(values: &[&str]) -> Vec<String> {
         values.iter().map(|value| (*value).to_string()).collect()
+    }
+
+    fn lint_commands(lints: &[super::LintCommand]) -> Vec<String> {
+        lints.iter().map(|lint| lint.command.clone()).collect()
     }
 
     fn test_config(group: &Path) -> WsConfig {
@@ -3175,14 +3540,82 @@ mod tests {
     #[test]
     fn lint_config_parsing_reads_tracked_and_repo_arrays() {
         assert_eq!(
-            parse_lints_toml("lints = [\n  \"cargo fmt --check\",\n  \"cargo test\",\n]\n"),
+            lint_commands(&parse_lints_toml(
+                "lints = [\n  \"cargo fmt --check\",\n  \"cargo test\",\n]\n"
+            )),
             strings(&["cargo fmt --check", "cargo test"])
         );
+        let named = parse_lints_toml(
+            "lints = [\n  { name = \"ruff format\", command = \"uv run ruff format --check .\" },\n  { command = \"uv run mypy\" },\n]\n",
+        );
+        assert_eq!(
+            lint_commands(&named),
+            strings(&["uv run ruff format --check .", "uv run mypy"])
+        );
+        assert_eq!(named[0].name.as_deref(), Some("ruff format"));
+        assert_eq!(named[1].name, None);
         assert_eq!(
             parse_config_string_array("[\"pnpm lint\",\"pnpm test\"]"),
             strings(&["pnpm lint", "pnpm test"])
         );
         assert!(parse_lints_toml("not_lints = [\"nope\"]").is_empty());
+    }
+
+    #[test]
+    fn lint_name_inference_handles_common_runners() {
+        for (command, expected) in [
+            ("uv run ruff format --check .", "ruff format"),
+            ("uv run ruff check .", "ruff check"),
+            ("uv run mypy", "mypy"),
+            ("poetry run python -m pytest", "pytest"),
+            (
+                "cargo clippy --workspace --all-targets -- -D warnings",
+                "cargo clippy",
+            ),
+            ("cargo nextest run --workspace", "cargo nextest run"),
+            ("npm run typecheck", "npm typecheck"),
+            ("npm test", "npm test"),
+            ("pnpm lint", "pnpm lint"),
+            ("yarn run format:check", "yarn format:check"),
+            ("bun run test", "bun test"),
+            ("tox run -e linting", "tox linting"),
+            ("nox -s tests", "nox tests"),
+            ("nix flake check", "nix flake check"),
+            ("fd -e sh -e bash -e zsh -x shellcheck", "shellcheck"),
+        ] {
+            assert_eq!(infer_lint_name(command), expected, "{command}");
+        }
+    }
+
+    #[test]
+    fn lint_display_name_prefers_explicit_name_then_inference() {
+        let explicit = LintCommand {
+            name: Some("custom validation".to_string()),
+            command: "uv run ruff check .".to_string(),
+        };
+        assert_eq!(lint_display_name(&explicit), "custom validation");
+
+        let inferred = LintCommand {
+            name: None,
+            command: "uv run ruff check .".to_string(),
+        };
+        assert_eq!(lint_display_name(&inferred), "ruff check");
+    }
+
+    #[test]
+    fn lint_onboard_config_uses_named_table_entries() {
+        let contents = lint_config_toml(&[LintSuggestion {
+            command: "uv run ruff format --check .".to_string(),
+            source: "pyproject.toml tool.ruff".to_string(),
+            reason: "Python ruff format check".to_string(),
+        }])
+        .unwrap();
+
+        assert!(
+            contents
+                .contains("{ name = \"ruff format\", command = \"uv run ruff format --check .\" }"),
+            "unexpected config:\n{contents}"
+        );
     }
 
     #[test]
@@ -3678,7 +4111,7 @@ tests = []
 
         write_tracked_lint_config(&root, &report, None).unwrap();
         assert_eq!(
-            configured_lints(&root).unwrap(),
+            lint_commands(&configured_lints(&root).unwrap()),
             strings(&["true", "printf ok"])
         );
         assert!(write_tracked_lint_config(&root, &report, None).is_err());
@@ -3877,7 +4310,7 @@ tests = []
         env::set_current_dir(&root).unwrap();
         run_lint_onboard(vec!["--write".into()]).unwrap();
         assert_eq!(
-            configured_lints(&root).unwrap(),
+            lint_commands(&configured_lints(&root).unwrap()),
             strings(&["npm run lint", "npm test"])
         );
         run_lint(Vec::new()).unwrap();
@@ -3923,7 +4356,7 @@ tests = []
         env::set_current_dir(&root).unwrap();
         run_lint_onboard(vec!["--local".into(), "--select=2".into()]).unwrap();
         assert_eq!(
-            configured_lints(&root).unwrap(),
+            lint_commands(&configured_lints(&root).unwrap()),
             strings(&["npm run typecheck"])
         );
         env::set_current_dir(old).unwrap();
