@@ -66,11 +66,11 @@ the workflow should stop and report that the review tools are not loaded rather
 than inventing a shell-based fallback artifact.
 
 The dotfiles module installs these tools into the global
-`~/.config/opencode/tools/` directory as real files rather than `/nix/store`
-symlinks, and declares `@opencode-ai/plugin` in
-`~/.config/opencode/package.json`. This keeps OpenCode's dependency reification
-and TypeScript module resolution pointed at the writable user config directory on
-both Linux and Darwin.
+`~/.config/opencode/tools/` directory as real files and configures OpenCode to
+load that directory rather than the `/nix/store` source path. It also declares
+`@opencode-ai/plugin` in `~/.config/opencode/package.json`. This keeps
+OpenCode's dependency reification and TypeScript module resolution pointed at
+the writable user config directory on both Linux and Darwin.
 
 The preferred terminal presentation layer is the companion
 `review-artifact-render` tool.

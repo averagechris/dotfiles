@@ -132,9 +132,10 @@ workflows. Current examples include:
 
 The PR review workflow is split into a reusable core review skill plus a
 GitHub-specific wrapper. Supporting custom tools live under `.opencode/tools/`.
-They are installed globally through `programs.opencode.tools`, then materialized
-as writable files in `~/.config/opencode/tools/` so TypeScript imports resolve
-from the user config directory instead of `/nix/store`. The module also writes a
+They are materialized as writable files in `~/.config/opencode/tools/`, and
+`programs.opencode.tools` points OpenCode at that config-directory copy rather
+than at the Nix store source path. This keeps TypeScript imports resolving from
+the user config directory instead of `/nix/store`. The module also writes a
 minimal `~/.config/opencode/package.json` declaring `@opencode-ai/plugin`; this
 lets OpenCode populate `~/.config/opencode/node_modules` before importing custom
 tools. The tools currently include:

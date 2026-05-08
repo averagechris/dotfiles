@@ -40,6 +40,7 @@
   ];
   cfg = config.dotfiles.opencode;
   reviewToolsPath = ../../../../.opencode/tools;
+  installedReviewToolsPath = "${config.home.homeDirectory}/.config/opencode/tools";
   opencodeNpmVersion = builtins.head (lib.splitString "+" (lib.getVersion pkgs.opencode));
   opencodePackageJson = builtins.toJSON {
     dependencies = {
@@ -156,11 +157,10 @@ in {
 
         commands = import ./commands.nix;
 
-        # Repo-managed PR review helpers. The Home Manager OpenCode module
-        # registers these as first-class custom tools; the activation hook below
-        # replaces the store symlink with real files so TypeScript import
-        # resolution can find ~/.config/opencode/node_modules.
-        tools = reviewToolsPath;
+        # Repo-managed PR review helpers. Point OpenCode at the mutable config
+        # copy, not the Nix store source path, so TypeScript import resolution
+        # starts under ~/.config/opencode and can find node_modules there.
+        tools = installedReviewToolsPath;
 
         # ============================================================================
         # SKILLS - Reusable knowledge for agents
@@ -191,7 +191,7 @@ in {
       # (not symlinks into /nix/store) so TypeScript tool imports resolve against
       # ~/.config/opencode/node_modules.
       home.activation.install-opencode-review-tools = lib.hm.dag.entryAfter ["writeBoundary"] ''
-        target="${config.home.homeDirectory}/.config/opencode/tools"
+        target="${installedReviewToolsPath}"
         ${pkgs.coreutils}/bin/rm -rf "$target"
         ${pkgs.coreutils}/bin/mkdir -p "$(${pkgs.coreutils}/bin/dirname "$target")"
         ${pkgs.coreutils}/bin/cp -R "${reviewToolsPath}" "$target"
