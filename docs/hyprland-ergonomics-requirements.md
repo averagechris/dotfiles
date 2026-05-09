@@ -1,6 +1,38 @@
 # Hyprland Ergonomics Requirements
 
-This document captures the planned tater/shared Hyprland ergonomics work before implementation. The goal is to turn several awkward window-management flows into one coherent command surface, backed by a repo-managed Rust CLI/daemon rather than a pile of one-off scripts.
+This document captures the tater/shared Hyprland ergonomics plan and current implementation status. The goal is to turn several awkward window-management flows into one coherent command surface, backed by a repo-managed Rust CLI/daemon rather than a pile of one-off scripts.
+
+## Current status
+
+`hctl` now exists as a repo-managed Rust helper under the shared Hyprland Home Manager module:
+
+```text
+flakes/hm-modules/modules/gui/hyprland/hctl/
+```
+
+Implemented so far:
+
+- Nix package/build for `hctl`.
+- Nix-generated runtime config at `~/.config/hctl/config.json`.
+- `dotfiles.gui.hyprland.hctl` Home Manager options for apps, workspaces, smart gaps, package override, and Eww state file path.
+- User systemd service `hctl.service` running `hctl daemon`.
+- Verb-first `hctl` command surface for summon/hide, borrow/return, workspace goto, pinning, video pinning, zen terminal, daemon, and Eww state inspection.
+- KeePassXC summon/hide behavior using app-native close-to-tray assumptions.
+- Signal/Telegram persistent `chat` workspace and real-window borrow/return behavior.
+- Smart gaps daemon behavior using width-based monitor profiles.
+- Event-driven daemon wakeups through Hyprland socket2, with polling fallback.
+- Eww state JSON written to `$XDG_STATE_HOME/hctl/eww-state.json`.
+- Eww widgets for named/special workspace context, chat borrowed state, and KeePassXC state.
+- Tests for config parsing, app matching, workspace targeting, smart gaps, Eww state derivation, state path expansion, Hyprland socket path derivation, and event filtering.
+
+Still pending or needing real-world tuning:
+
+- Manual runtime validation on tater's laptop panel and Dell monitor.
+- Verify exact KeePassXC tray show/hide behavior under real settings.
+- Verify exact Signal/Telegram/Zen/window class behavior under Hyprland.
+- Tune smart gap sizes and chat/borrow window geometry after use.
+- Research and integrate a real Wayland-compatible system tray.
+- Add richer modal hover/help UI if the current submap indicator is not enough.
 
 ## Decisions
 
@@ -62,10 +94,10 @@ The binary should default to this path, with an override for tests and manual de
 hctl --config /path/to/config.json state eww
 ```
 
-The Nix option namespace should remain explicit even though the binary is short:
+The Nix option namespace remains explicit even though the binary is short:
 
 ```nix
-dotfiles.hyprland.hctl = {
+dotfiles.gui.hyprland.hctl = {
   enable = true;
 
   apps = {
@@ -74,7 +106,7 @@ dotfiles.hyprland.hctl = {
       launch = ["keepassxc"];
 
       summon = {
-        enable = true;
+        enabled = true;
         floating = true;
         center = true;
         size = {
@@ -84,7 +116,7 @@ dotfiles.hyprland.hctl = {
       };
 
       hide = {
-        enable = true;
+        enabled = true;
         method = "close-to-tray";
       };
     };
@@ -95,7 +127,7 @@ dotfiles.hyprland.hctl = {
       homeWorkspace = "chat";
 
       borrow = {
-        enable = true;
+        enabled = true;
         floating = true;
         center = true;
         size = {
@@ -111,7 +143,7 @@ dotfiles.hyprland.hctl = {
       homeWorkspace = "chat";
 
       borrow = {
-        enable = true;
+        enabled = true;
         floating = true;
         center = true;
         size = {
@@ -131,26 +163,29 @@ dotfiles.hyprland.hctl = {
 
   smartGaps = {
     enable = true;
-    profiles = {
-      laptop = {
-        maxMonitorWidth = 1999;
+    profiles = [
+      {
+        name = "laptop";
+        match.maxWidth = 1999;
         gaps = {
           oneWindow = { inner = 12; outer = 32; };
           twoWindows = { inner = 10; outer = 24; };
+          threeWindows = { inner = 8; outer = 12; };
           manyWindows = { inner = 8; outer = 12; };
         };
-      };
+      }
 
-      externalLarge = {
-        minMonitorWidth = 2000;
+      {
+        name = "externalLarge";
+        match.minWidth = 2000;
         gaps = {
           oneWindow = { inner = 28; outer = 180; };
           twoWindows = { inner = 22; outer = 120; };
           threeWindows = { inner = 16; outer = 72; };
           manyWindows = { inner = 8; outer = 24; };
         };
-      };
-    };
+      }
+    ];
   };
 };
 ```
@@ -311,110 +346,110 @@ This file should be cheap for Eww to read and should contain the current state E
 
 ### Architecture
 
-- [ ] Add a repo-managed Rust package for `hctl` in the Home Manager module area or another shared package location.
-- [ ] Place `hctl` using the same broad pattern as the existing repo-managed `jj-workflow` helper: near the Home Manager module that owns the workflow.
-- [ ] Package the tool through Nix and expose it to the shared Hyprland configuration.
-- [ ] Generate `~/.config/hctl/config.json` from `dotfiles.hyprland.hctl` options.
-- [ ] Add a `--config` flag for tests and debugging alternate config files.
-- [ ] Provide subcommands for one-shot actions and a `daemon` subcommand for event-driven behavior.
-- [ ] Use structured state internally for Hyprland clients, monitors, workspaces, and active submaps.
-- [ ] Prefer event subscription for daemon behavior; use polling only as a fallback.
+- [x] Add a repo-managed Rust package for `hctl` in the Home Manager module area or another shared package location.
+- [x] Place `hctl` using the same broad pattern as the existing repo-managed `jj-workflow` helper: near the Home Manager module that owns the workflow.
+- [x] Package the tool through Nix and expose it to the shared Hyprland configuration.
+- [x] Generate `~/.config/hctl/config.json` from `dotfiles.gui.hyprland.hctl` options.
+- [x] Add a `--config` flag for tests and debugging alternate config files.
+- [x] Provide subcommands for one-shot actions and a `daemon` subcommand for event-driven behavior.
+- [x] Use structured state internally for Hyprland clients, monitors, workspaces, and active submaps.
+- [x] Prefer event subscription for daemon behavior; use polling only as a fallback.
 - [ ] Add dry-run/logging support for commands that move/resize windows.
 - [ ] Keep host-specific tuning configurable from Nix, especially for tater's laptop panel vs Dell monitor behavior.
-- [ ] Execute configured launch commands as argv lists without shell interpolation.
+- [x] Execute configured launch commands as argv lists without shell interpolation.
 
 ### KeePassXC summon/dismiss
 
 - [ ] Configure KeePassXC for native tray behavior: show tray icon, minimize/close to tray where supported.
-- [ ] Add a summon command that launches or reveals KeePassXC.
-- [ ] When summoned, move KeePassXC to the current workspace.
-- [ ] Float, center, focus, and resize KeePassXC to a reasonable size.
-- [ ] Add a hide command that returns KeePassXC to tray via app-native close/minimize behavior.
-- [ ] Represent hide behavior as an enum in config and Rust, initially implementing only `close-to-tray`.
-- [ ] Add keybindings for summon and hide.
-- [ ] Add an Eww affordance for KeePassXC, even if the full system tray becomes the primary UI.
+- [x] Add a summon command that launches or reveals KeePassXC.
+- [x] When summoned, move KeePassXC to the current workspace.
+- [x] Float, center, focus, and resize KeePassXC to a reasonable size.
+- [x] Add a hide command that returns KeePassXC to tray via app-native close/minimize behavior.
+- [x] Represent hide behavior as an enum in config and Rust, initially implementing only `close-to-tray`.
+- [x] Add keybindings for summon and hide.
+- [x] Add an Eww affordance for KeePassXC, even if the full system tray becomes the primary UI.
 
 ### Chat workspace and borrow/return
 
-- [ ] Define a persistent `chat` workspace for Signal, Telegram, and future chat apps.
-- [ ] Add window rules so Signal and Telegram default to the `chat` workspace.
-- [ ] Add a command/keybinding to jump to the `chat` workspace.
-- [ ] Add `borrow` behavior that moves the real Signal/Telegram window into the current workspace.
-- [ ] Borrowed chat windows should float, focus, and receive monitor-aware size/position.
-- [ ] Add toggle behavior: if the borrowed app is already on the current workspace, return it home.
-- [ ] Return behavior should move the app back to `chat` and restore the preferred chat layout.
-- [ ] Derive borrowed/home state from current clients and configured home workspaces for MVP; do not persist exact previous geometry yet.
-- [ ] Preserve drag-and-drop ergonomics for screenshots/files by ensuring borrowed windows are real windows on the current workspace, not just hidden overlays.
+- [x] Define a persistent `chat` workspace for Signal, Telegram, and future chat apps.
+- [x] Add window rules so Signal and Telegram default to the `chat` workspace.
+- [x] Add a command/keybinding to jump to the `chat` workspace.
+- [x] Add `borrow` behavior that moves the real Signal/Telegram window into the current workspace.
+- [x] Borrowed chat windows should float, focus, and receive monitor-aware size/position.
+- [x] Add toggle behavior: if the borrowed app is already on the current workspace, return it home.
+- [x] Return behavior should move the app back to `chat` and restore the preferred chat layout.
+- [x] Derive borrowed/home state from current clients and configured home workspaces for MVP; do not persist exact previous geometry yet.
+- [x] Preserve drag-and-drop ergonomics for screenshots/files by ensuring borrowed windows are real windows on the current workspace, not just hidden overlays.
 
 ### Smart video pinning
 
-- [ ] Add a command for focused-window smart video pinning.
-- [ ] The command should float the focused window, resize it to a sensible video aspect/size, move it to a good corner, and pin it.
-- [ ] Size should be monitor-aware, e.g. larger on Dell/external monitors and smaller on the laptop panel.
-- [ ] Add a separate generic pin toggle command/keybinding.
-- [ ] Bind these into the mnemonic window/action mode.
+- [x] Add a command for focused-window smart video pinning.
+- [x] The command should float the focused window, resize it to a sensible video aspect/size, move it to a good corner, and pin it.
+- [x] Size should be monitor-aware, e.g. larger on Dell/external monitors and smaller on the laptop panel.
+- [x] Add a separate generic pin toggle command/keybinding.
+- [ ] Bind smart video pinning into the mnemonic window/action mode.
 
 ### Smart gaps and zen terminal
 
-- [ ] Add daemon logic that reacts to workspace/client/monitor changes.
-- [ ] Count tiled windows on the active workspace and determine active monitor dimensions.
-- [ ] Match smart-gap profiles by monitor width for MVP.
-- [ ] Apply aggressive spacious gaps for sparse workspaces on large external monitors.
-- [ ] Shrink gaps as window count increases.
-- [ ] Keep laptop-panel gaps less aggressive.
-- [ ] Make smart gaps easy to disable from Nix.
-- [ ] Add a manual `zen-terminal` action for the focused terminal: float, center, and size to a comfortable large-monitor terminal shape.
+- [x] Add daemon logic that reacts to workspace/client/monitor changes.
+- [x] Count tiled windows on the active workspace and determine active monitor dimensions.
+- [x] Match smart-gap profiles by monitor width for MVP.
+- [x] Apply aggressive spacious gaps for sparse workspaces on large external monitors.
+- [x] Shrink gaps as window count increases.
+- [x] Keep laptop-panel gaps less aggressive.
+- [x] Make smart gaps easy to disable from Nix.
+- [x] Add a manual `zen-terminal` action for the focused terminal: float, center, and size to a comfortable large-monitor terminal shape.
 - [ ] Decide after testing whether `zen-terminal` should be a toggle that restores tiling.
 
 ### Eww and tray integration
 
 - [ ] Research and choose a real Wayland-compatible system tray strategy for Eww/bar usage.
 - [ ] Add or integrate the chosen system tray implementation.
-- [ ] Expose daemon state for Eww via `$XDG_STATE_HOME/hctl/eww-state.json`.
-- [ ] Show scratch/chat workspace state, including empty special/named workspaces.
-- [ ] Show borrowed chat app state, e.g. Signal or Telegram currently borrowed away from `chat`.
-- [ ] Show active modal/submap keybinding hints when in action/window/chat modes.
+- [x] Expose daemon state for Eww via `$XDG_STATE_HOME/hctl/eww-state.json`.
+- [x] Show scratch/chat workspace state, including empty special/named workspaces.
+- [x] Show borrowed chat app state, e.g. Signal or Telegram currently borrowed away from `chat`.
+- [x] Show active modal/submap keybinding hints when in action/window/chat modes.
 - [ ] Consider a hover/click cheat-sheet widget for advanced keybindings.
 
 ### Keybinding requirements
 
 - [ ] Keep the existing mnemonic/modal philosophy.
-- [ ] Add chat mode bindings for `chat` workspace, Signal borrow, and Telegram borrow.
-- [ ] Add password/KeePassXC summon/hide bindings.
-- [ ] Add window mode bindings for generic pin, smart video pin, and zen terminal.
-- [ ] Ensure every submap has an explicit Escape/reset binding.
-- [ ] Document all new keybindings in `docs/hyprland.md` when implemented.
+- [x] Add chat mode bindings for `chat` workspace, Signal borrow, and Telegram borrow.
+- [x] Add password/KeePassXC summon/hide bindings.
+- [ ] Add window mode bindings for smart video pin and zen terminal.
+- [x] Ensure every submap has an explicit Escape/reset binding.
+- [x] Document all new keybindings in `docs/hyprland.md` when implemented.
 
 ### Testing and validation
 
-- [ ] Add unit tests for parsing Hyprland JSON state where practical.
-- [ ] Add test fixtures for clients, monitors, and workspaces.
+- [x] Add unit tests for parsing Hyprland JSON state where practical.
+- [x] Add test fixtures for clients, monitors, and workspaces.
 - [ ] Validate command behavior manually on tater's laptop panel.
 - [ ] Validate command behavior manually on tater with the Dell monitor.
-- [ ] Run formatting/linting after implementation.
-- [ ] Run an appropriate tater or shared Home Manager build/check before shipping.
+- [x] Run formatting/linting after implementation.
+- [x] Run an appropriate tater or shared Home Manager build/check before shipping.
 
 ## MVP phases
 
 ### MVP 1: CLI, config, and one-shot actions
 
-- [ ] Build and install `hctl` from Nix.
-- [ ] Generate a JSON config file from Nix.
-- [ ] Implement `hctl --help` and the verb-first command structure.
-- [ ] Implement Hyprland state discovery for clients, monitors, and active workspace.
-- [ ] Implement `hctl summon keepassxc` and `hctl hide keepassxc`.
-- [ ] Implement `hctl borrow signal`, `hctl return signal`, `hctl borrow telegram`, and `hctl return telegram`.
-- [ ] Implement `hctl video-pin`, `hctl toggle-pin`, and `hctl zen-terminal`.
-- [ ] Implement daemon-written Eww state at `$XDG_STATE_HOME/hctl/eww-state.json`.
-- [ ] Implement `hctl state eww` as a debugging command that prints the same state shape.
+- [x] Build and install `hctl` from Nix.
+- [x] Generate a JSON config file from Nix.
+- [x] Implement `hctl --help` and the verb-first command structure.
+- [x] Implement Hyprland state discovery for clients, monitors, and active workspace.
+- [x] Implement `hctl summon keepassxc` and `hctl hide keepassxc`.
+- [x] Implement `hctl borrow signal`, `hctl return signal`, `hctl borrow telegram`, and `hctl return telegram`.
+- [x] Implement `hctl video-pin`, `hctl toggle-pin`, and `hctl zen-terminal`.
+- [x] Implement daemon-written Eww state at `$XDG_STATE_HOME/hctl/eww-state.json`.
+- [x] Implement `hctl state eww` as a debugging command that prints the same state shape.
 
 ### MVP 2: daemon and smart state
 
-- [ ] Implement `hctl daemon`.
-- [ ] Subscribe to Hyprland events for workspace/client/monitor changes.
-- [ ] Apply daemon-driven smart gaps.
-- [ ] Write or serve state for Eww without requiring heavy polling.
-- [ ] Add active mode/submap hints if Hyprland exposes the necessary events reliably.
+- [x] Implement `hctl daemon`.
+- [x] Subscribe to Hyprland events for workspace/client/monitor changes.
+- [x] Apply daemon-driven smart gaps.
+- [x] Write or serve state for Eww without requiring heavy polling.
+- [x] Add active mode/submap hints if Hyprland exposes the necessary events reliably.
 
 ### MVP 3: system tray and polish
 
@@ -425,11 +460,18 @@ This file should be cheap for Eww to read and should contain the current state E
 
 ## Open questions
 
-- What exact command/package path should `hctl` live under?
-- Which Rust crates should be used for CLI parsing, JSON, daemon event handling, and logging?
 - Which system tray implementation works best with the current Eww/bar setup on Wayland?
 - Should the chat home layout be floating-arranged or normal tiled layout after return?
 - Should smart gaps be driven purely by focused monitor/workspace, or should it try to handle multiple visible monitors independently if Hyprland supports the needed controls?
+
+## Next slices
+
+1. Add mnemonic bindings for `hctl video-pin` and `hctl zen-terminal`.
+2. Runtime-test KeePassXC tray behavior, Signal/Telegram borrow/return, and Zen pop-out pinning on tater.
+3. Tune smart gap profiles and borrowed chat geometry on the Dell monitor and laptop panel.
+4. Improve daemon behavior if runtime testing shows event gaps or excessive gap keyword churn.
+5. Research a real Wayland StatusNotifier/system tray approach for Eww or an adjacent tray surface.
+6. Consider richer hover/click help for advanced modal bindings.
 
 ## Initial implementation order
 

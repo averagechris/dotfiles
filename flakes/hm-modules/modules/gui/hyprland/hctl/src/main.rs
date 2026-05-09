@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
     env, fs,
+    io::{BufRead, BufReader},
+    os::unix::net::UnixStream,
     path::{Path, PathBuf},
     process::{Command, Stdio},
     thread,
@@ -750,12 +752,92 @@ fn select_gaps(
 }
 
 fn daemon(config: &Config) -> Result<()> {
+    if let Err(err) = daemon_tick(config) {
+        eprintln!("hctl initial daemon tick failed: {err:#}");
+    }
+
+    if let Some(socket_path) = hyprland_socket2_path() {
+        match UnixStream::connect(&socket_path) {
+            Ok(stream) => return daemon_event_loop(config, stream),
+            Err(err) => eprintln!(
+                "hctl failed to connect to Hyprland event socket {}; falling back to polling: {err}",
+                socket_path.display()
+            ),
+        }
+    } else {
+        eprintln!(
+            "hctl could not derive Hyprland event socket path; falling back to polling daemon"
+        );
+    }
+
+    daemon_poll_loop(config)
+}
+
+fn daemon_poll_loop(config: &Config) -> Result<()> {
     loop {
         if let Err(err) = daemon_tick(config) {
             eprintln!("hctl daemon tick failed: {err:#}");
         }
         thread::sleep(Duration::from_millis(750));
     }
+}
+
+fn daemon_event_loop(config: &Config, stream: UnixStream) -> Result<()> {
+    let reader = BufReader::new(stream);
+    for line in reader.lines() {
+        let line = line?;
+        if event_should_refresh(&line) {
+            if let Err(err) = daemon_tick(config) {
+                eprintln!("hctl daemon tick failed after Hyprland event {line:?}: {err:#}");
+            }
+        }
+    }
+
+    eprintln!("hctl Hyprland event socket closed; falling back to polling daemon");
+    daemon_poll_loop(config)
+}
+
+fn hyprland_socket2_path() -> Option<PathBuf> {
+    hyprland_socket2_path_from_env(
+        env::var_os("XDG_RUNTIME_DIR"),
+        env::var_os("HYPRLAND_INSTANCE_SIGNATURE"),
+    )
+}
+
+fn hyprland_socket2_path_from_env(
+    xdg_runtime_dir: Option<std::ffi::OsString>,
+    instance_signature: Option<std::ffi::OsString>,
+) -> Option<PathBuf> {
+    Some(
+        PathBuf::from(xdg_runtime_dir?)
+            .join("hypr")
+            .join(instance_signature?)
+            .join(".socket2.sock"),
+    )
+}
+
+fn event_should_refresh(event: &str) -> bool {
+    let Some((name, _payload)) = event.split_once(">>") else {
+        return false;
+    };
+
+    matches!(
+        name,
+        "activewindow"
+            | "activewindowv2"
+            | "changefloatingmode"
+            | "closewindow"
+            | "focusedmon"
+            | "fullscreen"
+            | "movewindow"
+            | "movewindowv2"
+            | "openwindow"
+            | "openwindowv2"
+            | "pin"
+            | "submap"
+            | "workspace"
+            | "workspacev2"
+    )
 }
 
 fn daemon_tick(config: &Config) -> Result<()> {
@@ -1010,5 +1092,28 @@ mod tests {
             .unwrap(),
             PathBuf::from("/home/chris/.local/state/hctl/eww-state.json")
         );
+    }
+
+    #[test]
+    fn hyprland_socket_path_uses_runtime_and_instance_signature() {
+        assert_eq!(
+            hyprland_socket2_path_from_env(Some("/run/user/1000".into()), Some("abc123".into())),
+            Some(PathBuf::from("/run/user/1000/hypr/abc123/.socket2.sock"))
+        );
+        assert_eq!(
+            hyprland_socket2_path_from_env(Some("/run/user/1000".into()), None),
+            None
+        );
+    }
+
+    #[test]
+    fn event_filter_refreshes_for_relevant_hyprland_events() {
+        assert!(event_should_refresh("workspace>>3"));
+        assert!(event_should_refresh("workspacev2>>3,chat"));
+        assert!(event_should_refresh("openwindow>>0xabc,3,Signal,Signal"));
+        assert!(event_should_refresh("closewindow>>0xabc"));
+        assert!(event_should_refresh("submap>>chat"));
+        assert!(!event_should_refresh("monitoradded>>DP-4"));
+        assert!(!event_should_refresh("malformed"));
     }
 }
