@@ -311,7 +311,6 @@
     programs.darktable.enable = false;
     programs.signal.enable = false;
     programs.waybar.enable = false;
-    programs.windsurf.enable = false; # this is overlayed into windsurf
   };
 
   fonts.packages = [pkgs.nerd-fonts.droid-sans-mono];

@@ -50,25 +50,33 @@ alejandra .
 statix check
 
 # Test (top-level)
-nix flake check
+nom flake check
 
 # Test (individual host)
-nix flake check ./flakes/hosts/<hostname>
+nom flake check ./flakes/hosts/<hostname>
 
-# Build NixOS host
-nixos-rebuild build --flake .#<hostname>
-nixos-rebuild build --flake ./flakes/hosts/<hostname>#<hostname>
+# Build NixOS host (preferred ergonomic wrapper)
+nh os build . --hostname <hostname>
+nh os build ./flakes/hosts/<hostname> --hostname <hostname>
 
-# Build Darwin host
-darwin-rebuild build --flake .#suremac
-darwin-rebuild build --flake ./flakes/hosts/suremac#suremac
+# Build Darwin host (preferred ergonomic wrapper)
+nh darwin build . --hostname suremac
+nh darwin build ./flakes/hosts/suremac --hostname suremac
 
 # Deploy NixOS hosts (via deploy-rs)
 nix run .#deploy -- .#<hostname>
 
 # Deploy Darwin host (manual - deploy-rs doesn't support Darwin)
-darwin-rebuild switch --flake .#suremac
+nh darwin switch . --hostname suremac
 ```
+
+Prefer `nh` for NixOS/Darwin build, test, and switch workflows and `nom` for raw
+Nix commands (`nom build`, `nom flake check`, `nom develop`) so output is easier
+to scan. In noninteractive agent/tool contexts, add `--no-nom` to `nh` builds or
+switches (for example, `nh os build -q --no-nom . --hostname tater`) to avoid the
+clock/progress animation and most store-path chatter flooding captured logs. Fall back to `nix`,
+`nixos-rebuild`, or `darwin-rebuild` only when `nh`/`nom` cannot express the
+operation or when a user explicitly asks for the lower-level command.
 
 ## Documentation
 
@@ -179,7 +187,7 @@ Managed jj workspaces use `~/projects/ws/<repo>/<workspace>` on personal hosts. 
 3. Use existing host as template (trap for NixOS, suremac for Darwin)
 4. Add inputs: base-lib, nixos-modules (or darwin-modules), hm-modules
 5. Update top-level `flake.nix` to import the new host
-6. Test with `nix flake check ./flakes/hosts/<hostname>`
+6. Test with `nom flake check ./flakes/hosts/<hostname>`
 
 ## Security Best Practices
 

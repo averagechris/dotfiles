@@ -9,9 +9,20 @@ All NixOS hosts import `nixosModules.common`, which installs common Nix and
 editing tools including `nh` and `nix-output-monitor` (`nom`).
 
 - `nom` is a more readable progress UI for Nix commands:
-  `nom build .#pkg`, `nom develop`, `nom shell nixpkgs#ripgrep`.
+  `nom build .#pkg`, `nom flake check`, `nom develop`,
+  `nom shell nixpkgs#ripgrep`.
 - `nh` wraps common NixOS workflows:
-  `nh os build .`, `nh os test .`, `nh os switch .`.
+  `nh os build . --hostname tater`, `nh os test . --hostname tater`,
+  `nh os switch . --hostname tater`.
+
+Prefer `nh` for NixOS build/test/switch commands and `nom` for raw Nix commands
+in this repository. They keep long Nix output readable and make failure context
+easier to find than plain `nix`/`nixos-rebuild` output. Use lower-level commands
+only when needed for a specific flag or reproduction.
+
+For captured/noninteractive logs, use `nh -q --no-nom` commands, such as
+`nh os build -q --no-nom . --hostname tater`, so the `nom` clock/progress
+animation and most store-path chatter do not repeat in captured output.
 
 The Darwin host also installs these tools directly in its host configuration.
 

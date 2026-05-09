@@ -7,7 +7,7 @@ This document describes the automated and semi-automated checks for tater's Hypr
 The tater host flake exposes a desktop regression check:
 
 ```bash
-nix flake check ./flakes/hosts/tater
+nom flake check ./flakes/hosts/tater
 ```
 
 This includes `checks.x86_64-linux.tater-desktop-static`, which is intentionally layered:
@@ -24,7 +24,7 @@ The check deliberately avoids trying to prove every visual policy. Things like e
 For a narrower run:
 
 ```bash
-nix build ./flakes/hosts/tater#checks.x86_64-linux.tater-desktop-static
+nom build ./flakes/hosts/tater#checks.x86_64-linux.tater-desktop-static
 ```
 
 ## Runtime doctor

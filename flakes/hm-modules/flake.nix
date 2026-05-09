@@ -51,7 +51,6 @@
           firefox = ./modules/gui/firefox.nix;
           kitty = ./modules/gui/kitty.nix;
           zed = ./modules/gui/zed.nix;
-          windsurf = ./modules/gui/windsurf.nix;
           zoom = ./modules/gui/zoom.nix;
           linux_desktop = ./modules/gui/linux_desktop.nix;
           hyprland = ./modules/gui/hyprland/default.nix;

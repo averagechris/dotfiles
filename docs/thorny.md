@@ -143,13 +143,13 @@ custom fan-control daemon.
 From this repository:
 
 ```bash
-nixos-rebuild build --flake .#thorny
+nh os build . --hostname thorny
 ```
 
 On the machine itself:
 
 ```bash
-sudo nixos-rebuild switch --flake .#thorny
+nh os switch . --hostname thorny
 ```
 
 After the current configuration has been activated once, `thorny` supports
@@ -174,7 +174,7 @@ To prove that the active client is actually scheduling work on `thorny`, use a
 fresh/unique derivation and disable local builds:
 
 ```bash
-nix build --impure --no-link --max-jobs 0 -L --expr '
+nom build --impure --no-link --max-jobs 0 -L --expr '
 with import <nixpkgs> {};
 runCommand "remote-builder-smoke-${toString builtins.currentTime}" {} "printf ok > $out"'
 ```

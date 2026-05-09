@@ -18,12 +18,12 @@ Each host is a self-contained flake that can be built and deployed independently
 
 ```bash
 # NixOS
-nixos-rebuild build --flake .#HOSTNAME
-nixos-rebuild switch --use-remote-sudo --flake .#HOSTNAME
+nh os build . --hostname HOSTNAME
+nh os switch . --hostname HOSTNAME
 
 # macOS (Darwin)
-darwin-rebuild build --flake .#suremac
-darwin-rebuild switch --flake .#suremac
+nh darwin build . --hostname suremac
+nh darwin switch . --hostname suremac
 
 # Deploy to remote NixOS host
 nix run .#deploy -- .#HOSTNAME
@@ -48,7 +48,7 @@ Each host flake declares nearly identical input blocks. **This is intentional** 
 
 1. **Standalone builds**: Each host can be built independently without the root flake
    ```bash
-   nix build ./flakes/hosts/trap#nixosConfigurations.trap.config.system.build.toplevel
+   nh os build ./flakes/hosts/trap --hostname trap
    ```
 
 2. **Clear dependencies**: Each host explicitly declares what it needs, making dependencies transparent
@@ -94,4 +94,4 @@ The duplication is **not** a limitation to be refactored away. It's an architect
 3. Update `configuration.nix` with host-specific settings
 4. Generate `hardware.nix` on target system: `nixos-generate-config --show-hardware-config`
 5. Add to root `flake.nix` inputs and outputs
-6. Test: `nix flake check ./flakes/hosts/HOSTNAME`
+6. Test: `nom flake check ./flakes/hosts/HOSTNAME`

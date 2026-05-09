@@ -220,7 +220,7 @@ ssh chris@49.13.143.249
 cd /tmp && rm -rf dotfiles-deploy
 git clone --depth 1 -b trainwreck-wip https://git.sr.ht/~averagechris/dotfiles dotfiles-deploy
 cd dotfiles-deploy
-nix build ./flakes/hosts/trainwreck#nixosConfigurations.trainwreck.config.system.build.toplevel
+nom build ./flakes/hosts/trainwreck#nixosConfigurations.trainwreck.config.system.build.toplevel
 sudo result/bin/switch-to-configuration switch
 rm -rf /tmp/dotfiles-deploy
 ```

@@ -19,7 +19,6 @@ in
       ./kitty.nix
       ./macos-hotkeys.nix
       ./zed.nix
-      ./windsurf.nix
       ./wezterm
       ./ghostty
       # Hyprland ecosystem tools
