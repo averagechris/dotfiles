@@ -43,8 +43,8 @@ dotfiles/
 ## Build/Lint/Test Commands
 
 ```bash
-# Format all Nix files
-alejandra .
+# Format all Nix files quietly (use -qq to suppress error details too)
+alejandra -q .
 
 # Lint
 statix check
@@ -65,6 +65,9 @@ nh darwin build ./flakes/hosts/suremac --hostname suremac
 
 # Deploy NixOS hosts (via deploy-rs)
 nix run .#deploy -- .#<hostname>
+
+# Quiet deploy wrapper; runs host checks, then buffers deploy output
+nix run .#deploy-quiet -- <hostname>
 
 # Deploy Darwin host (manual - deploy-rs doesn't support Darwin)
 nh darwin switch . --hostname suremac

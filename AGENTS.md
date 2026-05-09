@@ -43,8 +43,8 @@ dotfiles/
 # Run all configured lints (alejandra, statix, shellcheck)
 jj lint
 
-# Format
-alejandra .
+# Format quietly (use -qq to suppress error details too)
+alejandra -q .
 
 # Lint
 statix check
@@ -283,6 +283,11 @@ There are two openclaw instances running on trainwreck:
 | `grem` | `openclaw-gateway-grem.service` | Production bot |
 | `grem-staging` | `openclaw-gateway-grem-staging.service` | Testing config changes |
 
+The Home Manager Openclaw package overrides `meta.priority = 10`. Keep this
+priority override: the Openclaw bundle and the shared shell Python both expose
+`bin/python-config`, and equal-priority installation causes `home-manager-path`
+buildEnv collisions during trainwreck builds.
+
 **Development workflow**: Always make config changes to `instances.grem-staging` first, deploy, and test with the staging Telegram bot. Once verified working, copy the changes to `instances.grem` and deploy again.
 
 ### Service Management
@@ -383,12 +388,31 @@ This way all your DMs across platforms share the same session context.
 
 ### Deploying trainwreck
 
-Deploy-rs has issues with cross-architecture builds. Use this approach instead:
+Deploy trainwreck with deploy-rs from this repository:
 
 ```bash
-# Push changes first
-jj push
+nix run .#deploy -- .#trainwreck
+```
 
-# SSH and rebuild on trainwreck directly
+For quieter deploys, use the wrapper app. It runs only the target host flake
+check first, then invokes deploy-rs with its broad checks skipped. Both phases
+buffer output and only print full logs on failure:
+
+```bash
+nix run .#deploy-quiet -- trainwreck
+nix run .#deploy-quiet -- --no-checks trainwreck          # skip even the host check
+nix run .#deploy-quiet -- --deploy-rs-checks trainwreck   # use deploy-rs checks instead
+nix run .#deploy-quiet -- --show-output trainwreck        # stream logs live
+```
+
+The shared `mkDeploy` helper selects the deploy-rs activation wrapper for the
+target host architecture, so trainwreck's activation wrapper is `aarch64-linux`.
+Keep this architecture selection intact: using an x86_64 activation wrapper for
+trainwreck copies a non-ARM binary to the host and fails during activation with
+`cannot execute binary file: Exec format error`.
+
+If deploy-rs is unavailable, fall back to rebuilding on trainwreck directly:
+
+```bash
 ssh chris@<trainwreck-ip> "cd ~/dotfiles && git pull && sudo nixos-rebuild switch --flake .#trainwreck"
 ```

@@ -23,6 +23,7 @@ The Nix daemon is configured for builder use:
 - `nix.settings.trusted-users = ["@wheel" "chris"]`
 - `nix.settings.max-jobs = "auto"`
 - `nix.settings.cores = 0`
+- `nix.settings.extra-platforms = ["aarch64-linux"]`
 - `nix.settings.min-free = 20 GiB`
 - `nix.settings.max-free = 100 GiB`
 
@@ -31,6 +32,18 @@ available CPU cores. The free-space thresholds keep the existing shared 14-day
 GC policy while letting Nix automatically free store paths if builder activity
 pushes the disk toward low space. Client machines still need their own
 `nix.buildMachines` entry pointing at `thorny`/`thelio-nixos`.
+
+`thorny` also enables `boot.binfmt.emulatedSystems = ["aarch64-linux"]` so it can
+build `trainwreck`'s aarch64-linux system closure under QEMU/binfmt. This is
+emulated native execution, not full Nix cross compilation, but it lets these
+workflows succeed without needing an ARM workstation:
+
+- Build `trainwreck` while SSH'd into `trainwreck`; the build is submitted back
+  to `thorny` as a remote builder.
+- Build `trainwreck` from x86_64 clients such as `tater` or `trap`; the client
+  schedules aarch64-linux work on `thorny`.
+- Build `trainwreck` directly on `thorny`; local aarch64-linux derivations run
+  through binfmt/QEMU.
 
 `thorny-status` is installed for quick SSH checks. It prints host uptime, load,
 memory, disk usage, approximate Nix store size, active build-looking processes,
@@ -50,22 +63,38 @@ thorny-status-remote thelio-nixos
 
 ## Remote builder clients
 
-`tom`, `tater`, and `trap` import `nixosModules.useRemoteBuilds`. That shared
-module configures distributed builds and includes `thorny` as an x86_64-linux
-builder:
+`tom`, `tater`, `trap`, and `trainwreck` import `nixosModules.useRemoteBuilds`.
+That shared module configures distributed builds and includes `thorny` as both an
+x86_64-linux builder and an emulated aarch64-linux builder:
 
 - Host aliases: `thorny`, `thelio-nixos`
 - SSH identity: `/etc/ssh/ssh_host_ed25519_key`
 - Known host key: `sshKeys.system.thelio`
 - SSH fail-fast behavior: batch mode, one connection attempt, 5-second connect
   timeout, and short server-alive checks
-- Builder settings: `maxJobs = 16`, `speedFactor = 4`
-- Supported features: `benchmark`, `big-parallel`, `kvm`, `nixos-test`
+- x86_64-linux builder settings: `maxJobs = 16`, `speedFactor = 4`
+- x86_64-linux supported features: `benchmark`, `big-parallel`, `kvm`,
+  `nixos-test`
+- aarch64-linux builder settings: `maxJobs = 4`, `speedFactor = 1`
+- aarch64-linux supported features: `benchmark`, `big-parallel`
+- `nix.settings.builders-use-substitutes = true`, so `thorny` can fetch binary
+  substitutes itself before falling back to local/emulated builds
+
+The shared client module intentionally does not configure third-party remote
+builders such as `eu.nixbuild.net`; `thorny` is the only remote builder managed
+by this repository.
 
 Because the clients use their system SSH host key as the builder identity,
 `thorny` must continue to authorize the keys in `sshKeys.usesRemoteBuilders`.
 If another machine should use `thorny`, add its system key to that set and
 import `nixosModules.useRemoteBuilds` on the client.
+
+`trainwreck`'s `/etc/ssh/ssh_host_ed25519_key.pub` is included in
+`sshKeys.system.trainwreck` and `sshKeys.usesRemoteBuilders` for the "build while
+SSH'd into trainwreck and remote to thorny" workflow. If that path fails with
+`Permission denied`, confirm the public host key on `trainwreck` still matches
+the repo-managed key, then rebuild `thorny` so the key lands in `chris`'s
+authorized keys.
 
 The client `nix.buildMachines` entry sets `sshKey =
 "/etc/ssh/ssh_host_ed25519_key"` directly, so the Nix daemon does not depend on
@@ -158,6 +187,18 @@ passwordless deploys from trusted SSH keys via `nixosModules.sudoDeploy` and
 
 ```bash
 nix run .#deploy -- .#thorny
+```
+
+For quieter deploys, use the deploy wrapper. It accepts either a bare hostname or
+deploy-rs target, runs only the target host flake check, then invokes deploy-rs
+with its broad checks skipped. Both phases buffer output and print the full log
+only on failure:
+
+```bash
+nix run .#deploy-quiet -- thorny
+nix run .#deploy-quiet -- --no-checks thorny
+nix run .#deploy-quiet -- --deploy-rs-checks thorny
+nix run .#deploy-quiet -- --show-output thorny
 ```
 
 This relies on SSH access as `chris`; `chris` is in `wheel`, and wheel sudo does

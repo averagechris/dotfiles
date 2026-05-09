@@ -81,6 +81,18 @@
       # deploy usage: nix run .#deploy -- .#hostname
       apps.deploy = deploy-rs.apps.${system}.deploy-rs;
 
+      packages.deploy-quiet = pkgs.writeShellApplication {
+        name = "deploy-quiet";
+        runtimeInputs = [pkgs.nix];
+        text = builtins.readFile ./scripts/deploy-quiet.sh;
+      };
+
+      # Quiet deploy wrapper: nix run .#deploy-quiet -- hostname
+      apps.deploy-quiet = {
+        type = "app";
+        program = "${self.packages.${system}.deploy-quiet}/bin/deploy-quiet";
+      };
+
       # Setup script for Darwin
       packages.setup-darwin-determinate-substituters = pkgs.writeShellApplication {
         name = "setup-darwin-determinate-substituters";

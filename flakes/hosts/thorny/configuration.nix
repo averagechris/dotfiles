@@ -101,6 +101,11 @@ in {
   hardware.enableRedistributableFirmware = true;
   hardware.system76.enableAll = true;
 
+  # Allow thorny to build trainwreck's aarch64-linux system closure locally via
+  # binfmt/QEMU when invoked directly on thorny, and allow other clients to use
+  # thorny as an emulated aarch64-linux remote builder.
+  boot.binfmt.emulatedSystems = ["aarch64-linux"];
+
   # Passwordless sudo for deploy-rs / remote rebuilds from trusted SSH keys.
   dotfiles.sudoNoPassword.enable = true;
 
@@ -110,6 +115,7 @@ in {
     trusted-users = ["@wheel" "chris"];
     max-jobs = "auto";
     cores = 0;
+    extra-platforms = ["aarch64-linux"];
     min-free = 20 * 1024 * 1024 * 1024;
     max-free = 100 * 1024 * 1024 * 1024;
   };

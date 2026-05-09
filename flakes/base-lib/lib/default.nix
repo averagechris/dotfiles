@@ -147,12 +147,14 @@
     else mkNixosHost {inherit system hostPath;};
 
   # Create a deploy-rs configuration for a host
-  mkDeploy = host: {
+  mkDeploy = host: let
+    inherit (host.pkgs.stdenv.hostPlatform) system;
+  in {
     hostname = host.config.networking.hostName;
     profiles.system = {
       sshOpts = ["-t"];
       user = "root";
-      path = deploy-rs.lib.x86_64-linux.activate.nixos host;
+      path = deploy-rs.lib.${system}.activate.nixos host;
       sshUser = "chris";
       fastConnection = true;
       magicRollback = false;
@@ -161,12 +163,14 @@
   };
 
   # Create a deploy-rs configuration with interactive sudo
-  mkDeploy' = host: {
+  mkDeploy' = host: let
+    inherit (host.pkgs.stdenv.hostPlatform) system;
+  in {
     hostname = host.config.networking.hostName;
     profiles.system = {
       sshOpts = ["-t"];
       user = "root";
-      path = deploy-rs.lib.x86_64-linux.activate.nixos host;
+      path = deploy-rs.lib.${system}.activate.nixos host;
       sshUser = "chris";
       fastConnection = true;
       magicRollback = false;

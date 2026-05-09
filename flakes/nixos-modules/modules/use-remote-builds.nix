@@ -1,9 +1,5 @@
 {sshKeys, ...}: {
   programs.ssh.extraConfig = ''
-    Host eu.nixbuild.net
-      PubkeyAcceptedKeyTypes ssh-ed25519
-      IdentityFile /etc/ssh/ssh_host_ed25519_key
-
     Host thorny thelio-nixos
       PubkeyAcceptedKeyTypes ssh-ed25519
       IdentityFile /etc/ssh/ssh_host_ed25519_key
@@ -15,10 +11,6 @@
   '';
 
   programs.ssh.knownHosts = {
-    nixbuild = {
-      hostNames = ["eu.nixbuild.net"];
-      publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPIQCZc54poJ8vqawd8TraNryQeJnvH1eLpIDgbiqymM";
-    };
     thorny = {
       hostNames = ["thorny" "thelio-nixos"];
       publicKey = sshKeys.system.thelio;
@@ -29,12 +21,6 @@
     distributedBuilds = true;
     buildMachines = [
       {
-        hostName = "eu.nixbuild.net";
-        system = "aarch64-linux";
-        maxJobs = 100;
-        supportedFeatures = ["benchmark" "big-parallel"];
-      }
-      {
         hostName = "thorny";
         sshUser = "chris";
         sshKey = "/etc/ssh/ssh_host_ed25519_key";
@@ -43,6 +29,17 @@
         speedFactor = 4;
         supportedFeatures = ["benchmark" "big-parallel" "kvm" "nixos-test"];
       }
+      {
+        hostName = "thorny";
+        sshUser = "chris";
+        sshKey = "/etc/ssh/ssh_host_ed25519_key";
+        system = "aarch64-linux";
+        maxJobs = 4;
+        speedFactor = 1;
+        supportedFeatures = ["benchmark" "big-parallel"];
+      }
     ];
+
+    settings.builders-use-substitutes = true;
   };
 }

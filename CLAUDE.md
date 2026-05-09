@@ -10,7 +10,7 @@
 
 ## Formatting & Linting
 
-- Format code: `alejandra .`
+- Format code quietly: `alejandra -q .` (`-qq` also suppresses error details)
 - Lint code: `statix check`
 - Pre-commit hooks: Alejandra, Statix, Shellcheck
 

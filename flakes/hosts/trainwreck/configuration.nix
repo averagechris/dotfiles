@@ -8,8 +8,13 @@
   nixosConfig = config;
 
   # Shared base configuration for Grem instances (premium models)
+  openclawPackage = pkgs.openclaw.overrideAttrs (old: {
+    meta = (old.meta or {}) // {priority = 10;};
+  });
+
   baseInstance = {
     enable = true;
+    package = openclawPackage;
     agent.model = "openrouter/moonshotai/kimi-k2-0905";
     gateway.authTokenFile = nixosConfig.age.secrets.gateway-auth-token.path;
     providers.openrouter.apiKeyFile = nixosConfig.age.secrets.openrouter-api-key.path;
@@ -32,6 +37,7 @@
   # Shared base configuration for Mira instances (cheaper models, family-friendly)
   miraBaseInstance = {
     enable = true;
+    package = openclawPackage;
     # Mira runs on cheaper models - Mistral Medium has good personality
     agent.model = "openrouter/mistralai/mistral-medium-3.1";
     gateway.authTokenFile = nixosConfig.age.secrets.gateway-auth-token.path;
@@ -177,6 +183,7 @@ in {
     inputs.nixos-modules.nixosModules.sudoDeploy
     inputs.nixos-modules.nixosModules.users.chrisMinimal
     inputs.nixos-modules.nixosModules.isRemoteBuilder
+    inputs.nixos-modules.nixosModules.useRemoteBuilds
     inputs.agenix.nixosModules.default
     inputs.disko.nixosModules.disko
     ./hardware.nix
@@ -343,6 +350,11 @@ in {
 
     # Openclaw configuration
     programs.openclaw = {
+      # The batteries-included package exposes python-config, which collides
+      # with the shared shell module's Python in home-manager's buildEnv. Keep
+      # Python's bin/ entries preferred while still installing Openclaw's CLIs.
+      package = openclawPackage;
+
       # Grem's documents (global default - Mira's are handled separately)
       documentsRuntime = {
         agentsFile = nixosConfig.age.secrets.grem-agents.path;

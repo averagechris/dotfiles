@@ -87,8 +87,8 @@ direnv allow  # if using direnv
 ### Building and Testing
 
 ```bash
-# Format code
-alejandra .
+# Format code quietly (use -qq to suppress error details too)
+alejandra -q .
 
 # Lint code
 statix check
@@ -98,6 +98,9 @@ nom flake check
 
 # Build a NixOS host
 nh os build . --hostname tater
+
+# Quiet deploy wrapper; runs host checks, then buffers deploy output
+nix run .#deploy-quiet -- trainwreck
 
 # Show flake outputs
 nix flake show
