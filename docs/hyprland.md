@@ -17,7 +17,7 @@ Hyprland is a modern Wayland compositor with GPU acceleration, smooth animations
 | `Super+Shift+Q` | Exit Hyprland |
 | `Super+F` | Toggle fullscreen |
 | `Super+Shift+F` | Toggle floating |
-| `Super+Shift+P` | Pin window (floats on all workspaces) |
+| `Super+Shift+P` | Toggle pin for the focused window via `hctl` |
 | `Super+Space` | Application launcher (anyrun) |
 
 ### Window Navigation (Colemak-DH)
@@ -46,6 +46,23 @@ Hyprland is a modern Wayland compositor with GPU acceleration, smooth animations
 | `Super+O` | Open the workspace overview / move menu |
 | `Super+Scroll` | Scroll through workspaces |
 
+### hctl ergonomics helper
+
+The shared Hyprland module installs `hctl`, a small Rust CLI/daemon for ergonomic window workflows. Nix generates its runtime config at `~/.config/hctl/config.json`; the daemon writes Eww-facing state to `$XDG_STATE_HOME/hctl/eww-state.json` and applies smart gaps based on the focused monitor and active workspace's tiled window count.
+
+Useful commands:
+
+```bash
+hctl summon keepassxc       # show KeePassXC on the current workspace
+hctl hide keepassxc         # close KeePassXC back to tray, when app settings allow it
+hctl toggle-borrow signal   # borrow/return Signal between current workspace and chat
+hctl toggle-borrow telegram # borrow/return Telegram between current workspace and chat
+hctl goto chat              # jump to the named chat workspace
+hctl video-pin              # float, size, move, and pin the focused video/pop-out window
+hctl zen-terminal           # float and center the focused terminal at a comfortable size
+hctl state eww              # print the daemon/Eww state shape for debugging
+```
+
 ### Workspace Overview
 
 `Super+O` opens the script-backed workspace overview / move menu. This fallback is intentionally used on tater while Hyprspace is disabled: after reboot, Hyprland can start without the plugin dispatcher (`overview:toggle`), and the plugin path has been unstable enough to trigger Hyprland safe mode.
@@ -69,7 +86,7 @@ Submaps provide modal keybindings. Press `Super+<key>` to enter, `Escape` to exi
 |-----|--------|
 | `s` | Focus or launch Signal |
 | `t` | Focus or launch Telegram |
-| `k` | Focus or launch KeePassXC |
+| `k` | Summon KeePassXC via `hctl` |
 | `b` | Focus or launch Zen browser |
 | `o` | Focus or launch Obsidian |
 | `l` | Lock screen (hyprlock) |
@@ -80,6 +97,15 @@ Submaps provide modal keybindings. Press `Super+<key>` to enter, `Escape` to exi
 | `z` | Toggle eww bar (alternate) |
 | `y` | Toggle QWERTY/Colemak-DH layout |
 | `h` or `?` | Show keybindings help |
+| `Escape` | Exit submap |
+
+#### Chat Mode (`Super+C`)
+
+| Key | Action |
+|-----|--------|
+| `c` | Go to the persistent `chat` workspace |
+| `s` | Toggle borrowing Signal into the current workspace / returning it to `chat` |
+| `t` | Toggle borrowing Telegram into the current workspace / returning it to `chat` |
 | `Escape` | Exit submap |
 
 #### Resize Mode (`Super+R`)
@@ -100,6 +126,8 @@ Submaps provide modal keybindings. Press `Super+<key>` to enter, `Escape` to exi
 | `Shift+T` | Move window to terminal scratchpad |
 | `s` | Toggle general scratchpad |
 | `Shift+S` | Move window to general scratchpad |
+| `k` or `p` | Summon KeePassXC into the current workspace, floating and centered |
+| `Shift+K` or `Shift+P` | Hide KeePassXC back to tray, when app settings allow it |
 | `Escape` | Exit submap |
 
 ### Special Workspaces

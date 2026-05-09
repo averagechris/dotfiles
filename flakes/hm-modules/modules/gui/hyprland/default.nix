@@ -6,7 +6,34 @@
   ...
 }: let
   cfg = config.dotfiles.gui.hyprland;
+  hctlCfg = cfg.hctl;
   term = config.dotfiles.gui.terminal.binPath;
+  hctlPackage = pkgs.rustPlatform.buildRustPackage {
+    pname = "hctl";
+    version = "0.1.0";
+    src = ./hctl;
+    cargoLock = {
+      lockFile = ./hctl/Cargo.lock;
+      outputHashes = {};
+    };
+    nativeBuildInputs = [pkgs.makeWrapper];
+    postFixup = ''
+      wrapProgram $out/bin/hctl \
+        --prefix PATH : ${lib.makeBinPath ([pkgs.hyprland pkgs.keepassxc pkgs.signal-desktop] ++ lib.optionals (pkgs ? telegram-desktop) [pkgs.telegram-desktop])}
+    '';
+    meta = {
+      description = "Hyprland ergonomics control CLI and daemon";
+      license = lib.licenses.mit;
+    };
+  };
+  hctlConfig = {
+    inherit (hctlCfg) apps workspaces;
+    smartGaps = {
+      enabled = hctlCfg.smartGaps.enable;
+      inherit (hctlCfg.smartGaps) profiles;
+    };
+    eww.stateFile = hctlCfg.eww.stateFile;
+  };
   toggleDisplayWithLid = let
     name = "disable-builtin-display-when-lid-closed";
     script = pkgs.writeShellApplication {
@@ -88,6 +115,148 @@ in {
         description = "Hyprspace plugin package built against the active Hyprland package.";
       };
     };
+    hctl = {
+      enable = dotfiles_lib.options.mkDefaultEnabledOption "hctl Hyprland ergonomics CLI and daemon";
+      package = lib.mkOption {
+        type = lib.types.package;
+        default = hctlPackage;
+        description = "hctl package to install and use for Hyprland ergonomics.";
+      };
+      apps = lib.mkOption {
+        type = lib.types.attrs;
+        default = {
+          keepassxc = {
+            match = {
+              class = "org.keepassxc.KeePassXC";
+              title = null;
+              initialClass = null;
+              initialTitle = null;
+            };
+            launch = ["keepassxc"];
+            homeWorkspace = null;
+            summon = {
+              enabled = true;
+              floating = true;
+              center = true;
+              size = {
+                width = 900;
+                height = 650;
+              };
+            };
+            hide = {
+              enabled = true;
+              method = "close-to-tray";
+            };
+            borrow.enabled = false;
+          };
+          signal = {
+            match = {
+              class = "Signal";
+              title = null;
+              initialClass = null;
+              initialTitle = null;
+            };
+            launch = ["signal-desktop" "--start-in-tray"];
+            homeWorkspace = "chat";
+            borrow = {
+              enabled = true;
+              floating = true;
+              center = true;
+              size = {
+                width = 900;
+                height = 1000;
+              };
+            };
+          };
+          telegram = {
+            match = {
+              class = "org.telegram.desktop";
+              title = null;
+              initialClass = null;
+              initialTitle = null;
+            };
+            launch = ["telegram-desktop"];
+            homeWorkspace = "chat";
+            borrow = {
+              enabled = true;
+              floating = true;
+              center = true;
+              size = {
+                width = 900;
+                height = 1000;
+              };
+            };
+          };
+        };
+        description = "Application behavior emitted to hctl's JSON config.";
+      };
+      workspaces = lib.mkOption {
+        type = lib.types.attrs;
+        default.chat = {
+          name = "chat";
+          kind = "named";
+        };
+        description = "Workspace definitions emitted to hctl's JSON config.";
+      };
+      smartGaps = {
+        enable = lib.mkEnableOption "hctl smart gaps daemon behavior" // {default = true;};
+        profiles = lib.mkOption {
+          type = lib.types.listOf lib.types.attrs;
+          default = [
+            {
+              name = "laptop";
+              match.maxWidth = 1999;
+              gaps = {
+                oneWindow = {
+                  inner = 12;
+                  outer = 32;
+                };
+                twoWindows = {
+                  inner = 10;
+                  outer = 24;
+                };
+                threeWindows = {
+                  inner = 8;
+                  outer = 12;
+                };
+                manyWindows = {
+                  inner = 8;
+                  outer = 12;
+                };
+              };
+            }
+            {
+              name = "externalLarge";
+              match.minWidth = 2000;
+              gaps = {
+                oneWindow = {
+                  inner = 28;
+                  outer = 180;
+                };
+                twoWindows = {
+                  inner = 22;
+                  outer = 120;
+                };
+                threeWindows = {
+                  inner = 16;
+                  outer = 72;
+                };
+                manyWindows = {
+                  inner = 8;
+                  outer = 24;
+                };
+              };
+            }
+          ];
+          description = "Width-matched smart gap profiles emitted to hctl's JSON config.";
+        };
+      };
+      eww.stateFile = lib.mkOption {
+        type = lib.types.str;
+        default = "$XDG_STATE_HOME/hctl/eww-state.json";
+        description = "Path where hctl daemon writes Eww-facing JSON state.";
+      };
+    };
   };
 
   imports = [
@@ -139,6 +308,7 @@ in {
           "8, monitor:eDP-1"
           "9, monitor:eDP-1"
           "10, monitor:eDP-1"
+          "name:chat, monitor:DP-2"
         ];
         input = {
           kb_layout = "us, us";
@@ -262,7 +432,7 @@ in {
             "F, fullscreen,"
             # "P, pseudo,"
             # "J, togglesplit,"
-            "+SHIFT, P, pin"
+            "+SHIFT, P, exec, hctl toggle-pin"
             "SPACE, exec, anyrun"
 
             # movement between windows
@@ -318,6 +488,9 @@ in {
             # Scratchpad submap launcher
             "s, submap, scratchpad"
 
+            # Chat/communication actions submap launcher
+            "c, submap, chat"
+
             # Resize submap launcher
             "r, submap, resize"
 
@@ -369,15 +542,27 @@ in {
         bind = SHIFT, t, movetoworkspacesilent, special:terminal
         bind = , s, togglespecialworkspace, scratchpad
         bind = SHIFT, s, movetoworkspacesilent, special:scratchpad
+        bind = , k, exec, hctl summon keepassxc
+        bind = SHIFT, k, exec, hctl hide keepassxc
+        bind = , p, exec, hctl summon keepassxc
+        bind = SHIFT, p, exec, hctl hide keepassxc
+        bind = , escape, submap, reset
+        submap = reset
+
+        # Chat submap - persistent chat workspace plus borrowed app popups
+        submap = chat, reset
+        bind = , c, exec, hctl goto chat
+        bind = , s, exec, hctl toggle-borrow signal
+        bind = , t, exec, hctl toggle-borrow telegram
         bind = , escape, submap, reset
         submap = reset
 
         # Quick actions submap - app launcher/focus and system actions
         submap = quickactions, reset
         # App launcher/focus - tries to focus existing window, otherwise launches
-        bind = , s, exec, focus-or-launch signal "signal-desktop --start-in-tray"
-        bind = , t, exec, focus-or-launch telegramdesktop telegram-desktop
-        bind = , k, exec, focus-or-launch org.keepassxc.KeePassXC keepassxc
+        bind = , s, exec, hctl toggle-borrow signal
+        bind = , t, exec, hctl toggle-borrow telegram
+        bind = , k, exec, hctl summon keepassxc
         bind = , b, exec, focus-or-launch zen zen
         bind = , o, exec, focus-or-launch obsidian obsidian
         # System actions
@@ -434,191 +619,212 @@ in {
       longitude = "-86.767960";
     };
 
-    home.packages = with pkgs; [
-      imv
-      libnotify
-      mpv
-      pavucontrol
-      playerctl
-      pulseaudio
-      wl-clipboard
-      wofi
-      # Hypr ecosystem tools
-      hyprpicker
-      hyprsunset
-      hyprsysteminfo
-      # Productivity and system tools
-      grimblast
-      swaynotificationcenter
-      btop
-      hyprlock
-      # Custom scripts
-      (writeShellApplication {
-        name = "hyprland-keybindings-help";
-        runtimeInputs = [];
-        text = ''
-          #!/usr/bin/env bash
-          # Set terminal title for window matching
-          echo -ne "\033]0;Hyprland Keybindings\007"
-          cat << 'INNEREOF' | less -R
-          ┌─────────────────────────────────────────────────────────────────────────────┐
-          │                         HYPRLAND KEYBINDINGS                                │
-          ├─────────────────────────────────────────────────────────────────────────────┤
-          │                                                                             │
-          │  MOD = SUPER KEY (Windows/Command)                                         │
-          │  Navigation: M=Left N=Down E=Up I=Right (Colemak-DH)                       │
-          │                                                                             │
-          ├─────────────────────────────────────────────────────────────────────────────┤
-          │ WINDOW MANAGEMENT                                                           │
-          ├─────────────────────────────────────────────────────────────────────────────┤
-          │  MOD+T              Open terminal                                           │
-          │  MOD+Q              Close active window                                     │
-          │  MOD+Shift+Q        Exit Hyprland                                           │
-          │  MOD+F              Toggle fullscreen                                       │
-          │  MOD+Shift+F        Toggle floating                                         │
-          │  MOD+Shift+P        Pin window (float on all workspaces)                    │
-          │  MOD+Space          Application launcher (anyrun)                             │
-          │  MOD+Tab            Cycle to next window                                    │
-          │                                                                             │
-          ├─────────────────────────────────────────────────────────────────────────────┤
-          │ WINDOW NAVIGATION (Colemak-DH)                                              │
-          ├─────────────────────────────────────────────────────────────────────────────┤
-          │  MOD+M              Focus left                                              │
-          │  MOD+N              Focus down                                              │
-          │  MOD+E              Focus up                                                │
-          │  MOD+I              Focus right                                             │
-          │  MOD+Shift+M        Swap window left                                        │
-          │  MOD+Shift+N        Swap window down                                        │
-          │  MOD+Shift+E        Swap window up                                          │
-          │  MOD+Shift+I        Swap window right                                       │
-          │                                                                             │
-          ├─────────────────────────────────────────────────────────────────────────────┤
-          │ WORKSPACES                                                                  │
-          ├─────────────────────────────────────────────────────────────────────────────┤
-          │  MOD+1-9            Switch to workspace 1-9                                 │
-          │  MOD+0              Switch to workspace 10                                  │
-          │  MOD+Shift+1-9      Move window to workspace 1-9                            │
-          │  MOD+Shift+0        Move window to workspace 10                             │
-          │  MOD+Alt+M          Previous workspace                                      │
-          │  MOD+Alt+I          Next workspace                                          │
-          │  MOD+O              Toggle visual workspace overview                         │
-          │  MOD+Scroll         Scroll through workspaces                               │
-          │                                                                             │
-          ├─────────────────────────────────────────────────────────────────────────────┤
-          │ SUBMAPS (Modes) - Press MOD + key to enter, ESC to exit                     │
-          ├─────────────────────────────────────────────────────────────────────────────┤
-          │  MOD+A              Quick Actions menu:                                     │
-          │                       S=Signal  T=Telegram  K=KeePassXC                     │
-          │                       B=Zen     O=Obsidian  L=Lock                          │
-          │                       P=Pavucontrol  C=Color picker  D=Notifications        │
-          │                       W/Z=Eww bar    Y=Toggle layout    H/?=Help            │
-          │                       (focuses existing window or launches new)             │
-          │  MOD+R              Resize mode: M/N/E/I to resize, ESC to exit             │
-          │  MOD+S              Scratchpad mode: T=terminal S=scratchpad                │
-          │                                                                             │
-          ├─────────────────────────────────────────────────────────────────────────────┤
-          │ SPECIAL WORKSPACES                                                          │
-          ├─────────────────────────────────────────────────────────────────────────────┤
-          │  MOD+              Toggle terminal scratchpad                              │
-          │  MOD+Shift+        Move window to terminal scratchpad                      │
-          │  MOD+Escape         Return to previous workspace                            │
-          │                                                                             │
-          ├─────────────────────────────────────────────────────────────────────────────┤
-          │ SCREENSHOTS                                                                 │
-          ├─────────────────────────────────────────────────────────────────────────────┤
-          │  Print              Screenshot area (copy + save)                           │
-          │  Shift+Print        Screenshot output/monitor (copy + save)                 │
-          │  MOD+Print          Screenshot active window (copy + save)                  │
-          │                                                                             │
-          ├─────────────────────────────────────────────────────────────────────────────┤
-          │ MEDIA & BRIGHTNESS                                                          │
-          ├─────────────────────────────────────────────────────────────────────────────┤
-          │  XF86AudioMute      Toggle mute                                             │
-          │  XF86AudioRaiseVol  Volume up                                               │
-          │  XF86AudioLowerVol  Volume down                                             │
-          │  XF86AudioNext      Next track                                              │
-          │  XF86AudioPrev      Previous track                                          │
-          │  XF86AudioPlay      Play/Pause                                              │
-          │  XF86MonBrightness+ Brightness up                                           │
-          │  XF86MonBrightness- Brightness down                                         │
-          │                                                                             │
-          ├─────────────────────────────────────────────────────────────────────────────┤
-          │ OTHER                                                                       │
-          ├─────────────────────────────────────────────────────────────────────────────┤
-          │  MOD+C              Color picker (hyprpicker)                               │
-          │  MOD+MouseDrag      Move/resize windows                                     │
-          │                                                                             │
-          │  MOD+Shift+Ctrl+Alt+Space   Toggle QWERTY/Colemak-DH layout (mega keychord) │
-          │                                                                             │
-          └─────────────────────────────────────────────────────────────────────────────┘
-          INNEREOF
-        '';
-      })
-      (writeShellApplication {
-        name = "hyprland-workspace-overview";
-        runtimeInputs = [pkgs.coreutils pkgs.hyprland pkgs.jq pkgs.wofi];
-        text = ''
-          #!/usr/bin/env bash
-          set -euo pipefail
+    xdg.configFile."hctl/config.json" = lib.mkIf hctlCfg.enable {
+      text = builtins.toJSON hctlConfig;
+    };
 
-          workspaces_json="$(hyprctl workspaces -j)"
-          clients_json="$(hyprctl clients -j)"
-          active_json="$(hyprctl activeworkspace -j)"
-          active_id="$(jq -r '.id' <<< "$active_json")"
+    systemd.user.services.hctl = lib.mkIf hctlCfg.enable {
+      Unit = {
+        Description = "hctl Hyprland ergonomics daemon";
+        After = ["graphical-session.target"];
+        PartOf = ["graphical-session.target"];
+      };
+      Service = {
+        ExecStart = "${hctlCfg.package}/bin/hctl daemon";
+        Restart = "on-failure";
+        RestartSec = 2;
+      };
+      Install.WantedBy = ["graphical-session.target"];
+    };
 
-          choices="$({
-            for ws in {1..10}; do
-              jq -rn \
-                --argjson workspaces "$workspaces_json" \
-                --argjson clients "$clients_json" \
-                --argjson ws "$ws" \
-                --argjson active "$active_id" '
-                  def workspace: $workspaces[]? | select(.id == $ws);
-                  def client_count: [$clients[]? | select(.workspace.id == $ws)] | length;
-                  def titles: [$clients[]? | select(.workspace.id == $ws) | (.title // .class // "window")][0:3] | join(" • ");
-                  "go \($ws)\t" +
-                  (if $ws == $active then "●" else "○" end) +
-                  " workspace \($ws)" +
-                  (workspace.monitor as $monitor | if $monitor then " · " + $monitor else "" end) +
-                  " · " + (client_count | tostring) + " windows" +
-                  (titles as $titles | if $titles == "" then "" else " · " + $titles end),
-                  "move \($ws)\t󰁌 move active window → workspace \($ws)"
-                '
-            done
-          })"
+    home.packages =
+      lib.optionals hctlCfg.enable [hctlCfg.package]
+      ++ (with pkgs; [
+        imv
+        libnotify
+        mpv
+        pavucontrol
+        playerctl
+        pulseaudio
+        wl-clipboard
+        wofi
+        # Hypr ecosystem tools
+        hyprpicker
+        hyprsunset
+        hyprsysteminfo
+        # Productivity and system tools
+        grimblast
+        swaynotificationcenter
+        btop
+        hyprlock
+        # Custom scripts
+        (writeShellApplication {
+          name = "hyprland-keybindings-help";
+          runtimeInputs = [];
+          text = ''
+            #!/usr/bin/env bash
+            # Set terminal title for window matching
+            echo -ne "\033]0;Hyprland Keybindings\007"
+            cat << 'INNEREOF' | less -R
+            ┌─────────────────────────────────────────────────────────────────────────────┐
+            │                         HYPRLAND KEYBINDINGS                                │
+            ├─────────────────────────────────────────────────────────────────────────────┤
+            │                                                                             │
+            │  MOD = SUPER KEY (Windows/Command)                                         │
+            │  Navigation: M=Left N=Down E=Up I=Right (Colemak-DH)                       │
+            │                                                                             │
+            ├─────────────────────────────────────────────────────────────────────────────┤
+            │ WINDOW MANAGEMENT                                                           │
+            ├─────────────────────────────────────────────────────────────────────────────┤
+            │  MOD+T              Open terminal                                           │
+            │  MOD+Q              Close active window                                     │
+            │  MOD+Shift+Q        Exit Hyprland                                           │
+            │  MOD+F              Toggle fullscreen                                       │
+            │  MOD+Shift+F        Toggle floating                                         │
+            │  MOD+Shift+P        Toggle pin for focused window via hctl                   │
+            │  MOD+Space          Application launcher (anyrun)                             │
+            │  MOD+Tab            Cycle to next window                                    │
+            │                                                                             │
+            ├─────────────────────────────────────────────────────────────────────────────┤
+            │ WINDOW NAVIGATION (Colemak-DH)                                              │
+            ├─────────────────────────────────────────────────────────────────────────────┤
+            │  MOD+M              Focus left                                              │
+            │  MOD+N              Focus down                                              │
+            │  MOD+E              Focus up                                                │
+            │  MOD+I              Focus right                                             │
+            │  MOD+Shift+M        Swap window left                                        │
+            │  MOD+Shift+N        Swap window down                                        │
+            │  MOD+Shift+E        Swap window up                                          │
+            │  MOD+Shift+I        Swap window right                                       │
+            │                                                                             │
+            ├─────────────────────────────────────────────────────────────────────────────┤
+            │ WORKSPACES                                                                  │
+            ├─────────────────────────────────────────────────────────────────────────────┤
+            │  MOD+1-9            Switch to workspace 1-9                                 │
+            │  MOD+0              Switch to workspace 10                                  │
+            │  MOD+Shift+1-9      Move window to workspace 1-9                            │
+            │  MOD+Shift+0        Move window to workspace 10                             │
+            │  MOD+Alt+M          Previous workspace                                      │
+            │  MOD+Alt+I          Next workspace                                          │
+            │  MOD+O              Toggle visual workspace overview                         │
+            │  MOD+Scroll         Scroll through workspaces                               │
+            │                                                                             │
+            ├─────────────────────────────────────────────────────────────────────────────┤
+            │ SUBMAPS (Modes) - Press MOD + key to enter, ESC to exit                     │
+            ├─────────────────────────────────────────────────────────────────────────────┤
+            │  MOD+A              Quick Actions menu:                                     │
+            │                       S=Borrow Signal  T=Borrow Telegram  K=KeePassXC        │
+            │                       B=Zen     O=Obsidian  L=Lock                          │
+            │                       P=Pavucontrol  C=Color picker  D=Notifications        │
+            │                       W/Z=Eww bar    Y=Toggle layout    H/?=Help            │
+            │                       (focuses existing window or launches new)             │
+            │  MOD+C              Chat mode: C=chat workspace S=Signal T=Telegram          │
+            │  MOD+R              Resize mode: M/N/E/I to resize, ESC to exit             │
+            │  MOD+S              Scratchpad mode: T=terminal S=scratchpad K/P=KeePassXC  │
+            │                                                                             │
+            ├─────────────────────────────────────────────────────────────────────────────┤
+            │ SPECIAL WORKSPACES                                                          │
+            ├─────────────────────────────────────────────────────────────────────────────┤
+            │  MOD+              Toggle terminal scratchpad                              │
+            │  MOD+Shift+        Move window to terminal scratchpad                      │
+            │  MOD+Escape         Return to previous workspace                            │
+            │                                                                             │
+            ├─────────────────────────────────────────────────────────────────────────────┤
+            │ SCREENSHOTS                                                                 │
+            ├─────────────────────────────────────────────────────────────────────────────┤
+            │  Print              Screenshot area (copy + save)                           │
+            │  Shift+Print        Screenshot output/monitor (copy + save)                 │
+            │  MOD+Print          Screenshot active window (copy + save)                  │
+            │                                                                             │
+            ├─────────────────────────────────────────────────────────────────────────────┤
+            │ MEDIA & BRIGHTNESS                                                          │
+            ├─────────────────────────────────────────────────────────────────────────────┤
+            │  XF86AudioMute      Toggle mute                                             │
+            │  XF86AudioRaiseVol  Volume up                                               │
+            │  XF86AudioLowerVol  Volume down                                             │
+            │  XF86AudioNext      Next track                                              │
+            │  XF86AudioPrev      Previous track                                          │
+            │  XF86AudioPlay      Play/Pause                                              │
+            │  XF86MonBrightness+ Brightness up                                           │
+            │  XF86MonBrightness- Brightness down                                         │
+            │                                                                             │
+            ├─────────────────────────────────────────────────────────────────────────────┤
+            │ OTHER                                                                       │
+            ├─────────────────────────────────────────────────────────────────────────────┤
+            │  MOD+C              Color picker (hyprpicker)                               │
+            │  MOD+MouseDrag      Move/resize windows                                     │
+            │                                                                             │
+            │  MOD+Shift+Ctrl+Alt+Space   Toggle QWERTY/Colemak-DH layout (mega keychord) │
+            │                                                                             │
+            └─────────────────────────────────────────────────────────────────────────────┘
+            INNEREOF
+          '';
+        })
+        (writeShellApplication {
+          name = "hyprland-workspace-overview";
+          runtimeInputs = [pkgs.coreutils pkgs.hyprland pkgs.jq pkgs.wofi];
+          text = ''
+            #!/usr/bin/env bash
+            set -euo pipefail
 
-          selection="$(printf '%s\n' "$choices" | wofi --dmenu --prompt "Workspace overview" --width 760 --height 520 --insensitive || true)"
-          [[ -n "$selection" ]] || exit 0
+            workspaces_json="$(hyprctl workspaces -j)"
+            clients_json="$(hyprctl clients -j)"
+            active_json="$(hyprctl activeworkspace -j)"
+            active_id="$(jq -r '.id' <<< "$active_json")"
 
-          action="''${selection%%$'\t'*}"
-          verb="''${action%% *}"
-          ws="''${action#* }"
+            choices="$({
+              for ws in {1..10}; do
+                jq -rn \
+                  --argjson workspaces "$workspaces_json" \
+                  --argjson clients "$clients_json" \
+                  --argjson ws "$ws" \
+                  --argjson active "$active_id" '
+                    def workspace: $workspaces[]? | select(.id == $ws);
+                    def client_count: [$clients[]? | select(.workspace.id == $ws)] | length;
+                    def titles: [$clients[]? | select(.workspace.id == $ws) | (.title // .class // "window")][0:3] | join(" • ");
+                    "go \($ws)\t" +
+                    (if $ws == $active then "●" else "○" end) +
+                    " workspace \($ws)" +
+                    (workspace.monitor as $monitor | if $monitor then " · " + $monitor else "" end) +
+                    " · " + (client_count | tostring) + " windows" +
+                    (titles as $titles | if $titles == "" then "" else " · " + $titles end),
+                    "move \($ws)\t󰁌 move active window → workspace \($ws)"
+                  '
+              done
+            })"
 
-          case "$verb" in
-            go)
-              hyprctl dispatch workspace "$ws"
-              ;;
-            move)
-              hyprctl dispatch movetoworkspace "$ws"
-              hyprctl dispatch workspace "$ws"
-              ;;
-          esac
-        '';
-      })
-      (writeShellApplication {
-        name = "focus-or-launch";
-        runtimeInputs = [pkgs.jq];
-        text = ''
-          #!/usr/bin/env bash
-          WINDOW_CLASS="$1"
-          shift
-          if hyprctl clients -j | jq -e ".[] | select(.class | test(\"$WINDOW_CLASS\"; \"i\"))" > /dev/null 2>&1; then
-              hyprctl dispatch focuswindow "class:^($WINDOW_CLASS)$"
-          else
-              "$@" &
-          fi
-        '';
-      })
-    ];
+            selection="$(printf '%s\n' "$choices" | wofi --dmenu --prompt "Workspace overview" --width 760 --height 520 --insensitive || true)"
+            [[ -n "$selection" ]] || exit 0
+
+            action="''${selection%%$'\t'*}"
+            verb="''${action%% *}"
+            ws="''${action#* }"
+
+            case "$verb" in
+              go)
+                hyprctl dispatch workspace "$ws"
+                ;;
+              move)
+                hyprctl dispatch movetoworkspace "$ws"
+                hyprctl dispatch workspace "$ws"
+                ;;
+            esac
+          '';
+        })
+        (writeShellApplication {
+          name = "focus-or-launch";
+          runtimeInputs = [pkgs.jq];
+          text = ''
+            #!/usr/bin/env bash
+            WINDOW_CLASS="$1"
+            shift
+            if hyprctl clients -j | jq -e ".[] | select(.class | test(\"$WINDOW_CLASS\"; \"i\"))" > /dev/null 2>&1; then
+                hyprctl dispatch focuswindow "class:^($WINDOW_CLASS)$"
+            else
+                "$@" &
+            fi
+          '';
+        })
+      ]);
   };
 }
