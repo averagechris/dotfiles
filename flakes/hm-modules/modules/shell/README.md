@@ -8,7 +8,7 @@ This module provides a comprehensive shell environment configuration including t
 - **Development Tools**: Git, Lazygit, Gitui, Jujutsu VCS, and pre-commit hooks
 - **File Management**: Yazi file manager, Ranger, and FZF fuzzy finder
 - **Editor Integration**: Helix and Neovim with custom configurations
-- **System Utilities**: Ripgrep, direnv, htop, and custom shell scripts
+- **System Utilities**: Ripgrep, silent direnv/nix-direnv, htop, and custom shell scripts
 - **Python Support**: Optional Python interpreter with ipython
 - **Clipboard Integration**: Platform-aware copy/paste commands (wl-clipboard on Linux, pbcopy/pbpaste on macOS)
 
@@ -59,7 +59,7 @@ Enable the shell module in your Home Manager configuration:
 ## Default Packages
 
 When enabled, the module installs:
-- curl, fd, just, pre-commit, procs, titlecase
+- curl, fd, just, procs, titlecase
 - Additional shell scripts (if `shell_scripts.enable = true`)
 
 ## Environment Variables

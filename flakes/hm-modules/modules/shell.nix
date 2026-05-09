@@ -107,6 +107,7 @@ in
       programs.direnv = {
         enable = lib.mkDefault true;
         nix-direnv.enable = lib.mkDefault true;
+        silent = lib.mkDefault true;
         enableZshIntegration = lib.mkDefault true;
         enableNushellIntegration = lib.mkDefault true;
       };
