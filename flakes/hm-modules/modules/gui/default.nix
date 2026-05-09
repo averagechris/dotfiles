@@ -65,13 +65,10 @@ in
     };
 
     config = mkIf cfg.enable {
-      # these programs we enable by default if gui.enable
-      # but not all of the programs are (like write-stylus)
-      programs.alacritty.enable = mkDefault cfg.enable;
-      programs.kitty.enable = mkDefault cfg.enable;
-      dotfiles.wezterm.enable = mkDefault cfg.enable;
-      programs.darktable.enable = mkDefault cfg.enable;
-      programs.firefox.enable = mkDefault cfg.enable;
+      # Keep the base GUI module focused on shared desktop plumbing and common
+      # apps. Workstation modules select exactly one terminal and hosts opt into
+      # browsers explicitly, so enabling dotfiles.gui does not accidentally pull
+      # in several terminal emulators or an unused browser.
       programs.keepassxc.enable = mkDefault cfg.enable;
       programs.signal.enable = mkDefault cfg.enable;
       programs.zoom.enable = mkDefault cfg.enable;

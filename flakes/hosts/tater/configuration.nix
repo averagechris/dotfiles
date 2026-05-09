@@ -189,6 +189,10 @@ in {
   # LUKS configuration is handled by disko (see disk-config.nix)
 
   hardware.graphics.enable = true;
+  # The shared nixos-hardware AMD GPU profile enables 32-bit Mesa for broader
+  # gaming/Wine compatibility. Tater does not use those workloads, so keep only
+  # the native graphics stack to avoid a duplicate Mesa/LLVM closure.
+  hardware.graphics.enable32Bit = lib.mkForce false;
   hardware.enableRedistributableFirmware = true;
 
   # Bluetooth support
@@ -204,11 +208,6 @@ in {
     dockerCompat = true;
     defaultNetwork.settings.dns_enabled = true;
   };
-
-  # Gaming support
-  programs.steam.enable = true;
-  programs.gamemode.enable = true;
-  hardware.graphics.enable32Bit = true;
 
   users.users.chris.extraGroups = ["libvirtd" "podman"];
 
@@ -634,9 +633,6 @@ in {
     home.stateVersion = "26.05";
     imports = [
       inputs.hm-modules.homeManagerModules.default
-      inputs.nix-openclaw.homeManagerModules.openclaw
-      # Fix for openclaw node systemd service to prevent activation timeouts
-      inputs.hm-modules.homeManagerModules.openclaw-fix
       # Fix for ghostty validation to prevent activation timeouts
       inputs.hm-modules.homeManagerModules.ghostty-fix
     ];
@@ -813,48 +809,5 @@ in {
     home.packages = [pkgs.overskride taterNetworkRecover taterDisplayRefresh taterHomeClamshell taterHomeOpen taterHomeToggle taterHomeDocked taterDesktopDoctor thornyStatus];
     services.network-manager-applet.enable = true;
 
-    # Openclaw configuration (minimal base config for nodes)
-    # DEBUG: All enabled (will likely timeout)
-    programs.openclaw = let
-      # Create minimal documents for node (required by module)
-      documentsDir = pkgs.runCommand "openclaw-documents" {} ''
-                mkdir -p $out
-                echo "# AGENTS
-
-        This is a node." > $out/AGENTS.md
-                echo "# SOUL
-
-        Node configuration." > $out/SOUL.md
-                echo "# TOOLS
-
-        Node tools." > $out/TOOLS.md
-      '';
-    in {
-      # python3 is already in the Home Manager profile; including Openclaw's
-      # bundled copy makes buildEnv collide on Python launchers like bin/idle.
-      excludeTools = ["python3"];
-
-      # Required even for nodes to prevent activation script errors
-      documents = documentsDir;
-
-      # DEBUG: minimal instance enabled
-      instances.minimal = {
-        enable = true;
-        stateDir = "~/.openclaw";
-        workspaceDir = "~/.openclaw/workspace";
-        systemd.enable = false;
-        plugins = [];
-      };
-
-      # DEBUG: nodes enabled (this will likely cause timeout)
-      nodes.default = {
-        enable = true;
-        gateway.host = "trainwreck";
-        gateway.port = 18789;
-        displayName = "Tater";
-        stateDir = "~/.openclaw-node";
-        systemd.enable = false;
-      };
-    };
   };
 }
