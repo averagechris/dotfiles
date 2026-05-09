@@ -15,6 +15,17 @@
     ./hardware.nix
   ];
 
+  # calibre-web 0.6.27b0 declares requests < 2.33, while nixpkgs currently
+  # provides requests 2.33.1. Relax the upstream runtime metadata until nixpkgs
+  # carries a compatible package fix.
+  nixpkgs.overlays = [
+    (final: prev: {
+      calibre-web = prev.calibre-web.overridePythonAttrs (old: {
+        pythonRelaxDeps = (old.pythonRelaxDeps or []) ++ ["requests"];
+      });
+    })
+  ];
+
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
   networking.hostName = "tom";

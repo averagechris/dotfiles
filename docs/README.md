@@ -16,6 +16,7 @@
 - [tater desktop testing](/docs/tater-desktop-testing.md) - Static and runtime checks for tater's Hyprland, greetd, Eww, display, and Wi-Fi setup
 - [tater power and thermal tuning](/docs/tater-power-thermal.md) - ThinkPad T14s power, thermal, and fan-management tuning notes
 - [thorny / thelio-nixos](/docs/thorny.md) - System76 Thelio remote builder and Hyprland workstation notes
+- [tom](/docs/tom.md) - Home Assistant and Calibre-Web host deployment notes
 
 ## Troubleshooting
 
