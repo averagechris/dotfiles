@@ -56,6 +56,72 @@ lid or logging in, the user Hypridle timers are no longer running, but systemd's
 wake timer should still wake the machine after one hour of suspend and transition
 it to hibernate for better battery conservation.
 
+Hibernation resumes from a 40 GiB `/swapfile` inside the encrypted ext4 root
+filesystem. This keeps RAM images encrypted at rest by the root LUKS container
+without requiring a second unlock prompt. The old disko swap partition remains
+random-encrypted and is intentionally unused for resume because its key changes
+every boot.
+
+The resume settings live in `flakes/hosts/tater/hardware.nix`:
+
+```nix
+boot.resumeDevice = "/dev/disk/by-uuid/e817895a-ef3f-4289-8c9e-7e4e49703b13";
+boot.kernelParams = ["resume_offset=13852672"];
+swapDevices = lib.mkForce [{ device = "/swapfile"; size = 40960; }];
+zramSwap.enable = lib.mkForce false;
+```
+
+### Swapfile resume offset
+
+`resume_offset` is the physical disk block where the swapfile starts. The kernel
+needs it because `/swapfile` is a file inside ext4, not a whole swap partition;
+early resume happens before the normal root filesystem is fully mounted and
+before the kernel can ask ext4 to look up the file by path.
+
+The current offset was calculated on `tater` after creating `/swapfile`:
+
+```bash
+sudo install -o root -g root -m 0600 /dev/null /swapfile
+sudo fallocate -l 40G /swapfile
+sudo mkswap /swapfile
+sudo filefrag -v /swapfile | awk '/^[ ]*0:/{print $4}' | tr -d .
+```
+
+The expected output is:
+
+```text
+13852672
+```
+
+If `/swapfile` is deleted, recreated, moved, resized, or defragmented, this value
+can change. Recalculate the offset, update `boot.kernelParams`, rebuild, and
+reboot before relying on hibernation again. A quick verification command is:
+
+```bash
+sudo filefrag -v /swapfile | awk '/^[ ]*0:/{print $4}' | tr -d .
+```
+
+After booting a generation with hibernation enabled, verify the active kernel
+command line contains both resume parameters:
+
+```bash
+cat /proc/cmdline | tr ' ' '\n' | grep '^resume'
+```
+
+Expected values:
+
+```text
+resume=/dev/disk/by-uuid/e817895a-ef3f-4289-8c9e-7e4e49703b13
+resume_offset=13852672
+```
+
+Operational rules:
+
+- Do not delete or recreate `/swapfile` without updating `resume_offset`.
+- Do not defragment `/` while relying on swapfile resume.
+- After kernel/NixOS upgrades, prefer a clean reboot before testing hibernate.
+- If hibernate powers off but resumes to a fresh boot, check the offset first.
+
 ### Temporary idle inhibit
 
 The Eww bar shows an idle-inhibit button on `tater`:
@@ -81,6 +147,7 @@ dotfiles-idle-inhibit status
 dotfiles-idle-inhibit toggle
 systemctl --user status hypridle.service
 systemctl suspend-then-hibernate
+systemctl hibernate
 ```
 
 ## Iteration notes

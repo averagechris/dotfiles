@@ -23,14 +23,19 @@
   boot.kernelModules = ["kvm-amd"];
   boot.extraModulePackages = [];
 
-  # Enable hibernation (resume from swap)
-  # The swap partition is randomly encrypted, so hibernation requires
-  # a persistent swap. If you need hibernation, change disk-config.nix
-  # to use a LUKS-encrypted swap instead of randomEncryption.
-  # boot.resumeDevice = "/dev/disk/by-label/swap";
-
-  # Swap is handled by disko (see disk-config.nix)
-  swapDevices = [];
+  # Hibernation uses a swapfile inside the encrypted ext4 root filesystem. This
+  # preserves at-rest encryption without a second LUKS prompt and avoids the
+  # random-encrypted disko swap partition, whose key changes every boot and is
+  # therefore not resume-capable.
+  boot.resumeDevice = "/dev/disk/by-uuid/e817895a-ef3f-4289-8c9e-7e4e49703b13";
+  boot.kernelParams = ["resume_offset=13852672"];
+  swapDevices = lib.mkForce [
+    {
+      device = "/swapfile";
+      size = 40960;
+    }
+  ];
+  zramSwap.enable = lib.mkForce false;
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;

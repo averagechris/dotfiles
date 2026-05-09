@@ -152,6 +152,7 @@ in {
     HandleLidSwitchDocked = "ignore";
   };
   systemd.sleep.settings.Sleep = {
+    AllowHibernation = "yes";
     AllowSuspendThenHibernate = "yes";
     HibernateDelaySec = "1h";
   };

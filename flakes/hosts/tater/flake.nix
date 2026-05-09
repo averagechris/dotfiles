@@ -158,8 +158,11 @@
       # clamshell mode, and the core desktop daemons must be enabled.
       assert_eq "logind ignores lid while docked" ${builtins.toJSON cfg.services.logind.settings.Login.HandleLidSwitchDocked} ignore
       assert_eq "logind ignores lid on external power" ${builtins.toJSON cfg.services.logind.settings.Login.HandleLidSwitchExternalPower} ignore
+      assert_eq "systemd enables hibernation" ${builtins.toJSON cfg.systemd.sleep.settings.Sleep.AllowHibernation} yes
       assert_eq "systemd enables suspend-then-hibernate" ${builtins.toJSON cfg.systemd.sleep.settings.Sleep.AllowSuspendThenHibernate} yes
       assert_eq "systemd hibernates after one suspended hour" ${builtins.toJSON cfg.systemd.sleep.settings.Sleep.HibernateDelaySec} 1h
+      assert_eq "tater disables zram while hibernating to disk" ${bool cfg.zramSwap.enable} false
+      assert_eq "tater resumes from encrypted-root swapfile filesystem" ${builtins.toJSON cfg.boot.resumeDevice} /dev/disk/by-uuid/e817895a-ef3f-4289-8c9e-7e4e49703b13
       assert_eq "Hyprland system module enabled" ${bool cfg.programs.hyprland.enable} true
       assert_eq "kanshi enabled for chris" ${bool hm.services.kanshi.enable} true
       assert_eq "hypridle enabled for chris" ${bool hm.services.hypridle.enable} true

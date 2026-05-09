@@ -5,7 +5,8 @@
 #   /dev/nvme0n1p1 - 512MB EFI System Partition (FAT32) -> /boot
 #   /dev/nvme0n1p2 - LUKS encrypted container
 #     └── /dev/mapper/cryptroot - ext4 -> /
-#   /dev/nvme0n1p3 - 16GB swap (for hibernation)
+#   /dev/nvme0n1p3 - 16GB random-encrypted swap partition (currently unused;
+#     tater hibernates to an encrypted-root /swapfile instead)
 #
 # To apply manually from installer:
 #   sudo nix --experimental-features "nix-command flakes" run github:nix-community/disko -- --mode disko ./flakes/hosts/tater/disk-config.nix
