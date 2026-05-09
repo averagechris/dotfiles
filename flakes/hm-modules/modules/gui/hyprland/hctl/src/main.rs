@@ -146,7 +146,7 @@ struct GapTable {
     many_windows: Gaps,
 }
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
 struct Gaps {
     inner: i64,
     outer: i64,
@@ -366,7 +366,11 @@ fn summon(_config: &Config, name: &str, app: &AppConfig) -> Result<()> {
     let active = active_workspace()?;
     hypr_dispatch(&[
         "movetoworkspacesilent",
-        &format!("{},address:{}", active.name, client.address),
+        &format!(
+            "{},address:{}",
+            active_workspace_target(&active),
+            client.address
+        ),
     ])?;
     apply_action(&client.address, &app.summon)?;
     hypr_dispatch(&["focuswindow", &format!("address:{}", client.address)])
@@ -399,7 +403,11 @@ fn borrow(_config: &Config, name: &str, app: &AppConfig) -> Result<()> {
     let active = active_workspace()?;
     hypr_dispatch(&[
         "movetoworkspacesilent",
-        &format!("{},address:{}", active.name, client.address),
+        &format!(
+            "{},address:{}",
+            active_workspace_target(&active),
+            client.address
+        ),
     ])?;
     apply_action(&client.address, &app.borrow)?;
     hypr_dispatch(&["focuswindow", &format!("address:{}", client.address)])
@@ -447,6 +455,14 @@ fn workspace_target(workspace: &WorkspaceConfig) -> String {
     match workspace.kind {
         WorkspaceKind::Named => format!("name:{}", workspace.name),
         WorkspaceKind::Special => format!("special:{}", workspace.name),
+    }
+}
+
+fn active_workspace_target(workspace: &ActiveWorkspace) -> String {
+    if workspace.name.parse::<i64>().is_ok() {
+        workspace.name.clone()
+    } else {
+        format!("name:{}", workspace.name)
     }
 }
 
@@ -629,6 +645,15 @@ fn build_eww_state(config: &Config) -> Result<EwwState> {
     let active = active_workspace()?;
     let clients = clients()?;
     let monitor = focused_monitor()?;
+    Ok(build_eww_state_from(config, &active, &clients, &monitor))
+}
+
+fn build_eww_state_from(
+    config: &Config,
+    active: &ActiveWorkspace,
+    clients: &[Client],
+    monitor: &Monitor,
+) -> EwwState {
     let workspace_clients: Vec<&Client> = clients
         .iter()
         .filter(|client| client.workspace.id == active.id || client.workspace.name == active.name)
@@ -665,7 +690,7 @@ fn build_eww_state(config: &Config) -> Result<EwwState> {
         })
         .collect();
 
-    Ok(EwwState {
+    EwwState {
         active_workspace: EwwWorkspace {
             id: active.id,
             name: active.name.clone(),
@@ -681,7 +706,7 @@ fn build_eww_state(config: &Config) -> Result<EwwState> {
             tiled_window_count,
         },
         mode: EwwMode { name: None },
-    })
+    }
 }
 
 fn workspace_kind(config: &Config, name: &str) -> String {
@@ -748,12 +773,242 @@ fn daemon_tick(config: &Config) -> Result<()> {
 }
 
 fn expand_state_path(raw: &str) -> Result<PathBuf> {
+    expand_state_path_with_env(raw, env::var_os("XDG_STATE_HOME"), env::var_os("HOME"))
+}
+
+fn expand_state_path_with_env(
+    raw: &str,
+    xdg_state_home: Option<std::ffi::OsString>,
+    home: Option<std::ffi::OsString>,
+) -> Result<PathBuf> {
     if let Some(rest) = raw.strip_prefix("$XDG_STATE_HOME/") {
-        let base = env::var_os("XDG_STATE_HOME")
+        let base = xdg_state_home
             .map(PathBuf::from)
-            .or_else(|| env::var_os("HOME").map(|home| PathBuf::from(home).join(".local/state")))
+            .or_else(|| home.map(|home| PathBuf::from(home).join(".local/state")))
             .ok_or_else(|| anyhow!("HOME is not set and XDG_STATE_HOME is unavailable"))?;
         return Ok(base.join(rest));
     }
     Ok(PathBuf::from(raw))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn test_config() -> Config {
+        serde_json::from_str(
+            r#"
+            {
+              "apps": {
+                "signal": {
+                  "match": { "class": "Signal" },
+                  "launch": ["signal-desktop"],
+                  "homeWorkspace": "chat",
+                  "borrow": {
+                    "enabled": true,
+                    "floating": true,
+                    "center": true,
+                    "size": { "width": 900, "height": 1000 }
+                  }
+                },
+                "keepassxc": {
+                  "match": { "class": "org.keepassxc.KeePassXC" },
+                  "launch": ["keepassxc"],
+                  "summon": {
+                    "enabled": true,
+                    "floating": true,
+                    "center": true,
+                    "size": { "width": 900, "height": 650 }
+                  },
+                  "hide": { "enabled": true, "method": "close-to-tray" }
+                }
+              },
+              "workspaces": {
+                "chat": { "name": "chat", "kind": "named" },
+                "scratch": { "name": "scratch", "kind": "special" }
+              },
+              "smartGaps": {
+                "enabled": true,
+                "profiles": [
+                  {
+                    "name": "laptop",
+                    "match": { "maxWidth": 1999 },
+                    "gaps": {
+                      "oneWindow": { "inner": 12, "outer": 32 },
+                      "twoWindows": { "inner": 10, "outer": 24 },
+                      "threeWindows": { "inner": 8, "outer": 12 },
+                      "manyWindows": { "inner": 8, "outer": 12 }
+                    }
+                  },
+                  {
+                    "name": "externalLarge",
+                    "match": { "minWidth": 2000 },
+                    "gaps": {
+                      "oneWindow": { "inner": 28, "outer": 180 },
+                      "twoWindows": { "inner": 22, "outer": 120 },
+                      "threeWindows": { "inner": 16, "outer": 72 },
+                      "manyWindows": { "inner": 8, "outer": 24 }
+                    }
+                  }
+                ]
+              },
+              "eww": { "stateFile": "$XDG_STATE_HOME/hctl/eww-state.json" }
+            }
+            "#,
+        )
+        .expect("test config should parse")
+    }
+
+    fn client(class: &str, workspace_id: i64, workspace_name: &str, floating: bool) -> Client {
+        Client {
+            address: format!("0x{workspace_id:x}{class:x<4}"),
+            mapped: true,
+            hidden: false,
+            floating,
+            class: class.to_string(),
+            title: class.to_string(),
+            initial_class: class.to_string(),
+            initial_title: class.to_string(),
+            workspace: ClientWorkspace {
+                id: workspace_id,
+                name: workspace_name.to_string(),
+            },
+        }
+    }
+
+    #[test]
+    fn parses_v1_config_and_hide_enum() {
+        let config = test_config();
+        let keepass = config.apps.get("keepassxc").unwrap();
+        assert_eq!(keepass.launch, ["keepassxc"]);
+        assert!(matches!(keepass.hide.method, HideMethod::CloseToTray));
+        assert!(config.workspaces.contains_key("chat"));
+    }
+
+    #[test]
+    fn app_matching_uses_exact_configured_fields() {
+        let config = test_config();
+        let signal = config.apps.get("signal").unwrap();
+        assert!(app_matches(signal, &client("Signal", 1, "1", false)));
+        assert!(!app_matches(signal, &client("signal", 1, "1", false)));
+    }
+
+    #[test]
+    fn workspace_targets_distinguish_named_and_special() {
+        let config = test_config();
+        assert_eq!(
+            workspace_target(config.workspaces.get("chat").unwrap()),
+            "name:chat"
+        );
+        assert_eq!(
+            workspace_target(config.workspaces.get("scratch").unwrap()),
+            "special:scratch"
+        );
+    }
+
+    #[test]
+    fn active_workspace_target_preserves_numbered_and_names_named() {
+        assert_eq!(
+            active_workspace_target(&ActiveWorkspace {
+                id: 1,
+                name: "1".to_string(),
+            }),
+            "1"
+        );
+        assert_eq!(
+            active_workspace_target(&ActiveWorkspace {
+                id: -99,
+                name: "chat".to_string(),
+            }),
+            "name:chat"
+        );
+    }
+
+    #[test]
+    fn smart_gaps_select_width_profile_and_window_count() {
+        let config = test_config();
+        assert_eq!(
+            select_gaps(&config, 3840, 1),
+            Some((
+                "externalLarge".to_string(),
+                Gaps {
+                    inner: 28,
+                    outer: 180
+                }
+            ))
+        );
+        assert_eq!(
+            select_gaps(&config, 3840, 2),
+            Some((
+                "externalLarge".to_string(),
+                Gaps {
+                    inner: 22,
+                    outer: 120
+                }
+            ))
+        );
+        assert_eq!(
+            select_gaps(&config, 1920, 4),
+            Some((
+                "laptop".to_string(),
+                Gaps {
+                    inner: 8,
+                    outer: 12
+                }
+            ))
+        );
+    }
+
+    #[test]
+    fn eww_state_derives_borrowed_apps_and_tiled_count() {
+        let config = test_config();
+        let active = ActiveWorkspace {
+            id: 3,
+            name: "3".to_string(),
+        };
+        let clients = vec![
+            client("Signal", 3, "3", true),
+            client("ghostty", 3, "3", false),
+            client("org.keepassxc.KeePassXC", 4, "4", true),
+        ];
+        let monitor = Monitor {
+            name: "DP-2".to_string(),
+            width: 3840,
+            height: 2160,
+            focused: true,
+            active_workspace: ClientWorkspace {
+                id: 3,
+                name: "3".to_string(),
+            },
+        };
+
+        let state = build_eww_state_from(&config, &active, &clients, &monitor);
+        assert_eq!(state.active_workspace.window_count, 2);
+        assert_eq!(state.smart_gaps.tiled_window_count, 1);
+        assert_eq!(state.smart_gaps.profile.as_deref(), Some("externalLarge"));
+        assert!(state.apps.get("signal").unwrap().borrowed);
+        assert!(!state.apps.get("keepassxc").unwrap().borrowed);
+    }
+
+    #[test]
+    fn state_path_expands_xdg_state_home_or_home_default() {
+        assert_eq!(
+            expand_state_path_with_env(
+                "$XDG_STATE_HOME/hctl/eww-state.json",
+                Some("/tmp/state".into()),
+                Some("/home/chris".into())
+            )
+            .unwrap(),
+            PathBuf::from("/tmp/state/hctl/eww-state.json")
+        );
+        assert_eq!(
+            expand_state_path_with_env(
+                "$XDG_STATE_HOME/hctl/eww-state.json",
+                None,
+                Some("/home/chris".into())
+            )
+            .unwrap(),
+            PathBuf::from("/home/chris/.local/state/hctl/eww-state.json")
+        );
+    }
 }
