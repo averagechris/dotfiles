@@ -171,6 +171,69 @@ $highlight-high: #56526e;
   }
 }
 
+.hctl-workspace {
+  color: $foam;
+  padding: 0 10px;
+  margin-left: 8px;
+  border-radius: 4px;
+  background: $highlight-low;
+  font-weight: bold;
+
+  label:first-child {
+    margin-right: 4px;
+  }
+
+  &.active {
+    border: 1px solid $foam;
+  }
+}
+
+.hctl-chat {
+  color: $muted;
+  padding: 0 8px;
+  border-radius: 4px;
+  font-weight: bold;
+
+  &.home {
+    color: $foam;
+  }
+
+  &.borrowed {
+    color: $gold;
+    background: $overlay;
+  }
+
+  &:hover {
+    background: $overlay;
+    color: $text;
+  }
+}
+
+.hctl-keepass {
+  color: $muted;
+  padding: 0 8px;
+  border-radius: 4px;
+  font-weight: bold;
+
+  &.tray {
+    color: $iris;
+  }
+
+  &.mapped {
+    color: $gold;
+    background: $overlay;
+  }
+
+  &.stopped {
+    color: $muted;
+  }
+
+  &:hover {
+    background: $overlay;
+    color: $text;
+  }
+}
+
 .submap {
   color: $gold;
   padding: 0 12px;

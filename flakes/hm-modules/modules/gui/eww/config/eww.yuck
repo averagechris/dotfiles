@@ -15,6 +15,9 @@
 (defpoll keyboard-layout :interval "2s" "hyprctl devices -j 2>/dev/null | jq -r '.keyboards[] | select(.main == true) | .active_keymap' | cut -d'(' -f2 | cut -d')' -f1 || echo 'us'")
 (defpoll home-display-state :interval "2s" "command -v tater-home-toggle >/dev/null && hyprctl monitors -j 2>/dev/null | jq -r 'if any(.[]; .name == \"DP-2\" and .model == \"DELL U4320Q\" and ((.disabled // false) | not)) then if any(.[]; .name == \"eDP-1\" and ((.disabled // false) | not)) then \"open\" else \"clamshell\" end else \"absent\" end' || echo absent")
 (defpoll idle-inhibit-state :interval "2s" "command -v dotfiles-idle-inhibit >/dev/null && dotfiles-idle-inhibit status || echo unavailable")
+(defpoll hctl-workspace-label :interval "1s" "state=\"''${XDG_STATE_HOME:-$HOME/.local/state}/hctl/eww-state.json\"; jq -r 'if .activeWorkspace.kind == \"named\" and (.activeWorkspace.name | test(\"^[0-9]+$\") | not) then .activeWorkspace.name + (if .activeWorkspace.empty then \" ∅\" else \" \" + (.activeWorkspace.windowCount|tostring) end) elif .activeWorkspace.kind == \"special\" then \"special:\" + .activeWorkspace.name + (if .activeWorkspace.empty then \" ∅\" else \" \" + (.activeWorkspace.windowCount|tostring) end) else empty end' \"$state\" 2>/dev/null || true")
+(defpoll hctl-keepass-state :interval "1s" "state=\"''${XDG_STATE_HOME:-$HOME/.local/state}/hctl/eww-state.json\"; jq -r '.apps.keepassxc as $app | if ($app.running // false) then if ($app.mapped // false) then \"mapped\" else \"tray\" end else \"stopped\" end' \"$state\" 2>/dev/null || echo unavailable")
+(defpoll hctl-chat-state :interval "1s" "state=\"''${XDG_STATE_HOME:-$HOME/.local/state}/hctl/eww-state.json\"; jq -r '[if (.apps.signal.borrowed // false) then \"S\" else empty end, if (.apps.telegram.borrowed // false) then \"T\" else empty end] | if length > 0 then \"borrowed \" + join(\"/\") else \"home\" end' \"$state\" 2>/dev/null || echo unavailable")
 
 ; Workspaces (updated via hyprland IPC)
 (deflisten workspaces :initial "[1]" "scripts/workspaces.sh")
@@ -51,10 +54,36 @@
        :orientation "h" :space-evenly false
        :visible {current-submap != ""}
        :tooltip "Active submap/mode"
-    (label :text {current-submap == "resize" ? "󰩨 RESIZE" :
-                  current-submap == "scratchpad" ? "󰗼 SCRATCH" :
-                  current-submap == "quickactions" ? "󰍜 ACTIONS" :
-                  current-submap})))
+     (label :text {current-submap == "resize" ? "󰩨 RESIZE" :
+                   current-submap == "scratchpad" ? "󰗼 SCRATCH" :
+                   current-submap == "chat" ? "󰍡 CHAT" :
+                   current-submap == "quickactions" ? "󰍜 ACTIONS" :
+                   current-submap})))
+
+(defwidget hctl-workspace-widget []
+  (box :class "hctl-workspace ${hctl-workspace-label != '' ? 'active' : ''}"
+       :orientation "h" :space-evenly false
+       :visible {hctl-workspace-label != ""}
+       :tooltip "hctl workspace state"
+    (label :text "󰒲")
+    (label :text hctl-workspace-label)))
+
+(defwidget hctl-chat-widget []
+  (button :class "hctl-chat ${hctl-chat-state}"
+          :visible {hctl-chat-state != "unavailable"}
+          :onclick "hctl goto chat"
+          :onmiddleclick "hctl toggle-borrow signal"
+          :onrightclick "hctl toggle-borrow telegram"
+          :tooltip {hctl-chat-state == "home" ? "Chat apps are home; left click chat workspace, middle borrow Signal, right borrow Telegram" : "Chat app borrowed: ${hctl-chat-state}; left click chat workspace"}
+    {hctl-chat-state == "home" ? "󰍡" : "󰍡 ${hctl-chat-state}"}))
+
+(defwidget hctl-keepass-widget []
+  (button :class "hctl-keepass ${hctl-keepass-state}"
+          :visible {hctl-keepass-state != "unavailable"}
+          :onclick "hctl summon keepassxc"
+          :onrightclick "hctl hide keepassxc"
+          :tooltip {hctl-keepass-state == "mapped" ? "KeePassXC visible; right click to hide to tray" : hctl-keepass-state == "tray" ? "KeePassXC in tray; click to summon" : "KeePassXC stopped; click to launch"}
+    {hctl-keepass-state == "mapped" ? "󰌾" : hctl-keepass-state == "tray" ? "󰌾•" : "󰌾×"}))
 
 (defwidget clock []
   (box :class "clock" :orientation "h" :space-evenly false
@@ -150,6 +179,7 @@
 (defwidget left [items active]
   (box :class "left" :orientation "h" :space-evenly false :halign "start"
     (workspaces-widget :items items :active active)
+    (hctl-workspace-widget)
     (submap-widget)))
 
 (defwidget center []
@@ -161,6 +191,8 @@
     (keyboard-widget)
     (home-display-widget)
     (idle-inhibit-widget)
+    (hctl-chat-widget)
+    (hctl-keepass-widget)
     (network-widget)
     (bluetooth-widget)
     (brightness-widget)

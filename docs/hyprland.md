@@ -50,6 +50,13 @@ Hyprland is a modern Wayland compositor with GPU acceleration, smooth animations
 
 The shared Hyprland module installs `hctl`, a small Rust CLI/daemon for ergonomic window workflows. Nix generates its runtime config at `~/.config/hctl/config.json`; the daemon writes Eww-facing state to `$XDG_STATE_HOME/hctl/eww-state.json` and applies smart gaps based on the focused monitor and active workspace's tiled window count.
 
+The Eww bar consumes this state for lightweight desktop context:
+
+- a scratch/named workspace indicator appears when `hctl` reports a non-numbered or special workspace, including an empty marker (`∅`)
+- a chat indicator opens the `chat` workspace on left click, borrows Signal on middle click, and borrows Telegram on right click
+- a KeePassXC indicator summons KeePassXC on left click and hides it back to tray on right click
+- active Hyprland submap display includes the `chat` mode
+
 Useful commands:
 
 ```bash
