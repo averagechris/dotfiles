@@ -138,6 +138,7 @@ struct GapProfile {
 #[derive(Debug, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct GapProfileMatch {
+    name: Option<String>,
     min_width: Option<i64>,
     max_width: Option<i64>,
 }
@@ -748,7 +749,7 @@ fn build_eww_state_from(
         .iter()
         .filter(|client| !client.floating && !client.hidden)
         .count();
-    let gap_selection = select_gaps(config, monitor.width, tiled_window_count);
+    let gap_selection = select_gaps(config, monitor, tiled_window_count);
 
     let apps = config
         .apps
@@ -809,7 +810,7 @@ fn workspace_kind(config: &Config, name: &str) -> String {
 
 fn select_gaps(
     config: &Config,
-    monitor_width: i64,
+    monitor: &Monitor,
     tiled_window_count: usize,
 ) -> Option<(String, Gaps)> {
     if !config.smart_gaps.enabled {
@@ -818,12 +819,17 @@ fn select_gaps(
     let profile = config.smart_gaps.profiles.iter().find(|profile| {
         profile
             .r#match
-            .min_width
-            .map_or(true, |min_width| monitor_width >= min_width)
+            .name
+            .as_ref()
+            .map_or(true, |name| name == &monitor.name)
+            && profile
+                .r#match
+                .min_width
+                .map_or(true, |min_width| monitor.width >= min_width)
             && profile
                 .r#match
                 .max_width
-                .map_or(true, |max_width| monitor_width <= max_width)
+                .map_or(true, |max_width| monitor.width <= max_width)
     })?;
     let gaps = match tiled_window_count {
         0 | 1 => profile.gaps.one_window,
@@ -1057,6 +1063,18 @@ mod tests {
         }
     }
 
+    fn monitor(name: &str, width: i64, height: i64) -> Monitor {
+        Monitor {
+            name: name.to_string(),
+            x: 0,
+            y: 0,
+            width,
+            height,
+            focused: true,
+            active_workspace: ClientWorkspace::default(),
+        }
+    }
+
     #[test]
     fn parses_v1_config_and_hide_enum() {
         let config = test_config();
@@ -1146,8 +1164,10 @@ mod tests {
     #[test]
     fn smart_gaps_select_width_profile_and_window_count() {
         let config = test_config();
+        let external = monitor("DP-2", 3840, 2160);
+        let laptop = monitor("eDP-1", 1920, 1200);
         assert_eq!(
-            select_gaps(&config, 3840, 1),
+            select_gaps(&config, &external, 1),
             Some((
                 "externalLarge".to_string(),
                 Gaps {
@@ -1157,7 +1177,7 @@ mod tests {
             ))
         );
         assert_eq!(
-            select_gaps(&config, 3840, 2),
+            select_gaps(&config, &external, 2),
             Some((
                 "externalLarge".to_string(),
                 Gaps {
@@ -1167,7 +1187,7 @@ mod tests {
             ))
         );
         assert_eq!(
-            select_gaps(&config, 1920, 4),
+            select_gaps(&config, &laptop, 4),
             Some((
                 "laptop".to_string(),
                 Gaps {
@@ -1175,6 +1195,40 @@ mod tests {
                     outer: 12
                 }
             ))
+        );
+    }
+
+    #[test]
+    fn smart_gaps_can_select_by_monitor_name_before_width() {
+        let mut config = test_config();
+        config.smart_gaps.profiles.insert(
+            0,
+            serde_json::from_value(serde_json::json!({
+                "name": "namedDock",
+                "match": { "name": "DP-2" },
+                "gaps": {
+                  "oneWindow": { "inner": 30, "outer": 220 },
+                  "twoWindows": { "inner": 24, "outer": 140 },
+                  "threeWindows": { "inner": 18, "outer": 80 },
+                  "manyWindows": { "inner": 8, "outer": 24 }
+                }
+            }))
+            .unwrap(),
+        );
+
+        assert_eq!(
+            select_gaps(&config, &monitor("DP-2", 1920, 1080), 1),
+            Some((
+                "namedDock".to_string(),
+                Gaps {
+                    inner: 30,
+                    outer: 220
+                }
+            ))
+        );
+        assert_eq!(
+            select_gaps(&config, &monitor("HDMI-A-1", 1920, 1080), 1).map(|(name, _)| name),
+            Some("laptop".to_string())
         );
     }
 

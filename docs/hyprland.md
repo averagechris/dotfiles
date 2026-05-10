@@ -48,7 +48,7 @@ Hyprland is a modern Wayland compositor with GPU acceleration, smooth animations
 
 ### hctl ergonomics helper
 
-The shared Hyprland module installs `hctl`, a small Rust CLI/daemon for ergonomic window workflows. Nix generates its runtime config at `~/.config/hctl/config.json`; the daemon writes Eww-facing state to `$XDG_STATE_HOME/hctl/eww-state.json` and applies smart gaps based on the focused monitor and active workspace's tiled window count.
+The shared Hyprland module installs `hctl`, a small Rust CLI/daemon for ergonomic window workflows. Nix generates its runtime config at `~/.config/hctl/config.json`; the daemon writes Eww-facing state to `$XDG_STATE_HOME/hctl/eww-state.json` and applies smart gaps based on the focused monitor and active workspace's tiled window count. Smart-gap profiles can target an exact monitor name, or fall back to width ranges for laptop/external defaults.
 
 The Eww bar consumes this state for lightweight desktop context:
 

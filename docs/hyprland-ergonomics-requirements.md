@@ -21,7 +21,7 @@ Implemented so far:
 - `hctl video-pin` is idempotent for already-pinned windows: it still reapplies video geometry, but does not toggle pin off.
 - KeePassXC summon/hide behavior using app-native close-to-tray assumptions.
 - Signal/Telegram persistent `chat` workspace and real-window borrow/return behavior.
-- Smart gaps daemon behavior using width-based monitor profiles.
+- Smart gaps daemon behavior using exact monitor-name and width-based profiles.
 - Event-driven daemon wakeups through Hyprland socket2, with polling fallback.
 - Daemon smart-gap keyword writes are idempotent within a daemon run to avoid repeated gap churn on refresh events.
 - Eww state JSON written to `$XDG_STATE_HOME/hctl/eww-state.json`.
@@ -62,7 +62,7 @@ Runtime validation notes from the current tater session:
 - Represent launch commands as argv lists, not shell strings.
 - For MVP, derive borrow state from current Hyprland clients and configured app homes; add persisted exact-restore state later only if needed.
 - For MVP, have the daemon write JSON state for Eww instead of starting with polling.
-- Match smart-gap monitor profiles by width first; add exact monitor-name matching later if width-based matching is not precise enough.
+- Match smart-gap monitor profiles by exact monitor name when configured, with width ranges as the fallback/default profile shape.
 - Model hide behavior as an enum from day one, but initially implement only `close-to-tray`.
 
 ## High-level goals
@@ -308,7 +308,7 @@ Implementation notes:
 - `hide.method` is an enum. MVP implements only `close-to-tray`; future options may include `minimize`, `move-to-workspace`, or `move-to-special`.
 - Borrowed state is derived in MVP: an app with `homeWorkspace = "chat"` is considered borrowed when its matched window is mapped on another workspace.
 - The daemon should expand `$XDG_STATE_HOME` when writing Eww state. If unset, it should follow the XDG default of `~/.local/state`.
-- Width-based smart-gap profile matching is the MVP behavior. Monitor-name matching can be added later without changing the basic profile structure.
+- Smart-gap profiles can match an exact monitor `name` plus optional `minWidth`/`maxWidth` constraints. Existing width-only profiles continue to act as broad fallbacks.
 - Borrow/summon action sizes are clamped to the focused monitor with a small margin so fixed defaults do not overflow smaller panels.
 - Smart video pin placement uses the focused monitor's origin and dimensions rather than assuming the focused output starts at `(0, 0)`.
 
@@ -412,6 +412,7 @@ This file should be cheap for Eww to read and should contain the current state E
 - [x] Add daemon logic that reacts to workspace/client/monitor changes.
 - [x] Count tiled windows on the active workspace and determine active monitor dimensions.
 - [x] Match smart-gap profiles by monitor width for MVP.
+- [x] Allow smart-gap profiles to target exact monitor names for tater/dock-specific tuning.
 - [x] Apply aggressive spacious gaps for sparse workspaces on large external monitors.
 - [x] Shrink gaps as window count increases.
 - [x] Avoid repeating unchanged smart-gap keyword writes on every daemon refresh.
