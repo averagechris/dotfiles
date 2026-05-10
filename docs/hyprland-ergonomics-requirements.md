@@ -179,6 +179,28 @@ dotfiles.gui.hyprland.hctl = {
     enable = true;
     profiles = [
       {
+        name = "taterLaptopPanel";
+        match.name = "eDP-1";
+        gaps = {
+          oneWindow = { inner = 12; outer = 32; };
+          twoWindows = { inner = 10; outer = 24; };
+          threeWindows = { inner = 8; outer = 12; };
+          manyWindows = { inner = 8; outer = 12; };
+        };
+      }
+
+      {
+        name = "taterDellDock";
+        match.name = "DP-2";
+        gaps = {
+          oneWindow = { inner = 28; outer = 180; };
+          twoWindows = { inner = 22; outer = 120; };
+          threeWindows = { inner = 16; outer = 72; };
+          manyWindows = { inner = 8; outer = 24; };
+        };
+      }
+
+      {
         name = "laptop";
         match.maxWidth = 1999;
         gaps = {
@@ -268,6 +290,30 @@ The generated JSON should use stable, Rust-friendly shapes. A representative v1 
   "smartGaps": {
     "enabled": true,
     "profiles": [
+      {
+        "name": "taterLaptopPanel",
+        "match": {
+          "name": "eDP-1"
+        },
+        "gaps": {
+          "oneWindow": { "inner": 12, "outer": 32 },
+          "twoWindows": { "inner": 10, "outer": 24 },
+          "threeWindows": { "inner": 8, "outer": 12 },
+          "manyWindows": { "inner": 8, "outer": 12 }
+        }
+      },
+      {
+        "name": "taterDellDock",
+        "match": {
+          "name": "DP-2"
+        },
+        "gaps": {
+          "oneWindow": { "inner": 28, "outer": 180 },
+          "twoWindows": { "inner": 22, "outer": 120 },
+          "threeWindows": { "inner": 16, "outer": 72 },
+          "manyWindows": { "inner": 8, "outer": 24 }
+        }
+      },
       {
         "name": "laptop",
         "match": {
