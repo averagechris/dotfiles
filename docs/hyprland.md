@@ -65,7 +65,7 @@ hctl hide keepassxc         # close KeePassXC back to tray, when app settings al
 hctl toggle-borrow signal   # borrow/return Signal between current workspace and chat
 hctl toggle-borrow telegram # borrow/return Telegram between current workspace and chat
 hctl goto chat              # jump to the named chat workspace
-hctl video-pin              # float, size, move, and pin the focused video/pop-out window
+hctl video-pin              # float, size, move, and pin the focused video/pop-out window; leaves already-pinned windows pinned
 hctl zen-terminal           # float and center the focused terminal at a comfortable size
 hctl state eww              # print the daemon/Eww state shape for debugging
 hctl --dry-run video-pin    # print hyprctl dispatches without mutating window state

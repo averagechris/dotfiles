@@ -187,6 +187,8 @@ struct Client {
     #[serde(default)]
     floating: bool,
     #[serde(default)]
+    pinned: bool,
+    #[serde(default)]
     class: String,
     #[serde(default)]
     title: String,
@@ -488,6 +490,7 @@ fn active_workspace_target(workspace: &ActiveWorkspace) -> String {
 
 fn video_pin() -> Result<()> {
     let monitor = focused_monitor()?;
+    let active = active_client()?;
     let (width, height) = if monitor.width >= 2000 {
         (960, 540)
     } else {
@@ -504,6 +507,10 @@ fn video_pin() -> Result<()> {
         &height.to_string(),
     ])?;
     hypr_dispatch(&["moveactive", "exact", &x.to_string(), &y.to_string()])?;
+    if active.map(|client| client.pinned).unwrap_or(false) {
+        eprintln!("hctl video-pin: focused window is already pinned; leaving pin state unchanged");
+        return Ok(());
+    }
     hypr_dispatch(&["pin"])
 }
 
@@ -633,6 +640,23 @@ fn active_workspace() -> Result<ActiveWorkspace> {
     hypr_json(&["activeworkspace"])
 }
 
+fn active_client() -> Result<Option<Client>> {
+    active_client_from_value(hypr_json_value(&["activewindow"])?)
+        .context("failed to parse active window")
+}
+
+fn active_client_from_value(value: serde_json::Value) -> Result<Option<Client>> {
+    if value.is_null() || value.as_object().is_some_and(|object| object.is_empty()) {
+        return Ok(None);
+    }
+    let client: Client = serde_json::from_value(value)?;
+    if client.address.is_empty() {
+        Ok(None)
+    } else {
+        Ok(Some(client))
+    }
+}
+
 fn focused_monitor() -> Result<Monitor> {
     monitors()?
         .into_iter()
@@ -641,6 +665,11 @@ fn focused_monitor() -> Result<Monitor> {
 }
 
 fn hypr_json<T: for<'de> Deserialize<'de>>(args: &[&str]) -> Result<T> {
+    serde_json::from_value(hypr_json_value(args)?)
+        .with_context(|| format!("failed to parse hyprctl {} -j output", args.join(" ")))
+}
+
+fn hypr_json_value(args: &[&str]) -> Result<serde_json::Value> {
     let output = Command::new("hyprctl")
         .args(args)
         .arg("-j")
@@ -1016,6 +1045,7 @@ mod tests {
             mapped: true,
             hidden: false,
             floating,
+            pinned: false,
             class: class.to_string(),
             title: class.to_string(),
             initial_class: class.to_string(),
@@ -1049,6 +1079,29 @@ mod tests {
         assert!(args.dry_run);
         assert_eq!(args.config_path, PathBuf::from("/tmp/hctl.json"));
         assert_eq!(args.command, ["video-pin"]);
+    }
+
+    #[test]
+    fn active_client_parsing_handles_empty_and_pinned_windows() {
+        assert!(active_client_from_value(serde_json::json!({}))
+            .unwrap()
+            .is_none());
+        assert!(active_client_from_value(serde_json::Value::Null)
+            .unwrap()
+            .is_none());
+
+        let active = active_client_from_value(serde_json::json!({
+            "address": "0xabc",
+            "mapped": true,
+            "pinned": true,
+            "class": "mpv",
+            "workspace": { "id": 2, "name": "2" }
+        }))
+        .unwrap()
+        .unwrap();
+
+        assert_eq!(active.address, "0xabc");
+        assert!(active.pinned);
     }
 
     #[test]

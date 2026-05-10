@@ -18,6 +18,7 @@ Implemented so far:
 - User systemd service `hctl.service` running `hctl daemon`.
 - Verb-first `hctl` command surface for summon/hide, borrow/return, workspace goto, pinning, video pinning, zen terminal, daemon, and Eww state inspection.
 - Global `hctl --dry-run`/`-n` support for printing planned Hyprland dispatches/keywords without mutating window state.
+- `hctl video-pin` is idempotent for already-pinned windows: it still reapplies video geometry, but does not toggle pin off.
 - KeePassXC summon/hide behavior using app-native close-to-tray assumptions.
 - Signal/Telegram persistent `chat` workspace and real-window borrow/return behavior.
 - Smart gaps daemon behavior using width-based monitor profiles.
@@ -401,6 +402,7 @@ This file should be cheap for Eww to read and should contain the current state E
 
 - [x] Add a command for focused-window smart video pinning.
 - [x] The command should float the focused window, resize it to a sensible video aspect/size, move it to a good corner, and pin it.
+- [x] Avoid unpinning an already-pinned focused window when re-running smart video pinning.
 - [x] Size should be monitor-aware, e.g. larger on Dell/external monitors and smaller on the laptop panel.
 - [x] Add a separate generic pin toggle command/keybinding.
 - [x] Bind smart video pinning into the mnemonic window/action mode.
