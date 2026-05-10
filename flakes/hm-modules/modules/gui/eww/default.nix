@@ -95,6 +95,13 @@
       fi
     '';
   };
+  ewwHyprlandKeybindingsHelp = pkgs.writeShellApplication {
+    name = "eww-hyprland-keybindings-help";
+    runtimeInputs = [];
+    text = ''
+      exec ${config.dotfiles.gui.terminal.binPath} -e hyprland-keybindings-help
+    '';
+  };
 in {
   options.dotfiles.eww = {
     enable = lib.mkEnableOption "Eww bar and widgets";
@@ -133,6 +140,7 @@ in {
       bluez
       overskride # Bluetooth GUI
       ewwOpenBars
+      ewwHyprlandKeybindingsHelp
     ];
 
     # Ensure eww starts with Hyprland

@@ -386,7 +386,8 @@ See `windowrules.nix` for detailed window behavior configuration:
 ## Submap Indicator
 
 The eww bar displays the current submap with a pulsing gold indicator. Hover the
-indicator for the mode-specific key hints:
+indicator for the mode-specific key hints, or click it to open the full
+Hyprland keybindings help in a terminal:
 
 - **󰩨 RESIZE** - Resize mode (`M/N/E/I`, `Esc`)
 - **󰗼 SCRATCH** - Scratchpad and KeePassXC mode (`T/S/K/P`, shifted move variants, `Esc`)

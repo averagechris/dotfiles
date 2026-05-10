@@ -50,9 +50,9 @@
         ws))))
 
 (defwidget submap-widget []
-  (box :class "submap ${current-submap != '' ? 'active' : ''}"
-       :orientation "h" :space-evenly false
+  (button :class "submap ${current-submap != '' ? 'active' : ''}"
        :visible {current-submap != ""}
+       :onclick "eww-hyprland-keybindings-help"
        :tooltip {current-submap == "resize" ? "Resize mode: M shrink width, N grow height, E shrink height, I grow width, Esc exit" :
                  current-submap == "scratchpad" ? "Scratch mode: T terminal, Shift+T move terminal, S scratchpad, Shift+S move scratchpad, K/P KeePassXC, Esc exit" :
                  current-submap == "chat" ? "Chat mode: C chat workspace, S borrow/return Signal, T borrow/return Telegram, Esc exit" :
