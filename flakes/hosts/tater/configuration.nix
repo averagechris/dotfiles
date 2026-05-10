@@ -708,8 +708,10 @@ in {
         }
       ];
 
-    # Disable waybar when using eww
+    # Keep the full Waybar bar disabled while Eww owns the primary bar, but run
+    # a tiny adjacent Waybar surface as the real Wayland StatusNotifier tray.
     dotfiles.gui.hyprland.waybar.enable = false;
+    dotfiles.gui.hyprland.waybar.trayOnly.enable = true;
     wayland.windowManager.hyprland.package = inputs.hyprland.packages.${pkgs.system}.hyprland;
     dotfiles.gui.hyprland.overview = {
       # Keep Hyprspace disabled for now. A missing overview dispatcher after
@@ -808,6 +810,5 @@ in {
     # Bluetooth and network management
     home.packages = [pkgs.overskride taterNetworkRecover taterDisplayRefresh taterHomeClamshell taterHomeOpen taterHomeToggle taterHomeDocked taterDesktopDoctor thornyStatus];
     services.network-manager-applet.enable = true;
-
   };
 }

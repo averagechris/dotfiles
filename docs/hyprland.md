@@ -66,7 +66,7 @@ hctl toggle-borrow signal   # borrow/return Signal between current workspace and
 hctl toggle-borrow telegram # borrow/return Telegram between current workspace and chat
 hctl goto chat              # jump to the named chat workspace
 hctl video-pin              # float, size, move, and pin the focused video/pop-out window; leaves already-pinned windows pinned
-hctl zen-terminal           # float and center the focused terminal at a comfortable size
+hctl zen-window             # toggle a focused window between tiled and centered zen floating layout
 hctl state eww              # print the daemon/Eww state shape for debugging
 hctl --dry-run video-pin    # print hyprctl dispatches without mutating window state
 ```
@@ -78,7 +78,7 @@ Focused-window hctl helpers are also available from Window Actions mode:
 | Key | Action |
 |-----|--------|
 | `Super+W, v` | Smart video pin: float, size, corner-place, and pin the focused window |
-| `Super+W, z` | Zen terminal: float and center the focused terminal at a comfortable size |
+| `Super+W, z` | Zen window: toggle between tiled and centered zen floating layout |
 | `Super+W, p` | Toggle pin on the focused window |
 | `Escape` | Exit submap |
 
@@ -123,7 +123,7 @@ Submaps provide modal keybindings. Press `Super+<key>` to enter, `Escape` to exi
 | Key | Action |
 |-----|--------|
 | `v` | Smart video pin via `hctl video-pin` |
-| `z` | Zen terminal layout via `hctl zen-terminal` |
+| `z` | Toggle zen window layout via `hctl zen-window` |
 | `p` | Toggle pin for the focused window via `hctl toggle-pin` |
 | `Escape` | Exit submap |
 
@@ -394,6 +394,23 @@ Hyprland keybindings help in a terminal:
 - **󰍡 CHAT** - Chat workspace and borrow mode (`C/S/T`, `Esc`)
 - **󰖲 WINDOW** - Focused-window hctl actions (`V/Z/P`, `Esc`)
 - **󰍜 ACTIONS** - Quick actions mode (`S/T/K/B/O/L/H/?`, `Esc`)
+
+## System Tray
+
+Eww does not provide the Wayland StatusNotifierItem tray itself in this setup, so
+tray icons are hosted by an adjacent Waybar surface rather than inside the Eww
+bar. The shared Hyprland Waybar module supports two modes:
+
+- `dotfiles.gui.hyprland.waybar.enable = true` enables the traditional full
+  Waybar bar with workspaces, window title, system modules, and tray.
+- `dotfiles.gui.hyprland.waybar.trayOnly.enable = true` enables a small
+  top-right tray-only Waybar surface with no exclusive zone, intended to sit next
+  to the Eww bar.
+
+On tater, Eww remains the primary bar and hctl state surface. Full Waybar stays
+disabled, while the tray-only Waybar mode is enabled so KeePassXC and other apps
+that expose StatusNotifier items have a real tray host. KeePassXC and chat quick
+actions remain in Eww; the tray is only for app-provided tray icons.
 
 ## Keybindings Help
 

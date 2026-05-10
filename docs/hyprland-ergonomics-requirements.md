@@ -26,7 +26,7 @@ Implemented so far:
 - Daemon smart-gap keyword writes are idempotent within a daemon run to avoid repeated gap churn on refresh events.
 - Eww state JSON written to `$XDG_STATE_HOME/hctl/eww-state.json`.
 - Eww widgets for named/special workspace context, chat borrowed state, and KeePassXC state.
-- Mnemonic `Super+W` window-action bindings for video pinning, zen-terminal layout, and generic pin toggling.
+- Mnemonic `Super+W` window-action bindings for video pinning, zen-window layout, and generic pin toggling.
 - Tests for config parsing, app matching, workspace targeting, smart gaps, Eww state derivation, state path expansion, Hyprland socket path derivation, and event filtering.
 
 Still pending or needing real-world tuning:
@@ -35,7 +35,7 @@ Still pending or needing real-world tuning:
 - Verify exact KeePassXC tray show/hide behavior under real settings.
 - Verify exact Signal/Telegram/Zen/window class behavior under Hyprland and keep app-class matches tuned.
 - Tune smart gap sizes and chat/borrow window geometry after use.
-- Research and integrate a real Wayland-compatible system tray.
+- Tray direction implemented for tater: keep Eww as the primary bar and enable an adjacent tray-only Waybar StatusNotifier host, rather than trying to host tray icons inside Eww directly.
 - Eww's active submap indicator includes mode-specific hover tooltips, including window-action hints, and opens the full keybinding help when clicked.
 
 Runtime validation notes from the current tater session:
@@ -57,7 +57,7 @@ Runtime validation notes from the current tater session:
 - KeePassXC should use native tray behavior, not a permanent Hyprland workspace home.
 - Signal/Telegram quick access should move the real app window into the current workspace, then return it to its `chat` home.
 - Smart gaps should be aggressive/spacious on large external monitors for 1-2 windows.
-- Eww integration should prioritize a real system tray, while still exposing focused custom indicators where useful.
+- Eww integration should keep focused custom indicators where useful and pair with an adjacent real StatusNotifier tray surface for app tray icons; tater uses the shared tray-only Waybar mode for that surface.
 - Place the Rust helper using the same broad pattern as the existing repo-managed `jj-workflow` helper: colocated with the Home Manager module that owns the workflow.
 - Represent launch commands as argv lists, not shell strings.
 - For MVP, derive borrow state from current Hyprland clients and configured app homes; add persisted exact-restore state later only if needed.
@@ -87,7 +87,7 @@ hctl toggle-borrow telegram
 hctl goto chat
 hctl video-pin
 hctl toggle-pin
-hctl zen-terminal
+hctl zen-window
 hctl state eww
 hctl --dry-run video-pin
 ```
@@ -464,13 +464,13 @@ This file should be cheap for Eww to read and should contain the current state E
 - [x] Avoid repeating unchanged smart-gap keyword writes on every daemon refresh.
 - [x] Keep laptop-panel gaps less aggressive.
 - [x] Make smart gaps easy to disable from Nix.
-- [x] Add a manual `zen-terminal` action for the focused terminal: float, center, and size to a comfortable large-monitor terminal shape.
-- [ ] Decide after testing whether `zen-terminal` should be a toggle that restores tiling.
+- [x] Add a manual `zen-window` action for the focused window: toggle between tiled and centered/floating at a comfortable large-monitor shape.
+- [x] Decide after testing whether `zen-terminal` should be a toggle that restores tiling; it is now `zen-window`, with `zen-terminal` kept as a deprecated compatibility alias.
 
 ### Eww and tray integration
 
-- [ ] Research and choose a real Wayland-compatible system tray strategy for Eww/bar usage.
-- [ ] Add or integrate the chosen system tray implementation.
+- [x] Research and choose a real Wayland-compatible system tray strategy for Eww/bar usage.
+- [x] Add or integrate the chosen system tray implementation.
 - [x] Expose daemon state for Eww via `$XDG_STATE_HOME/hctl/eww-state.json`.
 - [x] Show scratch/chat workspace state, including empty special/named workspaces.
 - [x] Show borrowed chat app state, e.g. Signal or Telegram currently borrowed away from `chat`.
@@ -506,7 +506,7 @@ This file should be cheap for Eww to read and should contain the current state E
 - [x] Implement Hyprland state discovery for clients, monitors, and active workspace.
 - [x] Implement `hctl summon keepassxc` and `hctl hide keepassxc`.
 - [x] Implement `hctl borrow signal`, `hctl return signal`, `hctl borrow telegram`, and `hctl return telegram`.
-- [x] Implement `hctl video-pin`, `hctl toggle-pin`, and `hctl zen-terminal`.
+- [x] Implement `hctl video-pin`, `hctl toggle-pin`, and `hctl zen-window`.
 - [x] Implement daemon-written Eww state at `$XDG_STATE_HOME/hctl/eww-state.json`.
 - [x] Implement `hctl state eww` as a debugging command that prints the same state shape.
 
@@ -520,14 +520,14 @@ This file should be cheap for Eww to read and should contain the current state E
 
 ### MVP 3: system tray and polish
 
-- [ ] Research Eww-compatible Wayland StatusNotifier/system tray options.
-- [ ] Integrate the selected tray approach.
+- [x] Research Eww-compatible Wayland StatusNotifier/system tray options.
+- [x] Integrate the selected tray approach.
 - [ ] Polish KeePassXC tray/summon behavior based on real-world testing.
 - [ ] Tune tater monitor profiles after using the Dell monitor and laptop panel.
 
 ## Open questions
 
-- Which system tray implementation works best with the current Eww/bar setup on Wayland?
+- Does the top-right tray-only Waybar surface need monitor-specific placement tweaks after real tater runtime testing?
 - Should the chat home layout be floating-arranged or normal tiled layout after return?
 - Should smart gaps be driven purely by focused monitor/workspace, or should it try to handle multiple visible monitors independently if Hyprland supports the needed controls?
 
@@ -536,7 +536,7 @@ This file should be cheap for Eww to read and should contain the current state E
 1. Runtime-test KeePassXC tray behavior, Signal/Telegram borrow/return, and Zen pop-out pinning on tater.
 2. Tune smart gap profiles and borrowed chat geometry on the Dell monitor and laptop panel.
 3. Improve daemon behavior if runtime testing shows event gaps beyond the current event subscription and idempotent smart-gap writes.
-4. Research a real Wayland StatusNotifier/system tray approach for Eww or an adjacent tray surface.
+4. Runtime-test the tray-only Waybar StatusNotifier surface alongside the Eww bar and tune placement if needed.
 
 ## Initial implementation order
 

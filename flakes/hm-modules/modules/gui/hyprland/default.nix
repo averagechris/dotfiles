@@ -607,7 +607,7 @@ in {
         # Window actions submap - focused-window hctl helpers
         submap = windowactions, reset
         bind = , v, exec, hctl video-pin
-        bind = , z, exec, hctl zen-terminal
+        bind = , z, exec, hctl zen-window
         bind = , p, exec, hctl toggle-pin
         bind = , escape, submap, reset
         submap = reset
@@ -776,7 +776,7 @@ in {
             │  MOD+C              Chat mode: C=chat workspace S=Signal T=Telegram          │
             │  MOD+R              Resize mode: M/N/E/I to resize, ESC to exit             │
             │  MOD+S              Scratchpad mode: T=terminal S=scratchpad K/P=KeePassXC  │
-            │  MOD+W              Window mode: V=video pin Z=zen terminal P=toggle pin     │
+            │  MOD+W              Window mode: V=video pin Z=zen window P=toggle pin       │
             │                                                                             │
             ├─────────────────────────────────────────────────────────────────────────────┤
             │ SPECIAL WORKSPACES                                                          │

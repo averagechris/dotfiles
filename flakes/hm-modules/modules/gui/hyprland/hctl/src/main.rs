@@ -303,7 +303,7 @@ fn main() -> Result<()> {
         "goto" => goto_workspace(&config, &args.command),
         "video-pin" => video_pin(),
         "toggle-pin" => hypr_dispatch(&["pin"]),
-        "zen-terminal" => zen_terminal(),
+        "zen-window" | "zen-terminal" => zen_window(),
         "state" if args.command.get(1).map(String::as_str) == Some("eww") => {
             let state = build_eww_state(&config)?;
             println!("{}", serde_json::to_string_pretty(&state)?);
@@ -360,7 +360,7 @@ fn print_help() {
     println!(
         "hctl - Hyprland ergonomics control\n\n\
 Usage:\n  hctl [--config PATH] [--dry-run|-n] <command> [args]\n\n\
-Commands:\n  daemon\n  summon <app>\n  hide <app>\n  borrow <app>\n  return <app>\n  toggle-borrow <app>\n  goto <workspace>\n  video-pin\n  toggle-pin\n  zen-terminal\n  state eww"
+Commands:\n  daemon\n  summon <app>\n  hide <app>\n  borrow <app>\n  return <app>\n  toggle-borrow <app>\n  goto <workspace>\n  video-pin\n  toggle-pin\n  zen-window\n  zen-terminal (deprecated alias)\n  state eww"
     );
 }
 
@@ -515,7 +515,15 @@ fn video_pin() -> Result<()> {
     hypr_dispatch(&["pin"])
 }
 
-fn zen_terminal() -> Result<()> {
+fn zen_window() -> Result<()> {
+    if active_client()?
+        .map(|client| client.floating)
+        .unwrap_or(false)
+    {
+        hypr_dispatch(&["setfloating", "active"])?;
+        return Ok(());
+    }
+
     let monitor = focused_monitor()?;
     let width = if monitor.width >= 2000 {
         1400
