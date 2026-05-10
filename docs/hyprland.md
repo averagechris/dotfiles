@@ -70,6 +70,8 @@ hctl zen-terminal           # float and center the focused terminal at a comfort
 hctl state eww              # print the daemon/Eww state shape for debugging
 ```
 
+Borrowed chat windows are real Hyprland windows. `hctl borrow` floats, focuses, sizes, and centers them on the current workspace; `hctl return` moves them back to the `chat` workspace and tiles them again for the normal chat-home layout.
+
 Focused-window hctl helpers are also available from Window Actions mode:
 
 | Key | Action |

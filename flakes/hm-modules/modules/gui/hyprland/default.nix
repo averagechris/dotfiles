@@ -151,12 +151,12 @@ in {
           };
           signal = {
             match = {
-              class = "Signal";
+              class = "signal";
               title = null;
               initialClass = null;
               initialTitle = null;
             };
-            launch = ["signal-desktop" "--start-in-tray"];
+            launch = ["signal-desktop"];
             homeWorkspace = "chat";
             borrow = {
               enabled = true;
@@ -175,7 +175,7 @@ in {
               initialClass = null;
               initialTitle = null;
             };
-            launch = ["telegram-desktop"];
+            launch = ["Telegram"];
             homeWorkspace = "chat";
             borrow = {
               enabled = true;

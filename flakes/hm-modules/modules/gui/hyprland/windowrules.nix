@@ -115,10 +115,10 @@ in {
       "center class:^(imv)$"
 
       # Signal - persistent chat workspace, float dialogs
-      "workspace name:chat silent class:^(Signal)$"
-      "float class:^(Signal)$ title:^(Signal)$"
-      "size 1000 700 class:^(Signal)$ title:^(Signal)$"
-      "center class:^(Signal)$ title:^(Signal)$"
+      "workspace name:chat silent class:^(signal)$"
+      "float class:^(signal)$ title:^(Signal)$"
+      "size 1000 700 class:^(signal)$ title:^(Signal)$"
+      "center class:^(signal)$ title:^(Signal)$"
 
       # Telegram - persistent chat workspace, float dialogs
       "workspace name:chat silent class:^(org.telegram.desktop)$"

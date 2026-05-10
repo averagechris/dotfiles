@@ -432,7 +432,8 @@ fn return_app(config: &Config, name: &str, app: &AppConfig) -> Result<()> {
     hypr_dispatch(&[
         "movetoworkspacesilent",
         &format!("{},address:{}", target, client.address),
-    ])
+    ])?;
+    hypr_dispatch(&["settiled", &format!("address:{}", client.address)])
 }
 
 fn toggle_borrow(config: &Config, name: &str, app: &AppConfig) -> Result<()> {
@@ -519,18 +520,19 @@ fn apply_action(address: &str, action: &ActionConfig) -> Result<()> {
     if action.floating {
         hypr_dispatch(&["setfloating", &format!("address:{address}")])?;
     }
+    if action.size.is_some() || action.center {
+        hypr_dispatch(&["focuswindow", &format!("address:{address}")])?;
+    }
     if let Some(size) = action.size {
         let size = clamp_size_to_focused_monitor(size)?;
         hypr_dispatch(&[
-            "resizewindowpixel",
+            "resizeactive",
             "exact",
             &size.width.to_string(),
             &size.height.to_string(),
-            &format!("address:{address}"),
         ])?;
     }
     if action.center {
-        hypr_dispatch(&["focuswindow", &format!("address:{address}")])?;
         hypr_dispatch(&["centerwindow"])?;
     }
     Ok(())
@@ -569,7 +571,7 @@ fn ensure_app_window(app: &AppConfig) -> Result<()> {
         .spawn()
         .with_context(|| format!("failed to launch {}", app.launch[0]))?;
 
-    for _ in 0..50 {
+    for _ in 0..150 {
         thread::sleep(Duration::from_millis(100));
         if find_client(app)?.is_some() {
             return Ok(());
@@ -921,7 +923,7 @@ mod tests {
             {
               "apps": {
                 "signal": {
-                  "match": { "class": "Signal" },
+                  "match": { "class": "signal" },
                   "launch": ["signal-desktop"],
                   "homeWorkspace": "chat",
                   "borrow": {
@@ -1009,8 +1011,8 @@ mod tests {
     fn app_matching_uses_exact_configured_fields() {
         let config = test_config();
         let signal = config.apps.get("signal").unwrap();
-        assert!(app_matches(signal, &client("Signal", 1, "1", false)));
-        assert!(!app_matches(signal, &client("signal", 1, "1", false)));
+        assert!(app_matches(signal, &client("signal", 1, "1", false)));
+        assert!(!app_matches(signal, &client("Signal", 1, "1", false)));
     }
 
     #[test]
@@ -1087,7 +1089,7 @@ mod tests {
             name: "3".to_string(),
         };
         let clients = vec![
-            client("Signal", 3, "3", true),
+            client("signal", 3, "3", true),
             client("ghostty", 3, "3", false),
             client("org.keepassxc.KeePassXC", 4, "4", true),
         ];

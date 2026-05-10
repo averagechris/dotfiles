@@ -40,7 +40,9 @@ Runtime validation notes from the current tater session:
 
 - Focused monitor was `DP-2` at `3840x2160`, so the `externalLarge` smart-gap profile selected as expected for one tiled window.
 - KeePassXC exposed class and initial class `org.keepassxc.KeePassXC`, matching the configured app selector. It was visible on `special:scratchpad`; close-to-tray hide still needs an intentional interactive test with KeePassXC settings confirmed.
-- Signal and Telegram were not running in the sampled session, so borrow/return command behavior still needs validation with real chat windows.
+- Signal exposed class and initial class `signal` when launched manually during testing. The config/window rules now match that lowercase class, and `hctl` waits longer for slow chat app startup before giving up.
+- The first Signal borrow attempt launched a real window but timed out before matching the late client, leaving it tiled. After the lowercase class fix and command-dispatch fix, `hctl borrow signal` floated, centered, and resized the live Signal window to `900x1000`; `hctl return signal` moved it back to `chat` and tiled it again.
+- Telegram is exposed as `Telegram` in the current profile/Nix package metadata, so its launch argv now uses `Telegram` rather than `telegram-desktop`. After that fix, `hctl borrow telegram` launched/matched class `org.telegram.desktop`, floated, centered, and resized the window to `900x1000`; `hctl return telegram` moved it back to `chat` and tiled it again.
 - Zen Browser exposed class and initial class `zen-beta`; `hctl video-pin` remains class-agnostic, but Zen pop-out/video-window geometry still needs an intentional focused-window test.
 
 ## Decisions
@@ -131,8 +133,8 @@ dotfiles.gui.hyprland.hctl = {
     };
 
     signal = {
-      match.class = "Signal";
-      launch = ["signal-desktop" "--start-in-tray"];
+      match.class = "signal";
+      launch = ["signal-desktop"];
       homeWorkspace = "chat";
 
       borrow = {
@@ -148,7 +150,7 @@ dotfiles.gui.hyprland.hctl = {
 
     telegram = {
       match.class = "org.telegram.desktop";
-      launch = ["telegram-desktop"];
+      launch = ["Telegram"];
       homeWorkspace = "chat";
 
       borrow = {
@@ -236,12 +238,12 @@ The generated JSON should use stable, Rust-friendly shapes. A representative v1 
     },
     "signal": {
       "match": {
-        "class": "Signal",
+        "class": "signal",
         "title": null,
         "initialClass": null,
         "initialTitle": null
       },
-      "launch": ["signal-desktop", "--start-in-tray"],
+      "launch": ["signal-desktop"],
       "homeWorkspace": "chat",
       "borrow": {
         "enabled": true,
@@ -388,7 +390,7 @@ This file should be cheap for Eww to read and should contain the current state E
 - [x] Add `borrow` behavior that moves the real Signal/Telegram window into the current workspace.
 - [x] Borrowed chat windows should float, focus, and receive monitor-aware size/position.
 - [x] Add toggle behavior: if the borrowed app is already on the current workspace, return it home.
-- [x] Return behavior should move the app back to `chat` and restore the preferred chat layout.
+- [x] Return behavior should move the app back to `chat` and restore the preferred chat layout by tiling the returned app window.
 - [x] Derive borrowed/home state from current clients and configured home workspaces for MVP; do not persist exact previous geometry yet.
 - [x] Preserve drag-and-drop ergonomics for screenshots/files by ensuring borrowed windows are real windows on the current workspace, not just hidden overlays.
 
