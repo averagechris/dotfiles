@@ -491,6 +491,9 @@ in {
             # Chat/communication actions submap launcher
             "c, submap, chat"
 
+            # Window actions submap launcher
+            "w, submap, windowactions"
+
             # Resize submap launcher
             "r, submap, resize"
 
@@ -554,6 +557,14 @@ in {
         bind = , c, exec, hctl goto chat
         bind = , s, exec, hctl toggle-borrow signal
         bind = , t, exec, hctl toggle-borrow telegram
+        bind = , escape, submap, reset
+        submap = reset
+
+        # Window actions submap - focused-window hctl helpers
+        submap = windowactions, reset
+        bind = , v, exec, hctl video-pin
+        bind = , z, exec, hctl zen-terminal
+        bind = , p, exec, hctl toggle-pin
         bind = , escape, submap, reset
         submap = reset
 
@@ -721,6 +732,7 @@ in {
             │  MOD+C              Chat mode: C=chat workspace S=Signal T=Telegram          │
             │  MOD+R              Resize mode: M/N/E/I to resize, ESC to exit             │
             │  MOD+S              Scratchpad mode: T=terminal S=scratchpad K/P=KeePassXC  │
+            │  MOD+W              Window mode: V=video pin Z=zen terminal P=toggle pin     │
             │                                                                             │
             ├─────────────────────────────────────────────────────────────────────────────┤
             │ SPECIAL WORKSPACES                                                          │

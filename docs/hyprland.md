@@ -70,6 +70,15 @@ hctl zen-terminal           # float and center the focused terminal at a comfort
 hctl state eww              # print the daemon/Eww state shape for debugging
 ```
 
+Focused-window hctl helpers are also available from Window Actions mode:
+
+| Key | Action |
+|-----|--------|
+| `Super+W, v` | Smart video pin: float, size, corner-place, and pin the focused window |
+| `Super+W, z` | Zen terminal: float and center the focused terminal at a comfortable size |
+| `Super+W, p` | Toggle pin on the focused window |
+| `Escape` | Exit submap |
+
 ### Workspace Overview
 
 `Super+O` opens the script-backed workspace overview / move menu. This fallback is intentionally used on tater while Hyprspace is disabled: after reboot, Hyprland can start without the plugin dispatcher (`overview:toggle`), and the plugin path has been unstable enough to trigger Hyprland safe mode.
@@ -91,8 +100,8 @@ Submaps provide modal keybindings. Press `Super+<key>` to enter, `Escape` to exi
 
 | Key | Action |
 |-----|--------|
-| `s` | Focus or launch Signal |
-| `t` | Focus or launch Telegram |
+| `s` | Toggle borrowing Signal into the current workspace / returning it to `chat` |
+| `t` | Toggle borrowing Telegram into the current workspace / returning it to `chat` |
 | `k` | Summon KeePassXC via `hctl` |
 | `b` | Focus or launch Zen browser |
 | `o` | Focus or launch Obsidian |
@@ -104,6 +113,15 @@ Submaps provide modal keybindings. Press `Super+<key>` to enter, `Escape` to exi
 | `z` | Toggle eww bar (alternate) |
 | `y` | Toggle QWERTY/Colemak-DH layout |
 | `h` or `?` | Show keybindings help |
+| `Escape` | Exit submap |
+
+#### Window Actions (`Super+W`)
+
+| Key | Action |
+|-----|--------|
+| `v` | Smart video pin via `hctl video-pin` |
+| `z` | Zen terminal layout via `hctl zen-terminal` |
+| `p` | Toggle pin for the focused window via `hctl toggle-pin` |
 | `Escape` | Exit submap |
 
 #### Chat Mode (`Super+C`)

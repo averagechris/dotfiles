@@ -21,18 +21,27 @@ Implemented so far:
 - Signal/Telegram persistent `chat` workspace and real-window borrow/return behavior.
 - Smart gaps daemon behavior using width-based monitor profiles.
 - Event-driven daemon wakeups through Hyprland socket2, with polling fallback.
+- Daemon smart-gap keyword writes are idempotent within a daemon run to avoid repeated gap churn on refresh events.
 - Eww state JSON written to `$XDG_STATE_HOME/hctl/eww-state.json`.
 - Eww widgets for named/special workspace context, chat borrowed state, and KeePassXC state.
+- Mnemonic `Super+W` window-action bindings for video pinning, zen-terminal layout, and generic pin toggling.
 - Tests for config parsing, app matching, workspace targeting, smart gaps, Eww state derivation, state path expansion, Hyprland socket path derivation, and event filtering.
 
 Still pending or needing real-world tuning:
 
 - Manual runtime validation on tater's laptop panel and Dell monitor.
 - Verify exact KeePassXC tray show/hide behavior under real settings.
-- Verify exact Signal/Telegram/Zen/window class behavior under Hyprland.
+- Verify exact Signal/Telegram/Zen/window class behavior under Hyprland and keep app-class matches tuned.
 - Tune smart gap sizes and chat/borrow window geometry after use.
 - Research and integrate a real Wayland-compatible system tray.
 - Add richer modal hover/help UI if the current submap indicator is not enough.
+
+Runtime validation notes from the current tater session:
+
+- Focused monitor was `DP-2` at `3840x2160`, so the `externalLarge` smart-gap profile selected as expected for one tiled window.
+- KeePassXC exposed class and initial class `org.keepassxc.KeePassXC`, matching the configured app selector. It was visible on `special:scratchpad`; close-to-tray hide still needs an intentional interactive test with KeePassXC settings confirmed.
+- Signal and Telegram were not running in the sampled session, so borrow/return command behavior still needs validation with real chat windows.
+- Zen Browser exposed class and initial class `zen-beta`; `hctl video-pin` remains class-agnostic, but Zen pop-out/video-window geometry still needs an intentional focused-window test.
 
 ## Decisions
 
@@ -123,7 +132,7 @@ dotfiles.gui.hyprland.hctl = {
 
     signal = {
       match.class = "Signal";
-      launch = ["signal-desktop"];
+      launch = ["signal-desktop" "--start-in-tray"];
       homeWorkspace = "chat";
 
       borrow = {
@@ -232,7 +241,7 @@ The generated JSON should use stable, Rust-friendly shapes. A representative v1 
         "initialClass": null,
         "initialTitle": null
       },
-      "launch": ["signal-desktop"],
+      "launch": ["signal-desktop", "--start-in-tray"],
       "homeWorkspace": "chat",
       "borrow": {
         "enabled": true,
@@ -294,6 +303,8 @@ Implementation notes:
 - Borrowed state is derived in MVP: an app with `homeWorkspace = "chat"` is considered borrowed when its matched window is mapped on another workspace.
 - The daemon should expand `$XDG_STATE_HOME` when writing Eww state. If unset, it should follow the XDG default of `~/.local/state`.
 - Width-based smart-gap profile matching is the MVP behavior. Monitor-name matching can be added later without changing the basic profile structure.
+- Borrow/summon action sizes are clamped to the focused monitor with a small margin so fixed defaults do not overflow smaller panels.
+- Smart video pin placement uses the focused monitor's origin and dimensions rather than assuming the focused output starts at `(0, 0)`.
 
 ## Runtime state and Eww interface
 
@@ -387,7 +398,7 @@ This file should be cheap for Eww to read and should contain the current state E
 - [x] The command should float the focused window, resize it to a sensible video aspect/size, move it to a good corner, and pin it.
 - [x] Size should be monitor-aware, e.g. larger on Dell/external monitors and smaller on the laptop panel.
 - [x] Add a separate generic pin toggle command/keybinding.
-- [ ] Bind smart video pinning into the mnemonic window/action mode.
+- [x] Bind smart video pinning into the mnemonic window/action mode.
 
 ### Smart gaps and zen terminal
 
@@ -396,6 +407,7 @@ This file should be cheap for Eww to read and should contain the current state E
 - [x] Match smart-gap profiles by monitor width for MVP.
 - [x] Apply aggressive spacious gaps for sparse workspaces on large external monitors.
 - [x] Shrink gaps as window count increases.
+- [x] Avoid repeating unchanged smart-gap keyword writes on every daemon refresh.
 - [x] Keep laptop-panel gaps less aggressive.
 - [x] Make smart gaps easy to disable from Nix.
 - [x] Add a manual `zen-terminal` action for the focused terminal: float, center, and size to a comfortable large-monitor terminal shape.
@@ -416,7 +428,7 @@ This file should be cheap for Eww to read and should contain the current state E
 - [ ] Keep the existing mnemonic/modal philosophy.
 - [x] Add chat mode bindings for `chat` workspace, Signal borrow, and Telegram borrow.
 - [x] Add password/KeePassXC summon/hide bindings.
-- [ ] Add window mode bindings for smart video pin and zen terminal.
+- [x] Add window mode bindings for smart video pin and zen terminal.
 - [x] Ensure every submap has an explicit Escape/reset binding.
 - [x] Document all new keybindings in `docs/hyprland.md` when implemented.
 
@@ -466,12 +478,11 @@ This file should be cheap for Eww to read and should contain the current state E
 
 ## Next slices
 
-1. Add mnemonic bindings for `hctl video-pin` and `hctl zen-terminal`.
-2. Runtime-test KeePassXC tray behavior, Signal/Telegram borrow/return, and Zen pop-out pinning on tater.
-3. Tune smart gap profiles and borrowed chat geometry on the Dell monitor and laptop panel.
-4. Improve daemon behavior if runtime testing shows event gaps or excessive gap keyword churn.
-5. Research a real Wayland StatusNotifier/system tray approach for Eww or an adjacent tray surface.
-6. Consider richer hover/click help for advanced modal bindings.
+1. Runtime-test KeePassXC tray behavior, Signal/Telegram borrow/return, and Zen pop-out pinning on tater.
+2. Tune smart gap profiles and borrowed chat geometry on the Dell monitor and laptop panel.
+3. Improve daemon behavior if runtime testing shows event gaps beyond the current event subscription and idempotent smart-gap writes.
+4. Research a real Wayland StatusNotifier/system tray approach for Eww or an adjacent tray surface.
+5. Consider richer hover/click help for advanced modal bindings.
 
 ## Initial implementation order
 

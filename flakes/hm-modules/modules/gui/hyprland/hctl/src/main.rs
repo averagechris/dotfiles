@@ -63,7 +63,7 @@ struct ActionConfig {
     size: Option<Size>,
 }
 
-#[derive(Debug, Copy, Clone, Deserialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Deserialize)]
 struct Size {
     width: i64,
     height: i64,
@@ -207,6 +207,10 @@ struct ClientWorkspace {
 struct Monitor {
     #[serde(default)]
     name: String,
+    #[serde(default)]
+    x: i64,
+    #[serde(default)]
+    y: i64,
     #[serde(default)]
     width: i64,
     #[serde(default)]
@@ -476,8 +480,8 @@ fn video_pin() -> Result<()> {
         (640, 360)
     };
     let margin = 32;
-    let x = (monitor.width - width - margin).max(margin);
-    let y = (monitor.height - height - margin).max(margin);
+    let x = monitor.x + (monitor.width - width - margin).max(margin);
+    let y = monitor.y + (monitor.height - height - margin).max(margin);
     hypr_dispatch(&["setfloating", "active"])?;
     hypr_dispatch(&[
         "resizeactive",
@@ -516,6 +520,7 @@ fn apply_action(address: &str, action: &ActionConfig) -> Result<()> {
         hypr_dispatch(&["setfloating", &format!("address:{address}")])?;
     }
     if let Some(size) = action.size {
+        let size = clamp_size_to_focused_monitor(size)?;
         hypr_dispatch(&[
             "resizewindowpixel",
             "exact",
@@ -529,6 +534,24 @@ fn apply_action(address: &str, action: &ActionConfig) -> Result<()> {
         hypr_dispatch(&["centerwindow"])?;
     }
     Ok(())
+}
+
+fn clamp_size_to_focused_monitor(size: Size) -> Result<Size> {
+    let monitor = focused_monitor()?;
+    Ok(clamp_size_to_monitor(size, &monitor))
+}
+
+fn clamp_size_to_monitor(size: Size, monitor: &Monitor) -> Size {
+    Size {
+        width: clamp_dimension(size.width, monitor.width, 80, 320),
+        height: clamp_dimension(size.height, monitor.height, 80, 240),
+    }
+}
+
+fn clamp_dimension(requested: i64, available: i64, margin: i64, preferred_min: i64) -> i64 {
+    let maximum = (available - margin).max(1);
+    let minimum = preferred_min.min(maximum);
+    requested.min(maximum).max(minimum)
 }
 
 fn ensure_app_window(app: &AppConfig) -> Result<()> {
@@ -752,13 +775,15 @@ fn select_gaps(
 }
 
 fn daemon(config: &Config) -> Result<()> {
-    if let Err(err) = daemon_tick(config) {
+    let mut last_gaps = None;
+
+    if let Err(err) = daemon_tick(config, &mut last_gaps) {
         eprintln!("hctl initial daemon tick failed: {err:#}");
     }
 
     if let Some(socket_path) = hyprland_socket2_path() {
         match UnixStream::connect(&socket_path) {
-            Ok(stream) => return daemon_event_loop(config, stream),
+            Ok(stream) => return daemon_event_loop(config, stream, &mut last_gaps),
             Err(err) => eprintln!(
                 "hctl failed to connect to Hyprland event socket {}; falling back to polling: {err}",
                 socket_path.display()
@@ -770,31 +795,35 @@ fn daemon(config: &Config) -> Result<()> {
         );
     }
 
-    daemon_poll_loop(config)
+    daemon_poll_loop(config, &mut last_gaps)
 }
 
-fn daemon_poll_loop(config: &Config) -> Result<()> {
+fn daemon_poll_loop(config: &Config, last_gaps: &mut Option<Gaps>) -> Result<()> {
     loop {
-        if let Err(err) = daemon_tick(config) {
+        if let Err(err) = daemon_tick(config, last_gaps) {
             eprintln!("hctl daemon tick failed: {err:#}");
         }
         thread::sleep(Duration::from_millis(750));
     }
 }
 
-fn daemon_event_loop(config: &Config, stream: UnixStream) -> Result<()> {
+fn daemon_event_loop(
+    config: &Config,
+    stream: UnixStream,
+    last_gaps: &mut Option<Gaps>,
+) -> Result<()> {
     let reader = BufReader::new(stream);
     for line in reader.lines() {
         let line = line?;
         if event_should_refresh(&line) {
-            if let Err(err) = daemon_tick(config) {
+            if let Err(err) = daemon_tick(config, last_gaps) {
                 eprintln!("hctl daemon tick failed after Hyprland event {line:?}: {err:#}");
             }
         }
     }
 
     eprintln!("hctl Hyprland event socket closed; falling back to polling daemon");
-    daemon_poll_loop(config)
+    daemon_poll_loop(config, last_gaps)
 }
 
 fn hyprland_socket2_path() -> Option<PathBuf> {
@@ -829,6 +858,9 @@ fn event_should_refresh(event: &str) -> bool {
             | "closewindow"
             | "focusedmon"
             | "fullscreen"
+            | "monitoradded"
+            | "monitoraddedv2"
+            | "monitorremoved"
             | "movewindow"
             | "movewindowv2"
             | "openwindow"
@@ -840,11 +872,17 @@ fn event_should_refresh(event: &str) -> bool {
     )
 }
 
-fn daemon_tick(config: &Config) -> Result<()> {
+fn daemon_tick(config: &Config, last_gaps: &mut Option<Gaps>) -> Result<()> {
     let state = build_eww_state(config)?;
     if let (Some(inner), Some(outer)) = (state.smart_gaps.inner, state.smart_gaps.outer) {
-        hypr_keyword(&["general:gaps_in", &inner.to_string()])?;
-        hypr_keyword(&["general:gaps_out", &outer.to_string()])?;
+        let gaps = Gaps { inner, outer };
+        if last_gaps.as_ref() != Some(&gaps) {
+            hypr_keyword(&["general:gaps_in", &inner.to_string()])?;
+            hypr_keyword(&["general:gaps_out", &outer.to_string()])?;
+            *last_gaps = Some(gaps);
+        }
+    } else {
+        *last_gaps = None;
     }
     let path = expand_state_path(&config.eww.state_file)?;
     if let Some(parent) = path.parent() {
@@ -1055,6 +1093,8 @@ mod tests {
         ];
         let monitor = Monitor {
             name: "DP-2".to_string(),
+            x: 1920,
+            y: 0,
             width: 3840,
             height: 2160,
             focused: true,
@@ -1070,6 +1110,47 @@ mod tests {
         assert_eq!(state.smart_gaps.profile.as_deref(), Some("externalLarge"));
         assert!(state.apps.get("signal").unwrap().borrowed);
         assert!(!state.apps.get("keepassxc").unwrap().borrowed);
+    }
+
+    #[test]
+    fn action_sizes_clamp_to_monitor_work_area_margin() {
+        let laptop = Monitor {
+            name: "eDP-1".to_string(),
+            x: 0,
+            y: 0,
+            width: 1920,
+            height: 1080,
+            focused: true,
+            active_workspace: ClientWorkspace::default(),
+        };
+
+        assert_eq!(
+            clamp_size_to_monitor(
+                Size {
+                    width: 900,
+                    height: 1000,
+                },
+                &laptop,
+            ),
+            Size {
+                width: 900,
+                height: 1000,
+            }
+        );
+
+        assert_eq!(
+            clamp_size_to_monitor(
+                Size {
+                    width: 3000,
+                    height: 1800,
+                },
+                &laptop,
+            ),
+            Size {
+                width: 1840,
+                height: 1000,
+            }
+        );
     }
 
     #[test]
@@ -1112,8 +1193,9 @@ mod tests {
         assert!(event_should_refresh("workspacev2>>3,chat"));
         assert!(event_should_refresh("openwindow>>0xabc,3,Signal,Signal"));
         assert!(event_should_refresh("closewindow>>0xabc"));
+        assert!(event_should_refresh("monitoradded>>DP-4"));
+        assert!(event_should_refresh("monitorremoved>>DP-4"));
         assert!(event_should_refresh("submap>>chat"));
-        assert!(!event_should_refresh("monitoradded>>DP-4"));
         assert!(!event_should_refresh("malformed"));
     }
 }
