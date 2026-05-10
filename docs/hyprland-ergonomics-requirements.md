@@ -36,7 +36,7 @@ Still pending or needing real-world tuning:
 - Verify exact Signal/Telegram/Zen/window class behavior under Hyprland and keep app-class matches tuned.
 - Tune smart gap sizes and chat/borrow window geometry after use.
 - Research and integrate a real Wayland-compatible system tray.
-- Add richer modal hover/help UI if the current submap indicator is not enough.
+- Eww's active submap indicator includes mode-specific hover tooltips, including window-action hints.
 
 Runtime validation notes from the current tater session:
 
@@ -475,7 +475,7 @@ This file should be cheap for Eww to read and should contain the current state E
 - [x] Show scratch/chat workspace state, including empty special/named workspaces.
 - [x] Show borrowed chat app state, e.g. Signal or Telegram currently borrowed away from `chat`.
 - [x] Show active modal/submap keybinding hints when in action/window/chat modes.
-- [ ] Consider a hover/click cheat-sheet widget for advanced keybindings.
+- [x] Add hover key hints to the active submap indicator for advanced modal bindings.
 
 ### Keybinding requirements
 
@@ -536,7 +536,7 @@ This file should be cheap for Eww to read and should contain the current state E
 2. Tune smart gap profiles and borrowed chat geometry on the Dell monitor and laptop panel.
 3. Improve daemon behavior if runtime testing shows event gaps beyond the current event subscription and idempotent smart-gap writes.
 4. Research a real Wayland StatusNotifier/system tray approach for Eww or an adjacent tray surface.
-5. Consider richer hover/click help for advanced modal bindings.
+5. Consider click-to-open detailed help from the active submap indicator if hover hints are not enough.
 
 ## Initial implementation order
 

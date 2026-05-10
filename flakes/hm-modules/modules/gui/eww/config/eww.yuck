@@ -53,12 +53,18 @@
   (box :class "submap ${current-submap != '' ? 'active' : ''}"
        :orientation "h" :space-evenly false
        :visible {current-submap != ""}
-       :tooltip "Active submap/mode"
+       :tooltip {current-submap == "resize" ? "Resize mode: M shrink width, N grow height, E shrink height, I grow width, Esc exit" :
+                 current-submap == "scratchpad" ? "Scratch mode: T terminal, Shift+T move terminal, S scratchpad, Shift+S move scratchpad, K/P KeePassXC, Esc exit" :
+                 current-submap == "chat" ? "Chat mode: C chat workspace, S borrow/return Signal, T borrow/return Telegram, Esc exit" :
+                 current-submap == "windowactions" ? "Window mode: V smart video pin, Z zen terminal, P toggle pin, Esc exit" :
+                 current-submap == "quickactions" ? "Actions mode: S Signal, T Telegram, K KeePassXC, B Zen, O Obsidian, L lock, H/? help, Esc exit" :
+                 "Active submap/mode: ${current-submap}"}
      (label :text {current-submap == "resize" ? "󰩨 RESIZE" :
-                   current-submap == "scratchpad" ? "󰗼 SCRATCH" :
-                   current-submap == "chat" ? "󰍡 CHAT" :
-                   current-submap == "quickactions" ? "󰍜 ACTIONS" :
-                   current-submap})))
+                    current-submap == "scratchpad" ? "󰗼 SCRATCH" :
+                    current-submap == "chat" ? "󰍡 CHAT" :
+                    current-submap == "windowactions" ? "󰖲 WINDOW" :
+                    current-submap == "quickactions" ? "󰍜 ACTIONS" :
+                    current-submap})))
 
 (defwidget hctl-workspace-widget []
   (box :class "hctl-workspace ${hctl-workspace-label != '' ? 'active' : ''}"

@@ -385,10 +385,14 @@ See `windowrules.nix` for detailed window behavior configuration:
 
 ## Submap Indicator
 
-The eww bar displays the current submap with a pulsing gold indicator:
-- **󰩨 RESIZE** - Resize mode
-- **󰗼 SCRATCH** - Scratchpad mode
-- **󰍜 ACTIONS** - Quick actions mode
+The eww bar displays the current submap with a pulsing gold indicator. Hover the
+indicator for the mode-specific key hints:
+
+- **󰩨 RESIZE** - Resize mode (`M/N/E/I`, `Esc`)
+- **󰗼 SCRATCH** - Scratchpad and KeePassXC mode (`T/S/K/P`, shifted move variants, `Esc`)
+- **󰍡 CHAT** - Chat workspace and borrow mode (`C/S/T`, `Esc`)
+- **󰖲 WINDOW** - Focused-window hctl actions (`V/Z/P`, `Esc`)
+- **󰍜 ACTIONS** - Quick actions mode (`S/T/K/B/O/L/H/?`, `Esc`)
 
 ## Keybindings Help
 
