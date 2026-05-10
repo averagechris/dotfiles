@@ -27,7 +27,7 @@
   };
   eww = pkgs.writeShellApplication {
     name = "eww";
-    runtimeInputs = [pkgs.coreutils];
+    runtimeInputs = [pkgs.coreutils pkgs.hyprland pkgs.jq];
     text = ''
       set -euo pipefail
 
@@ -46,6 +46,38 @@
             ;;
         esac
       done
+
+      if [[ "''${1:-}" == "reload" ]]; then
+        # `eww reload` attempts to restore currently open windows. After
+        # dock/undock, an external-monitor bar can still be recorded as open
+        # even though its monitor no longer exists, which makes reload fail
+        # before it can redraw the laptop bar. Close known bar windows first,
+        # reload the config, then reopen the bar for the currently enabled
+        # monitor layout.
+        for bar in bar-internal bar-external-dp1 bar-external bar-external-dp3 bar-external-hdmi-a-1 bar-external-hdmi-a-2; do
+          ${lib.getExe pkgs.eww} --config "$XDG_CONFIG_HOME/eww-stable" close "$bar" || true
+        done
+        ${lib.getExe pkgs.eww} --config "$XDG_CONFIG_HOME/eww-stable" reload
+
+        external_bar_for_monitor() {
+          case "$1" in
+            DP-1) printf '%s\n' bar-external-dp1 ;;
+            DP-2) printf '%s\n' bar-external ;;
+            DP-3) printf '%s\n' bar-external-dp3 ;;
+            HDMI-A-1) printf '%s\n' bar-external-hdmi-a-1 ;;
+            HDMI-A-2) printf '%s\n' bar-external-hdmi-a-2 ;;
+            *) return 1 ;;
+          esac
+        }
+
+        external_monitor="$(hyprctl monitors -j | jq -r 'first(.[] | select(.name != "eDP-1" and (((.disabled // false) | not))) | .name) // empty')"
+        if [[ -n "$external_monitor" ]] && external_bar="$(external_bar_for_monitor "$external_monitor")"; then
+          ${lib.getExe pkgs.eww} --config "$XDG_CONFIG_HOME/eww-stable" open "$external_bar" || true
+        elif hyprctl monitors -j | jq -e '.[] | select(.name == "eDP-1" and (((.disabled // false) | not)))' >/dev/null; then
+          ${lib.getExe pkgs.eww} --config "$XDG_CONFIG_HOME/eww-stable" open bar-internal || true
+        fi
+        exit 0
+      fi
 
       exec ${lib.getExe pkgs.eww} --config "$XDG_CONFIG_HOME/eww-stable" "$@"
     '';
