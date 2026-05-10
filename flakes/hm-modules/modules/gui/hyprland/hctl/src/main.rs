@@ -322,6 +322,7 @@ fn main() -> Result<()> {
         "video-pin" => video_pin(),
         "toggle-pin" => hypr_dispatch(&["pin"]),
         "zen-window" | "zen-terminal" => zen_window(),
+        "tray-hide" => tray_hide_active(),
         "toggle-smart-gaps" => toggle_smart_gaps(&config, &args.command),
         "enable-smart-gaps" => set_smart_gaps_for_workspace(&config, &args.command, true),
         "disable-smart-gaps" => set_smart_gaps_for_workspace(&config, &args.command, false),
@@ -381,7 +382,7 @@ fn print_help() {
     println!(
         "hctl - Hyprland ergonomics control\n\n\
 Usage:\n  hctl [--config PATH] [--dry-run|-n] <command> [args]\n\n\
-Commands:\n  daemon\n  summon <app>\n  hide <app>\n  borrow <app>\n  return <app>\n  toggle-borrow <app>\n  goto <workspace>\n  video-pin\n  toggle-pin\n  zen-window\n  zen-terminal (deprecated alias)\n  toggle-smart-gaps [workspace]\n  enable-smart-gaps [workspace]\n  disable-smart-gaps [workspace]\n  state eww"
+Commands:\n  daemon\n  summon <app>\n  hide <app>\n  borrow <app>\n  return <app>\n  toggle-borrow <app>\n  goto <workspace>\n  video-pin\n  toggle-pin\n  zen-window\n  zen-terminal (deprecated alias)\n  tray-hide\n  toggle-smart-gaps [workspace]\n  enable-smart-gaps [workspace]\n  disable-smart-gaps [workspace]\n  state eww"
     );
 }
 
@@ -564,6 +565,11 @@ fn zen_window() -> Result<()> {
         &height.to_string(),
     ])?;
     hypr_dispatch(&["centerwindow"])
+}
+
+fn tray_hide_active() -> Result<()> {
+    active_client()?.ok_or_else(|| anyhow!("no active window to hide to tray"))?;
+    hypr_dispatch(&["closewindow", "active"])
 }
 
 fn toggle_smart_gaps(config: &Config, command: &[String]) -> Result<()> {
