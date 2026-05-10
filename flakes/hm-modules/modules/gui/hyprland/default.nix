@@ -103,6 +103,97 @@
       '';
     };
   in "${script}/bin/${name}";
+  hyprWindowOpacity = let
+    name = "hypr-window-opacity";
+    script = pkgs.writeShellApplication {
+      inherit name;
+      runtimeInputs = [pkgs.coreutils pkgs.hyprland pkgs.jq pkgs.libnotify pkgs.python3];
+      text = ''
+                usage() {
+                  printf 'Usage: %s up|down|reset|set <0.35-1.00>\n' "$0" >&2
+                }
+
+                clamp_opacity() {
+                  python3 - "$1" <<'PY'
+        import sys
+        value = float(sys.argv[1])
+        value = max(0.35, min(1.0, value))
+        print(f"{value:.2f}")
+        PY
+                }
+
+                active_json="$(hyprctl activewindow -j)"
+                address="$(jq -r '.address // ""' <<<"$active_json")"
+                if [[ "$address" == "" ]]; then
+                  notify-send --app-name=Hyprland "Window opacity" "No active window"
+                  exit 0
+                fi
+
+                state_dir="''${XDG_STATE_HOME:-$HOME/.local/state}/hypr-window-opacity"
+                mkdir -p "$state_dir"
+                state_file="$state_dir/$address"
+
+                # Hyprland's dynamic property is `opacity` (a window-rule effect),
+                # not the client JSON's runtime `alpha` field. Keep the last
+                # requested value per window so repeatable nudges do not depend
+                # on renderer/client internals exposing the effective multiplier.
+                current=1.0
+                if [[ -f "$state_file" ]]; then
+                  current="$(<"$state_file")"
+                fi
+                action="''${1:-}"
+                reset_override=false
+
+                case "$action" in
+                  up)
+                    target="$(python3 - "$current" <<'PY'
+        import sys
+        print(float(sys.argv[1]) + 0.05)
+        PY
+        )"
+                    ;;
+                  down)
+                    target="$(python3 - "$current" <<'PY'
+        import sys
+        print(float(sys.argv[1]) - 0.05)
+        PY
+        )"
+                    ;;
+                  reset)
+                    target=1.0
+                    reset_override=true
+                    ;;
+                  set)
+                    if [[ -z "''${2:-}" ]]; then
+                      usage
+                      exit 2
+                    fi
+                    target="$2"
+                    ;;
+                  *)
+                    usage
+                    exit 2
+                    ;;
+                esac
+
+                target="$(clamp_opacity "$target")"
+                if [[ "$reset_override" == true || "$target" == "1.00" ]]; then
+                  hyprctl dispatch setprop "address:$address" opacity unset >/dev/null
+                  rm -f "$state_file"
+                else
+                  hyprctl dispatch setprop "address:$address" opacity "$target" >/dev/null
+                  printf '%s\n' "$target" >"$state_file"
+                fi
+
+                percent="$(python3 - "$target" <<'PY'
+        import sys
+        print(round(float(sys.argv[1]) * 100))
+        PY
+        )"
+                notify-send --app-name=Hyprland --hint="int:value:$percent" "Window opacity" "Focused window: $percent%"
+      '';
+    };
+  in "${script}/bin/${name}";
 in {
   options.dotfiles.gui.hyprland = {
     enable = lib.mkEnableOption "Enable configured hyprland.";
@@ -546,6 +637,11 @@ in {
             # Window actions submap launcher
             "w, submap, windowactions"
 
+            # Focused window opacity controls
+            "bracketleft, exec, ${hyprWindowOpacity} down"
+            "bracketright, exec, ${hyprWindowOpacity} up"
+            "+SHIFT, bracketright, exec, ${hyprWindowOpacity} reset"
+
             # Resize submap launcher
             "r, submap, resize"
 
@@ -618,6 +714,21 @@ in {
         bind = , z, exec, hctl zen-window
         bind = , p, exec, hctl toggle-pin
         bind = , g, exec, hctl toggle-smart-gaps
+        bind = , o, submap, opacity
+        bind = , escape, submap, reset
+        submap = reset
+
+        # Opacity submap - focused window transparency controls
+        submap = opacity
+        binde = , n, exec, ${hyprWindowOpacity} down
+        binde = , e, exec, ${hyprWindowOpacity} up
+        bind = , 0, exec, ${hyprWindowOpacity} reset
+        bind = , 1, exec, ${hyprWindowOpacity} set 1.00
+        bind = , 9, exec, ${hyprWindowOpacity} set 0.90
+        bind = , 8, exec, ${hyprWindowOpacity} set 0.80
+        bind = , 7, exec, ${hyprWindowOpacity} set 0.70
+        bind = , 6, exec, ${hyprWindowOpacity} set 0.60
+        bind = , 5, exec, ${hyprWindowOpacity} set 0.50
         bind = , escape, submap, reset
         submap = reset
 
@@ -747,6 +858,8 @@ in {
             │  MOD+Shift+F        Toggle floating                                         │
             │  MOD+Shift+P        Toggle pin for focused window via hctl                   │
             │  MOD+Space          Application launcher (anyrun)                             │
+            │  MOD+[ / MOD+]      Decrease / increase focused window opacity               │
+            │  MOD+Shift+]        Reset focused window opacity                              │
             │  MOD+Tab            Cycle to next window                                    │
             │                                                                             │
             ├─────────────────────────────────────────────────────────────────────────────┤
@@ -785,7 +898,8 @@ in {
             │  MOD+C              Chat mode: C=chat workspace S=Signal T=Telegram          │
             │  MOD+R              Resize mode: M/N/E/I to resize, ESC to exit             │
             │  MOD+S              Scratchpad mode: T=terminal S=scratchpad K/P=KeePassXC  │
-            │  MOD+W              Window mode: V=video Z=zen P=pin G=smart gaps            │
+            │  MOD+W              Window mode: V=video Z=zen P=pin G=smart gaps O=opacity  │
+            │                       Opacity: N/E adjust, 5-9 preset, 0/1 reset to opaque    │
             │                                                                             │
             ├─────────────────────────────────────────────────────────────────────────────┤
             │ SPECIAL WORKSPACES                                                          │

@@ -19,6 +19,9 @@ Hyprland is a modern Wayland compositor with GPU acceleration, smooth animations
 | `Super+Shift+F` | Toggle floating |
 | `Super+Shift+P` | Toggle pin for the focused window via `hctl` |
 | `Super+Space` | Application launcher (anyrun) |
+| `Super+[` | Decrease focused window opacity by 5% |
+| `Super+]` | Increase focused window opacity by 5% |
+| `Super+Shift+]` | Reset focused window opacity to 100% |
 
 ### Window Navigation (Colemak-DH)
 
@@ -85,6 +88,7 @@ Focused-window hctl helpers are also available from Window Actions mode:
 | `Super+W, z` | Zen window: toggle between tiled and centered zen floating layout |
 | `Super+W, p` | Toggle pin on the focused window |
 | `Super+W, g` | Toggle dynamic smart gaps for the current workspace |
+| `Super+W, o` | Enter opacity controls for the focused window |
 | `Escape` | Exit submap |
 
 `hctl tray-hide` is intentionally generic: it asks Hyprland to close the active
@@ -137,7 +141,24 @@ Submaps provide modal keybindings. Press `Super+<key>` to enter, `Escape` to exi
 | `z` | Toggle zen window layout via `hctl zen-window` |
 | `p` | Toggle pin for the focused window via `hctl toggle-pin` |
 | `g` | Toggle dynamic smart gaps for the current workspace via `hctl toggle-smart-gaps` |
+| `o` | Enter Opacity Mode for the focused window |
 | `Escape` | Exit submap |
+
+#### Opacity Mode (`Super+W, o`)
+
+Opacity controls apply to the currently focused window and show a desktop notification with the new percentage. Use the direct `Super+[` / `Super+]` bindings for quick 5% nudges, or enter this mode when you want repeatable adjustments and presets.
+
+| Key | Action |
+|-----|--------|
+| `N` | Decrease focused window opacity by 5% |
+| `E` | Increase focused window opacity by 5% |
+| `5` | Set opacity to 50% |
+| `6` | Set opacity to 60% |
+| `7` | Set opacity to 70% |
+| `8` | Set opacity to 80% |
+| `9` | Set opacity to 90% |
+| `0` or `1` | Reset opacity to 100% |
+| `Escape` | Exit opacity mode |
 
 #### Chat Mode (`Super+C`)
 
