@@ -708,10 +708,9 @@ in {
         }
       ];
 
-    # Keep the full Waybar bar disabled while Eww owns the primary bar, but run
-    # a tiny adjacent Waybar surface as the real Wayland StatusNotifier tray.
+    # Keep Waybar disabled while Eww owns the primary bar and native systray.
     dotfiles.gui.hyprland.waybar.enable = false;
-    dotfiles.gui.hyprland.waybar.trayOnly.enable = true;
+    dotfiles.gui.hyprland.waybar.trayOnly.enable = false;
     wayland.windowManager.hyprland.package = inputs.hyprland.packages.${pkgs.system}.hyprland;
     dotfiles.gui.hyprland.overview = {
       # Keep Hyprspace disabled for now. A missing overview dispatcher after

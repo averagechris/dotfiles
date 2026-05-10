@@ -21,13 +21,13 @@
 
   trayOnlySettings = {
     name = "tray-only";
-    layer = "top";
+    layer = "overlay";
     position = "top";
     height = 24;
     exclusive = false;
     passthrough = false;
     fixed-center = false;
-    margin-top = 4;
+    margin-top = 8;
     margin-right = 8;
     modules-left = [];
     modules-center = [];
@@ -59,10 +59,11 @@ in {
         }
 
         window#waybar.tray-only #tray {
-          background: rgba(25, 23, 36, 0.88);
-          border: 1px solid rgba(196, 167, 231, 0.45);
-          border-radius: 10px;
-          padding: 3px 8px;
+          background: #232136;
+          border: none;
+          border-radius: 0 8px 8px 0;
+          min-height: 24px;
+          padding: 0 8px;
         }
       '';
     };

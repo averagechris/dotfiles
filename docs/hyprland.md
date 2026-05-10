@@ -67,6 +67,7 @@ hctl toggle-borrow telegram # borrow/return Telegram between current workspace a
 hctl goto chat              # jump to the named chat workspace
 hctl video-pin              # float, size, move, and pin the focused video/pop-out window; leaves already-pinned windows pinned
 hctl zen-window             # toggle a focused window between tiled and centered zen floating layout
+hctl tray-hide              # close the focused window; tray-capable apps may hide to tray instead of exiting
 hctl toggle-smart-gaps      # toggle dynamic smart gaps for the current workspace
 hctl disable-smart-gaps 2   # disable dynamic gaps on workspace 2 until re-enabled
 hctl enable-smart-gaps chat # re-enable dynamic gaps on the named chat workspace
@@ -85,6 +86,12 @@ Focused-window hctl helpers are also available from Window Actions mode:
 | `Super+W, p` | Toggle pin on the focused window |
 | `Super+W, g` | Toggle dynamic smart gaps for the current workspace |
 | `Escape` | Exit submap |
+
+`hctl tray-hide` is intentionally generic: it asks Hyprland to close the active
+window. Apps that implement close-to-tray, such as KeePassXC when configured that
+way, can turn that close request into a tray hide. Apps without close-to-tray
+support may exit, so use the binding for windows you expect to have native tray
+behavior.
 
 ### Workspace Overview
 
@@ -375,6 +382,14 @@ If a particular monitor needs exact refresh/scale/position, add a more specific 
 - Floats and centers at 900x600
 - Unlock dialog is pinned
 - Key: `Super+A, k` to focus/launch
+- `hctl summon keepassxc` and the Eww KeePassXC indicator assume KeePassXC's
+  native tray behavior is enabled. On any new graphical host, open KeePassXC's
+  settings and enable the tray options before relying on the hide binding:
+  - show system tray icon
+  - minimize to tray
+  - close to tray / minimize instead of exiting on close
+- Without those KeePassXC settings, `hctl hide keepassxc`, `Super+S, Shift+K`,
+  `Super+S, Shift+P`, or `Super+Q` can quit KeePassXC instead of hiding it.
 
 ## Window Rules
 
@@ -402,20 +417,15 @@ Hyprland keybindings help in a terminal:
 
 ## System Tray
 
-Eww does not provide the Wayland StatusNotifierItem tray itself in this setup, so
-tray icons are hosted by an adjacent Waybar surface rather than inside the Eww
-bar. The shared Hyprland Waybar module supports two modes:
+The Eww bar uses Eww's native `systray` widget to host Wayland
+StatusNotifierItem tray icons inside the bar. On tater, Waybar remains disabled:
 
-- `dotfiles.gui.hyprland.waybar.enable = true` enables the traditional full
-  Waybar bar with workspaces, window title, system modules, and tray.
-- `dotfiles.gui.hyprland.waybar.trayOnly.enable = true` enables a small
-  top-right tray-only Waybar surface with no exclusive zone, intended to sit next
-  to the Eww bar.
+- `dotfiles.gui.hyprland.waybar.enable = false`
+- `dotfiles.gui.hyprland.waybar.trayOnly.enable = false`
 
-On tater, Eww remains the primary bar and hctl state surface. Full Waybar stays
-disabled, while the tray-only Waybar mode is enabled so KeePassXC and other apps
-that expose StatusNotifier items have a real tray host. KeePassXC and chat quick
-actions remain in Eww; the tray is only for app-provided tray icons.
+KeePassXC, Telegram, and other apps that expose StatusNotifier items should show
+up directly in the Eww bar. KeePassXC and chat quick actions remain available as
+custom Eww/hctl affordances alongside the real tray icons.
 
 ## Keybindings Help
 

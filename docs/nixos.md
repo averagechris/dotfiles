@@ -26,6 +26,19 @@ animation and most store-path chatter do not repeat in captured output.
 
 The Darwin host also installs these tools directly in its host configuration.
 
+## Graphical host post-install checklist
+
+For any new graphical workstation host, configure KeePassXC's native tray behavior
+before relying on Hyprland/Eww password-manager bindings:
+
+- enable **show system tray icon**
+- enable **minimize to tray**
+- enable **close to tray** / **minimize instead of exiting on close**
+
+The Hyprland `hctl hide keepassxc` workflow sends KeePassXC a normal close
+request and expects KeePassXC to convert that into a tray hide. Without these
+KeePassXC settings, close-style bindings can quit the app instead of hiding it.
+
 ## Create installation media
 
 > Any iso provided by the [NixOS Download Page](https://nixos.org/nixos/download.html)

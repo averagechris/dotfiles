@@ -15,9 +15,9 @@
 (defpoll keyboard-layout :interval "2s" "hyprctl devices -j 2>/dev/null | jq -r '.keyboards[] | select(.main == true) | .active_keymap' | cut -d'(' -f2 | cut -d')' -f1 || echo 'us'")
 (defpoll home-display-state :interval "2s" "command -v tater-home-toggle >/dev/null && hyprctl monitors -j 2>/dev/null | jq -r 'if any(.[]; .name == \"DP-2\" and .model == \"DELL U4320Q\" and ((.disabled // false) | not)) then if any(.[]; .name == \"eDP-1\" and ((.disabled // false) | not)) then \"open\" else \"clamshell\" end else \"absent\" end' || echo absent")
 (defpoll idle-inhibit-state :interval "2s" "command -v dotfiles-idle-inhibit >/dev/null && dotfiles-idle-inhibit status || echo unavailable")
-(defpoll hctl-workspace-label :interval "1s" "state=\"''${XDG_STATE_HOME:-$HOME/.local/state}/hctl/eww-state.json\"; jq -r 'if .activeWorkspace.kind == \"named\" and (.activeWorkspace.name | test(\"^[0-9]+$\") | not) then .activeWorkspace.name + (if .activeWorkspace.empty then \" ∅\" else \" \" + (.activeWorkspace.windowCount|tostring) end) elif .activeWorkspace.kind == \"special\" then \"special:\" + .activeWorkspace.name + (if .activeWorkspace.empty then \" ∅\" else \" \" + (.activeWorkspace.windowCount|tostring) end) else empty end' \"$state\" 2>/dev/null || true")
-(defpoll hctl-keepass-state :interval "1s" "state=\"''${XDG_STATE_HOME:-$HOME/.local/state}/hctl/eww-state.json\"; jq -r '.apps.keepassxc as $app | if ($app.running // false) then if ($app.mapped // false) then \"mapped\" else \"tray\" end else \"stopped\" end' \"$state\" 2>/dev/null || echo unavailable")
-(defpoll hctl-chat-state :interval "1s" "state=\"''${XDG_STATE_HOME:-$HOME/.local/state}/hctl/eww-state.json\"; jq -r '[if (.apps.signal.borrowed // false) then \"S\" else empty end, if (.apps.telegram.borrowed // false) then \"T\" else empty end] | if length > 0 then \"borrowed \" + join(\"/\") else \"home\" end' \"$state\" 2>/dev/null || echo unavailable")
+(defpoll hctl-workspace-label :interval "1s" "state_home=\"$(printenv XDG_STATE_HOME 2>/dev/null || printf '%s/.local/state' \"$HOME\")\"; state=\"$state_home/hctl/eww-state.json\"; jq -r 'if .activeWorkspace.kind == \"named\" and (.activeWorkspace.name | test(\"^[0-9]+$\") | not) then .activeWorkspace.name + (if .activeWorkspace.empty then \" ∅\" else \" \" + (.activeWorkspace.windowCount|tostring) end) elif .activeWorkspace.kind == \"special\" then \"special:\" + .activeWorkspace.name + (if .activeWorkspace.empty then \" ∅\" else \" \" + (.activeWorkspace.windowCount|tostring) end) else empty end' \"$state\" 2>/dev/null || true")
+(defpoll hctl-keepass-state :interval "1s" "state_home=\"$(printenv XDG_STATE_HOME 2>/dev/null || printf '%s/.local/state' \"$HOME\")\"; state=\"$state_home/hctl/eww-state.json\"; jq -r '.apps.keepassxc as $app | if ($app.running // false) then if ($app.mapped // false) then \"mapped\" else \"tray\" end else \"stopped\" end' \"$state\" 2>/dev/null || echo unavailable")
+(defpoll hctl-chat-state :interval "1s" "state_home=\"$(printenv XDG_STATE_HOME 2>/dev/null || printf '%s/.local/state' \"$HOME\")\"; state=\"$state_home/hctl/eww-state.json\"; jq -r '[if (.apps.signal.borrowed // false) then \"S\" else empty end, if (.apps.telegram.borrowed // false) then \"T\" else empty end] | if length > 0 then \"borrowed \" + join(\"/\") else \"home\" end' \"$state\" 2>/dev/null || echo unavailable")
 
 ; Workspaces (updated via hyprland IPC)
 (deflisten workspaces :initial "[1]" "scripts/workspaces.sh")
@@ -90,6 +90,13 @@
           :onrightclick "hctl hide keepassxc"
           :tooltip {hctl-keepass-state == "mapped" ? "KeePassXC visible; right click to hide to tray" : hctl-keepass-state == "tray" ? "KeePassXC in tray; click to summon" : "KeePassXC stopped; click to launch"}
     {hctl-keepass-state == "mapped" ? "󰌾" : hctl-keepass-state == "tray" ? "󰌾•" : "󰌾×"}))
+
+(defwidget tray-widget []
+  (box :class "tray" :orientation "h" :space-evenly false
+    (systray :orientation "h"
+             :icon-size 16
+             :spacing 6
+             :space-evenly false)))
 
 (defwidget clock []
   (box :class "clock" :orientation "h" :space-evenly false
@@ -206,6 +213,7 @@
     (battery-widget)
     (date-widget)
     (clock)
+    (tray-widget)
     (power-button)))
 
 (defwidget bar [items active]
