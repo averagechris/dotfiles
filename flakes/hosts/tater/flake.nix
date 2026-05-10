@@ -38,6 +38,10 @@
       url = "github:anyrun-org/anyrun";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    pip-chrome-extension = {
+      url = "git+https://git.sr.ht/~averagechris/pip-chrome-extension";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     disko = {
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";

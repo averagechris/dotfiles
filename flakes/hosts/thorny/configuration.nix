@@ -149,6 +149,7 @@ in {
     home.stateVersion = "26.05";
     imports = [
       inputs.hm-modules.homeManagerModules.default
+      inputs.pip-chrome-extension.homeManagerModules.default
       inputs.hm-modules.homeManagerModules.ghostty-fix
     ];
 
@@ -188,6 +189,7 @@ in {
 
     programs.meganz.enable = true;
     programs.helium.enable = true;
+    programs.helium.extension-simple-pip-helper.enable = true;
 
     dotfiles.shell.yazi.enable = true;
     programs.opencode.enable = true;

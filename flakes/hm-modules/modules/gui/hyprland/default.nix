@@ -735,6 +735,7 @@ in {
         # Quick actions submap - app launcher/focus and system actions
         submap = quickactions, reset
         # App launcher/focus - tries to focus existing window, otherwise launches
+        bind = , 5, exec, grimblast --notify copysave area
         bind = , s, exec, hctl toggle-borrow signal
         bind = , t, exec, hctl toggle-borrow telegram
         bind = , k, exec, hctl summon keepassxc

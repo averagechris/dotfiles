@@ -633,6 +633,7 @@ in {
     home.stateVersion = "26.05";
     imports = [
       inputs.hm-modules.homeManagerModules.default
+      inputs.pip-chrome-extension.homeManagerModules.default
       # Fix for ghostty validation to prevent activation timeouts
       inputs.hm-modules.homeManagerModules.ghostty-fix
     ];
@@ -802,6 +803,7 @@ in {
     dotfiles.opencode.openrouterApiKeyFile = "/run/agenix/openrouter-api-key";
     programs.meganz.enable = true;
     programs.helium.enable = true;
+    programs.helium.extension-simple-pip-helper.enable = true;
 
     # GPG configuration with automatic key import
     dotfiles.gpg.enable = true;

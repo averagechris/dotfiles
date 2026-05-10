@@ -19481,6 +19481,48 @@
         "type": "github"
       }
     },
+    "pip-chrome-extension": {
+      "inputs": {
+        "nixpkgs": [
+          "tater",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1778390663,
+        "narHash": "sha256-Rxp+vKW8amcYbUhYgP6s6ybUg2mla7feR0yab9QjQUk=",
+        "ref": "refs/heads/main",
+        "rev": "e56e932a6bd63e99281f9c3c77cca2a4880615ae",
+        "revCount": 28,
+        "type": "git",
+        "url": "https://git.sr.ht/~averagechris/pip-chrome-extension"
+      },
+      "original": {
+        "type": "git",
+        "url": "https://git.sr.ht/~averagechris/pip-chrome-extension"
+      }
+    },
+    "pip-chrome-extension_2": {
+      "inputs": {
+        "nixpkgs": [
+          "thorny",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1778390663,
+        "narHash": "sha256-Rxp+vKW8amcYbUhYgP6s6ybUg2mla7feR0yab9QjQUk=",
+        "ref": "refs/heads/main",
+        "rev": "e56e932a6bd63e99281f9c3c77cca2a4880615ae",
+        "revCount": 28,
+        "type": "git",
+        "url": "https://git.sr.ht/~averagechris/pip-chrome-extension"
+      },
+      "original": {
+        "type": "git",
+        "url": "https://git.sr.ht/~averagechris/pip-chrome-extension"
+      }
+    },
     "pre-commit-hooks": {
       "inputs": {
         "flake-compat": "flake-compat_25",
@@ -24369,6 +24411,7 @@
           "base-lib",
           "nixpkgs"
         ],
+        "pip-chrome-extension": "pip-chrome-extension",
         "starship-jj": "starship-jj_7",
         "titlecase": [
           "tater",
@@ -24471,6 +24514,7 @@
           "base-lib",
           "nixpkgs"
         ],
+        "pip-chrome-extension": "pip-chrome-extension_2",
         "starship-jj": "starship-jj_11",
         "titlecase": [
           "thorny",
