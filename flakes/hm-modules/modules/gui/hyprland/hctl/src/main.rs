@@ -7,9 +7,12 @@ use std::{
     os::unix::net::UnixStream,
     path::{Path, PathBuf},
     process::{Command, Stdio},
+    sync::atomic::{AtomicBool, Ordering},
     thread,
     time::Duration,
 };
+
+static DRY_RUN: AtomicBool = AtomicBool::new(false);
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -274,11 +277,13 @@ struct EwwMode {
 
 struct Args {
     config_path: PathBuf,
+    dry_run: bool,
     command: Vec<String>,
 }
 
 fn main() -> Result<()> {
     let args = parse_args()?;
+    DRY_RUN.store(args.dry_run, Ordering::Relaxed);
     if args.command.is_empty() || args.command[0] == "help" || args.command[0] == "--help" {
         print_help();
         return Ok(());
@@ -306,8 +311,12 @@ fn main() -> Result<()> {
 }
 
 fn parse_args() -> Result<Args> {
-    let mut raw: Vec<String> = env::args().skip(1).collect();
+    parse_args_from(env::args().skip(1).collect())
+}
+
+fn parse_args_from(mut raw: Vec<String>) -> Result<Args> {
     let mut config_path = default_config_path()?;
+    let mut dry_run = false;
     let mut i = 0;
     while i < raw.len() {
         if raw[i] == "--config" {
@@ -316,12 +325,16 @@ fn parse_args() -> Result<Args> {
                 .ok_or_else(|| anyhow!("--config requires a path"))?;
             config_path = PathBuf::from(value);
             raw.drain(i..=i + 1);
+        } else if raw[i] == "--dry-run" || raw[i] == "-n" {
+            dry_run = true;
+            raw.remove(i);
         } else {
             i += 1;
         }
     }
     Ok(Args {
         config_path,
+        dry_run,
         command: raw,
     })
 }
@@ -343,7 +356,7 @@ fn load_config(path: &Path) -> Result<Config> {
 fn print_help() {
     println!(
         "hctl - Hyprland ergonomics control\n\n\
-Usage:\n  hctl [--config PATH] <command> [args]\n\n\
+Usage:\n  hctl [--config PATH] [--dry-run|-n] <command> [args]\n\n\
 Commands:\n  daemon\n  summon <app>\n  hide <app>\n  borrow <app>\n  return <app>\n  toggle-borrow <app>\n  goto <workspace>\n  video-pin\n  toggle-pin\n  zen-terminal\n  state eww"
     );
 }
@@ -563,6 +576,10 @@ fn ensure_app_window(app: &AppConfig) -> Result<()> {
     if app.launch.is_empty() {
         bail!("app is not running and has no launch command");
     }
+    if DRY_RUN.load(Ordering::Relaxed) {
+        eprintln!("dry-run: launch {}", shell_like_argv(&app.launch));
+        return Ok(());
+    }
     Command::new(&app.launch[0])
         .args(&app.launch[1..])
         .stdin(Stdio::null())
@@ -578,6 +595,10 @@ fn ensure_app_window(app: &AppConfig) -> Result<()> {
         }
     }
     bail!("launched app, but no matching window appeared")
+}
+
+fn shell_like_argv(argv: &[String]) -> String {
+    argv.join(" ")
 }
 
 fn find_client(app: &AppConfig) -> Result<Option<Client>> {
@@ -637,6 +658,10 @@ fn hypr_json<T: for<'de> Deserialize<'de>>(args: &[&str]) -> Result<T> {
 }
 
 fn hypr_dispatch(args: &[&str]) -> Result<()> {
+    if DRY_RUN.load(Ordering::Relaxed) {
+        eprintln!("dry-run: hyprctl dispatch {}", args.join(" "));
+        return Ok(());
+    }
     let output = Command::new("hyprctl")
         .arg("dispatch")
         .args(args)
@@ -653,6 +678,10 @@ fn hypr_dispatch(args: &[&str]) -> Result<()> {
 }
 
 fn hypr_keyword(args: &[&str]) -> Result<()> {
+    if DRY_RUN.load(Ordering::Relaxed) {
+        eprintln!("dry-run: hyprctl keyword {}", args.join(" "));
+        return Ok(());
+    }
     let output = Command::new("hyprctl")
         .arg("keyword")
         .args(args)
@@ -1005,6 +1034,21 @@ mod tests {
         assert_eq!(keepass.launch, ["keepassxc"]);
         assert!(matches!(keepass.hide.method, HideMethod::CloseToTray));
         assert!(config.workspaces.contains_key("chat"));
+    }
+
+    #[test]
+    fn parses_global_dry_run_and_config_flags() {
+        let args = parse_args_from(vec![
+            "--dry-run".to_string(),
+            "--config".to_string(),
+            "/tmp/hctl.json".to_string(),
+            "video-pin".to_string(),
+        ])
+        .unwrap();
+
+        assert!(args.dry_run);
+        assert_eq!(args.config_path, PathBuf::from("/tmp/hctl.json"));
+        assert_eq!(args.command, ["video-pin"]);
     }
 
     #[test]

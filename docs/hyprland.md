@@ -68,6 +68,7 @@ hctl goto chat              # jump to the named chat workspace
 hctl video-pin              # float, size, move, and pin the focused video/pop-out window
 hctl zen-terminal           # float and center the focused terminal at a comfortable size
 hctl state eww              # print the daemon/Eww state shape for debugging
+hctl --dry-run video-pin    # print hyprctl dispatches without mutating window state
 ```
 
 Borrowed chat windows are real Hyprland windows. `hctl borrow` floats, focuses, sizes, and centers them on the current workspace; `hctl return` moves them back to the `chat` workspace and tiles them again for the normal chat-home layout.

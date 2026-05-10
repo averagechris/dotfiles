@@ -17,6 +17,7 @@ Implemented so far:
 - `dotfiles.gui.hyprland.hctl` Home Manager options for apps, workspaces, smart gaps, package override, and Eww state file path.
 - User systemd service `hctl.service` running `hctl daemon`.
 - Verb-first `hctl` command surface for summon/hide, borrow/return, workspace goto, pinning, video pinning, zen terminal, daemon, and Eww state inspection.
+- Global `hctl --dry-run`/`-n` support for printing planned Hyprland dispatches/keywords without mutating window state.
 - KeePassXC summon/hide behavior using app-native close-to-tray assumptions.
 - Signal/Telegram persistent `chat` workspace and real-window borrow/return behavior.
 - Smart gaps daemon behavior using width-based monitor profiles.
@@ -87,6 +88,7 @@ hctl video-pin
 hctl toggle-pin
 hctl zen-terminal
 hctl state eww
+hctl --dry-run video-pin
 ```
 
 The CLI should talk to Hyprland through `hyprctl` and/or Hyprland sockets. The daemon should subscribe to Hyprland events when possible instead of polling constantly.
@@ -300,6 +302,7 @@ The generated JSON should use stable, Rust-friendly shapes. A representative v1 
 Implementation notes:
 
 - `launch` is always an argv list. `hctl` should execute it directly, not through a shell.
+- `--dry-run` prints launch/dispatch/keyword operations and suppresses launch, dispatch, and keyword side effects while still reading Hyprland state when needed.
 - `match` starts with class/title fields from Hyprland client JSON. Matching should be exact by default; regex/glob matching can be added later if needed.
 - `hide.method` is an enum. MVP implements only `close-to-tray`; future options may include `minimize`, `move-to-workspace`, or `move-to-special`.
 - Borrowed state is derived in MVP: an app with `homeWorkspace = "chat"` is considered borrowed when its matched window is mapped on another workspace.
@@ -367,7 +370,7 @@ This file should be cheap for Eww to read and should contain the current state E
 - [x] Provide subcommands for one-shot actions and a `daemon` subcommand for event-driven behavior.
 - [x] Use structured state internally for Hyprland clients, monitors, workspaces, and active submaps.
 - [x] Prefer event subscription for daemon behavior; use polling only as a fallback.
-- [ ] Add dry-run/logging support for commands that move/resize windows.
+- [x] Add dry-run/logging support for commands that move/resize windows.
 - [ ] Keep host-specific tuning configurable from Nix, especially for tater's laptop panel vs Dell monitor behavior.
 - [x] Execute configured launch commands as argv lists without shell interpolation.
 
