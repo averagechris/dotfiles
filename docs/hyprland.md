@@ -8,6 +8,26 @@ Hyprland is a modern Wayland compositor with GPU acceleration, smooth animations
 
 ## Keybindings
 
+The source of truth lives in `flakes/hm-modules/modules/gui/hyprland/default.nix`.
+Home Manager is forced to render this module as plain Hyprlang
+(`wayland.windowManager.hyprland.configType = "hyprlang"`) rather than Lua.
+Hyprland 0.54 can start with the generated Lua file while registering no
+bindings (`hyprctl binds -j` returns `[]`), so keep the Hyprlang renderer unless
+that upstream behavior is retested and fixed.
+
+Keybindings are intentionally written as small Nix trees instead of one long
+Hyprland string list:
+
+- `keyTree.media` contains hardware/media keys.
+- `keyTree.super` mirrors `Super+...` chords; nested sets like
+  `keyTree.super.shift` and `keyTree.super.alt` mirror modifier layers.
+- Submaps are defined in a `submaps` attrset and rendered back to Hyprland's
+  `submap = ...` / `bind = ...` config format.
+
+Use the local helpers (`modKey`, `modShiftKey`, `bind`, `binde`, etc.) when
+editing bindings so the tree stays easy to scan while still producing plain
+Hyprland config lines.
+
 ### Core Window Management
 
 | Key | Action |

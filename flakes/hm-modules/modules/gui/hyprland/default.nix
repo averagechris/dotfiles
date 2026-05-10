@@ -419,6 +419,12 @@ in {
       inherit (cfg) enable;
       xwayland.enable = true;
       systemd.enable = true;
+      # Hyprland 0.54 accepts Home Manager's generated Lua config without
+      # surfacing config errors, but currently fails to register binds from
+      # hl.bind()/raw extraConfig when launched that way (`hyprctl binds -j`
+      # returns []). Emit plain Hyprlang instead so keybindings and submaps are
+      # parsed by Hyprland's primary config loader.
+      configType = "hyprlang";
       plugins = lib.optionals (cfg.overview.enable && cfg.overview.package != null) [cfg.overview.package];
       settings = {
         env = [
@@ -547,120 +553,106 @@ in {
           brightctl = "${pkgs.brightnessctl}/bin/brightnessctl";
           pamixer = "${pkgs.pamixer}/bin/pamixer";
           playerctl = "${pkgs.playerctl}/bin/playerctl";
-          withSuper = with lib.strings;
-            lst: (map (rule:
-              if (hasPrefix "+" rule)
-              then "$mainMod ${rule}"
-              else "$mainMod, ${rule}")
-            lst);
+          bindKey = mods: key: action: "${mods},${lib.optionalString (mods != "") " "}${key}, ${action}";
+          modKey = bindKey "$mainMod";
+          modShiftKey = bindKey "$mainMod +SHIFT";
+          modAltKey = bindKey "$mainMod +ALT";
+          modSuperKey = bindKey "$mainMod +SUPER";
+          modMegaKey = bindKey "$mainMod +SHIFT+CTRL+ALT";
+          keyTree = {
+            media = [
+              (bindKey "" "XF86AudioRaiseVolume" "exec, ${pamixer} --increase 5")
+              (bindKey "" "XF86AudioLowerVolume" "exec, ${pamixer} --decrease 5")
+              "SHIFT,XF86AudioRaiseVolume, exec, ${pamixer} --increase 5"
+              "SHIFT,XF86AudioLowerVolume, exec, ${pamixer} --decrease 5"
+              (bindKey "" "XF86AudioMute" "exec, ${pamixer} --toggle-mute")
+              (bindKey "" "XF86AudioNext" "exec, ${playerctl} next")
+              (bindKey "" "XF86AudioPrev" "exec, ${playerctl} previous")
+              (bindKey "" "XF86AudioStop" "exec, ${playerctl} play-pause")
+              (bindKey "" "XF86MonBrightnessUp" "exec, ${brightctl} set +5%")
+              (bindKey "" "XF86MonBrightnessDown" "exec, ${brightctl} set 5%-")
+            ];
+            super = {
+              primary = [
+                (modKey "T" "exec, ${term}")
+                (modKey "Q" "killactive,")
+                (modShiftKey "Q" "exit,")
+                (modShiftKey "F" "togglefloating,")
+                (modKey "F" "fullscreen,")
+                (modShiftKey "P" "exec, hctl toggle-pin")
+                (modKey "SPACE" "exec, anyrun")
+              ];
+              navigation = [
+                (modKey "m" "movefocus, l")
+                (modKey "n" "movefocus, d")
+                (modKey "e" "movefocus, u")
+                (modKey "i" "movefocus, r")
+                (modShiftKey "m" "swapwindow, l")
+                (modShiftKey "n" "swapwindow, d")
+                (modShiftKey "e" "swapwindow, u")
+                (modShiftKey "i" "swapwindow, r")
+              ];
+              workspaces = [
+                (modShiftKey "1" "movetoworkspace, 1")
+                (modShiftKey "2" "movetoworkspace, 2")
+                (modShiftKey "3" "movetoworkspace, 3")
+                (modShiftKey "4" "movetoworkspace, 4")
+                (modShiftKey "5" "movetoworkspace, 5")
+                (modShiftKey "6" "movetoworkspace, 6")
+                (modShiftKey "7" "movetoworkspace, 7")
+                (modShiftKey "8" "movetoworkspace, 8")
+                (modShiftKey "9" "movetoworkspace, 9")
+                (modShiftKey "0" "movetoworkspace, 10")
+                (modKey "1" "workspace, 1")
+                (modKey "2" "workspace, 2")
+                (modKey "3" "workspace, 3")
+                (modKey "4" "workspace, 4")
+                (modKey "5" "workspace, 5")
+                (modKey "6" "workspace, 6")
+                (modKey "7" "workspace, 7")
+                (modKey "8" "workspace, 8")
+                (modKey "9" "workspace, 9")
+                (modKey "0" "workspace, 10")
+                (modAltKey "m" "workspace, e-1")
+                (modAltKey "i" "workspace, e+1")
+                (modKey "O" (
+                  if cfg.overview.enable
+                  then "overview:toggle, all"
+                  else "exec, hyprland-workspace-overview"
+                ))
+                (modKey "mouse_right" "workspace, e+1")
+                (modKey "mouse_left" "workspace, e-1")
+              ];
+              modes = [
+                (modKey "grave" "togglespecialworkspace, terminal")
+                (modShiftKey "grave" "movetoworkspacesilent, special:terminal")
+                (modKey "s" "submap, scratchpad")
+                (modKey "c" "submap, chat")
+                (modKey "w" "submap, windowactions")
+                (modKey "bracketleft" "exec, ${hyprWindowOpacity} down")
+                (modKey "bracketright" "exec, ${hyprWindowOpacity} up")
+                (modShiftKey "bracketright" "exec, ${hyprWindowOpacity} reset")
+                (modKey "r" "submap, resize")
+                (modKey "a" "submap, quickactions")
+              ];
+              tools = [
+                (modMegaKey "SPACE" "exec, hyprctl switchxkblayout at-translated-set-2-keyboard next")
+                (modKey "C" "exec, hyprpicker -a")
+                (modKey "Escape" "workspace, previous")
+                (modKey "Print" "exec, grimblast --notify copysave area")
+                (modShiftKey "Print" "exec, grimblast --notify copysave output")
+                (modSuperKey "Print" "exec, grimblast --notify copysave active")
+              ];
+            };
+          };
         in
-          [
-            ",XF86AudioRaiseVolume, exec, ${pamixer} --increase 5"
-            ",XF86AudioLowerVolume, exec, ${pamixer} --decrease 5"
-            "SHIFT,XF86AudioRaiseVolume, exec, ${pamixer} --increase 5"
-            "SHIFT,XF86AudioLowerVolume, exec, ${pamixer} --decrease 5"
-            ",XF86AudioMute, exec, ${pamixer} --toggle-mute"
-            ",XF86AudioNext, exec, ${playerctl} next"
-            ",XF86AudioPrev, exec, ${playerctl} previous"
-            ",XF86AudioStop, exec, ${playerctl} play-pause"
-            ",XF86MonBrightnessUp, exec, ${brightctl} set +5%"
-            ",XF86MonBrightnessDown, exec, ${brightctl} set 5%-"
-          ]
-          ++ withSuper [
-            # primary actions
-            "T, exec, ${term}"
-            "Q, killactive,"
-            "+SHIFT, Q, exit,"
-            "+SHIFT, F, togglefloating,"
-            "F, fullscreen,"
-            # "P, pseudo,"
-            # "J, togglesplit,"
-            "+SHIFT, P, exec, hctl toggle-pin"
-            "SPACE, exec, anyrun"
-
-            # movement between windows
-            "m, movefocus, l"
-            "n, movefocus, d"
-            "e, movefocus, u"
-            "i, movefocus, r"
-
-            "+SHIFT, m, swapwindow, l"
-            "+SHIFT, n, swapwindow, d"
-            "+SHIFT, e, swapwindow, u"
-            "+SHIFT, i, swapwindow, r"
-
-            # Move active window to a workspace with mainMod + SHIFT + [0-9]
-            "+SHIFT, 1, movetoworkspace, 1"
-            "+SHIFT, 2, movetoworkspace, 2"
-            "+SHIFT, 3, movetoworkspace, 3"
-            "+SHIFT, 4, movetoworkspace, 4"
-            "+SHIFT, 5, movetoworkspace, 5"
-            "+SHIFT, 6, movetoworkspace, 6"
-            "+SHIFT, 7, movetoworkspace, 7"
-            "+SHIFT, 8, movetoworkspace, 8"
-            "+SHIFT, 9, movetoworkspace, 9"
-            "+SHIFT, 0, movetoworkspace, 10"
-
-            # change to workspace by number
-            "1, workspace, 1"
-            "2, workspace, 2"
-            "3, workspace, 3"
-            "4, workspace, 4"
-            "5, workspace, 5"
-            "6, workspace, 6"
-            "7, workspace, 7"
-            "8, workspace, 8"
-            "9, workspace, 9"
-            "0, workspace, 10"
-            "+ALT, m, workspace, e-1"
-            "+ALT, i, workspace, e+1"
-            (
-              if cfg.overview.enable
-              then "O, overview:toggle, all"
-              else "O, exec, hyprland-workspace-overview"
-            )
-
-            # Scroll through existing workspaces with mainMod + scroll
-            "mouse_right, workspace, e+1"
-            "mouse_left, workspace, e-1"
-
-            # Terminal scratchpad (grave/backtick key)
-            "grave, togglespecialworkspace, terminal"
-            "+SHIFT, grave, movetoworkspacesilent, special:terminal"
-
-            # Scratchpad submap launcher
-            "s, submap, scratchpad"
-
-            # Chat/communication actions submap launcher
-            "c, submap, chat"
-
-            # Window actions submap launcher
-            "w, submap, windowactions"
-
-            # Focused window opacity controls
-            "bracketleft, exec, ${hyprWindowOpacity} down"
-            "bracketright, exec, ${hyprWindowOpacity} up"
-            "+SHIFT, bracketright, exec, ${hyprWindowOpacity} reset"
-
-            # Resize submap launcher
-            "r, submap, resize"
-
-            # Quick actions submap launcher
-            "a, submap, quickactions"
-
-            # toggle between qwerty and colemak_dh keyboard layouts (mega keychord)
-            "+SHIFT+CTRL+ALT, SPACE, exec, hyprctl switchxkblayout at-translated-set-2-keyboard next"
-
-            # Hypr ecosystem tools
-            "C, exec, hyprpicker -a"
-
-            # Consistent key to leave any scratchpad and return to previous workspace
-            "Escape, workspace, previous"
-
-            # Screenshot keybindings
-            "Print, exec, grimblast --notify copysave area"
-            "+SHIFT, Print, exec, grimblast --notify copysave output"
-            "+SUPER, Print, exec, grimblast --notify copysave active"
+          lib.flatten [
+            keyTree.media
+            keyTree.super.primary
+            keyTree.super.navigation
+            keyTree.super.workspaces
+            keyTree.super.modes
+            keyTree.super.tools
           ];
         bindl = [
           ",switch:Lid Switch, exec, ${toggleDisplayWithLid}"
