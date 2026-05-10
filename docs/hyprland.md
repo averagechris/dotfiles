@@ -67,6 +67,9 @@ hctl toggle-borrow telegram # borrow/return Telegram between current workspace a
 hctl goto chat              # jump to the named chat workspace
 hctl video-pin              # float, size, move, and pin the focused video/pop-out window; leaves already-pinned windows pinned
 hctl zen-window             # toggle a focused window between tiled and centered zen floating layout
+hctl toggle-smart-gaps      # toggle dynamic smart gaps for the current workspace
+hctl disable-smart-gaps 2   # disable dynamic gaps on workspace 2 until re-enabled
+hctl enable-smart-gaps chat # re-enable dynamic gaps on the named chat workspace
 hctl state eww              # print the daemon/Eww state shape for debugging
 hctl --dry-run video-pin    # print hyprctl dispatches without mutating window state
 ```
@@ -80,6 +83,7 @@ Focused-window hctl helpers are also available from Window Actions mode:
 | `Super+W, v` | Smart video pin: float, size, corner-place, and pin the focused window |
 | `Super+W, z` | Zen window: toggle between tiled and centered zen floating layout |
 | `Super+W, p` | Toggle pin on the focused window |
+| `Super+W, g` | Toggle dynamic smart gaps for the current workspace |
 | `Escape` | Exit submap |
 
 ### Workspace Overview
@@ -125,6 +129,7 @@ Submaps provide modal keybindings. Press `Super+<key>` to enter, `Escape` to exi
 | `v` | Smart video pin via `hctl video-pin` |
 | `z` | Toggle zen window layout via `hctl zen-window` |
 | `p` | Toggle pin for the focused window via `hctl toggle-pin` |
+| `g` | Toggle dynamic smart gaps for the current workspace via `hctl toggle-smart-gaps` |
 | `Escape` | Exit submap |
 
 #### Chat Mode (`Super+C`)

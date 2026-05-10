@@ -22,11 +22,12 @@ Implemented so far:
 - KeePassXC summon/hide behavior using app-native close-to-tray assumptions.
 - Signal/Telegram persistent `chat` workspace and real-window borrow/return behavior.
 - Smart gaps daemon behavior using exact monitor-name and width-based profiles.
+- Per-workspace smart-gap toggles with `hctl toggle-smart-gaps [workspace]`; `Super+W, g` toggles the current workspace and restores base gaps while disabled.
 - Event-driven daemon wakeups through Hyprland socket2, with polling fallback.
 - Daemon smart-gap keyword writes are idempotent within a daemon run to avoid repeated gap churn on refresh events.
 - Eww state JSON written to `$XDG_STATE_HOME/hctl/eww-state.json`.
 - Eww widgets for named/special workspace context, chat borrowed state, and KeePassXC state.
-- Mnemonic `Super+W` window-action bindings for video pinning, zen-window layout, and generic pin toggling.
+- Mnemonic `Super+W` window-action bindings for video pinning, zen-window layout, generic pin toggling, and per-workspace smart-gap toggling.
 - Tests for config parsing, app matching, workspace targeting, smart gaps, Eww state derivation, state path expansion, Hyprland socket path derivation, and event filtering.
 
 Still pending or needing real-world tuning:
@@ -88,6 +89,9 @@ hctl goto chat
 hctl video-pin
 hctl toggle-pin
 hctl zen-window
+hctl toggle-smart-gaps [workspace]
+hctl enable-smart-gaps [workspace]
+hctl disable-smart-gaps [workspace]
 hctl state eww
 hctl --dry-run video-pin
 ```
@@ -507,6 +511,7 @@ This file should be cheap for Eww to read and should contain the current state E
 - [x] Implement `hctl summon keepassxc` and `hctl hide keepassxc`.
 - [x] Implement `hctl borrow signal`, `hctl return signal`, `hctl borrow telegram`, and `hctl return telegram`.
 - [x] Implement `hctl video-pin`, `hctl toggle-pin`, and `hctl zen-window`.
+- [x] Implement per-workspace smart-gap toggles with a current-workspace keybinding.
 - [x] Implement daemon-written Eww state at `$XDG_STATE_HOME/hctl/eww-state.json`.
 - [x] Implement `hctl state eww` as a debugging command that prints the same state shape.
 

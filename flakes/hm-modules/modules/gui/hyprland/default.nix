@@ -30,7 +30,7 @@
     inherit (hctlCfg) apps workspaces;
     smartGaps = {
       enabled = hctlCfg.smartGaps.enable;
-      inherit (hctlCfg.smartGaps) profiles;
+      inherit (hctlCfg.smartGaps) profiles resetGaps;
     };
     eww.stateFile = hctlCfg.eww.stateFile;
   };
@@ -293,6 +293,14 @@ in {
             }
           ];
           description = "Monitor-name and width-matched smart gap profiles emitted to hctl's JSON config.";
+        };
+        resetGaps = lib.mkOption {
+          type = lib.types.attrs;
+          default = {
+            inner = 4;
+            outer = 6;
+          };
+          description = "Base Hyprland gaps restored when smart gaps are disabled for a workspace.";
         };
       };
       eww.stateFile = lib.mkOption {
@@ -609,6 +617,7 @@ in {
         bind = , v, exec, hctl video-pin
         bind = , z, exec, hctl zen-window
         bind = , p, exec, hctl toggle-pin
+        bind = , g, exec, hctl toggle-smart-gaps
         bind = , escape, submap, reset
         submap = reset
 
@@ -776,7 +785,7 @@ in {
             │  MOD+C              Chat mode: C=chat workspace S=Signal T=Telegram          │
             │  MOD+R              Resize mode: M/N/E/I to resize, ESC to exit             │
             │  MOD+S              Scratchpad mode: T=terminal S=scratchpad K/P=KeePassXC  │
-            │  MOD+W              Window mode: V=video pin Z=zen window P=toggle pin       │
+            │  MOD+W              Window mode: V=video Z=zen P=pin G=smart gaps            │
             │                                                                             │
             ├─────────────────────────────────────────────────────────────────────────────┤
             │ SPECIAL WORKSPACES                                                          │

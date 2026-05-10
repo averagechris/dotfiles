@@ -1,7 +1,7 @@
 use anyhow::{anyhow, bail, Context, Result};
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet},
     env, fs,
     io::{BufRead, BufReader},
     os::unix::net::UnixStream,
@@ -117,13 +117,29 @@ enum WorkspaceKind {
     Special,
 }
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct SmartGapsConfig {
     #[serde(default)]
     enabled: bool,
+    #[serde(default = "default_reset_gaps")]
+    reset_gaps: Gaps,
     #[serde(default)]
     profiles: Vec<GapProfile>,
+}
+
+impl Default for SmartGapsConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            reset_gaps: default_reset_gaps(),
+            profiles: Vec::new(),
+        }
+    }
+}
+
+fn default_reset_gaps() -> Gaps {
+    Gaps { inner: 4, outer: 6 }
 }
 
 #[derive(Debug, Deserialize)]
@@ -267,6 +283,8 @@ struct EwwAppState {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct EwwSmartGaps {
+    enabled: bool,
+    disabled_for_workspace: bool,
     profile: Option<String>,
     inner: Option<i64>,
     outer: Option<i64>,
@@ -304,6 +322,9 @@ fn main() -> Result<()> {
         "video-pin" => video_pin(),
         "toggle-pin" => hypr_dispatch(&["pin"]),
         "zen-window" | "zen-terminal" => zen_window(),
+        "toggle-smart-gaps" => toggle_smart_gaps(&config, &args.command),
+        "enable-smart-gaps" => set_smart_gaps_for_workspace(&config, &args.command, true),
+        "disable-smart-gaps" => set_smart_gaps_for_workspace(&config, &args.command, false),
         "state" if args.command.get(1).map(String::as_str) == Some("eww") => {
             let state = build_eww_state(&config)?;
             println!("{}", serde_json::to_string_pretty(&state)?);
@@ -360,7 +381,7 @@ fn print_help() {
     println!(
         "hctl - Hyprland ergonomics control\n\n\
 Usage:\n  hctl [--config PATH] [--dry-run|-n] <command> [args]\n\n\
-Commands:\n  daemon\n  summon <app>\n  hide <app>\n  borrow <app>\n  return <app>\n  toggle-borrow <app>\n  goto <workspace>\n  video-pin\n  toggle-pin\n  zen-window\n  zen-terminal (deprecated alias)\n  state eww"
+Commands:\n  daemon\n  summon <app>\n  hide <app>\n  borrow <app>\n  return <app>\n  toggle-borrow <app>\n  goto <workspace>\n  video-pin\n  toggle-pin\n  zen-window\n  zen-terminal (deprecated alias)\n  toggle-smart-gaps [workspace]\n  enable-smart-gaps [workspace]\n  disable-smart-gaps [workspace]\n  state eww"
     );
 }
 
@@ -543,6 +564,77 @@ fn zen_window() -> Result<()> {
         &height.to_string(),
     ])?;
     hypr_dispatch(&["centerwindow"])
+}
+
+fn toggle_smart_gaps(config: &Config, command: &[String]) -> Result<()> {
+    let workspace = workspace_arg_or_active(command)?;
+    let mut disabled = read_smart_gaps_disabled_workspaces()?;
+    let enabled = if disabled.remove(&workspace) {
+        true
+    } else {
+        disabled.insert(workspace.clone());
+        false
+    };
+    write_smart_gaps_disabled_workspaces(&disabled)?;
+    apply_smart_gaps_now(config)?;
+    println!(
+        "smart gaps {} for workspace {}",
+        if enabled { "enabled" } else { "disabled" },
+        workspace
+    );
+    Ok(())
+}
+
+fn set_smart_gaps_for_workspace(config: &Config, command: &[String], enabled: bool) -> Result<()> {
+    let workspace = workspace_arg_or_active(command)?;
+    let mut disabled = read_smart_gaps_disabled_workspaces()?;
+    if enabled {
+        disabled.remove(&workspace);
+    } else {
+        disabled.insert(workspace.clone());
+    }
+    write_smart_gaps_disabled_workspaces(&disabled)?;
+    apply_smart_gaps_now(config)?;
+    println!(
+        "smart gaps {} for workspace {}",
+        if enabled { "enabled" } else { "disabled" },
+        workspace
+    );
+    Ok(())
+}
+
+fn workspace_arg_or_active(command: &[String]) -> Result<String> {
+    if let Some(workspace) = command.get(1) {
+        return Ok(workspace.clone());
+    }
+    Ok(active_workspace()?.name)
+}
+
+fn apply_smart_gaps_now(config: &Config) -> Result<()> {
+    daemon_tick(config, &mut None)
+}
+
+fn smart_gaps_disabled_state_path() -> Result<PathBuf> {
+    expand_state_path("$XDG_STATE_HOME/hctl/smart-gaps-disabled-workspaces.json")
+}
+
+fn read_smart_gaps_disabled_workspaces() -> Result<BTreeSet<String>> {
+    let path = smart_gaps_disabled_state_path()?;
+    if !path.exists() {
+        return Ok(BTreeSet::new());
+    }
+    let contents =
+        fs::read_to_string(&path).with_context(|| format!("failed to read {}", path.display()))?;
+    serde_json::from_str(&contents).with_context(|| format!("failed to parse {}", path.display()))
+}
+
+fn write_smart_gaps_disabled_workspaces(disabled: &BTreeSet<String>) -> Result<()> {
+    let path = smart_gaps_disabled_state_path()?;
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    fs::write(path, serde_json::to_string_pretty(disabled)?)?;
+    Ok(())
 }
 
 fn apply_action(address: &str, action: &ActionConfig) -> Result<()> {
@@ -757,7 +849,14 @@ fn build_eww_state_from(
         .iter()
         .filter(|client| !client.floating && !client.hidden)
         .count();
-    let gap_selection = select_gaps(config, monitor, tiled_window_count);
+    let smart_gaps_disabled_for_workspace = smart_gaps_disabled_for_workspace(active);
+    let gap_selection = select_gaps(
+        config,
+        monitor,
+        active,
+        tiled_window_count,
+        smart_gaps_disabled_for_workspace,
+    );
 
     let apps = config
         .apps
@@ -794,6 +893,8 @@ fn build_eww_state_from(
         },
         apps,
         smart_gaps: EwwSmartGaps {
+            enabled: config.smart_gaps.enabled,
+            disabled_for_workspace: smart_gaps_disabled_for_workspace,
             profile: gap_selection.as_ref().map(|(name, _)| name.clone()),
             inner: gap_selection.as_ref().map(|(_, gaps)| gaps.inner),
             outer: gap_selection.as_ref().map(|(_, gaps)| gaps.outer),
@@ -819,10 +920,18 @@ fn workspace_kind(config: &Config, name: &str) -> String {
 fn select_gaps(
     config: &Config,
     monitor: &Monitor,
+    active: &ActiveWorkspace,
     tiled_window_count: usize,
+    disabled_for_workspace: bool,
 ) -> Option<(String, Gaps)> {
     if !config.smart_gaps.enabled {
         return None;
+    }
+    if disabled_for_workspace {
+        return Some((
+            format!("disabled:{}", active.name),
+            config.smart_gaps.reset_gaps,
+        ));
     }
     let profile = config.smart_gaps.profiles.iter().find(|profile| {
         profile
@@ -846,6 +955,14 @@ fn select_gaps(
         _ => profile.gaps.many_windows,
     };
     Some((profile.name.clone(), gaps))
+}
+
+fn smart_gaps_disabled_for_workspace(active: &ActiveWorkspace) -> bool {
+    read_smart_gaps_disabled_workspaces()
+        .map(|disabled| {
+            disabled.contains(&active.name) || disabled.contains(&active.id.to_string())
+        })
+        .unwrap_or(false)
 }
 
 fn daemon(config: &Config) -> Result<()> {
@@ -1083,6 +1200,13 @@ mod tests {
         }
     }
 
+    fn active(name: &str) -> ActiveWorkspace {
+        ActiveWorkspace {
+            id: name.parse().unwrap_or(-1),
+            name: name.to_string(),
+        }
+    }
+
     #[test]
     fn parses_v1_config_and_hide_enum() {
         let config = test_config();
@@ -1175,7 +1299,7 @@ mod tests {
         let external = monitor("DP-2", 3840, 2160);
         let laptop = monitor("eDP-1", 1920, 1200);
         assert_eq!(
-            select_gaps(&config, &external, 1),
+            select_gaps(&config, &external, &active("1"), 1, false),
             Some((
                 "externalLarge".to_string(),
                 Gaps {
@@ -1185,7 +1309,7 @@ mod tests {
             ))
         );
         assert_eq!(
-            select_gaps(&config, &external, 2),
+            select_gaps(&config, &external, &active("1"), 2, false),
             Some((
                 "externalLarge".to_string(),
                 Gaps {
@@ -1195,7 +1319,7 @@ mod tests {
             ))
         );
         assert_eq!(
-            select_gaps(&config, &laptop, 4),
+            select_gaps(&config, &laptop, &active("1"), 4, false),
             Some((
                 "laptop".to_string(),
                 Gaps {
@@ -1225,7 +1349,13 @@ mod tests {
         );
 
         assert_eq!(
-            select_gaps(&config, &monitor("DP-2", 1920, 1080), 1),
+            select_gaps(
+                &config,
+                &monitor("DP-2", 1920, 1080),
+                &active("1"),
+                1,
+                false
+            ),
             Some((
                 "namedDock".to_string(),
                 Gaps {
@@ -1235,8 +1365,30 @@ mod tests {
             ))
         );
         assert_eq!(
-            select_gaps(&config, &monitor("HDMI-A-1", 1920, 1080), 1).map(|(name, _)| name),
+            select_gaps(
+                &config,
+                &monitor("HDMI-A-1", 1920, 1080),
+                &active("1"),
+                1,
+                false,
+            )
+            .map(|(name, _)| name),
             Some("laptop".to_string())
+        );
+    }
+
+    #[test]
+    fn smart_gaps_disabled_workspace_selects_reset_gaps() {
+        let config = test_config();
+        assert_eq!(
+            select_gaps(
+                &config,
+                &monitor("DP-2", 3840, 2160),
+                &active("chat"),
+                1,
+                true
+            ),
+            Some(("disabled:chat".to_string(), Gaps { inner: 4, outer: 6 }))
         );
     }
 

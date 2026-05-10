@@ -56,7 +56,7 @@
        :tooltip {current-submap == "resize" ? "Resize mode: M shrink width, N grow height, E shrink height, I grow width, Esc exit" :
                  current-submap == "scratchpad" ? "Scratch mode: T terminal, Shift+T move terminal, S scratchpad, Shift+S move scratchpad, K/P KeePassXC, Esc exit" :
                  current-submap == "chat" ? "Chat mode: C chat workspace, S borrow/return Signal, T borrow/return Telegram, Esc exit" :
-                 current-submap == "windowactions" ? "Window mode: V smart video pin, Z zen terminal, P toggle pin, Esc exit" :
+                  current-submap == "windowactions" ? "Window mode: V smart video pin, Z zen window, P toggle pin, G smart gaps, Esc exit" :
                  current-submap == "quickactions" ? "Actions mode: S Signal, T Telegram, K KeePassXC, B Zen, O Obsidian, L lock, H/? help, Esc exit" :
                  "Active submap/mode: ${current-submap}"}
      (label :text {current-submap == "resize" ? "󰩨 RESIZE" :
