@@ -37,6 +37,9 @@ may not be reproduced correctly by external device software.
 ## Terminal Hotkey
 
 `suremac` runs `skhd` as a Home Manager launchd agent for global macOS hotkeys.
+It explicitly enables the Home Manager WezTerm module with
+`dotfiles.wezterm.enable = true` and sets `dotfiles.gui.terminal` to WezTerm,
+so the WezTerm app/config and the global terminal hotkey stay in sync.
 
 | Shortcut | Action |
 | --- | --- |
