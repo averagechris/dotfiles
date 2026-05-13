@@ -47,20 +47,28 @@
       "@opencode-ai/plugin" = opencodeNpmVersion;
     };
   };
+  patchedOpencode = pkgs.opencode.overrideAttrs (old: {
+    patches =
+      (old.patches or [])
+      ++ [
+        ./patches/opencode-allow-nix-bun-1-3-13.patch
+        ./patches/opencode-strip-env-assignments.patch
+      ];
+  });
   opencodePackage =
     if pkgs.stdenv.hostPlatform.isLinux
     then
       pkgs.symlinkJoin {
-        inherit (pkgs.opencode) meta;
-        name = "${lib.getName pkgs.opencode}-wrapped-${lib.getVersion pkgs.opencode}";
-        paths = [pkgs.opencode];
+        inherit (patchedOpencode) meta;
+        name = "${lib.getName patchedOpencode}-wrapped-${lib.getVersion patchedOpencode}";
+        paths = [patchedOpencode];
         nativeBuildInputs = [pkgs.makeWrapper];
         postBuild = ''
           wrapProgram $out/bin/opencode \
             --prefix LD_LIBRARY_PATH : ${lib.makeLibraryPath [pkgs.stdenv.cc.cc.lib]}
         '';
       }
-    else pkgs.opencode;
+    else patchedOpencode;
   renderToolNote = tool:
     if tool.description == null
     then tool.name

@@ -21,6 +21,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };
+    opencode = {
+      url = "github:anomalyco/opencode";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     base-lib = {
       url = "path:../base-lib";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -82,8 +86,26 @@
         inherit system;
         config.allowUnfree = true;
         overlays = [
-          (_final: _prev: {
+          (final: prev: let
+            inherit (prev.stdenv.hostPlatform) system;
+            opencodeInput = inputs.opencode;
+            rev = opencodeInput.shortRev or opencodeInput.dirtyShortRev or "dirty";
+            upstreamHashes = builtins.fromJSON (builtins.readFile "${opencodeInput}/nix/hashes.json");
+            nodeModulesHashOverrides = {
+              "3b7a5e783d59e8986dca6e5df48663613fa80722" = {
+                aarch64-darwin = "sha256-81IAmdjiYZz8IgMJt0+VxzdOS80gTHc5SendwEW/vD4=";
+              };
+            };
+            node_modules = final.callPackage "${opencodeInput}/nix/node_modules.nix" {
+              inherit rev;
+              hash =
+                (nodeModulesHashOverrides.${opencodeInput.rev or ""} or {}).${system} or upstreamHashes.nodeModules.${system};
+            };
+          in {
             titlecase = base-lib.inputs.titlecase.packages.${system}.default;
+            opencode = final.callPackage "${opencodeInput}/nix/opencode.nix" {
+              inherit node_modules;
+            };
           })
         ];
       };

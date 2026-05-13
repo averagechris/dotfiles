@@ -2,6 +2,13 @@
 
 This repository manages OpenCode through the home-manager module at `flakes/hm-modules/modules/opencode/`.
 
+OpenCode itself comes from the upstream `github:anomalyco/opencode` flake input,
+not from nixpkgs. `flakes/base-lib/` exposes that package through the shared
+overlay as `pkgs.opencode`, and `flakes/hm-modules/` mirrors the same overlay for
+standalone module evaluation checks. This keeps OpenCode closer to upstream's
+frequent releases while preserving the normal `pkgs.opencode` and home-manager
+`programs.opencode.package` integration points.
+
 ## What it configures
 
 - custom primary and sub-agents
@@ -27,6 +34,54 @@ The Build primary agent also has a bash permission allowlist for common
 development commands. Build runners such as `just` and `make` are allowed so
 agents can execute repository-provided workflows without prompting for each
 invocation.
+
+### Env-prefixed runner commands
+
+OpenCode currently evaluates bash permission rules against the command source it
+extracts from the shell AST. For inline environment assignments, that source can
+include the assignments, so a command such as:
+
+```bash
+SERVICE_REDIS_PORT=51820 SERVICE_POSTGRES_PORT=51821 just test ...
+```
+
+does not match the existing `"just *": "allow"` rule. The prompt may still offer
+an "always" approval for `just *`, but that session approval does not cover the
+next env-prefixed invocation because the evaluated pattern still starts with the
+assignment prefix.
+
+This module patches `pkgs.opencode`, which is supplied by the upstream OpenCode
+flake overlay, with module-local patches under
+`flakes/hm-modules/modules/opencode/patches/`.
+
+`opencode-strip-env-assignments.patch` normalizes bash permission patterns by
+stripping safe leading inline environment assignments before permission
+matching. With the example above, OpenCode authorizes `just test ...`, so the
+existing `just` and `just *` allow rules work across projects no matter what
+service-specific environment prefix they use.
+
+The patch deliberately does not strip assignments containing command
+substitution, such as `FOO=$(curl example.com) just test` or backticks. Those
+assignments can execute code before `just` starts and should fall through to the
+normal catch-all prompt.
+
+The upstream OpenCode flake builds a fixed-output `opencode-node_modules`
+derivation from `nix/hashes.json`. Because the `dev` branch moves quickly, that
+hash can temporarily lag the lockfile revision. The base-lib overlay carries any
+required per-revision node-modules hash overrides next to the upstream package
+selection, scoped by full upstream revision so future upstream hash updates are
+used automatically.
+
+Prefer this normalization patch over broad config patterns such as `*=* just *`.
+OpenCode permission wildcards are anchored but simple (`*` and `?` only), so a
+broad assignment-style pattern can accidentally match unrelated commands that
+merely contain `=... just ...` in their arguments.
+
+`opencode-allow-nix-bun-1-3-13.patch` keeps the upstream build working while
+nixpkgs' packaged Bun briefly lags the Bun patch version declared in OpenCode's
+root `package.json`. It broadens the build script's version guard to accept the
+same Bun 1.3 minor series provided by the Nix toolchain; remove it once nixpkgs
+and upstream agree on the same Bun patch release.
 
 Agent-exposed tools and MCPs are configured separately:
 

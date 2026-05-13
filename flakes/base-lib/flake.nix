@@ -25,6 +25,10 @@
       url = "sourcehut:~averagechris/titlecase";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    opencode = {
+      url = "github:anomalyco/opencode";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = inputs @ {
@@ -49,6 +53,7 @@
     # Import overlays
     overlaysModule = import ./overlays/default.nix {
       inherit inputs nixpkgs titlecase;
+      opencode = inputs.opencode or null;
     };
   in {
     # Export library functions

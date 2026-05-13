@@ -3,8 +3,34 @@
   inputs,
   nixpkgs,
   titlecase,
+  opencode ? null,
 }: {
   default = final: prev: {
+    opencode =
+      if opencode != null && builtins.hasAttr prev.stdenv.hostPlatform.system opencode.packages
+      then let
+        inherit (prev.stdenv.hostPlatform) system;
+        rev = opencode.shortRev or opencode.dirtyShortRev or "dirty";
+        upstreamHashes = builtins.fromJSON (builtins.readFile "${opencode}/nix/hashes.json");
+        nodeModulesHashOverrides = {
+          # Upstream dev changed transitive dependency output without updating
+          # nix/hashes.json for this revision. Keep this scoped to the exact
+          # revision so future upstream hash updates are used automatically.
+          "3b7a5e783d59e8986dca6e5df48663613fa80722" = {
+            aarch64-darwin = "sha256-81IAmdjiYZz8IgMJt0+VxzdOS80gTHc5SendwEW/vD4=";
+          };
+        };
+        node_modules = final.callPackage "${opencode}/nix/node_modules.nix" {
+          inherit rev;
+          hash =
+            (nodeModulesHashOverrides.${opencode.rev or ""} or {}).${system} or upstreamHashes.nodeModules.${system};
+        };
+      in
+        final.callPackage "${opencode}/nix/opencode.nix" {
+          inherit node_modules;
+        }
+      else prev.opencode;
+
     rodney = prev.buildGoModule rec {
       pname = "rodney";
       version = "0.4.0";

@@ -1,0 +1,33 @@
+diff --git a/packages/opencode/src/tool/shell.ts b/packages/opencode/src/tool/shell.ts
+index 6a5c67d..d155df0 100644
+--- a/packages/opencode/src/tool/shell.ts
++++ b/packages/opencode/src/tool/shell.ts
+@@ -121,7 +121,27 @@ function parts(node: Node) {
+ }
+ 
+ function source(node: Node) {
+-  return (node.parent?.type === "redirected_statement" ? node.parent.text : node.text).trim()
++  const base = node.parent?.type === "redirected_statement" ? node.parent : node
++  let text = base.text.trim()
++
++  // Inline environment assignments are not the command being authorized.
++  // Strip safe leading assignments so commands like
++  // `SERVICE_PORT=1234 just test` still match `just *` permission rules.
++  // Keep assignments containing command substitutions in the pattern because
++  // they can execute code before the target command starts.
++  let lastVariableAssignment: ReturnType<typeof node.child> = null
++  for (let i = 0; i < node.childCount; i++) {
++    const child = node.child(i)
++    if (!child || child.type !== "variable_assignment") break
++    if (child.descendantsOfType("command_substitution").length > 0) return text
++    lastVariableAssignment = child
++  }
++
++  if (lastVariableAssignment) {
++    text = base.text.slice(lastVariableAssignment.endIndex - base.startIndex).trimStart()
++  }
++
++  return text.trim()
+ }
+ 
+ function commands(node: Node) {
