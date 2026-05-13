@@ -23,6 +23,11 @@ startup failures while loading project or global files, including custom tools.
 The OpenCode module installs a small, explicit set of agent-specific tools and
 generates the system-prompt tool note from the configured list.
 
+The Build primary agent also has a bash permission allowlist for common
+development commands. Build runners such as `just` and `make` are allowed so
+agents can execute repository-provided workflows without prompting for each
+invocation.
+
 Agent-exposed tools and MCPs are configured separately:
 
 - `dotfiles.opencode.agentTools` installs CLI tools into `home.packages` and
