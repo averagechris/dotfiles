@@ -94,7 +94,7 @@ alejandra -q .
 statix check
 
 # Run all checks
-nom flake check
+nix flake check
 
 # Build a NixOS host
 nh os build . --hostname tater
@@ -112,7 +112,7 @@ nix flake show
 2. Create `flake.nix`, `configuration.nix`, and `hardware.nix` (NixOS only)
 3. Use existing host as template (trap for NixOS, suremac for Darwin)
 4. Add the host to the root `flake.nix` inputs and outputs
-5. Test with `nom flake check`
+5. Test with `nix flake check`
 
 ## Documentation
 

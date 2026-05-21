@@ -94,4 +94,4 @@ The duplication is **not** a limitation to be refactored away. It's an architect
 3. Update `configuration.nix` with host-specific settings
 4. Generate `hardware.nix` on target system: `nixos-generate-config --show-hardware-config`
 5. Add to root `flake.nix` inputs and outputs
-6. Test: `nom flake check ./flakes/hosts/HOSTNAME`
+6. Test: `nix flake check ./flakes/hosts/HOSTNAME`

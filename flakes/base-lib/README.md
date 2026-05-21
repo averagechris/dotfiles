@@ -442,10 +442,10 @@ with lib;
 
 ```bash
 # Check base-lib itself
-nom flake check ./flakes/base-lib
+nix flake check ./flakes/base-lib
 
 # Check all flakes
-nom flake check
+nix flake check
 ```
 
 ### Show Flake Outputs
@@ -521,7 +521,7 @@ nix eval .#nixosConfigurations.myhost.config.environment.systemPackages
 1. **Keep base-lib stable**: Changes affect all hosts
 2. **Use specialArgs**: Pass data through specialArgs rather than modifying modules
 3. **Document functions**: Add comments explaining function purpose and parameters
-4. **Test changes**: Run `nom flake check` before committing
+4. **Test changes**: Run `nix flake check` before committing
 5. **Version lock**: Use `flake.lock` for reproducibility
 6. **Use follows**: Always use `follows` for shared dependencies
 7. **Organize code**: Group related functions in separate files

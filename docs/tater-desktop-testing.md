@@ -7,7 +7,7 @@ This document describes the automated and semi-automated checks for tater's Hypr
 The tater host flake exposes a desktop regression check:
 
 ```bash
-nom flake check ./flakes/hosts/tater
+nix flake check ./flakes/hosts/tater
 ```
 
 This includes `checks.x86_64-linux.tater-desktop-static`, which is intentionally layered:

@@ -50,10 +50,10 @@ alejandra -q .
 statix check
 
 # Test top-level flake
-nom flake check
+nix flake check
 
 # Test individual host flake
-nom flake check ./flakes/hosts/<hostname>
+nix flake check ./flakes/hosts/<hostname>
 
 # Build NixOS host (preferred ergonomic wrapper)
 nh os build . --hostname <hostname>
@@ -73,9 +73,10 @@ nix run .#deploy-quiet -- <hostname>
 nh darwin switch . --hostname suremac
 ```
 
-Prefer `nh` for NixOS/Darwin build, test, and switch workflows and `nom` for raw
-Nix commands (`nom build`, `nom flake check`, `nom develop`) so output is easier
-to scan. In noninteractive agent/tool contexts, add `--no-nom` to `nh` builds or
+Prefer `nh` for NixOS/Darwin build, test, and switch workflows. Use `nom` for raw
+Nix build/develop commands (`nom build`, `nom develop`) so output is easier
+to scan, but use `nix flake check` for flake checks because this `nom` wrapper
+does not support `nom flake check`. In noninteractive agent/tool contexts, add `--no-nom` to `nh` builds or
 switches (for example, `nh os build -q --no-nom . --hostname tater`) to avoid the
 clock/progress animation and most store-path chatter flooding captured logs. Fall back to `nix`,
 `nixos-rebuild`, or `darwin-rebuild` only when `nh`/`nom` cannot express the
@@ -120,7 +121,7 @@ Use `mkDefaultEnabledOption` helper for boolean options.
    - Darwin: use `suremac` as template
 4. Add inputs: `base-lib`, `nixos-modules` (or `darwin-modules`), `hm-modules`
 5. Update top-level `flake.nix` to import the new host
-6. Test with `nom flake check ./flakes/hosts/<hostname>`
+6. Test with `nix flake check ./flakes/hosts/<hostname>`
 
 ## Host-Specific Notes
 
@@ -214,7 +215,7 @@ nix eval .#<attr>
 nom build .#<attr> --show-trace
 
 # Check flake
-nom flake check
+nix flake check
 
 # Update a specific input
 nix flake lock --update-input <input-name>

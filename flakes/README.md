@@ -188,8 +188,8 @@ dotfiles.mymodule.enable = true;
 
 ```bash
 # Testing
-nom flake check                              # all flakes
-nom flake check ./flakes/hosts/HOSTNAME      # single host
+nix flake check                              # all flakes
+nix flake check ./flakes/hosts/HOSTNAME      # single host
 
 # Building
 nh os build . --hostname HOSTNAME
@@ -208,5 +208,5 @@ nix eval .#nixosConfigurations.HOSTNAME.config --apply 'x: x.networking.hostName
 
 - **Keep base-lib stable** — changes affect all hosts
 - **Use `follows`** — ensures consistent dependency versions
-- **Test before committing** — run `nom flake check`
+- **Test before committing** — run `nix flake check`
 - **Use `flake.lock`** — commit for reproducible builds

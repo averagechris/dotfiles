@@ -143,7 +143,8 @@ in {
     programs.eww = {
       enable = true;
       package = eww;
-      configDir = ./config;
+      yuckConfig = builtins.readFile ./config/eww.yuck;
+      scssConfig = builtins.readFile ./config/eww.scss;
     };
 
     # Eww hashes the canonical config directory path into its daemon socket.

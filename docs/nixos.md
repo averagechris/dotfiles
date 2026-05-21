@@ -8,17 +8,19 @@ supplemented with the tips in [this fantastic blog post](https://qfpl.io/posts/i
 All NixOS hosts import `nixosModules.common`, which installs common Nix and
 editing tools including `nh` and `nix-output-monitor` (`nom`).
 
-- `nom` is a more readable progress UI for Nix commands:
-  `nom build .#pkg`, `nom flake check`, `nom develop`,
-  `nom shell nixpkgs#ripgrep`.
+- `nom` is a more readable progress UI for supported Nix commands:
+  `nom build .#pkg`, `nom develop`, `nom shell nixpkgs#ripgrep`.
+  Use `nix flake check` for flake checks; this `nom` wrapper does not support
+  `nom flake check`.
 - `nh` wraps common NixOS workflows:
   `nh os build . --hostname tater`, `nh os test . --hostname tater`,
   `nh os switch . --hostname tater`.
 
-Prefer `nh` for NixOS build/test/switch commands and `nom` for raw Nix commands
-in this repository. They keep long Nix output readable and make failure context
-easier to find than plain `nix`/`nixos-rebuild` output. Use lower-level commands
-only when needed for a specific flag or reproduction.
+Prefer `nh` for NixOS build/test/switch commands and `nom` for supported raw Nix
+commands in this repository. Use `nix flake check` for flake checks. These
+wrappers keep long Nix output readable and make failure context easier to find
+than plain `nix`/`nixos-rebuild` output where supported. Use lower-level
+commands only when needed for a specific flag or reproduction.
 
 For captured/noninteractive logs, use `nh -q --no-nom` commands, such as
 `nh os build -q --no-nom . --hostname tater`, so the `nom` clock/progress
