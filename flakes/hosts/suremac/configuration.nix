@@ -15,6 +15,12 @@
       mode = "0400";
     };
 
+    openrouter-api-key = {
+      file = ../../../secrets/openrouter-api-key.age;
+      owner = "chris";
+      mode = "0400";
+    };
+
     gpg-private-key = {
       file = ../../../secrets/gpg-private-key.age;
       owner = "chris";
@@ -273,7 +279,10 @@
       }
     ];
     programs.opencode.enable = true;
-    programs.pi.enable = true;
+    programs.pi = {
+      enable = true;
+      openrouterApiKeyFile = config.age.secrets.openrouter-api-key.path;
+    };
     dotfiles.opencode.circleciTokenFile = "/run/agenix/circleci-token";
     dotfiles.opencode.agentSupportPackages = with pkgs; [
       python313Packages.databricks-sql-connector

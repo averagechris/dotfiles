@@ -1,7 +1,7 @@
 # Pi
 
 This repository packages the [Pi coding agent](https://pi.dev/) and exposes a
-minimal Home Manager module for installing it.
+Home Manager module for installing and configuring it.
 
 ## Package
 
@@ -63,10 +63,144 @@ Enable Pi with:
 programs.pi.enable = true;
 ```
 
-The module only installs the package for now. Configuration options for Pi
-settings, packages, skills, prompts, or environment variables can be added later
-after deciding how much of Pi's `~/.pi/agent/settings.json` should be managed by
-Home Manager.
+The module installs `pkgs.pi`, writes `~/.pi/agent/settings.json`, and can manage
+optional resource paths, custom model configuration, shell environment variables,
+and wrapper commands.
+
+Default settings are intentionally opinionated for this dotfiles repo:
+
+```json
+{
+  "defaultProvider": "openrouter",
+  "defaultModel": "openai/gpt-5.5",
+  "defaultThinkingLevel": "low",
+  "quietStartup": true,
+  "collapseChangelog": true,
+  "enableInstallTelemetry": false,
+  "enabledModels": [
+    "anthropic/*opus*",
+    "anthropic/*sonnet*",
+    "anthropic/*haiku*",
+    "openai/gpt-*",
+    "moonshotai/*kimi*",
+    "google/gemini*"
+  ]
+}
+```
+
+Override or extend those settings with `programs.pi.settings`; the module merges
+your values over the defaults:
+
+```nix
+programs.pi = {
+  enable = true;
+  settings = {
+    defaultThinkingLevel = "medium";
+    compaction = {
+      enabled = true;
+      reserveTokens = 16384;
+      keepRecentTokens = 20000;
+    };
+  };
+};
+```
+
+### Credentials
+
+Use `openrouterApiKeyFile` to hook Pi up to the shared OpenRouter agenix secret:
+
+```nix
+programs.pi = {
+  enable = true;
+  openrouterApiKeyFile = config.age.secrets.openrouter-api-key.path;
+};
+```
+
+By default the module configures the key in two places:
+
+- `~/.pi/agent/auth.json` gets an OpenRouter `api_key` entry whose key is a
+  shell command, e.g. `!/nix/store/.../bin/cat /run/agenix/openrouter-api-key`.
+  The secret value is not copied into the Nix store. This makes Pi's OpenRouter
+  model catalog available even before a shell startup file has exported the
+  environment variable, avoiding warnings from `enabledModels`.
+- shell initialization exports `OPENROUTER_API_KEY` for Pi subprocesses,
+  extensions, and ad-hoc CLI usage. This mirrors the OpenCode module.
+
+Set `programs.pi.exportOpenrouterEnv = false` if a host should manage Pi auth
+without exporting the key to the shell. Set
+`programs.pi.manageOpenrouterAuthFile = false` if Pi should manage `auth.json`
+itself with `/login` or additional provider credentials.
+
+The module also exports these environment variables by default:
+
+```bash
+PI_SKIP_VERSION_CHECK=1
+PI_TELEMETRY=0
+```
+
+Because Nix manages the installed Pi package, upstream self-update prompts and
+install telemetry are not useful in normal dotfiles-managed sessions. Add or
+override variables with `programs.pi.environment`.
+
+### Resources and custom models
+
+Pi can load declarative packages, extensions, skills, prompt templates, and
+themes from settings. Use the dedicated options instead of hand-editing
+`settings.json`:
+
+```nix
+programs.pi = {
+  packages = [
+    # "npm:some-pi-package@1.0.0"
+    # "git:github.com/user/repo@v1"
+  ];
+
+  extensions = [./pi/extensions/safety.ts];
+  skills = [./pi/skills];
+  prompts = [./pi/prompts];
+  themes = [./pi/themes];
+};
+```
+
+If a provider/model needs custom catalog metadata or routing overrides, set
+`programs.pi.models`. Non-empty values write `~/.pi/agent/models.json`:
+
+```nix
+programs.pi.models = {
+  providers.openrouter.modelOverrides."openai/gpt-5.5" = {
+    reasoning = true;
+    input = ["text" "image"];
+  };
+};
+```
+
+Leave `models = {}` to avoid managing `models.json`.
+
+### Wrapper commands
+
+Define named wrapper commands for common modes. Wrapper arguments are fixed by
+Nix and user-provided arguments are appended at runtime:
+
+```nix
+programs.pi.wrappers = {
+  readonly.tools = ["read" "grep" "find" "ls"];
+
+  deep = {
+    model = "openrouter/anthropic/claude-opus-4.5";
+    thinking = "high";
+  };
+
+  plan = {
+    tools = ["read" "grep" "find" "ls" "bash"];
+    appendSystemPrompts = [''
+      Work in planning mode. Do not edit files unless explicitly asked.
+      Produce concrete implementation steps and risks.
+    ''];
+  };
+};
+```
+
+Those examples install `pi-readonly`, `pi-deep`, and `pi-plan`.
 
 To override the installed package:
 
@@ -80,5 +214,7 @@ programs.pi = {
 ## Runtime state
 
 Pi stores global settings, credentials, sessions, and installed Pi packages
-under `~/.pi/agent/`. This module intentionally does not manage that directory
-yet.
+under `~/.pi/agent/`. This module manages `settings.json`, optionally manages
+`models.json`, and manages `auth.json` only when `openrouterApiKeyFile` and
+`manageOpenrouterAuthFile` are both enabled. It intentionally does not manage
+sessions, npm/git package checkouts, or other mutable runtime state.
