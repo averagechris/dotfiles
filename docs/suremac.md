@@ -72,3 +72,9 @@ back in.
 Raycast does not expose a stable declarative config file for aliases and
 hotkeys. Use Raycast's built-in sync for Raycast-managed configuration instead
 of committing `.rayconfig` exports to this repository.
+
+## Coding Agents
+
+`suremac` enables both `programs.opencode` and `programs.pi` in Home Manager.
+Pi is installed through the minimal `programs.pi.enable = true` module; see
+[`docs/pi.md`](/docs/pi.md) for the package pinning and manual update policy.

@@ -44,6 +44,7 @@
         shell = ./modules/shell.nix;
         helix = ./modules/helix/default.nix;
         opencode = ./modules/opencode/default.nix;
+        pi = ./modules/pi.nix;
         openclaw-fix = ./modules/openclaw-fix.nix;
         ghostty-fix = ./modules/ghostty-fix.nix;
 
@@ -103,6 +104,8 @@
             };
           in {
             titlecase = base-lib.inputs.titlecase.packages.${system}.default;
+            pi-coding-agent = final.callPackage ../base-lib/packages/pi-coding-agent.nix {};
+            pi = final.pi-coding-agent;
             opencode = final.callPackage "${opencodeInput}/nix/opencode.nix" {
               inherit node_modules;
             };

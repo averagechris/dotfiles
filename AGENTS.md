@@ -55,6 +55,10 @@ nix flake check
 # Test (individual host)
 nix flake check ./flakes/hosts/<hostname>
 
+# Routine flake updates with supply-chain cooldowns
+./scripts/update-flakes.sh --check
+./scripts/update-flakes.sh
+
 # Build NixOS host (preferred ergonomic wrapper)
 nh os build . --hostname <hostname>
 nh os build ./flakes/hosts/<hostname> --hostname <hostname>
@@ -78,6 +82,19 @@ switches (for example, `nh os build -q --no-nom . --hostname tater`) to avoid th
 clock/progress animation and most store-path chatter flooding captured logs. Fall back to `nix`,
 `nixos-rebuild`, or `darwin-rebuild` only when `nh`/`nom` cannot express the
 operation or when a user explicitly asks for the lower-level command.
+
+Use `scripts/update-flakes.sh` for routine dependency updates. It applies a
+default 7-day cooldown to fast-moving agent inputs such as `opencode`, `pi`, and
+`pi-coding-agent` so new upstream commits are not pulled immediately. Override
+only after manual review with `--ignore-cooldown`, or tune with
+`--cooldown-days`, `--cooldown-inputs`, `FLAKE_UPDATE_COOLDOWN_DAYS`, and
+`FLAKE_UPDATE_COOLDOWN_INPUTS`.
+
+Pi is currently packaged from manually pinned upstream release archives rather
+than a flake input. Keep it that way unless there is a concrete need to consume
+Pi source directly, apply local patches, or track a fork. Update Pi manually only
+after a cooldown/review window; see `docs/pi.md` for the update checklist and
+the tradeoffs of not making it a flake input.
 
 ## Documentation
 

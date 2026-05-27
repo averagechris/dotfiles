@@ -31,6 +31,9 @@
         }
       else prev.opencode;
 
+    pi-coding-agent = final.callPackage ../packages/pi-coding-agent.nix {};
+    pi = final.pi-coding-agent;
+
     rodney = prev.buildGoModule rec {
       pname = "rodney";
       version = "0.4.0";

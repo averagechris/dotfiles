@@ -80,7 +80,7 @@ This repository uses `jj` (Jujutsu) for version control, colocated with git.
 
 ```bash
 # Enter development shell with all tools
-nix flake update
+./scripts/update-flakes.sh --check
 direnv allow  # if using direnv
 ```
 

@@ -273,6 +273,7 @@
       }
     ];
     programs.opencode.enable = true;
+    programs.pi.enable = true;
     dotfiles.opencode.circleciTokenFile = "/run/agenix/circleci-token";
     dotfiles.opencode.agentSupportPackages = with pkgs; [
       python313Packages.databricks-sql-connector

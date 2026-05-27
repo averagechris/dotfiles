@@ -11,6 +11,7 @@
 - [nixos](/docs/nixos.md) - General NixOS configuration notes
 - [opencode](/docs/opencode.md) - OpenCode module configuration, skills, and MCP integrations
 - [opencode-pr-review](/docs/opencode-pr-review.md) - Design and usage notes for the OpenCode GitHub PR review workflow
+- [pi](/docs/pi.md) - Pi coding agent package and minimal Home Manager module
 - [gpg-signing](/docs/gpg-signing.md) - GPG signing setup for git and jj commits with agenix
 - [shell](/docs/shell.md) - Shell module configuration and PATH precedence
 - [suremac](/docs/suremac.md) - macOS host settings, automatic time zone behavior, and Spaces desktop shortcuts

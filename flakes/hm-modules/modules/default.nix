@@ -3,6 +3,7 @@
     ./gui
     ./gpg.nix
     ./meganz.nix
+    ./pi.nix
     ./shell.nix
     ./opencode
     ./helix
