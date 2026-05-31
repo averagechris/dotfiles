@@ -106,6 +106,7 @@
             titlecase = base-lib.inputs.titlecase.packages.${system}.default;
             pi-coding-agent = final.callPackage ../base-lib/packages/pi-coding-agent.nix {};
             pi = final.pi-coding-agent;
+            coderabbit-cli = final.callPackage ../base-lib/packages/coderabbit-cli.nix {};
             opencode = final.callPackage "${opencodeInput}/nix/opencode.nix" {
               inherit node_modules;
             };

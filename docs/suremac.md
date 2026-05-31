@@ -78,3 +78,8 @@ of committing `.rayconfig` exports to this repository.
 `suremac` enables both `programs.opencode` and `programs.pi` in Home Manager.
 Pi is installed through the minimal `programs.pi.enable = true` module; see
 [`docs/pi.md`](/docs/pi.md) for the package pinning and manual update policy.
+
+OpenCode agents on `suremac` also get host-specific CLI tools, including the
+Nix-packaged CodeRabbit CLI as `coderabbit` / `cr`. See
+[`docs/coderabbit-cli.md`](/docs/coderabbit-cli.md) for the local review
+workflow and the Nix update policy.

@@ -99,7 +99,7 @@ By default, all OpenCode-enabled hosts install:
 
 - `jj` - Jujutsu VCS
 - `nodejs` - JavaScript runtime
-- `python3` - Python 3.13 runtime
+- `python3` - Python 3.14 runtime
 - `rg` - fast code search
 
 These come from the module's built-in default tool list:
@@ -108,7 +108,7 @@ These come from the module's built-in default tool list:
 [
   { package = jujutsu; name = "jj"; description = "Jujutsu VCS"; }
   { package = nodejs; name = "nodejs"; description = "JavaScript runtime"; }
-  { package = python313; name = "python3"; description = "Python 3.13 runtime"; }
+  { package = python314; name = "python3"; description = "Python 3.14 runtime"; }
   { package = ripgrep; name = "rg"; description = "fast code search"; }
 ]
 ```
@@ -126,9 +126,9 @@ module combines those with the built-in default tool list.
 
 Use `dotfiles.opencode.agentTools` for tools that should only be available to
 agents on particular hosts. For example, `suremac` adds the CircleCI CLI,
-Databricks CLI, GitHub CLI, Rodney, Showboat, and the Linear CLI. On Darwin,
-this host-specific list avoids relying on unrelated system packages for agent
-workflows:
+CodeRabbit CLI, Databricks CLI, GitHub CLI, Rodney, Showboat, and the Linear
+CLI. On Darwin, this host-specific list avoids relying on unrelated system
+packages for agent workflows:
 
 ```nix
 dotfiles.opencode.agentSupportPackages = with pkgs; [
@@ -137,12 +137,13 @@ dotfiles.opencode.agentSupportPackages = with pkgs; [
 
 dotfiles.opencode.agentTools = with pkgs; [
   { package = circleci-cli; name = "circleci"; description = "CircleCI CLI"; }
+  { package = coderabbit-cli; name = "cr"; description = "CodeRabbit AI review CLI"; }
   { package = databricks-cli; name = "databricks-cli"; }
   { package = gh; name = "gh"; description = "GitHub CLI"; }
   { package = rodney; name = "rodney"; description = "Chrome automation CLI"; }
   { package = showboat; name = "showboat"; description = "work documentation CLI"; }
   {
-    package = inputs.linear-cli.packages.${pkgs.stdenv.hostPlatform.system}.homebrew-artifact;
+    package = inputs.linear-cli.packages.${pkgs.stdenv.hostPlatform.system}.linear;
     name = "linear";
     description = "Linear CLI";
   }
@@ -154,9 +155,9 @@ example:
 
 > Your runtime is a macOS environment. By default, your environment includes
 > these additional tools: jj (Jujutsu VCS), nodejs (JavaScript runtime),
-> python3 (Python 3.13 runtime), rg (fast code search),
-> circleci (CircleCI CLI), databricks-cli, gh (GitHub CLI), rodney
-> (Chrome automation CLI),
+> python3 (Python 3.14 runtime), rg (fast code search),
+> circleci (CircleCI CLI), cr (CodeRabbit AI review CLI), databricks-cli,
+> gh (GitHub CLI), rodney (Chrome automation CLI),
 > showboat (work documentation CLI), linear (Linear CLI). The project local dev
 > shell may provide additional tooling.
 
@@ -215,6 +216,9 @@ The `databricks-cli` skill explains an important CLI detail: there is no
 top-level `databricks sql` subcommand in the current official CLI. Agents
 should use `queries`, `query-history`, `warehouses`, `psql`, or `databricks api`
 depending on the task.
+
+`suremac` additionally configures the repo-managed `coderabbit-cli` skill for
+its OpenCode agents only, alongside the host-specific `cr`/`coderabbit` package.
 
 The jj skills recommend quiet/structured helper output for agents, especially
 `jj sync -q --fail-on-conflicts` and `jj sync --json --fail-on-conflicts`.

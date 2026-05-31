@@ -279,6 +279,7 @@
       }
     ];
     programs.opencode.enable = true;
+    programs.opencode.skills.coderabbit-cli = builtins.readFile ../../hm-modules/modules/opencode/skills/coderabbit-cli/SKILL.md;
     programs.pi = {
       enable = true;
       openrouterApiKeyFile = config.age.secrets.openrouter-api-key.path;
@@ -292,6 +293,11 @@
         package = circleci-cli;
         name = "circleci";
         description = "CircleCI CLI";
+      }
+      {
+        package = pkgs.coderabbit-cli;
+        name = "cr";
+        description = "CodeRabbit AI review CLI";
       }
       {
         package = databricks-cli;

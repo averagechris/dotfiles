@@ -33,6 +33,7 @@
 
     pi-coding-agent = final.callPackage ../packages/pi-coding-agent.nix {};
     pi = final.pi-coding-agent;
+    coderabbit-cli = final.callPackage ../packages/coderabbit-cli.nix {};
 
     rodney = prev.buildGoModule rec {
       pname = "rodney";
