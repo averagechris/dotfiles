@@ -13,7 +13,7 @@ in
 
     config = mkIf cfg.enable {
       home.packages = [
-        pkgs.zoom
+        pkgs.zoom-us
       ];
 
       xdg.configFile."zoomus.conf".text = ''

@@ -378,11 +378,11 @@
         "rust-overlay": "rust-overlay"
       },
       "locked": {
-        "lastModified": 1779818780,
-        "narHash": "sha256-bo00/RzGt7oGlTrf9uglMDQ7RHpcIOvFA5SaTuQVSSQ=",
+        "lastModified": 1780320683,
+        "narHash": "sha256-fxpL42AirGqicF5FixBge4+tn32GtJu3rnacL7pzSiI=",
         "owner": "helix-editor",
         "repo": "helix",
-        "rev": "d268dada3dfa36c6175ad2269e46805e3d611c24",
+        "rev": "72d583700adf1f0e4e79356662b563cd3a76ab88",
         "type": "github"
       },
       "original": {
@@ -442,11 +442,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1779726696,
-        "narHash": "sha256-/p37CB5n6Wpw250b0Lq0CYwNq2D8uGKzDoBulyLcQqA=",
+        "lastModified": 1780408569,
+        "narHash": "sha256-s7Tv6FUQThRAvW8En8XVC6HMb0uiikzVccCcCo9u/Bg=",
         "owner": "nix-community",
         "repo": "home-manager",
-        "rev": "1a95e2efb477959b70b4a14c51035975c0481df6",
+        "rev": "f384af1bec6423a0d4ba1855917ab948f64e5808",
         "type": "github"
       },
       "original": {
@@ -583,11 +583,11 @@
     },
     "nixpkgs_5": {
       "locked": {
-        "lastModified": 1779560665,
-        "narHash": "sha256-tpyBcxPpcQb8ukyNF7DoCwfSY3VPsxHoYwj00Cayv5o=",
+        "lastModified": 1780243769,
+        "narHash": "sha256-x5UQuRsH3MqI0U9afaXSNqzTPSeZlRLvFAav2Ux1pNw=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "64c08a7ca051951c8eae34e3e3cb1e202fe36786",
+        "rev": "331800de5053fcebacf6813adb5db9c9dca22a0c",
         "type": "github"
       },
       "original": {
@@ -698,11 +698,11 @@
         "systems": "systems_8"
       },
       "locked": {
-        "lastModified": 1758227149,
-        "narHash": "sha256-4gRGvi2badjYQfUaEpZ53O0YF+jm6znGIh+Z5UI4k5Q=",
+        "lastModified": 1780339070,
+        "narHash": "sha256-vh/F2yM/OJgLY7q7xNbriIl/kcbQ7PQblPvLat0NuPQ=",
         "owner": "~averagechris",
         "repo": "starship-jj",
-        "rev": "04d0e924328d3f506a27557b2a2df3292d1af110",
+        "rev": "c97cb310ad91efb868207b7ab926cedeb521a621",
         "type": "sourcehut"
       },
       "original": {
