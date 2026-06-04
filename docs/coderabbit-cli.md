@@ -83,5 +83,6 @@ For OpenCode agents on `suremac`, the generated runtime note includes `cr
 4. optionally address lower-severity suggestions; and
 5. re-run one verification review rather than looping indefinitely.
 
-The package is Nix-managed, so do not use `cr update`. To update the CLI, change
-the version and hashes in `flakes/base-lib/packages/coderabbit-cli.nix`.
+The package is Nix-managed, so do not use `cr update`. To update the CLI, check
+`https://cli.coderabbit.ai/releases/latest/VERSION`, then change the version and
+Darwin archive hashes in `flakes/base-lib/packages/coderabbit-cli.nix`.
