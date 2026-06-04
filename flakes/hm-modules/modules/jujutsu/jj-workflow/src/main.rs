@@ -8,6 +8,8 @@ use std::io::{self, IsTerminal, Write};
 use std::os::unix::fs as unix_fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+use std::thread;
+use std::time::{Duration, Instant};
 
 fn main() {
     if let Err(err) = run() {
@@ -32,6 +34,7 @@ fn run() -> Result<()> {
         "lint" => run_lint(args.collect()),
         "ship" => run_ship(parse_common_args(args.collect())?),
         "sync" => run_sync(parse_common_args(args.collect())?),
+        "pr" => run_pr(args.collect()),
         "ws" | "workspace" => run_ws(args.collect()),
         "-h" | "--help" | "help" => {
             print_usage(&program);
@@ -47,7 +50,7 @@ fn run() -> Result<()> {
 fn print_usage(program: &OsStr) {
     let name = program.to_string_lossy();
     eprintln!(
-        "Usage:\n  {name} lint [onboard ...]\n  {name} ship [-b|--bookmark <bookmark>] [--remote <remote>] [-- <jj git push args...>]\n  {name} sync [-b|--bookmark <bookmark>] [--remote <remote>] [--onto <revset>] [-- <jj rebase args...>]\n  {name} ws <add|list|path|forget|prune|root> ..."
+        "Usage:\n  {name} lint [onboard ...]\n  {name} ship [-b|--bookmark <bookmark>] [--remote <remote>] [-- <jj git push args...>]\n  {name} sync [-b|--bookmark <bookmark>] [--remote <remote>] [--onto <revset>] [-- <jj rebase args...>]\n  {name} pr <doctor|create|update|close|watch> ...\n  {name} ws <add|list|path|forget|prune|root> ..."
     );
 }
 
@@ -437,6 +440,1734 @@ fn run_sync(mut args: ParsedArgs) -> Result<()> {
     }
 
     Ok(())
+}
+
+#[derive(Debug, Clone, Default)]
+struct PrArgs {
+    base: Option<String>,
+    repo: Option<String>,
+    remote: Option<String>,
+    head: Option<String>,
+    title: Option<String>,
+    body: Option<String>,
+    body_file: Option<String>,
+    ticket: Option<String>,
+    short_description: Option<String>,
+    pr: Option<String>,
+    sync: bool,
+    run_lints: bool,
+    run_cr: bool,
+    draft: bool,
+    push: bool,
+    no_push: bool,
+    dry_run: bool,
+    json: bool,
+    once: bool,
+    ignore_comments: bool,
+    required: bool,
+    interval: Option<Duration>,
+    timeout: Option<Duration>,
+    help: bool,
+}
+
+#[derive(Debug, Clone)]
+struct GithubRemote {
+    name: String,
+    url: String,
+    owner: String,
+    repo: String,
+}
+
+impl GithubRemote {
+    fn slug(&self) -> String {
+        format!("{}/{}", self.owner, self.repo)
+    }
+}
+
+#[derive(Debug, Clone)]
+struct PrBase {
+    pr_base: String,
+    sync_base: String,
+    inferred: bool,
+}
+
+#[derive(Debug, Clone)]
+struct PrHead {
+    bookmark: String,
+    inferred: bool,
+    source: String,
+}
+
+#[derive(Debug, Clone)]
+struct ExistingPr {
+    number: u64,
+    url: String,
+    title: String,
+    state: String,
+}
+
+#[derive(Debug, Clone)]
+struct PrCheck {
+    name: String,
+    bucket: String,
+    state: String,
+    link: String,
+}
+
+#[derive(Debug, Clone)]
+struct UnresolvedComment {
+    author: String,
+    path: String,
+    line: Option<u64>,
+    first_line: String,
+    url: String,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum WatchState {
+    Success,
+    Pending,
+    Failed,
+}
+
+#[derive(Debug, Clone)]
+struct PrWatchSnapshot {
+    pr: ExistingPr,
+    checks: Vec<PrCheck>,
+    comments: Vec<UnresolvedComment>,
+    review_decision: Option<String>,
+    state: WatchState,
+}
+
+#[derive(Debug, Clone)]
+struct ReviewStatePage {
+    review_decision: String,
+    comments: Vec<UnresolvedComment>,
+    has_next_page: bool,
+    end_cursor: Option<String>,
+}
+
+fn run_pr(args: Vec<OsString>) -> Result<()> {
+    let mut iter = args.into_iter();
+    let command = match iter.next() {
+        Some(command) => command,
+        None => {
+            print_pr_usage();
+            bail!("missing pr subcommand");
+        }
+    };
+
+    match command.to_string_lossy().as_ref() {
+        "doctor" => pr_doctor(parse_pr_args(iter.collect(), false)?),
+        "create" => pr_create(parse_pr_args(iter.collect(), true)?),
+        "update" => pr_update(parse_pr_args(iter.collect(), false)?),
+        "close" => pr_close(parse_pr_args(iter.collect(), false)?),
+        "watch" => pr_watch(parse_pr_args(iter.collect(), false)?),
+        "-h" | "--help" | "help" => {
+            print_pr_usage();
+            Ok(())
+        }
+        other => {
+            print_pr_usage();
+            bail!("unknown pr subcommand: {other}")
+        }
+    }
+}
+
+fn parse_pr_args(args: Vec<OsString>, push_default: bool) -> Result<PrArgs> {
+    let mut parsed = PrArgs {
+        push: push_default,
+        ..PrArgs::default()
+    };
+    let mut iter = args.into_iter();
+
+    while let Some(arg) = iter.next() {
+        let arg_str = arg
+            .to_str()
+            .ok_or_else(|| anyhow!("argument contains invalid UTF-8"))?;
+
+        macro_rules! take_value {
+            ($field:ident) => {{
+                let value = iter
+                    .next()
+                    .ok_or_else(|| anyhow!("missing value for {arg_str}"))?;
+                parsed.$field = Some(os_to_string(value)?);
+            }};
+        }
+
+        match arg_str {
+            "--base" => take_value!(base),
+            "--repo" => take_value!(repo),
+            "--remote" => take_value!(remote),
+            "--head" => take_value!(head),
+            "--title" => take_value!(title),
+            "--body" => take_value!(body),
+            "--body-file" => take_value!(body_file),
+            "--ticket" => take_value!(ticket),
+            "--short-description" => take_value!(short_description),
+            "--pr" => take_value!(pr),
+            "--interval" => {
+                let value = iter
+                    .next()
+                    .ok_or_else(|| anyhow!("missing value for {arg_str}"))?;
+                parsed.interval = Some(parse_duration_arg(&os_to_string(value)?)?);
+            }
+            "--timeout" => {
+                let value = iter
+                    .next()
+                    .ok_or_else(|| anyhow!("missing value for {arg_str}"))?;
+                parsed.timeout = Some(parse_duration_arg(&os_to_string(value)?)?);
+            }
+            "--sync" => parsed.sync = true,
+            "--run-lints" => parsed.run_lints = true,
+            "--run-cr" => parsed.run_cr = true,
+            "--draft" => parsed.draft = true,
+            "--once" => parsed.once = true,
+            "--ignore-comments" => parsed.ignore_comments = true,
+            "--required" => parsed.required = true,
+            "--push" => {
+                parsed.push = true;
+                parsed.no_push = false;
+            }
+            "--no-push" => {
+                parsed.push = false;
+                parsed.no_push = true;
+            }
+            "--dry-run" => parsed.dry_run = true,
+            "--json" => parsed.json = true,
+            "-h" | "--help" => parsed.help = true,
+            _ => {
+                if let Some(value) = arg_str.strip_prefix("--base=") {
+                    parsed.base = Some(value.to_string());
+                } else if let Some(value) = arg_str.strip_prefix("--repo=") {
+                    parsed.repo = Some(value.to_string());
+                } else if let Some(value) = arg_str.strip_prefix("--remote=") {
+                    parsed.remote = Some(value.to_string());
+                } else if let Some(value) = arg_str.strip_prefix("--head=") {
+                    parsed.head = Some(value.to_string());
+                } else if let Some(value) = arg_str.strip_prefix("--title=") {
+                    parsed.title = Some(value.to_string());
+                } else if let Some(value) = arg_str.strip_prefix("--body=") {
+                    parsed.body = Some(value.to_string());
+                } else if let Some(value) = arg_str.strip_prefix("--body-file=") {
+                    parsed.body_file = Some(value.to_string());
+                } else if let Some(value) = arg_str.strip_prefix("--ticket=") {
+                    parsed.ticket = Some(value.to_string());
+                } else if let Some(value) = arg_str.strip_prefix("--short-description=") {
+                    parsed.short_description = Some(value.to_string());
+                } else if let Some(value) = arg_str.strip_prefix("--pr=") {
+                    parsed.pr = Some(value.to_string());
+                } else if let Some(value) = arg_str.strip_prefix("--interval=") {
+                    parsed.interval = Some(parse_duration_arg(value)?);
+                } else if let Some(value) = arg_str.strip_prefix("--timeout=") {
+                    parsed.timeout = Some(parse_duration_arg(value)?);
+                } else {
+                    bail!("unknown pr argument: {arg_str}");
+                }
+            }
+        }
+    }
+
+    Ok(parsed)
+}
+
+fn pr_doctor(args: PrArgs) -> Result<()> {
+    if args.help {
+        print_pr_doctor_usage();
+        return Ok(());
+    }
+    validate_pr_doctor_args(&args)?;
+
+    let mut blockers = Vec::new();
+    let mut warnings = Vec::new();
+    let repo = match resolve_github_remote(args.repo.as_deref(), args.remote.as_deref()) {
+        Ok(repo) => Some(repo),
+        Err(err) => {
+            blockers.push(err.to_string());
+            None
+        }
+    };
+    let sync_remote = repo
+        .as_ref()
+        .and_then(|repo| sync_remote_for_repo(repo, &args).ok().flatten());
+    let base = match resolve_pr_base(args.base.as_deref(), sync_remote.as_deref()) {
+        Ok(base) => Some(base),
+        Err(err) => {
+            blockers.push(err.to_string());
+            None
+        }
+    };
+    let head = match resolve_pr_head(&args, true) {
+        Ok(head) => Some(head),
+        Err(err) => {
+            blockers.push(err.to_string());
+            None
+        }
+    };
+    let scoped_conflicts = match &head {
+        Some(head) => conflicted_changes_in(&format!("::bookmarks({:?})", head.bookmark))?,
+        None => conflicted_changes_in("::@")?,
+    };
+    if !scoped_conflicts.is_empty() {
+        blockers.push(format!(
+            "PR-relevant changes have conflicts: {}",
+            scoped_conflicts.join(", ")
+        ));
+    } else {
+        let global_conflicts = conflicted_changes()?;
+        if !global_conflicts.is_empty() {
+            warnings.push(format!(
+                "repository has unrelated conflicted changes outside the PR stack: {}",
+                global_conflicts.join(", ")
+            ));
+        }
+    }
+    if which::which("gh").is_err() {
+        blockers.push("gh CLI is not available on PATH".to_string());
+    }
+    if args.run_cr && which::which("cr").is_err() {
+        warnings.push("cr CLI is not available on PATH".to_string());
+    }
+
+    let existing = match (&repo, &head) {
+        (Some(repo), Some(head)) if which::which("gh").is_ok() => {
+            match gh_prs_by_head(repo, &head.bookmark) {
+                Ok(prs) => prs.into_iter().next(),
+                Err(err) => {
+                    warnings.push(format!("could not query existing PRs with gh: {err:#}"));
+                    None
+                }
+            }
+        }
+        _ => None,
+    };
+
+    if args.json {
+        print_pr_doctor_json(
+            repo.as_ref(),
+            base.as_ref(),
+            head.as_ref(),
+            existing.as_ref(),
+            &blockers,
+            &warnings,
+        );
+    } else {
+        print_pr_doctor_human(
+            repo.as_ref(),
+            base.as_ref(),
+            head.as_ref(),
+            existing.as_ref(),
+            &blockers,
+            &warnings,
+        );
+    }
+
+    Ok(())
+}
+
+fn pr_create(args: PrArgs) -> Result<()> {
+    if args.help {
+        print_pr_create_usage();
+        return Ok(());
+    }
+    if args.title.is_none() {
+        bail!("jj pr create requires --title");
+    }
+    validate_pr_create_args(&args)?;
+    let repo = resolve_github_remote(args.repo.as_deref(), args.remote.as_deref())?;
+    validate_body_source(&args, true)?;
+    let sync_remote = sync_remote_for_repo(&repo, &args)?;
+    let base = resolve_pr_base(args.base.as_deref(), sync_remote.as_deref())?;
+    ensure_no_conflicts_in("::@")?;
+    if !args.dry_run {
+        ensure_current_change_described(args.title.as_deref())?;
+    }
+    let head = resolve_pr_head_for_create(&args, !args.dry_run)?;
+
+    if args.dry_run {
+        println!(
+            "Would create PR: gh pr create --repo {} --base {} --head {} --title <title> {}{}",
+            repo.slug(),
+            base.pr_base,
+            head.bookmark,
+            if args.body_file.is_some() {
+                "--body-file <file>"
+            } else {
+                "--body <body>"
+            },
+            if args.draft { " --draft" } else { "" }
+        );
+        return Ok(());
+    }
+
+    let existing = gh_prs_by_head(&repo, &head.bookmark)?;
+    if !existing.is_empty() {
+        let urls = existing
+            .iter()
+            .map(|pr| format!("#{} {}", pr.number, pr.url))
+            .collect::<Vec<_>>()
+            .join("\n  ");
+        bail!(
+            "existing PR found for head {head}:\n  {urls}\n\nUse `jj pr update` to edit it or `jj pr close` to close it.",
+            head = head.bookmark
+        );
+    }
+
+    if args.sync {
+        run_sync(ParsedArgs {
+            onto: Some(base.sync_base.clone()),
+            quiet: false,
+            noninteractive: true,
+            fail_on_conflicts: true,
+            ..ParsedArgs::default()
+        })?;
+        ensure_no_conflicts_in("::@")?;
+    }
+    if args.run_lints {
+        run_lint(Vec::new())?;
+    }
+    if args.run_cr {
+        run_external_status("cr", &["review"], "cr review")?;
+    }
+    if args.push {
+        let push_args = vec![
+            OsString::from("git"),
+            OsString::from("push"),
+            OsString::from("--bookmark"),
+            OsString::from(&head.bookmark),
+            OsString::from("--remote"),
+            OsString::from(resolve_push_remote(&repo, &args)?),
+        ];
+        if let Err(err) = run_jj_status_os(push_args) {
+            bail!(
+                "{err:#}\n\nPush failed. jj pr will not force/update remote bookmarks automatically. Resolve the remote bookmark state manually, then retry. Common next steps:\n  jj bookmark list {bookmark} --all-remotes\n  jj git push --bookmark {bookmark}",
+                bookmark = head.bookmark
+            );
+        }
+    }
+
+    let url = gh_pr_create(&repo, &base, &head, &args)?;
+    println!("{url}");
+    Ok(())
+}
+
+fn pr_update(args: PrArgs) -> Result<()> {
+    if args.help {
+        print_pr_update_usage();
+        return Ok(());
+    }
+    validate_body_source(&args, false)?;
+    if args.title.is_none()
+        && args.body.is_none()
+        && args.body_file.is_none()
+        && args.base.is_none()
+    {
+        bail!("jj pr update requires at least one of --title, --body, --body-file, or --base");
+    }
+
+    validate_pr_update_args(&args)?;
+    let repo = resolve_github_remote(args.repo.as_deref(), args.remote.as_deref())?;
+    let pr = resolve_existing_pr(&repo, &args)?;
+    let mut gh_args = vec![
+        "pr".to_string(),
+        "edit".to_string(),
+        pr.number.to_string(),
+        "--repo".to_string(),
+        repo.slug(),
+    ];
+    if let Some(title) = args.title.as_deref() {
+        gh_args.push("--title".to_string());
+        gh_args.push(title.to_string());
+    }
+    if let Some(body) = args.body.as_deref() {
+        gh_args.push("--body".to_string());
+        gh_args.push(body.to_string());
+    }
+    if let Some(body_file) = args.body_file.as_deref() {
+        gh_args.push("--body-file".to_string());
+        gh_args.push(body_file.to_string());
+    }
+    if let Some(base) = args.base.as_deref() {
+        gh_args.push("--base".to_string());
+        gh_args.push(sync_bookmark_name(base).to_string());
+    }
+    gh_status(&gh_args, "gh pr edit")?;
+    println!("Updated PR #{}: {}", pr.number, pr.url);
+    Ok(())
+}
+
+fn pr_close(args: PrArgs) -> Result<()> {
+    if args.help {
+        print_pr_close_usage();
+        return Ok(());
+    }
+    validate_pr_close_args(&args)?;
+    let repo = resolve_github_remote(args.repo.as_deref(), args.remote.as_deref())?;
+    let pr = resolve_existing_pr(&repo, &args)?;
+    let gh_args = vec![
+        "pr".to_string(),
+        "close".to_string(),
+        pr.number.to_string(),
+        "--repo".to_string(),
+        repo.slug(),
+    ];
+    gh_status(&gh_args, "gh pr close")?;
+    println!("Closed PR #{}: {}", pr.number, pr.url);
+    Ok(())
+}
+
+fn pr_watch(args: PrArgs) -> Result<()> {
+    if args.help {
+        print_pr_watch_usage();
+        return Ok(());
+    }
+    validate_pr_watch_args(&args)?;
+    let repo = resolve_github_remote(args.repo.as_deref(), args.remote.as_deref())?;
+    let pr = resolve_existing_pr(&repo, &args)?;
+    if pr.state != "OPEN" {
+        if args.json {
+            print_closed_pr_json(&pr);
+        } else {
+            print_closed_pr_human(&pr);
+        }
+        bail!("PR #{} is {}", pr.number, pr.state);
+    }
+    let interval = args.interval.unwrap_or_else(|| Duration::from_secs(60));
+    let timeout = args.timeout.unwrap_or_else(|| Duration::from_secs(30 * 60));
+    let deadline = Instant::now() + timeout;
+
+    loop {
+        let snapshot = pr_watch_snapshot(&repo, &pr, &args)?;
+        if args.json {
+            print_pr_watch_json(&snapshot);
+        } else {
+            print_pr_watch_human(&snapshot);
+        }
+
+        match snapshot.state {
+            WatchState::Success => return Ok(()),
+            WatchState::Failed => bail!("PR checks or unresolved review comments need attention"),
+            WatchState::Pending if args.once => bail!("PR checks are still pending"),
+            WatchState::Pending => {
+                if Instant::now() >= deadline {
+                    bail!(
+                        "timed out waiting for PR checks/comments after {}s",
+                        timeout.as_secs()
+                    );
+                }
+                thread::sleep(interval);
+            }
+        }
+    }
+}
+
+fn pr_watch_snapshot(
+    repo: &GithubRemote,
+    pr: &ExistingPr,
+    args: &PrArgs,
+) -> Result<PrWatchSnapshot> {
+    let checks = gh_pr_checks(repo, pr.number, args.required)?;
+    let (review_decision, comments) = if args.ignore_comments {
+        (None, Vec::new())
+    } else {
+        let (decision, comments) = gh_review_state(repo, pr.number)?;
+        (Some(decision), comments)
+    };
+    let has_failures = checks
+        .iter()
+        .any(|check| matches!(check.bucket.as_str(), "fail" | "cancel"));
+    let has_pending = checks.is_empty() || checks.iter().any(|check| check.bucket == "pending");
+    let changes_requested = review_decision.as_deref() == Some("CHANGES_REQUESTED");
+    let state = if has_failures || !comments.is_empty() || changes_requested {
+        WatchState::Failed
+    } else if has_pending {
+        WatchState::Pending
+    } else {
+        WatchState::Success
+    };
+    Ok(PrWatchSnapshot {
+        pr: pr.clone(),
+        checks,
+        comments,
+        review_decision,
+        state,
+    })
+}
+
+fn resolve_existing_pr(repo: &GithubRemote, args: &PrArgs) -> Result<ExistingPr> {
+    if let Some(pr) = args.pr.as_deref() {
+        return gh_pr_view(repo, pr);
+    }
+    let head = resolve_pr_head(args, false)?;
+    let prs = gh_prs_by_head(repo, &head.bookmark)?;
+    match prs.as_slice() {
+        [] => bail!(
+            "no open PR found for head {} in {}",
+            head.bookmark,
+            repo.slug()
+        ),
+        [pr] => Ok(pr.clone()),
+        many => bail!(
+            "multiple open PRs found for head {} in {}: {}. Re-run with --pr <number>.",
+            head.bookmark,
+            repo.slug(),
+            many.iter()
+                .map(|pr| format!("#{}", pr.number))
+                .collect::<Vec<_>>()
+                .join(", ")
+        ),
+    }
+}
+
+fn resolve_github_remote(
+    explicit: Option<&str>,
+    remote_override: Option<&str>,
+) -> Result<GithubRemote> {
+    if let Some(slug) = explicit {
+        let (owner, repo) = parse_repo_slug(slug)?;
+        return Ok(GithubRemote {
+            name: "explicit".to_string(),
+            url: format!("https://github.com/{owner}/{repo}"),
+            owner,
+            repo,
+        });
+    }
+
+    let remotes = github_remotes()?;
+    if let Some(remote_name) = remote_override {
+        let matches: Vec<GithubRemote> = remotes
+            .iter()
+            .filter(|remote| remote.name == remote_name)
+            .cloned()
+            .collect();
+        return match matches.as_slice() {
+            [remote] => Ok(remote.clone()),
+            [] => bail!("no GitHub remote named {remote_name} found; re-run with --repo <owner/repo> or another --remote"),
+            _ => bail!("multiple GitHub remotes named {remote_name} found; re-run with --repo <owner/repo>"),
+        };
+    }
+
+    let origin_matches: Vec<GithubRemote> = remotes
+        .iter()
+        .filter(|remote| remote.name == "origin")
+        .cloned()
+        .collect();
+    match origin_matches.as_slice() {
+        [remote] => return Ok(remote.clone()),
+        many if many.len() > 1 => {
+            bail!("multiple GitHub origin remotes found; re-run with --repo <owner/repo>")
+        }
+        _ => {}
+    }
+    match remotes.as_slice() {
+        [remote] => Ok(remote.clone()),
+        [] => bail!(
+            "no github.com remotes found in `jj git remote list`; re-run with --repo <owner/repo>"
+        ),
+        many => bail!(
+            "multiple GitHub remotes found: {}. Re-run with --repo <owner/repo>.",
+            many.iter()
+                .map(|remote| format!("{}={}", remote.name, remote.slug()))
+                .collect::<Vec<_>>()
+                .join(", ")
+        ),
+    }
+}
+
+fn github_remotes() -> Result<Vec<GithubRemote>> {
+    let output = run_jj_capture(["git", "remote", "list", "--color=never"])?;
+    Ok(output
+        .stdout
+        .lines()
+        .filter_map(parse_github_remote_line)
+        .collect())
+}
+
+fn parse_github_remote_line(line: &str) -> Option<GithubRemote> {
+    let mut parts = line.split_whitespace();
+    let name = parts.next()?;
+    let url = parts.next()?;
+    let (owner, repo) = parse_github_remote_url(url)?;
+    Some(GithubRemote {
+        name: name.to_string(),
+        url: url.to_string(),
+        owner,
+        repo,
+    })
+}
+
+fn parse_github_remote_url(url: &str) -> Option<(String, String)> {
+    let trimmed = url.trim().trim_end_matches(".git");
+    let path = if let Some(rest) = trimmed.strip_prefix("git@github.com:") {
+        rest
+    } else if let Some(rest) = trimmed.strip_prefix("ssh://git@github.com/") {
+        rest
+    } else if let Some(rest) = trimmed.strip_prefix("https://github.com/") {
+        rest
+    } else if let Some(rest) = trimmed.strip_prefix("http://github.com/") {
+        rest
+    } else {
+        return None;
+    };
+    parse_repo_slug(path).ok()
+}
+
+fn parse_repo_slug(slug: &str) -> Result<(String, String)> {
+    let slug = slug.trim().trim_end_matches(".git").trim_matches('/');
+    let mut parts = slug.split('/');
+    let owner = parts.next().unwrap_or_default();
+    let repo = parts.next().unwrap_or_default();
+    if owner.is_empty() || repo.is_empty() || parts.next().is_some() {
+        bail!("expected GitHub repo as <owner>/<repo>, got {slug}");
+    }
+    Ok((owner.to_string(), repo.to_string()))
+}
+
+fn sync_remote_for_repo(repo: &GithubRemote, args: &PrArgs) -> Result<Option<String>> {
+    if let Some(remote) = args.remote.as_deref() {
+        return Ok(Some(remote.to_string()));
+    }
+    if repo.name != "explicit" {
+        return Ok(Some(repo.name.clone()));
+    }
+    if let Some(remote) = infer_remote_for_repo_slug(&repo.slug())? {
+        return Ok(Some(remote));
+    }
+    Ok(jj_config_string("dotfiles.sync.remote")?)
+}
+
+fn resolve_push_remote(repo: &GithubRemote, args: &PrArgs) -> Result<String> {
+    if let Some(remote) = args.remote.as_deref() {
+        return Ok(remote.to_string());
+    }
+    if repo.name != "explicit" {
+        return Ok(repo.name.clone());
+    }
+    infer_remote_for_repo_slug(&repo.slug())?.ok_or_else(|| {
+        anyhow!(
+            "could not infer a jj remote matching explicit repo {}. Re-run with --remote <remote> or --no-push and push manually.",
+            repo.slug()
+        )
+    })
+}
+
+fn infer_remote_for_repo_slug(slug: &str) -> Result<Option<String>> {
+    let mut matches: Vec<GithubRemote> = github_remotes()?
+        .into_iter()
+        .filter(|remote| remote.slug() == slug)
+        .collect();
+    dedup_github_remotes_by_name(&mut matches);
+    match matches.as_slice() {
+        [] => Ok(None),
+        [remote] => Ok(Some(remote.name.clone())),
+        many => bail!(
+            "multiple jj remotes match GitHub repo {slug}: {}. Re-run with --remote <remote>.",
+            many.iter()
+                .map(|remote| remote.name.clone())
+                .collect::<Vec<_>>()
+                .join(", ")
+        ),
+    }
+}
+
+fn dedup_github_remotes_by_name(remotes: &mut Vec<GithubRemote>) {
+    remotes.sort_by(|left, right| left.name.cmp(&right.name));
+    remotes.dedup_by(|left, right| left.name == right.name);
+}
+
+fn resolve_pr_base(explicit: Option<&str>, sync_remote: Option<&str>) -> Result<PrBase> {
+    if let Some(base) = explicit {
+        if base == "trunk()" {
+            bail!("`trunk()` is a jj revset, not a GitHub PR base branch. Re-run with --base <branch>.");
+        }
+        let pr_base = sync_bookmark_name(base).to_string();
+        let sync_base = if split_bookmark_remote(base).is_some() || base == "trunk()" {
+            base.to_string()
+        } else {
+            format!("{base}@{}", sync_remote.unwrap_or("origin"))
+        };
+        return Ok(PrBase {
+            pr_base,
+            sync_base,
+            inferred: false,
+        });
+    }
+    let sync_base = resolve_sync_base(sync_remote, true)?;
+    if sync_base == "trunk()" {
+        bail!("could not infer a GitHub PR base branch from jj sync fallback `trunk()`. Re-run with --base <branch>.");
+    }
+    Ok(PrBase {
+        pr_base: sync_bookmark_name(&sync_base).to_string(),
+        sync_base,
+        inferred: true,
+    })
+}
+
+fn resolve_pr_head(args: &PrArgs, allow_stack: bool) -> Result<PrHead> {
+    if let Some(head) = args.head.as_deref() {
+        return Ok(PrHead {
+            bookmark: head.to_string(),
+            inferred: false,
+            source: "--head".to_string(),
+        });
+    }
+
+    if let Some(bookmark) = one_non_integration_bookmark("@")? {
+        return Ok(PrHead {
+            bookmark,
+            inferred: true,
+            source: "current-change".to_string(),
+        });
+    }
+
+    if allow_stack {
+        if let Some(bookmark) = one_non_integration_bookmark("heads(::@ & bookmarks())")? {
+            return Ok(PrHead {
+                bookmark,
+                inferred: true,
+                source: "stack".to_string(),
+            });
+        }
+    }
+
+    bail!("no non-integration bookmark found for @ or its stack. Pass --head <bookmark>, create one with `jj bookmark set <name> -r @`, or enable auto-bookmarking and pass --ticket.")
+}
+
+fn resolve_pr_head_for_create(args: &PrArgs, create_bookmark: bool) -> Result<PrHead> {
+    if let Some(head) = args.head.as_deref() {
+        return Ok(PrHead {
+            bookmark: head.to_string(),
+            inferred: false,
+            source: "--head".to_string(),
+        });
+    }
+
+    if let Some(bookmark) = one_non_integration_bookmark("@")? {
+        return Ok(PrHead {
+            bookmark,
+            inferred: true,
+            source: "current-change".to_string(),
+        });
+    }
+
+    if pr_auto_bookmark_enabled()? {
+        let ticket = args.ticket.as_deref().ok_or_else(|| {
+            anyhow!("no non-integration bookmark found at @; auto-bookmarking requires --ticket")
+        })?;
+        let short_description = args
+            .short_description
+            .clone()
+            .or_else(|| args.title.as_deref().map(short_description_from_title))
+            .ok_or_else(|| anyhow!("auto-bookmarking requires --short-description or --title"))?;
+        let bookmark =
+            render_bookmark_template(&pr_bookmark_template()?, ticket, &short_description)?;
+        if create_bookmark {
+            run_jj_status(["bookmark", "set", bookmark.as_str(), "-r", "@"])?;
+        }
+        return Ok(PrHead {
+            bookmark,
+            inferred: false,
+            source: if create_bookmark {
+                "auto-created".to_string()
+            } else {
+                "auto-create-plan".to_string()
+            },
+        });
+    }
+
+    bail!("jj pr create requires a non-integration bookmark at @. Pass --head <bookmark>, create one with `jj bookmark set <name> -r @`, or enable auto-bookmarking and pass --ticket.")
+}
+
+fn validate_body_source(args: &PrArgs, required: bool) -> Result<()> {
+    match (args.body.is_some(), args.body_file.is_some(), required) {
+        (true, true, _) => bail!("pass only one of --body or --body-file"),
+        (false, false, true) => bail!("jj pr create requires --body or --body-file"),
+        _ => Ok(()),
+    }
+}
+
+fn reject_unsupported_pr_flags(command: &str, args: &PrArgs) -> Result<()> {
+    if args.dry_run {
+        bail!("jj pr {command} does not support --dry-run");
+    }
+    Ok(())
+}
+
+fn validate_pr_selector_args(args: &PrArgs) -> Result<()> {
+    if args.head.is_some() && args.pr.is_some() {
+        bail!("pass only one of --head or --pr");
+    }
+    Ok(())
+}
+
+fn validate_pr_doctor_args(args: &PrArgs) -> Result<()> {
+    reject_unsupported_pr_flags("doctor", args)?;
+    if let Some(flag) = first_unsupported_pr_flag(args, &["repo", "remote", "base", "head", "json"])
+    {
+        bail!("jj pr doctor does not support --{flag}");
+    }
+    Ok(())
+}
+
+fn validate_pr_create_args(args: &PrArgs) -> Result<()> {
+    if let Some(flag) = first_unsupported_pr_flag(
+        args,
+        &[
+            "base",
+            "repo",
+            "remote",
+            "head",
+            "title",
+            "body",
+            "body-file",
+            "ticket",
+            "short-description",
+            "sync",
+            "run-lints",
+            "run-cr",
+            "draft",
+            "push",
+            "no-push",
+            "dry-run",
+        ],
+    ) {
+        bail!("jj pr create does not support --{flag}");
+    }
+    Ok(())
+}
+
+fn validate_pr_update_args(args: &PrArgs) -> Result<()> {
+    reject_unsupported_pr_flags("update", args)?;
+    validate_pr_selector_args(args)?;
+    if let Some(flag) = first_unsupported_pr_flag(
+        args,
+        &[
+            "repo",
+            "remote",
+            "head",
+            "pr",
+            "title",
+            "body",
+            "body-file",
+            "base",
+        ],
+    ) {
+        bail!("jj pr update does not support --{flag}");
+    }
+    Ok(())
+}
+
+fn validate_pr_close_args(args: &PrArgs) -> Result<()> {
+    reject_unsupported_pr_flags("close", args)?;
+    validate_pr_selector_args(args)?;
+    if let Some(flag) = first_unsupported_pr_flag(args, &["repo", "remote", "head", "pr"]) {
+        bail!("jj pr close does not support --{flag}");
+    }
+    Ok(())
+}
+
+fn validate_pr_watch_args(args: &PrArgs) -> Result<()> {
+    reject_unsupported_pr_flags("watch", args)?;
+    validate_pr_selector_args(args)?;
+    if let Some(flag) = first_unsupported_pr_flag(
+        args,
+        &[
+            "repo",
+            "remote",
+            "head",
+            "pr",
+            "once",
+            "json",
+            "ignore-comments",
+            "required",
+            "interval",
+            "timeout",
+        ],
+    ) {
+        bail!("jj pr watch does not support --{flag}");
+    }
+    if !args.once
+        && args
+            .interval
+            .unwrap_or_else(|| Duration::from_secs(60))
+            .as_secs()
+            < 5
+    {
+        bail!("jj pr watch requires --interval >= 5s unless --once is used");
+    }
+    Ok(())
+}
+
+fn first_unsupported_pr_flag(args: &PrArgs, allowed: &[&str]) -> Option<&'static str> {
+    let candidates = [
+        ("base", args.base.is_some()),
+        ("repo", args.repo.is_some()),
+        ("remote", args.remote.is_some()),
+        ("head", args.head.is_some()),
+        ("title", args.title.is_some()),
+        ("body", args.body.is_some()),
+        ("body-file", args.body_file.is_some()),
+        ("ticket", args.ticket.is_some()),
+        ("short-description", args.short_description.is_some()),
+        ("pr", args.pr.is_some()),
+        ("sync", args.sync),
+        ("run-lints", args.run_lints),
+        ("run-cr", args.run_cr),
+        ("draft", args.draft),
+        ("push", args.push),
+        ("no-push", args.no_push),
+        ("dry-run", args.dry_run),
+        ("json", args.json),
+        ("once", args.once),
+        ("ignore-comments", args.ignore_comments),
+        ("required", args.required),
+        ("interval", args.interval.is_some()),
+        ("timeout", args.timeout.is_some()),
+    ];
+    candidates
+        .into_iter()
+        .find(|(flag, present)| *present && !allowed.contains(flag))
+        .map(|(flag, _)| flag)
+}
+
+fn one_non_integration_bookmark(revset: &str) -> Result<Option<String>> {
+    let bookmarks: Vec<String> = bookmark_names_for_revset(revset)?
+        .into_iter()
+        .filter(|bookmark| !is_integration_bookmark(bookmark))
+        .collect();
+    match bookmarks.as_slice() {
+        [] => Ok(None),
+        [bookmark] => Ok(Some(bookmark.clone())),
+        many => bail!(
+            "multiple non-integration bookmarks found for {revset}: {}. Pass --head <bookmark>.",
+            many.join(", ")
+        ),
+    }
+}
+
+fn pr_auto_bookmark_enabled() -> Result<bool> {
+    Ok(jj_config_bool("dotfiles.pr.auto-bookmark")?.unwrap_or(false))
+}
+
+fn pr_bookmark_template() -> Result<String> {
+    Ok(jj_config_string("dotfiles.pr.bookmark-template")?
+        .unwrap_or_else(|| "{whoami}/{ticket-number}/{short-description}".to_string()))
+}
+
+fn render_bookmark_template(
+    template: &str,
+    ticket: &str,
+    short_description: &str,
+) -> Result<String> {
+    validate_ticket(ticket)?;
+    let whoami = env::var("USER").unwrap_or_else(|_| "chris".to_string());
+    let rendered = template
+        .replace("{whoami}", &slug_component(&whoami))
+        .replace("{ticket-number}", ticket)
+        .replace("{short-description}", &slug_component(short_description));
+    if rendered.contains('{') || rendered.contains('}') {
+        bail!("bookmark template contains unknown placeholders: {template}");
+    }
+    if rendered.trim().is_empty() || rendered.contains("//") {
+        bail!("bookmark template rendered an invalid bookmark: {rendered}");
+    }
+    Ok(rendered)
+}
+
+fn validate_ticket(ticket: &str) -> Result<()> {
+    let mut chars = ticket.chars();
+    let Some(first) = chars.next() else {
+        bail!("ticket number cannot be empty");
+    };
+    if !first.is_ascii_alphanumeric() {
+        bail!("ticket number must start with a letter or number: {ticket}");
+    }
+    if !chars.all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '.' | '_' | '-')) {
+        bail!(
+            "ticket number may only contain letters, numbers, dot, underscore, or hyphen: {ticket}"
+        );
+    }
+    Ok(())
+}
+
+fn short_description_from_title(title: &str) -> String {
+    let without_ticket = title
+        .split_whitespace()
+        .filter(|part| !(part.starts_with('[') && part.ends_with(']')))
+        .collect::<Vec<_>>()
+        .join(" ");
+    let without_type = without_ticket
+        .split_once(':')
+        .map(|(_, rest)| rest.trim())
+        .unwrap_or(without_ticket.trim());
+    slug_component(without_type)
+}
+
+fn slug_component(value: &str) -> String {
+    let mut out = String::new();
+    let mut prev_dash = false;
+    for ch in value.chars().flat_map(char::to_lowercase) {
+        if ch.is_ascii_alphanumeric() {
+            out.push(ch);
+            prev_dash = false;
+        } else if !prev_dash {
+            out.push('-');
+            prev_dash = true;
+        }
+    }
+    out.trim_matches('-').to_string()
+}
+
+fn ensure_no_conflicts_in(revset: &str) -> Result<()> {
+    let conflicts = conflicted_changes_in(revset)?;
+    if conflicts.is_empty() {
+        Ok(())
+    } else {
+        bail!(
+            "PR-relevant changes have conflicts: {}",
+            conflicts.join(", ")
+        )
+    }
+}
+
+fn ensure_current_change_described(title: Option<&str>) -> Result<()> {
+    if !commit_description_is_empty("@")? {
+        return Ok(());
+    }
+    let hint = title
+        .map(|title| format!("\nSuggested command:\n  jj describe -m {:?}", title))
+        .unwrap_or_else(|| {
+            "\nDescribe the current change with `jj describe -m <message>`.".to_string()
+        });
+    bail!("current change has no description and cannot be pushed.{hint}")
+}
+
+fn run_external_status(program: &str, args: &[&str], label: &str) -> Result<()> {
+    let status = Command::new(program)
+        .args(args)
+        .status()
+        .with_context(|| format!("failed to execute {label}"))?;
+    if status.success() {
+        Ok(())
+    } else {
+        bail!("{label} failed with status {status}")
+    }
+}
+
+fn gh_prs_by_head(repo: &GithubRemote, head: &str) -> Result<Vec<ExistingPr>> {
+    let args = vec![
+        "pr".to_string(),
+        "list".to_string(),
+        "--repo".to_string(),
+        repo.slug(),
+        "--head".to_string(),
+        head.to_string(),
+        "--state".to_string(),
+        "open".to_string(),
+        "--json".to_string(),
+        "number,url,title,state".to_string(),
+    ];
+    let stdout = gh_capture(&args, "gh pr list")?;
+    parse_pr_list_json(&stdout)
+}
+
+fn gh_pr_view(repo: &GithubRemote, pr: &str) -> Result<ExistingPr> {
+    let args = vec![
+        "pr".to_string(),
+        "view".to_string(),
+        pr.to_string(),
+        "--repo".to_string(),
+        repo.slug(),
+        "--json".to_string(),
+        "number,url,title,state".to_string(),
+    ];
+    let stdout = gh_capture(&args, "gh pr view")?;
+    parse_pr_json(&serde_json::from_str(&stdout).context("failed to parse gh pr view JSON")?)
+}
+
+fn gh_pr_create(
+    repo: &GithubRemote,
+    base: &PrBase,
+    head: &PrHead,
+    args: &PrArgs,
+) -> Result<String> {
+    let mut gh_args = vec![
+        "pr".to_string(),
+        "create".to_string(),
+        "--repo".to_string(),
+        repo.slug(),
+        "--base".to_string(),
+        base.pr_base.clone(),
+        "--head".to_string(),
+        head.bookmark.clone(),
+        "--title".to_string(),
+        args.title.clone().expect("title checked by caller"),
+    ];
+    if let Some(body) = args.body.as_deref() {
+        gh_args.push("--body".to_string());
+        gh_args.push(body.to_string());
+    }
+    if let Some(body_file) = args.body_file.as_deref() {
+        gh_args.push("--body-file".to_string());
+        gh_args.push(body_file.to_string());
+    }
+    if args.draft {
+        gh_args.push("--draft".to_string());
+    }
+    Ok(gh_capture(&gh_args, "gh pr create")?.trim().to_string())
+}
+
+fn gh_pr_checks(repo: &GithubRemote, pr_number: u64, required: bool) -> Result<Vec<PrCheck>> {
+    let mut args = vec![
+        "pr".to_string(),
+        "checks".to_string(),
+        pr_number.to_string(),
+        "--repo".to_string(),
+        repo.slug(),
+        "--json".to_string(),
+        "name,bucket,state,link".to_string(),
+    ];
+    if required {
+        args.push("--required".to_string());
+    }
+    let stdout = gh_capture_allow_exit_codes(&args, "gh pr checks", &[1, 8])?;
+    parse_checks_json(&stdout)
+}
+
+fn gh_review_state(
+    repo: &GithubRemote,
+    pr_number: u64,
+) -> Result<(String, Vec<UnresolvedComment>)> {
+    let mut comments = Vec::new();
+    let mut decision = String::new();
+    let mut after: Option<String> = None;
+
+    loop {
+        let _first_page = decision.is_empty();
+        let after_arg = after
+            .as_deref()
+            .map(|cursor| format!(", after: \"{}\"", json_escape(cursor)))
+            .unwrap_or_default();
+        let query = r#"
+query($owner: String!, $repo: String!, $number: Int!) {
+  repository(owner: $owner, name: $repo) {
+    pullRequest(number: $number) {
+      reviewDecision
+      reviewThreads(first: 100__AFTER__) {
+        pageInfo { hasNextPage endCursor }
+        nodes {
+          isResolved
+          isOutdated
+          comments(last: 1) {
+            nodes {
+              author { login }
+              bodyText
+              path
+              line
+              url
+            }
+          }
+        }
+      }
+    }
+  }
+}
+"#
+        .replace("__AFTER__", &after_arg);
+        let args = vec![
+            "api".to_string(),
+            "graphql".to_string(),
+            "-f".to_string(),
+            format!("owner={}", repo.owner),
+            "-f".to_string(),
+            format!("repo={}", repo.repo),
+            "-F".to_string(),
+            format!("number={pr_number}"),
+            "-f".to_string(),
+            format!("query={query}"),
+        ];
+        let stdout = gh_capture(&args, "gh api graphql reviewThreads")?;
+        let page = parse_review_state_json(&stdout)?;
+        decision = page.review_decision;
+        comments.extend(page.comments);
+        if !page.has_next_page {
+            break;
+        }
+        after = page.end_cursor;
+        if after.is_none() {
+            break;
+        }
+    }
+
+    if decision.is_empty() {
+        decision = "REVIEW_REQUIRED".to_string();
+    }
+    Ok((decision, comments))
+}
+
+fn gh_capture(args: &[String], label: &str) -> Result<String> {
+    gh_capture_allow_exit_codes(args, label, &[])
+}
+
+fn gh_capture_allow_exit_codes(
+    args: &[String],
+    label: &str,
+    allowed_codes: &[i32],
+) -> Result<String> {
+    let output = Command::new("gh")
+        .args(args)
+        .env("GH_PROMPT_DISABLED", "1")
+        .output()
+        .with_context(|| format!("failed to execute {label}"))?;
+    let allowed = output
+        .status
+        .code()
+        .is_some_and(|code| allowed_codes.contains(&code));
+    if !output.status.success() && !allowed {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        bail!(
+            "{label} failed with status {}: {}",
+            output.status,
+            stderr.trim()
+        );
+    }
+    String::from_utf8(output.stdout).context("failed to decode gh stdout")
+}
+
+fn gh_status(args: &[String], label: &str) -> Result<()> {
+    let status = Command::new("gh")
+        .args(args)
+        .env("GH_PROMPT_DISABLED", "1")
+        .status()
+        .with_context(|| format!("failed to execute {label}"))?;
+    if status.success() {
+        Ok(())
+    } else {
+        bail!("{label} failed with status {status}")
+    }
+}
+
+fn parse_pr_list_json(stdout: &str) -> Result<Vec<ExistingPr>> {
+    let value: serde_json::Value =
+        serde_json::from_str(stdout).context("failed to parse gh pr list JSON")?;
+    let array = value
+        .as_array()
+        .ok_or_else(|| anyhow!("expected gh pr list JSON array"))?;
+    array.iter().map(parse_pr_json).collect()
+}
+
+fn parse_pr_json(value: &serde_json::Value) -> Result<ExistingPr> {
+    Ok(ExistingPr {
+        number: value
+            .get("number")
+            .and_then(serde_json::Value::as_u64)
+            .ok_or_else(|| anyhow!("PR JSON missing number"))?,
+        url: value
+            .get("url")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or_default()
+            .to_string(),
+        title: value
+            .get("title")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or_default()
+            .to_string(),
+        state: value
+            .get("state")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or_default()
+            .to_string(),
+    })
+}
+
+fn parse_checks_json(stdout: &str) -> Result<Vec<PrCheck>> {
+    let value: serde_json::Value =
+        serde_json::from_str(stdout).context("failed to parse gh pr checks JSON")?;
+    let array = value
+        .as_array()
+        .ok_or_else(|| anyhow!("expected gh pr checks JSON array"))?;
+    Ok(array
+        .iter()
+        .map(|check| PrCheck {
+            name: check
+                .get("name")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or_default()
+                .to_string(),
+            bucket: check
+                .get("bucket")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or_default()
+                .to_string(),
+            state: check
+                .get("state")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or_default()
+                .to_string(),
+            link: check
+                .get("link")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or_default()
+                .to_string(),
+        })
+        .collect())
+}
+
+fn parse_review_state_json(stdout: &str) -> Result<ReviewStatePage> {
+    let value: serde_json::Value =
+        serde_json::from_str(stdout).context("failed to parse gh reviewThreads JSON")?;
+    let pr = value
+        .pointer("/data/repository/pullRequest")
+        .ok_or_else(|| anyhow!("expected pullRequest in GitHub GraphQL response"))?;
+    let review_decision = pr
+        .get("reviewDecision")
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or("REVIEW_REQUIRED")
+        .to_string();
+    let page_info = pr.pointer("/reviewThreads/pageInfo");
+    let has_next_page = page_info
+        .and_then(|page| page.get("hasNextPage"))
+        .and_then(serde_json::Value::as_bool)
+        .unwrap_or(false);
+    let end_cursor = page_info
+        .and_then(|page| page.get("endCursor"))
+        .and_then(serde_json::Value::as_str)
+        .map(str::to_string);
+    let threads = value
+        .pointer("/data/repository/pullRequest/reviewThreads/nodes")
+        .and_then(serde_json::Value::as_array)
+        .ok_or_else(|| anyhow!("expected reviewThreads nodes in GitHub GraphQL response"))?;
+    let mut comments = Vec::new();
+    for thread in threads {
+        if thread
+            .get("isResolved")
+            .and_then(serde_json::Value::as_bool)
+            .unwrap_or(false)
+            || thread
+                .get("isOutdated")
+                .and_then(serde_json::Value::as_bool)
+                .unwrap_or(false)
+        {
+            continue;
+        }
+        let Some(nodes) = thread
+            .pointer("/comments/nodes")
+            .and_then(serde_json::Value::as_array)
+        else {
+            continue;
+        };
+        let Some(comment) = nodes.last() else {
+            continue;
+        };
+        comments.push(UnresolvedComment {
+            author: comment
+                .pointer("/author/login")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or("unknown")
+                .to_string(),
+            path: comment
+                .get("path")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or_default()
+                .to_string(),
+            line: comment.get("line").and_then(serde_json::Value::as_u64),
+            first_line: first_nonempty_line(
+                comment
+                    .get("bodyText")
+                    .and_then(serde_json::Value::as_str)
+                    .unwrap_or_default(),
+            ),
+            url: comment
+                .get("url")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or_default()
+                .to_string(),
+        });
+    }
+    Ok(ReviewStatePage {
+        review_decision,
+        comments,
+        has_next_page,
+        end_cursor,
+    })
+}
+
+fn first_nonempty_line(body: &str) -> String {
+    body.lines()
+        .map(str::trim)
+        .find(|line| !line.is_empty())
+        .unwrap_or("")
+        .chars()
+        .take(180)
+        .collect()
+}
+
+fn parse_duration_arg(value: &str) -> Result<Duration> {
+    let value = value.trim();
+    if value.is_empty() {
+        bail!("duration cannot be empty");
+    }
+    let (number, multiplier) = match value.chars().last().unwrap() {
+        's' | 'S' => (&value[..value.len() - 1], 1),
+        'm' | 'M' => (&value[..value.len() - 1], 60),
+        'h' | 'H' => (&value[..value.len() - 1], 60 * 60),
+        ch if ch.is_ascii_digit() => (value, 1),
+        _ => bail!("duration must be seconds or use s/m/h suffix: {value}"),
+    };
+    let amount: u64 = number
+        .parse()
+        .with_context(|| format!("invalid duration: {value}"))?;
+    if amount == 0 {
+        bail!("duration must be greater than zero: {value}");
+    }
+    Ok(Duration::from_secs(amount.saturating_mul(multiplier)))
+}
+
+fn print_pr_doctor_json(
+    repo: Option<&GithubRemote>,
+    base: Option<&PrBase>,
+    head: Option<&PrHead>,
+    existing: Option<&ExistingPr>,
+    blockers: &[String],
+    warnings: &[String],
+) {
+    println!(
+        "{}",
+        json!({
+            "version": 1,
+            "repo": repo.map(|repo| json!({
+                "owner": repo.owner,
+                "name": repo.repo,
+                "slug": repo.slug(),
+                "remote": repo.name,
+                "url": repo.url,
+            })),
+            "base": base.map(|base| json!({
+                "pr": base.pr_base,
+                "sync": base.sync_base,
+                "inferred": base.inferred,
+            })),
+            "head": head.map(|head| json!({
+                "bookmark": head.bookmark,
+                "inferred": head.inferred,
+                "source": head.source,
+            })),
+            "existingPr": existing.map(|pr| json!({
+                "number": pr.number,
+                "url": pr.url,
+                "title": pr.title,
+                "state": pr.state,
+            })),
+            "blockers": blockers,
+            "warnings": warnings,
+        })
+    );
+}
+
+fn print_pr_doctor_human(
+    repo: Option<&GithubRemote>,
+    base: Option<&PrBase>,
+    head: Option<&PrHead>,
+    existing: Option<&ExistingPr>,
+    blockers: &[String],
+    warnings: &[String],
+) {
+    match repo {
+        Some(repo) => println!("Repo: {} (remote {})", repo.slug(), repo.name),
+        None => println!("Repo: unavailable"),
+    }
+    match base {
+        Some(base) => println!("Base: {} (sync {})", base.pr_base, base.sync_base),
+        None => println!("Base: unavailable"),
+    }
+    match head {
+        Some(head) => println!("Head: {} ({})", head.bookmark, head.source),
+        None => println!("Head: unavailable"),
+    }
+    match existing {
+        Some(pr) => println!("Existing PR: #{} {}", pr.number, pr.url),
+        None => println!("Existing PR: none detected"),
+    }
+    if warnings.is_empty() {
+        println!("Warnings: none");
+    } else {
+        println!("Warnings:");
+        for warning in warnings {
+            println!(" - {warning}");
+        }
+    }
+    if blockers.is_empty() {
+        println!("Status: ready");
+    } else {
+        println!("Blockers:");
+        for blocker in blockers {
+            println!(" - {blocker}");
+        }
+    }
+}
+
+fn print_pr_watch_json(snapshot: &PrWatchSnapshot) {
+    println!(
+        "{}",
+        json!({
+            "version": 1,
+            "pr": {
+                "number": snapshot.pr.number,
+                "url": snapshot.pr.url,
+                "title": snapshot.pr.title,
+                "state": snapshot.pr.state,
+            },
+            "state": match snapshot.state {
+                WatchState::Success => "success",
+                WatchState::Pending => "pending",
+                WatchState::Failed => "failed",
+            },
+            "reviewDecision": snapshot.review_decision,
+            "checks": snapshot.checks.iter().map(|check| json!({
+                "name": check.name,
+                "bucket": check.bucket,
+                "state": check.state,
+                "link": check.link,
+            })).collect::<Vec<_>>(),
+            "unresolvedComments": snapshot.comments.iter().map(|comment| json!({
+                "author": comment.author,
+                "path": comment.path,
+                "line": comment.line,
+                "firstLine": comment.first_line,
+                "url": comment.url,
+            })).collect::<Vec<_>>(),
+        })
+    );
+}
+
+fn print_closed_pr_json(pr: &ExistingPr) {
+    println!(
+        "{}",
+        json!({
+            "version": 1,
+            "pr": {
+                "number": pr.number,
+                "url": pr.url,
+                "title": pr.title,
+                "state": pr.state,
+            },
+            "state": "closed",
+            "checks": [],
+            "unresolvedComments": [],
+        })
+    );
+}
+
+fn print_closed_pr_human(pr: &ExistingPr) {
+    println!("PR #{}: {} {}", pr.number, pr.state, pr.url);
+    println!("Status: closed; no active checks/review polling performed");
+}
+
+fn print_pr_watch_human(snapshot: &PrWatchSnapshot) {
+    let pass = count_checks(&snapshot.checks, "pass");
+    let fail = count_checks(&snapshot.checks, "fail") + count_checks(&snapshot.checks, "cancel");
+    let pending = count_checks(&snapshot.checks, "pending");
+    let skipping = count_checks(&snapshot.checks, "skipping");
+    println!("PR #{}: {}", snapshot.pr.number, snapshot.pr.url);
+    println!("Checks: {pass} pass, {pending} pending, {fail} fail/cancel, {skipping} skipped");
+    if let Some(decision) = snapshot.review_decision.as_deref() {
+        println!("Review decision: {decision}");
+    }
+    let failing: Vec<&PrCheck> = snapshot
+        .checks
+        .iter()
+        .filter(|check| matches!(check.bucket.as_str(), "fail" | "cancel"))
+        .collect();
+    if !failing.is_empty() {
+        println!("Failing checks:");
+        for check in failing.iter().take(10) {
+            println!(
+                " - {}: {}{}",
+                check.name,
+                check.state,
+                format_link(&check.link)
+            );
+        }
+    }
+    let pending_checks: Vec<&PrCheck> = snapshot
+        .checks
+        .iter()
+        .filter(|check| check.bucket == "pending")
+        .collect();
+    if !pending_checks.is_empty() {
+        println!("Pending checks:");
+        for check in pending_checks.iter().take(10) {
+            println!(" - {}: {}", check.name, check.state);
+        }
+        if pending_checks.len() > 10 {
+            println!(" - ... {} more", pending_checks.len() - 10);
+        }
+    }
+    if snapshot.comments.is_empty() {
+        println!("Unresolved review comments: 0");
+    } else {
+        println!("Unresolved review comments: {}", snapshot.comments.len());
+        for comment in snapshot.comments.iter().take(10) {
+            let location = if comment.path.is_empty() {
+                "PR".to_string()
+            } else if let Some(line) = comment.line {
+                format!("{}:{line}", comment.path)
+            } else {
+                comment.path.clone()
+            };
+            println!(
+                " - {} {}: {}{}",
+                comment.author,
+                location,
+                comment.first_line,
+                format_link(&comment.url)
+            );
+        }
+        if snapshot.comments.len() > 10 {
+            println!(" - ... {} more", snapshot.comments.len() - 10);
+        }
+    }
+    match snapshot.state {
+        WatchState::Success => println!("Status: ready"),
+        WatchState::Pending => println!("Status: pending"),
+        WatchState::Failed => println!("Status: needs attention"),
+    }
+}
+
+fn count_checks(checks: &[PrCheck], bucket: &str) -> usize {
+    checks.iter().filter(|check| check.bucket == bucket).count()
+}
+
+fn format_link(link: &str) -> String {
+    if link.is_empty() {
+        String::new()
+    } else {
+        format!(" ({link})")
+    }
+}
+
+fn print_pr_usage() {
+    eprintln!("Usage:\n  jj pr doctor [--json] [--repo <owner/repo>] [--remote <remote>] [--base <branch>] [--head <bookmark>]\n  jj pr create --title <title> (--body <text>|--body-file <file>) [--base <branch>] [--repo <owner/repo>] [--remote <remote>] [--head <bookmark>] [--ticket <id>] [--sync] [--run-lints] [--run-cr] [--draft] [--no-push] [--dry-run]\n  jj pr update [--title <title>] [--body <text>|--body-file <file>] [--base <branch>] [--repo <owner/repo>] [--remote <remote>] [--head <bookmark>|--pr <number>]\n  jj pr close [--repo <owner/repo>] [--remote <remote>] [--head <bookmark>|--pr <number>]\n  jj pr watch [--repo <owner/repo>] [--remote <remote>] [--head <bookmark>|--pr <number>] [--interval 60s] [--timeout 30m] [--once] [--json] [--ignore-comments] [--required]");
+}
+
+fn print_pr_doctor_usage() {
+    eprintln!("Usage:\n  jj pr doctor [--json] [--repo <owner/repo>] [--remote <remote>] [--base <branch>] [--head <bookmark>]");
+}
+
+fn print_pr_create_usage() {
+    eprintln!("Usage:\n  jj pr create --title <title> (--body <text>|--body-file <file>) [--base <branch>] [--repo <owner/repo>] [--remote <remote>] [--head <bookmark>] [--ticket <id>] [--short-description <slug>] [--sync] [--run-lints] [--run-cr] [--draft] [--no-push] [--dry-run]");
+}
+
+fn print_pr_update_usage() {
+    eprintln!("Usage:\n  jj pr update [--title <title>] [--body <text>|--body-file <file>] [--base <branch>] [--repo <owner/repo>] [--remote <remote>] [--head <bookmark>|--pr <number>]");
+}
+
+fn print_pr_close_usage() {
+    eprintln!("Usage:\n  jj pr close [--repo <owner/repo>] [--remote <remote>] [--head <bookmark>|--pr <number>]");
+}
+
+fn print_pr_watch_usage() {
+    eprintln!("Usage:\n  jj pr watch [--repo <owner/repo>] [--remote <remote>] [--head <bookmark>|--pr <number>] [--interval 60s] [--timeout 30m] [--once] [--json] [--ignore-comments] [--required]\n\nPolls GitHub checks, review decision, and unresolved review threads. Exits 0 when checks pass and no unresolved comments/blocking review decision remains; exits nonzero with a compact summary on failed checks, pending --once, comments, or timeout.");
 }
 
 #[derive(Debug, Clone)]
@@ -2985,6 +4716,39 @@ fn commit_is_empty(revset: &str) -> Result<bool> {
     }
 }
 
+fn commit_description_is_empty(revset: &str) -> Result<bool> {
+    let output = run_jj_capture_allow_failure([
+        "log",
+        "-r",
+        revset,
+        "-n",
+        "1",
+        "--no-graph",
+        "--color=never",
+        "-T",
+        "description",
+    ])?;
+
+    if !output.status.success() {
+        bail!(format_jj_error(
+            &[
+                "log",
+                "-r",
+                revset,
+                "-n",
+                "1",
+                "--no-graph",
+                "--color=never",
+                "-T",
+                "description",
+            ],
+            &output
+        ))
+    }
+
+    Ok(output.stdout.trim().is_empty())
+}
+
 fn rollback_bookmark(bookmark: &str, previous_target: Option<&str>) -> Result<()> {
     match previous_target {
         Some(target) => run_jj_status([
@@ -3269,10 +5033,15 @@ fn format_jj_error_os(args: &[OsString], output: &JjOutput) -> String {
 }
 
 fn conflicted_changes() -> Result<Vec<String>> {
+    conflicted_changes_in("all()")
+}
+
+fn conflicted_changes_in(revset: &str) -> Result<Vec<String>> {
+    let conflict_revset = format!("conflicts() & ({revset})");
     let output = run_jj_capture([
         "log",
         "-r",
-        "conflicts()",
+        conflict_revset.as_str(),
         "--no-graph",
         "--color=never",
         "-T",
@@ -3328,17 +5097,20 @@ struct JjOutput {
 mod tests {
     use super::{
         choose_ship_bookmark, choose_sync_base, configured_lints, fetch_remote_choice,
-        infer_lint_name, infer_remote_integration_bookmark_from, is_check_only_format_script,
-        is_integration_bookmark, is_safe_package_check_script, is_validation_name,
-        lint_config_toml, lint_display_name, lint_onboard_json, lint_onboard_report,
-        makefile_targets, parse_common_args, parse_config_string_array, parse_lint_selection,
-        parse_lints_toml, parse_toml_string_array, parse_ws_add_args, parse_ws_forget_args,
-        parse_ws_path_args, parse_ws_prune_args, python_runner, run_lint, run_lint_onboard,
-        run_sync, run_ws, selected_lints, ship_plan, source_venv_python_usable,
-        stale_workspace_dirs, sync_base_candidates, validate_ws_name, workspace_context_for_repo,
-        write_tracked_lint_config, FetchChoice, LintCommand, LintOnboardReport, LintSuggestion,
-        ParsedArgs, ProjectGroup, ShipPlan, WsAddArgs, WsConfig, WsForgetArgs, WsPathArgs,
-        WsPruneArgs,
+        first_unsupported_pr_flag, infer_lint_name, infer_remote_integration_bookmark_from,
+        is_check_only_format_script, is_integration_bookmark, is_safe_package_check_script,
+        is_validation_name, lint_config_toml, lint_display_name, lint_onboard_json,
+        lint_onboard_report, makefile_targets, parse_checks_json, parse_common_args,
+        parse_config_string_array, parse_duration_arg, parse_github_remote_url,
+        parse_lint_selection, parse_lints_toml, parse_review_state_json, parse_toml_string_array,
+        parse_ws_add_args, parse_ws_forget_args, parse_ws_path_args, parse_ws_prune_args,
+        python_runner, render_bookmark_template, resolve_pr_base, run_lint, run_lint_onboard,
+        run_sync, run_ws, selected_lints, ship_plan, short_description_from_title,
+        source_venv_python_usable, stale_workspace_dirs, sync_base_candidates,
+        validate_body_source, validate_pr_watch_args, validate_ticket, validate_ws_name,
+        workspace_context_for_repo, write_tracked_lint_config, FetchChoice, LintCommand,
+        LintOnboardReport, LintSuggestion, ParsedArgs, PrArgs, ProjectGroup, ShipPlan, WsAddArgs,
+        WsConfig, WsForgetArgs, WsPathArgs, WsPruneArgs,
     };
     use std::env;
     use std::ffi::OsString;
@@ -3346,6 +5118,7 @@ mod tests {
     use std::path::{Path, PathBuf};
     use std::process::Command;
     use std::sync::Mutex;
+    use std::time::Duration;
 
     static INTEGRATION_LOCK: Mutex<()> = Mutex::new(());
 
@@ -3355,6 +5128,163 @@ mod tests {
 
     fn lint_commands(lints: &[super::LintCommand]) -> Vec<String> {
         lints.iter().map(|lint| lint.command.clone()).collect()
+    }
+
+    #[test]
+    fn github_remote_parsing_accepts_common_github_urls() {
+        for url in [
+            "git@github.com:sureapp/surecraft-core.git",
+            "git@github.com:sureapp/surecraft-core",
+            "ssh://git@github.com/sureapp/surecraft-core.git",
+            "https://github.com/sureapp/surecraft-core.git",
+            "https://github.com/sureapp/surecraft-core",
+        ] {
+            assert_eq!(
+                parse_github_remote_url(url),
+                Some(("sureapp".to_string(), "surecraft-core".to_string()))
+            );
+        }
+        assert_eq!(
+            parse_github_remote_url("git@example.com:sureapp/repo"),
+            None
+        );
+    }
+
+    #[test]
+    fn pr_bookmark_template_renders_safe_bookmark() {
+        let bookmark = render_bookmark_template(
+            "{whoami}/{ticket-number}/{short-description}",
+            "EPD-8719",
+            "Stop Deterministic Scheduled MTA Retries!",
+        )
+        .unwrap();
+        let suffix = "/EPD-8719/stop-deterministic-scheduled-mta-retries";
+        assert!(bookmark.ends_with(suffix), "bookmark was {bookmark}");
+    }
+
+    #[test]
+    fn pr_short_description_drops_conventional_prefix_and_ticket() {
+        assert_eq!(
+            short_description_from_title(
+                "fix(policy): stop deterministic scheduled MTA retries [EPD-8719]"
+            ),
+            "stop-deterministic-scheduled-mta-retries"
+        );
+    }
+
+    #[test]
+    fn pr_explicit_base_uses_selected_sync_remote() {
+        let base = resolve_pr_base(Some("develop"), Some("upstream")).unwrap();
+        assert_eq!(base.pr_base, "develop");
+        assert_eq!(base.sync_base, "develop@upstream");
+
+        let remote_base = resolve_pr_base(Some("main@origin"), Some("upstream")).unwrap();
+        assert_eq!(remote_base.pr_base, "main");
+        assert_eq!(remote_base.sync_base, "main@origin");
+
+        assert!(resolve_pr_base(Some("trunk()"), Some("origin")).is_err());
+    }
+
+    #[test]
+    fn pr_body_source_validation_rejects_ambiguous_inputs() {
+        let both = PrArgs {
+            body: Some("body".to_string()),
+            body_file: Some("/tmp/body.md".to_string()),
+            ..PrArgs::default()
+        };
+        assert!(validate_body_source(&both, true).is_err());
+
+        let missing = PrArgs::default();
+        assert!(validate_body_source(&missing, true).is_err());
+        assert!(validate_body_source(&missing, false).is_ok());
+    }
+
+    #[test]
+    fn pr_ticket_validation_is_conservative() {
+        for ticket in ["EPD-8719", "ABC_123", "A.1"] {
+            validate_ticket(ticket).unwrap();
+        }
+        for ticket in ["", " EPD-1", "EPD 1", "EPD/1", "EPD@1"] {
+            assert!(
+                validate_ticket(ticket).is_err(),
+                "ticket {ticket:?} should fail"
+            );
+        }
+    }
+
+    #[test]
+    fn pr_watch_parses_duration_suffixes() {
+        assert_eq!(parse_duration_arg("30").unwrap().as_secs(), 30);
+        assert_eq!(parse_duration_arg("60s").unwrap().as_secs(), 60);
+        assert_eq!(parse_duration_arg("30m").unwrap().as_secs(), 1800);
+        assert_eq!(parse_duration_arg("1h").unwrap().as_secs(), 3600);
+        assert!(parse_duration_arg("0").is_err());
+        assert!(parse_duration_arg("1d").is_err());
+    }
+
+    #[test]
+    fn pr_watch_validation_rejects_ambiguous_or_ignored_flags() {
+        let ambiguous = PrArgs {
+            head: Some("feature".to_string()),
+            pr: Some("123".to_string()),
+            once: true,
+            ..PrArgs::default()
+        };
+        assert!(validate_pr_watch_args(&ambiguous).is_err());
+
+        let ignored = PrArgs {
+            title: Some("unused".to_string()),
+            once: true,
+            ..PrArgs::default()
+        };
+        assert!(validate_pr_watch_args(&ignored).is_err());
+
+        let tight_loop = PrArgs {
+            interval: Some(Duration::from_secs(1)),
+            ..PrArgs::default()
+        };
+        assert!(validate_pr_watch_args(&tight_loop).is_err());
+
+        assert_eq!(
+            first_unsupported_pr_flag(&ignored, &["repo", "remote", "head", "pr"]),
+            Some("title")
+        );
+    }
+
+    #[test]
+    fn pr_watch_parses_checks_json() {
+        let checks = parse_checks_json(
+            r#"[
+              {"name":"lint","bucket":"pass","state":"SUCCESS","link":"https://example.test/lint"},
+              {"name":"tests","bucket":"fail","state":"FAILURE","link":"https://example.test/tests"}
+            ]"#,
+        )
+        .unwrap();
+        assert_eq!(checks.len(), 2);
+        assert_eq!(checks[1].name, "tests");
+        assert_eq!(checks[1].bucket, "fail");
+    }
+
+    #[test]
+    fn pr_watch_parses_unresolved_non_outdated_review_threads() {
+        let page = parse_review_state_json(
+            r#"{
+              "data": {"repository": {"pullRequest": {"reviewThreads": {"nodes": [
+                {"isResolved": false, "isOutdated": false, "comments": {"nodes": [
+                  {"author": {"login": "coderabbitai"}, "bodyText": "First line\nMore detail", "path": "src/main.rs", "line": 42, "url": "https://example.test/comment"}
+                ]}},
+                {"isResolved": true, "isOutdated": false, "comments": {"nodes": [
+                  {"author": {"login": "human"}, "bodyText": "resolved", "path": "src/lib.rs", "line": 1, "url": "https://example.test/resolved"}
+                ]}}
+              ]}}}}
+            }"#,
+        )
+        .unwrap();
+        assert_eq!(page.review_decision, "REVIEW_REQUIRED");
+        let comments = page.comments;
+        assert_eq!(comments.len(), 1);
+        assert_eq!(comments[0].author, "coderabbitai");
+        assert_eq!(comments[0].first_line, "First line");
     }
 
     fn test_config(group: &Path) -> WsConfig {

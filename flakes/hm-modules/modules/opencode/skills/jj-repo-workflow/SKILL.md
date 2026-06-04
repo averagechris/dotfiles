@@ -2,7 +2,7 @@
 name: jj-repo-workflow
 description: |
   Repository-level jj aliases for checks, lint onboarding, syncing, pushing,
-  shipping, integration bookmark behavior, and final handoff.
+  shipping, suremac PR creation, integration bookmark behavior, and final handoff.
 ---
 
 # jj Repo Workflow
@@ -18,6 +18,8 @@ jj sync --json --fail-on-conflicts # structured agent/script output
 jj sync --onto <revset> # sync to explicit base when inference is wrong
 jj push                 # run lints, then push current bookmark/change; only when asked
 jj ship --bookmark <b>  # finish/publish selected work; only when asked to ship/publish
+jj pr doctor            # suremac-only GitHub PR helper preflight for jj workspaces
+jj pr watch             # compact GitHub check/review polling for an existing PR
 ```
 
 ## `jj lint`
@@ -113,6 +115,25 @@ Use when the user wants the change finished and published.
 - Refuses empty targets.
 - Requires `--bookmark` if only integration bookmarks are nearby.
 - Pushes via `jj git push` after lints pass to avoid duplicate lint runs.
+
+## `jj pr` on suremac
+
+When creating, updating, or closing GitHub PRs for work repos from jj workspaces
+on `suremac`, load/use the `suremac-jj-pr` skill and prefer `jj pr` over bare
+`gh pr create`.
+
+Typical create flow:
+
+```bash
+jj pr doctor
+jj pr create --base develop --sync --run-lints --run-cr --ticket EPD-1234 --title "fix(scope): summary [EPD-1234]" --body-file /tmp/pr-body.md
+jj pr watch
+```
+
+The helper infers the GitHub repo from jj remotes and always passes `gh --repo`,
+so it works in non-colocated jj workspaces. Use `jj pr watch` instead of dumping
+raw CI logs or full review threads into agent context; fetch details with `gh`
+only when the compact summary is insufficient.
 
 ## Agent defaults
 

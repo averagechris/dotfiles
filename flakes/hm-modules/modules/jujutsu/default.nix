@@ -40,6 +40,7 @@
         --prefix PATH : ${lib.makeBinPath [
         pkgs.fzf
         pkgs.jujutsu
+        pkgs.gh
         pkgs.direnv
         pkgs.docker
       ]}
@@ -77,146 +78,169 @@ in {
     };
   };
 
+  options.dotfiles.jujutsu.prWorkflow = with lib; {
+    enable = mkEnableOption "jj pr GitHub pull request workflow helper";
+
+    autoBookmark = mkOption {
+      type = types.bool;
+      default = true;
+      description = "Whether jj pr create may create a bookmark when none is inferred and --ticket is provided.";
+    };
+
+    bookmarkTemplate = mkOption {
+      type = types.str;
+      default = "{whoami}/{ticket-number}/{short-description}";
+      description = "Template used by jj pr auto-bookmarking. Supported placeholders: {whoami}, {ticket-number}, {short-description}.";
+    };
+  };
+
   config.programs.jujutsu = lib.mkIf cfg.enable {
     settings = {
       user = {
         name = lib.mkDefault "chris";
         email = lib.mkDefault "chris@thesogu.com";
       };
-      aliases = {
-        df = ["jj" "diff" "--from" "trunk()"];
-        ll = ["log" "-r" "ancestors(@) | descendants(@)"];
-        ld = ["log" "-r" "descendants(@)"];
-        la = ["log" "-r" "ancestors(@)"];
-        log-all = ["log" "-r" "all()"];
-        # Move the closest ancestor bookmark to the parent of your working copy (@-):
-        tug = ["bookmark" "move" "--from" "heads(::@- & bookmarks())" "--to" "@-"];
+      aliases =
+        {
+          df = ["jj" "diff" "--from" "trunk()"];
+          ll = ["log" "-r" "ancestors(@) | descendants(@)"];
+          ld = ["log" "-r" "descendants(@)"];
+          la = ["log" "-r" "ancestors(@)"];
+          log-all = ["log" "-r" "all()"];
+          # Move the closest ancestor bookmark to the parent of your working copy (@-):
+          tug = ["bookmark" "move" "--from" "heads(::@- & bookmarks())" "--to" "@-"];
 
-        # change (edit) to a bookmark
-        ch = with pkgs; let
-          script = writeShellApplication {
-            name = "jj-ch";
-            runtimeInputs = [jujutsu fzf coreutils];
-            text = ''
-              set -euo pipefail
+          # change (edit) to a bookmark
+          ch = with pkgs; let
+            script = writeShellApplication {
+              name = "jj-ch";
+              runtimeInputs = [jujutsu fzf coreutils];
+              text = ''
+                set -euo pipefail
 
-              # Count local bookmarks
-              count="$(jj bookmark list -T 'self.name() ++ "\n"' | wc -l)"
+                # Count local bookmarks
+                count="$(jj bookmark list -T 'self.name() ++ "\n"' | wc -l)"
 
-              if [ "''${count}" = "1" ]; then
-                # Get the only bookmark name
-                only="$(jj bookmark list -T 'self.name()')"
+                if [ "''${count}" = "1" ]; then
+                  # Get the only bookmark name
+                  only="$(jj bookmark list -T 'self.name()')"
 
-                # If current change (@) is an descendant of that bookmark, do nothing
-                if jj log --no-graph -r "descendants(bookmarks(\"''${only}\")) & @" -n 1 | grep -q .; then
-                  # No-op
-                  exit 0
+                  # If current change (@) is an descendant of that bookmark, do nothing
+                  if jj log --no-graph -r "descendants(bookmarks(\"''${only}\")) & @" -n 1 | grep -q .; then
+                    # No-op
+                    exit 0
+                  fi
+                  # else fall through to create a child on that bookmark
                 fi
-                # else fall through to create a child on that bookmark
-              fi
 
-              # Fuzzy-pick a bookmark (shows name, short id, first-line desc)
-              sel="$(
-                jj bookmark list \
-                  -T 'self.name() ++ "\t" ++ coalesce(self.normal_target().commit_id().short(), "") ++ "\t" ++ coalesce(self.normal_target().description().first_line(), "") ++ "\n"' \
-                  | fzf --query "''${1:-}" --exit-0 --select-1
-              )" || exit 0
+                # Fuzzy-pick a bookmark (shows name, short id, first-line desc)
+                sel="$(
+                  jj bookmark list \
+                    -T 'self.name() ++ "\t" ++ coalesce(self.normal_target().commit_id().short(), "") ++ "\t" ++ coalesce(self.normal_target().description().first_line(), "") ++ "\n"' \
+                    | fzf --query "''${1:-}" --exit-0 --select-1
+                )" || exit 0
 
-              name="$(printf '%s' "''${sel}" | cut -f1)"
+                name="$(printf '%s' "''${sel}" | cut -f1)"
 
-              # Create a new change on top of the selected bookmark target
-              jj new -r "bookmarks(\"''${name}\")"
-            '';
-          };
-        in ["util" "exec" "--" "${script}/bin/jj-ch"];
+                # Create a new change on top of the selected bookmark target
+                jj new -r "bookmarks(\"''${name}\")"
+              '';
+            };
+          in ["util" "exec" "--" "${script}/bin/jj-ch"];
 
-        prune = with pkgs; let
-          script = writeShellApplication {
-            name = "jj-prune-stale";
-            runtimeInputs = [jujutsu fzf coreutils];
-            text = ''
-              set -euo pipefail
+          prune = with pkgs; let
+            script = writeShellApplication {
+              name = "jj-prune-stale";
+              runtimeInputs = [jujutsu fzf coreutils];
+              text = ''
+                set -euo pipefail
 
-              remote="''${1:-origin}"
+                remote="''${1:-origin}"
 
-              # Refresh remote refs and import into jj view
-              jj git fetch "$remote"
-              jj git import
+                # Refresh remote refs and import into jj view
+                jj git fetch "$remote"
+                jj git import
 
-              # Build a tab-separated list of stale bookmarks:
-              # name, short commit id, first-line description
-              # Condition: tracked() && !tracking_present()
-              list_cmd=(
-                jj bookmark list
-                -T 'if(self.tracked() && !self.tracking_present(),
-                        self.name() ++ "\t"
-                        ++ coalesce(self.normal_target().commit_id().short(), "")
-                        ++ "\t"
-                        ++ coalesce(self.normal_target().description().first_line(), "")
-                        ++ "\n",
-                      "")'
-              )
+                # Build a tab-separated list of stale bookmarks:
+                # name, short commit id, first-line description
+                # Condition: tracked() && !tracking_present()
+                list_cmd=(
+                  jj bookmark list
+                  -T 'if(self.tracked() && !self.tracking_present(),
+                          self.name() ++ "\t"
+                          ++ coalesce(self.normal_target().commit_id().short(), "")
+                          ++ "\t"
+                          ++ coalesce(self.normal_target().description().first_line(), "")
+                          ++ "\n",
+                        "")'
+                )
 
-              # Let user confirm via fzf, with all selected by default
-              sel="$(
-                "''${list_cmd[@]}" \
-                  | sed '/^$/d' \
-                  | fzf --multi --bind 'start:select-all' \
-                        --header 'Prune local bookmarks whose upstream no longer exists'
-              )" || exit 0
+                # Let user confirm via fzf, with all selected by default
+                sel="$(
+                  "''${list_cmd[@]}" \
+                    | sed '/^$/d' \
+                    | fzf --multi --bind 'start:select-all' \
+                          --header 'Prune local bookmarks whose upstream no longer exists'
+                )" || exit 0
 
-              [ -z "$sel" ] && {
-                echo "No bookmarks selected."
-                exit 0
-              }
+                [ -z "$sel" ] && {
+                  echo "No bookmarks selected."
+                  exit 0
+                }
 
-              echo "Pruning bookmarks:"
-              printf '%s\n' "$sel" | cut -f1 | sed 's/^/ - /'
+                echo "Pruning bookmarks:"
+                printf '%s\n' "$sel" | cut -f1 | sed 's/^/ - /'
 
-              # Delete selected bookmarks locally
-              printf '%s\n' "$sel" | while IFS= read -r line; do
-                name="$(printf '%s' "$line" | cut -f1)"
-                [ -n "$name" ] && jj bookmark delete "$name"
-              done
-            '';
-          };
-        in ["util" "exec" "--" "${script}/bin/jj-prune-stale"];
+                # Delete selected bookmarks locally
+                printf '%s\n' "$sel" | while IFS= read -r line; do
+                  name="$(printf '%s' "$line" | cut -f1)"
+                  [ -n "$name" ] && jj bookmark delete "$name"
+                done
+              '';
+            };
+          in ["util" "exec" "--" "${script}/bin/jj-prune-stale"];
 
-        # Run repo-configured lints without pushing; `jj lint onboard` discovers
-        # candidate commands when a repo has not been configured yet.
-        lint = ["util" "exec" "--" "${jjWorkflow}/bin/jj-workflow" "lint"];
+          # Run repo-configured lints without pushing; `jj lint onboard` discovers
+          # candidate commands when a repo has not been configured yet.
+          lint = ["util" "exec" "--" "${jjWorkflow}/bin/jj-workflow" "lint"];
 
-        # Complete workflow: finish current change and push the parent of the
-        # working copy to remote so an already-empty `@` does not get shipped.
-        # Refuses empty targets and requires an explicit --bookmark instead of
-        # silently falling back to integration bookmarks.
-        ship = ["util" "exec" "--" "${jjWorkflow}/bin/jj-workflow" "ship"];
+          # Complete workflow: finish current change and push the parent of the
+          # working copy to remote so an already-empty `@` does not get shipped.
+          # Refuses empty targets and requires an explicit --bookmark instead of
+          # silently falling back to integration bookmarks.
+          ship = ["util" "exec" "--" "${jjWorkflow}/bin/jj-workflow" "ship"];
 
-        # Sync with upstream: fetch, then rebase onto the integration bookmark
-        sync = ["util" "exec" "--" "${jjWorkflow}/bin/jj-workflow" "sync"];
+          # Sync with upstream: fetch, then rebase onto the integration bookmark
+          sync = ["util" "exec" "--" "${jjWorkflow}/bin/jj-workflow" "sync"];
 
-        # Ergonomic Jujutsu workspace management.
-        ws = ["util" "exec" "--" "${jjWorkflow}/bin/jj-workflow" "ws"];
+          # Ergonomic Jujutsu workspace management.
+          ws = ["util" "exec" "--" "${jjWorkflow}/bin/jj-workflow" "ws"];
 
-        # Push with pre-push lints (configurable per-repo)
-        # Or skip lints entirely with: jj git push
-        # Configure lints in .jj-lint.toml (VCS-tracked) or repo config (.jj/repo/config.toml)
-        push = with pkgs; let
-          script = writeShellApplication {
-            name = "jj-push";
-            runtimeInputs = [jujutsu];
-            text = ''
-              set -euo pipefail
+          # Push with pre-push lints (configurable per-repo)
+          # Or skip lints entirely with: jj git push
+          # Configure lints in .jj-lint.toml (VCS-tracked) or repo config (.jj/repo/config.toml)
+          push = with pkgs; let
+            script = writeShellApplication {
+              name = "jj-push";
+              runtimeInputs = [jujutsu];
+              text = ''
+                set -euo pipefail
 
-              ${jjWorkflow}/bin/jj-workflow lint
+                ${jjWorkflow}/bin/jj-workflow lint
 
-              echo ""
-              echo "Lints passed! Pushing..."
-              jj git push "$@"
-            '';
-          };
-        in ["util" "exec" "--" "${script}/bin/jj-push"];
-      };
+                echo ""
+                echo "Lints passed! Pushing..."
+                jj git push "$@"
+              '';
+            };
+          in ["util" "exec" "--" "${script}/bin/jj-push"];
+        }
+        // lib.optionalAttrs dotCfg.prWorkflow.enable {
+          # GitHub PR workflow for jj workspaces. Disabled by default and enabled
+          # only on hosts that use GitHub work repositories from non-colocated jj
+          # workspaces.
+          pr = ["util" "exec" "--" "${jjWorkflow}/bin/jj-workflow" "pr"];
+        };
       scope = [
         {
           paths = ["~/sureapp/**"];
@@ -239,6 +263,10 @@ in {
         // lib.optionalAttrs (dotCfg.workspaces.fetchRemote != null) {
           fetch-remote = dotCfg.workspaces.fetchRemote;
         };
+      dotfiles.pr = lib.mkIf dotCfg.prWorkflow.enable {
+        auto-bookmark = dotCfg.prWorkflow.autoBookmark;
+        bookmark-template = dotCfg.prWorkflow.bookmarkTemplate;
+      };
       signing = lib.mkIf (!config.dotfiles.gpg.enable) {
         # When gpg module is not enabled, use the hardcoded signing key
         # When gpg module is enabled, it manages jj config during activation
