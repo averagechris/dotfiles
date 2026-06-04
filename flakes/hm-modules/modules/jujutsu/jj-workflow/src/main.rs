@@ -4,6 +4,8 @@ use std::env;
 use std::ffi::{OsStr, OsString};
 use std::fs;
 use std::io::{self, IsTerminal, Write};
+#[cfg(unix)]
+use std::os::unix::fs as unix_fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
@@ -447,6 +449,7 @@ struct ProjectGroup {
 struct WsConfig {
     project_groups: Vec<ProjectGroup>,
     copy_envrc: String,
+    venv_mode: String,
     direnv_allow: bool,
     docker_cleanup: String,
     docker_remove_volumes: bool,
@@ -489,7 +492,7 @@ fn print_ws_usage() {
 }
 
 fn print_ws_add_usage() {
-    eprintln!("Usage:\n  jj ws add <name> [-r <revset>] [--project-group <path>] [--no-envrc] [--no-direnv] [-q]\n\nCreates <project-group>/<workspace-dir>/<repo>/<name>.\nDefault base: main checkout -> inferred remote bookmark; workspace -> @.\n\nExamples:\n  jj ws add feature-x -q\n  jj ws add followup -r @\n  jj ws add hotfix --revision main@origin");
+    eprintln!("Usage:\n  jj ws add <name> [-r <revset>] [--project-group <path>] [--venv=<copy|link|none>] [--no-envrc] [--no-venv] [--no-direnv] [-q]\n\nCreates <project-group>/<workspace-dir>/<repo>/<name>.\nDefault base: main checkout -> inferred remote bookmark; workspace -> @.\n\nExamples:\n  jj ws add feature-x -q\n  jj ws add followup -r @\n  jj ws add hotfix --revision main@origin");
 }
 
 fn print_ws_list_usage() {
@@ -501,7 +504,7 @@ fn print_ws_path_usage() {
 }
 
 fn print_ws_forget_usage() {
-    eprintln!("Usage:\n  jj ws forget <name> [--force] [--keep-dir] [--no-docker] [--docker-volumes] [--dry-run] [-q]\n  jj ws forget --pick [options]\n\nForgets and deletes a workspace. Refuses current/non-empty work unless --force.\n\nExamples:\n  jj ws forget feature-x --dry-run\n  jj ws forget feature-x\n  jj ws forget scratch --force -q");
+    eprintln!("Usage:\n  jj ws forget <name> [--force] [--keep-dir] [--no-docker] [--docker-volumes|--keep-docker-volumes] [--dry-run] [-q]\n  jj ws forget --pick [options]\n\nForgets and deletes a workspace. Refuses current/non-empty work unless --force.\nDocker Compose cleanup removes volumes by default; use --keep-docker-volumes to keep them.\n\nExamples:\n  jj ws forget feature-x --dry-run\n  jj ws forget feature-x\n  jj ws forget scratch --force -q");
 }
 
 fn print_ws_prune_usage() {
@@ -515,16 +518,25 @@ fn print_ws_root_usage() {
 fn ws_config() -> Result<WsConfig> {
     let copy_envrc = jj_config_string("dotfiles.workspaces.copy-envrc")?
         .unwrap_or_else(|| "untracked".to_string());
+    let venv_mode =
+        jj_config_string("dotfiles.workspaces.venv-mode")?.unwrap_or_else(|| match jj_config_bool(
+            "dotfiles.workspaces.link-venv",
+        ) {
+            Ok(Some(false)) => "none".to_string(),
+            _ => "copy".to_string(),
+        });
+    validate_venv_mode(&venv_mode)?;
     let direnv_allow = jj_config_bool("dotfiles.workspaces.direnv-allow")?.unwrap_or(true);
     let docker_cleanup = jj_config_string("dotfiles.workspaces.docker-cleanup")?
         .unwrap_or_else(|| "auto".to_string());
     let docker_remove_volumes =
-        jj_config_bool("dotfiles.workspaces.docker-remove-volumes")?.unwrap_or(false);
+        jj_config_bool("dotfiles.workspaces.docker-remove-volumes")?.unwrap_or(true);
     let fetch_remote = jj_config_string("dotfiles.workspaces.fetch-remote")?;
     let groups = jj_config_project_groups()?;
     Ok(WsConfig {
         project_groups: groups,
         copy_envrc,
+        venv_mode,
         direnv_allow,
         docker_cleanup,
         docker_remove_volumes,
@@ -615,7 +627,11 @@ fn workspace_context_for_repo(
         config
             .project_groups
             .iter()
-            .filter(|group| repo_root.starts_with(&group.path))
+            .filter(|group| {
+                repo_root.starts_with(
+                    fs::canonicalize(&group.path).unwrap_or_else(|_| group.path.clone()),
+                )
+            })
             .max_by_key(|group| group.path.components().count())
             .cloned()
             .ok_or_else(|| {
@@ -666,6 +682,8 @@ struct WsAddArgs {
     project_group: Option<PathBuf>,
     quiet: bool,
     no_envrc: bool,
+    venv_mode: Option<String>,
+    no_venv: bool,
     no_direnv: bool,
     help: bool,
 }
@@ -693,6 +711,16 @@ fn parse_ws_add_args(args: Vec<OsString>) -> Result<WsAddArgs> {
             parsed.quiet = true;
         } else if arg == OsStr::new("--no-envrc") {
             parsed.no_envrc = true;
+        } else if arg == OsStr::new("--venv") || arg == OsStr::new("--venv-mode") {
+            parsed.venv_mode = Some(os_to_string(
+                iter.next().ok_or_else(|| anyhow!("missing venv mode"))?,
+            )?);
+        } else if let Some(value) = take_value_after_prefix(&arg, "--venv=")? {
+            parsed.venv_mode = Some(value);
+        } else if let Some(value) = take_value_after_prefix(&arg, "--venv-mode=")? {
+            parsed.venv_mode = Some(value);
+        } else if arg == OsStr::new("--no-venv") {
+            parsed.no_venv = true;
         } else if arg == OsStr::new("--no-direnv") {
             parsed.no_direnv = true;
         } else if arg == OsStr::new("-h") || arg == OsStr::new("--help") {
@@ -707,6 +735,9 @@ fn parse_ws_add_args(args: Vec<OsString>) -> Result<WsAddArgs> {
     }
     if !parsed.help && parsed.name.is_empty() {
         bail!("missing workspace name\n\nUsage: jj ws add <name> [-r <revset>] [-q]");
+    }
+    if let Some(mode) = parsed.venv_mode.as_deref() {
+        validate_venv_mode(mode)?;
     }
     Ok(parsed)
 }
@@ -735,7 +766,7 @@ fn ws_add(args: Vec<OsString>) -> Result<()> {
         fetch_for_workspace(&config)?;
         infer_remote_integration_bookmark()?
     };
-    run_jj_status_os(vec![
+    let add_args = vec![
         OsString::from("workspace"),
         OsString::from("add"),
         OsString::from("--name"),
@@ -743,11 +774,21 @@ fn ws_add(args: Vec<OsString>) -> Result<()> {
         OsString::from("--revision"),
         OsString::from(&base),
         dest.clone().into_os_string(),
-    ])?;
+    ];
+    if parsed.quiet {
+        run_jj_capture_os(add_args)?;
+    } else {
+        run_jj_status_os(add_args)?;
+    }
     let mut copied_envrc = false;
+    let mut venv_action = None;
     let mut direnv_allowed = false;
     if !parsed.no_envrc && config.copy_envrc != "never" {
         copied_envrc = copy_envrc_if_needed(&ctx.repo_root, &dest, &config.copy_envrc)?;
+    }
+    if !parsed.no_venv {
+        let venv_mode = parsed.venv_mode.as_deref().unwrap_or(&config.venv_mode);
+        venv_action = setup_venv_if_needed(&ctx.repo_root, &dest, venv_mode)?;
     }
     if !parsed.no_direnv
         && config.direnv_allow
@@ -767,6 +808,9 @@ fn ws_add(args: Vec<OsString>) -> Result<()> {
         println!("base: {base}");
         if copied_envrc {
             println!("copied untracked .envrc");
+        }
+        if let Some(action) = venv_action {
+            println!("{} untracked .venv", action.past_tense());
         }
         if direnv_allowed {
             println!("direnv allowed");
@@ -868,6 +912,130 @@ fn copy_envrc_if_needed(src: &Path, dest: &Path, mode: &str) -> Result<bool> {
     fs::copy(&src_envrc, &dest_envrc)
         .with_context(|| format!("failed to copy {}", src_envrc.display()))?;
     Ok(true)
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum VenvAction {
+    Copied,
+    Linked,
+}
+
+impl VenvAction {
+    fn past_tense(self) -> &'static str {
+        match self {
+            VenvAction::Copied => "copied",
+            VenvAction::Linked => "linked",
+        }
+    }
+}
+
+fn setup_venv_if_needed(src: &Path, dest: &Path, mode: &str) -> Result<Option<VenvAction>> {
+    let src_venv = src.join(".venv");
+    let dest_venv = dest.join(".venv");
+    if !src_venv.exists()
+        || dest_venv.exists()
+        || file_is_tracked(src, ".venv")?
+        || !source_venv_python_usable(&src_venv)
+    {
+        return Ok(None);
+    }
+    match mode {
+        "none" => Ok(None),
+        "link" => {
+            symlink_path(&src_venv, &dest_venv).with_context(|| {
+                format!(
+                    "failed to symlink {} to {}",
+                    dest_venv.display(),
+                    src_venv.display()
+                )
+            })?;
+            Ok(Some(VenvAction::Linked))
+        }
+        "copy" => {
+            clone_or_copy_dir(&src_venv, &dest_venv)?;
+            repair_venv_paths(&src_venv, &dest_venv)?;
+            Ok(Some(VenvAction::Copied))
+        }
+        other => bail!("invalid venv mode {other:?}; expected copy, link, or none"),
+    }
+}
+
+fn source_venv_python_usable(src_venv: &Path) -> bool {
+    src_venv.join("bin/python").exists()
+}
+
+fn clone_or_copy_dir(src: &Path, dest: &Path) -> Result<()> {
+    let clone_args: Vec<&str> = if cfg!(target_os = "macos") {
+        vec!["-cR"]
+    } else {
+        vec!["-a", "--reflink=auto"]
+    };
+    if run_cp(&clone_args, src, dest)? {
+        return Ok(());
+    }
+    let _ = fs::remove_dir_all(dest);
+    let copy_args: Vec<&str> = if cfg!(target_os = "macos") {
+        vec!["-pR"]
+    } else {
+        vec!["-a"]
+    };
+    if run_cp(&copy_args, src, dest)? {
+        return Ok(());
+    }
+    bail!("failed to copy {} to {}", src.display(), dest.display())
+}
+
+fn run_cp(args: &[&str], src: &Path, dest: &Path) -> Result<bool> {
+    let program = if cfg!(target_os = "macos") {
+        "/bin/cp"
+    } else {
+        "cp"
+    };
+    let status = Command::new(program)
+        .args(args)
+        .arg(src)
+        .arg(dest)
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .with_context(|| format!("failed to execute {program}"))?;
+    Ok(status.success())
+}
+
+fn repair_venv_paths(src_venv: &Path, dest_venv: &Path) -> Result<()> {
+    let old = fs::canonicalize(src_venv).unwrap_or_else(|_| src_venv.to_path_buf());
+    let new = fs::canonicalize(dest_venv).unwrap_or_else(|_| dest_venv.to_path_buf());
+    let old = old.to_string_lossy();
+    let new = new.to_string_lossy();
+    replace_path_in_text_file(&dest_venv.join("pyvenv.cfg"), &old, &new)?;
+    let bin = dest_venv.join("bin");
+    if bin.exists() {
+        for entry in fs::read_dir(bin)? {
+            let path = entry?.path();
+            if path.is_file() {
+                replace_path_in_text_file(&path, &old, &new)?;
+            }
+        }
+    }
+    Ok(())
+}
+
+fn replace_path_in_text_file(path: &Path, old: &str, new: &str) -> Result<()> {
+    let Ok(bytes) = fs::read(path) else {
+        return Ok(());
+    };
+    let Ok(text) = String::from_utf8(bytes) else {
+        return Ok(());
+    };
+    if text.contains(old) {
+        fs::write(path, text.replace(old, new))?;
+    }
+    Ok(())
+}
+
+#[cfg(unix)]
+fn symlink_path(src: &Path, dest: &Path) -> std::io::Result<()> {
+    unix_fs::symlink(src, dest)
 }
 
 fn file_is_tracked(repo: &Path, file: &str) -> Result<bool> {
@@ -1021,6 +1189,7 @@ struct WsForgetArgs {
     keep_dir: bool,
     no_docker: bool,
     docker_volumes: bool,
+    keep_docker_volumes: bool,
     dry_run: bool,
     quiet: bool,
 }
@@ -1034,6 +1203,7 @@ fn parse_ws_forget_args(args: Vec<OsString>) -> Result<WsForgetArgs> {
             "--keep-dir" => parsed.keep_dir = true,
             "--no-docker" => parsed.no_docker = true,
             "--docker-volumes" => parsed.docker_volumes = true,
+            "--keep-docker-volumes" => parsed.keep_docker_volumes = true,
             "--dry-run" => parsed.dry_run = true,
             "-q" | "--quiet" => parsed.quiet = true,
             "-h" | "--help" => print_ws_forget_usage(),
@@ -1048,7 +1218,17 @@ fn parse_ws_forget_args(args: Vec<OsString>) -> Result<WsForgetArgs> {
     if !parsed.pick && parsed.name.is_none() {
         bail!("missing workspace name\n\nUsage: jj ws forget <name> [--force] [--dry-run]");
     }
+    if parsed.docker_volumes && parsed.keep_docker_volumes {
+        bail!("--docker-volumes and --keep-docker-volumes are mutually exclusive");
+    }
     Ok(parsed)
+}
+
+fn validate_venv_mode(mode: &str) -> Result<()> {
+    match mode {
+        "copy" | "link" | "none" => Ok(()),
+        other => bail!("invalid venv mode {other:?}; expected copy, link, or none"),
+    }
 }
 
 fn ws_forget(args: Vec<OsString>) -> Result<()> {
@@ -1080,17 +1260,27 @@ fn ws_forget(args: Vec<OsString>) -> Result<()> {
         bail!("workspace {name} has non-empty work at {}\n\nReview it first with:\n  jj --repository {} status\n\nUse --force to forget and delete anyway.", target.display(), target.display());
     }
     let config = ws_config()?;
+    let has_compose = has_compose_file(&path);
+    let remove_docker_volumes =
+        parsed.docker_volumes || (config.docker_remove_volumes && !parsed.keep_docker_volumes);
     if parsed.dry_run {
         println!("would forget {name} at {}", path.display());
+        if !parsed.no_docker && config.docker_cleanup == "auto" && has_compose {
+            if remove_docker_volumes {
+                println!("would run: docker compose down --remove-orphans --volumes");
+            } else {
+                println!("would run: docker compose down --remove-orphans");
+            }
+        }
         return Ok(());
     }
-    if !parsed.no_docker && config.docker_cleanup == "auto" && has_compose_file(&path) {
+    if !parsed.no_docker && config.docker_cleanup == "auto" && has_compose {
         let mut cmd = Command::new("docker");
         cmd.arg("compose")
             .arg("down")
             .arg("--remove-orphans")
             .current_dir(&path);
-        if parsed.docker_volumes || config.docker_remove_volumes {
+        if remove_docker_volumes {
             cmd.arg("--volumes");
         }
         run_status(&mut cmd, "docker compose down")?;
@@ -1292,7 +1482,7 @@ fn configured_lints(repo: &Path) -> Result<Vec<LintCommand>> {
     if lint_file.exists() {
         return Ok(parse_lints_toml(&fs::read_to_string(lint_file)?));
     }
-    let output = run_jj_capture_allow_failure(["config", "get", "dotfiles.push-lints"])?;
+    let output = run_jj_capture_in_allow_failure(repo, ["config", "get", "dotfiles.push-lints"])?;
     if output.status.success() {
         return Ok(parse_config_string_array(&output.stdout)
             .into_iter()
@@ -2994,6 +3184,23 @@ fn run_jj_capture_allow_failure<const N: usize>(args: [&str; N]) -> Result<JjOut
     })
 }
 
+fn run_jj_capture_in_allow_failure<const N: usize>(
+    repo: &Path,
+    args: [&str; N],
+) -> Result<JjOutput> {
+    let output = Command::new("jj")
+        .current_dir(repo)
+        .args(args)
+        .output()
+        .with_context(|| format!("failed to execute jj {}", args.join(" ")))?;
+
+    Ok(JjOutput {
+        status: output.status,
+        stdout: String::from_utf8(output.stdout).context("failed to decode jj stdout")?,
+        stderr: String::from_utf8(output.stderr).context("failed to decode jj stderr")?,
+    })
+}
+
 fn run_jj_capture_os(args: Vec<OsString>) -> Result<JjOutput> {
     let output = run_jj_capture_os_allow_failure(&args)?;
     if output.status.success() {
@@ -3127,10 +3334,11 @@ mod tests {
         makefile_targets, parse_common_args, parse_config_string_array, parse_lint_selection,
         parse_lints_toml, parse_toml_string_array, parse_ws_add_args, parse_ws_forget_args,
         parse_ws_path_args, parse_ws_prune_args, python_runner, run_lint, run_lint_onboard,
-        run_sync, run_ws, selected_lints, ship_plan, stale_workspace_dirs, sync_base_candidates,
-        validate_ws_name, workspace_context_for_repo, write_tracked_lint_config, FetchChoice,
-        LintCommand, LintOnboardReport, LintSuggestion, ParsedArgs, ProjectGroup, ShipPlan,
-        WsAddArgs, WsConfig, WsForgetArgs, WsPathArgs, WsPruneArgs,
+        run_sync, run_ws, selected_lints, ship_plan, source_venv_python_usable,
+        stale_workspace_dirs, sync_base_candidates, validate_ws_name, workspace_context_for_repo,
+        write_tracked_lint_config, FetchChoice, LintCommand, LintOnboardReport, LintSuggestion,
+        ParsedArgs, ProjectGroup, ShipPlan, WsAddArgs, WsConfig, WsForgetArgs, WsPathArgs,
+        WsPruneArgs,
     };
     use std::env;
     use std::ffi::OsString;
@@ -3156,9 +3364,10 @@ mod tests {
                 workspace_dir: "ws".to_string(),
             }],
             copy_envrc: "untracked".to_string(),
+            venv_mode: "copy".to_string(),
             direnv_allow: true,
             docker_cleanup: "auto".to_string(),
-            docker_remove_volumes: false,
+            docker_remove_volumes: true,
             fetch_remote: None,
         }
     }
@@ -3338,13 +3547,29 @@ mod tests {
     }
 
     #[test]
+    fn venv_source_python_must_be_usable() {
+        let root = named_tempdir("venv-usable");
+        let venv = root.join(".venv");
+        fs::create_dir_all(venv.join("bin")).unwrap();
+
+        assert!(!source_venv_python_usable(&venv));
+
+        fs::write(venv.join("bin/python"), "#!/bin/sh\n").unwrap();
+        assert!(source_venv_python_usable(&venv));
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
     fn ws_add_parser_accepts_flags_and_equals_forms() {
         assert_eq!(
             parse_ws_add_args(vec![
                 "feature".into(),
                 "--revision=@".into(),
                 "--project-group=/tmp/projects".into(),
+                "--venv=link".into(),
                 "--no-envrc".into(),
+                "--no-venv".into(),
                 "--no-direnv".into(),
                 "-q".into(),
             ])
@@ -3354,7 +3579,9 @@ mod tests {
                 revision: Some("@".to_string()),
                 project_group: Some(PathBuf::from("/tmp/projects")),
                 quiet: true,
+                venv_mode: Some("link".to_string()),
                 no_envrc: true,
+                no_venv: true,
                 no_direnv: true,
                 help: false,
             }
@@ -3408,10 +3635,17 @@ mod tests {
                 keep_dir: true,
                 no_docker: true,
                 docker_volumes: true,
+                keep_docker_volumes: false,
                 dry_run: true,
                 quiet: true,
             }
         );
+        assert!(parse_ws_forget_args(vec![
+            "feature".into(),
+            "--docker-volumes".into(),
+            "--keep-docker-volumes".into(),
+        ])
+        .is_err());
         assert!(parse_ws_forget_args(vec!["feature".into(), "--pick".into()]).is_err());
         assert!(parse_ws_forget_args(vec![]).is_err());
     }
@@ -4194,8 +4428,22 @@ tests = []
                 "false",
             ],
         );
+        fs::write(repo.join(".gitignore"), ".venv\n").unwrap();
         fs::write(repo.join("tracked.txt"), "hello\n").unwrap();
         fs::write(repo.join(".envrc"), "use flake\n").unwrap();
+        fs::create_dir_all(repo.join(".venv/bin")).unwrap();
+        let source_venv = fs::canonicalize(&repo).unwrap().join(".venv");
+        fs::write(
+            repo.join(".venv/pyvenv.cfg"),
+            format!("command = {}\n", source_venv.display()),
+        )
+        .unwrap();
+        fs::write(repo.join(".venv/bin/python"), "#!/bin/sh\n").unwrap();
+        fs::write(
+            repo.join(".venv/bin/tool"),
+            format!("#!{}/bin/python\n", source_venv.display()),
+        )
+        .unwrap();
         jj(&repo, &["describe", "-m", "initial"]);
 
         let old = env::current_dir().unwrap();
@@ -4213,6 +4461,64 @@ tests = []
             fs::read_to_string(ws.join(".envrc")).unwrap(),
             "use flake\n"
         );
+        assert!(!fs::symlink_metadata(ws.join(".venv"))
+            .unwrap()
+            .file_type()
+            .is_symlink());
+        let dest_venv = fs::canonicalize(&ws).unwrap().join(".venv");
+        let copied_tool = fs::read_to_string(ws.join(".venv/bin/tool")).unwrap();
+        assert!(copied_tool.contains(&dest_venv.to_string_lossy().to_string()));
+        assert!(!copied_tool.contains(&source_venv.to_string_lossy().to_string()));
+        run_ws(vec![
+            "forget".into(),
+            "scratch".into(),
+            "--force".into(),
+            "-q".into(),
+        ])
+        .unwrap();
+        env::set_current_dir(old).unwrap();
+
+        assert!(!ws.exists());
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn integration_skips_broken_source_venv() {
+        let _guard = INTEGRATION_LOCK.lock().unwrap();
+        let root = named_tempdir("broken-venv");
+        let group = root.join("projects");
+        let repo = group.join("demo");
+        fs::create_dir_all(&group).unwrap();
+        run(Command::new("jj").arg("git").arg("init").arg(&repo));
+        jj(
+            &repo,
+            &[
+                "config",
+                "set",
+                "--repo",
+                "dotfiles.workspaces.project-groups",
+                &format!("[\"{}:ws\"]", group.display()),
+            ],
+        );
+        fs::write(repo.join(".gitignore"), ".venv\n").unwrap();
+        fs::write(repo.join("tracked.txt"), "hello\n").unwrap();
+        fs::create_dir_all(repo.join(".venv/bin")).unwrap();
+        #[cfg(unix)]
+        std::os::unix::fs::symlink("/missing/python", repo.join(".venv/bin/python")).unwrap();
+        jj(&repo, &["describe", "-m", "initial"]);
+
+        let old = env::current_dir().unwrap();
+        env::set_current_dir(&repo).unwrap();
+        run_ws(vec![
+            "add".into(),
+            "scratch".into(),
+            "-r".into(),
+            "@".into(),
+            "-q".into(),
+        ])
+        .unwrap();
+        let ws = group.join("ws/demo/scratch");
+        assert!(!ws.join(".venv").exists());
         run_ws(vec![
             "forget".into(),
             "scratch".into(),

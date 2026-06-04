@@ -229,9 +229,10 @@ in {
       dotfiles.workspaces =
         {
           copy-envrc = "untracked";
+          venv-mode = "copy";
           direnv-allow = true;
           docker-cleanup = "auto";
-          docker-remove-volumes = false;
+          docker-remove-volumes = true;
           picker = "fzf";
           project-groups = map (group: "${group.path}:${group.workspaceDir}") dotCfg.workspaces.projectGroups;
         }
