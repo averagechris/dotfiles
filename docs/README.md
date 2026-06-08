@@ -11,6 +11,7 @@
 - [jj PR workflow](/docs/jj-pr-workflow.md) - suremac-only `jj pr` helper for creating GitHub PRs from jj workspaces
 - [jj workspaces](/docs/jj-workspaces.md) - Design decisions and implementation checklist for ergonomic jj workspace management
 - [nixos](/docs/nixos.md) - General NixOS configuration notes
+- [notion-cli](/docs/notion-cli.md) - Notion CLI package, suremac installation, usage, and update notes
 - [opencode](/docs/opencode.md) - OpenCode module configuration, skills, and MCP integrations
 - [opencode-pr-review](/docs/opencode-pr-review.md) - Design and usage notes for the OpenCode GitHub PR review workflow
 - [pi](/docs/pi.md) - Pi coding agent package, Home Manager settings, OpenRouter credentials, resources, and wrappers

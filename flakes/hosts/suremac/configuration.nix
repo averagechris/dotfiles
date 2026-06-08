@@ -40,6 +40,7 @@
     nh
     neovim
     nix-output-monitor
+    notion-cli
     which
   ];
 
@@ -304,6 +305,11 @@
       {
         package = databricks-cli;
         name = "databricks-cli";
+      }
+      {
+        package = notion-cli;
+        name = "ntn";
+        description = "Notion CLI";
       }
       {
         package = gh;

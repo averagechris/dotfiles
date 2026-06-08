@@ -83,3 +83,9 @@ OpenCode agents on `suremac` also get host-specific CLI tools, including the
 Nix-packaged CodeRabbit CLI as `coderabbit` / `cr`. See
 [`docs/coderabbit-cli.md`](/docs/coderabbit-cli.md) for the local review
 workflow and the Nix update policy.
+
+## Notion CLI
+
+`suremac` installs the Nix-packaged Notion CLI as `ntn` in
+`environment.systemPackages` and exposes it to OpenCode agents as a host-specific
+tool. See [`docs/notion-cli.md`](/docs/notion-cli.md) for usage and update notes.
