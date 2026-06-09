@@ -1111,6 +1111,29 @@
         "type": "indirect"
       }
     },
+    "granola-cli": {
+      "inputs": {
+        "flake-utils": [
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1781046420,
+        "narHash": "sha256-P0VgcHK2G/tBTPldeVZKYzKa6myf16oUpjIpFlLM3J8=",
+        "owner": "~averagechris",
+        "repo": "granola-cli",
+        "rev": "8be6aa39660fb4645111862e5d374a5b13ad77ee",
+        "type": "sourcehut"
+      },
+      "original": {
+        "owner": "~averagechris",
+        "repo": "granola-cli",
+        "type": "sourcehut"
+      }
+    },
     "helix": {
       "inputs": {
         "nixpkgs": "nixpkgs_11",
@@ -1877,6 +1900,7 @@
           "base-lib",
           "flake-utils"
         ],
+        "granola-cli": "granola-cli",
         "helix": "helix",
         "hm-modules": "hm-modules",
         "home-manager": [

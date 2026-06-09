@@ -11835,6 +11835,31 @@
         "type": "github"
       }
     },
+    "granola-cli": {
+      "inputs": {
+        "flake-utils": [
+          "suremac",
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "suremac",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1781046420,
+        "narHash": "sha256-P0VgcHK2G/tBTPldeVZKYzKa6myf16oUpjIpFlLM3J8=",
+        "owner": "~averagechris",
+        "repo": "granola-cli",
+        "rev": "8be6aa39660fb4645111862e5d374a5b13ad77ee",
+        "type": "sourcehut"
+      },
+      "original": {
+        "owner": "~averagechris",
+        "repo": "granola-cli",
+        "type": "sourcehut"
+      }
+    },
     "helix": {
       "inputs": {
         "nixpkgs": [
@@ -21885,6 +21910,7 @@
           "base-lib",
           "flake-utils"
         ],
+        "granola-cli": "granola-cli",
         "helix": "helix_4",
         "hm-modules": "hm-modules_3",
         "home-manager": [

@@ -2,6 +2,7 @@
   imports = [
     ./gui
     ./gpg.nix
+    ./granola.nix
     ./meganz.nix
     ./pi.nix
     ./shell.nix

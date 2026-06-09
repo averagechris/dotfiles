@@ -25,6 +25,7 @@ in {
   "circleci-token.age".publicKeys = all-keys;
   "gpg-private-key.age".publicKeys = all-keys;
   "gpg-key-id.age".publicKeys = all-keys;
+  "granola-token.age".publicKeys = [suremac-key];
 
   # Trainwreck secrets (clawdbot)
   "trainwreck/telegram-bot-token.age".publicKeys = trainwreck-keys ++ systems-keys;

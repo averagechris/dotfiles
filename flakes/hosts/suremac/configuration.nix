@@ -32,6 +32,12 @@
       owner = "chris";
       mode = "0400";
     };
+
+    granola-token = {
+      file = ../../../secrets/granola-token.age;
+      owner = "chris";
+      mode = "0400";
+    };
   };
 
   nixpkgs.config.allowUnfree = true;
@@ -287,6 +293,10 @@
       enable = true;
       openrouterApiKeyFile = config.age.secrets.openrouter-api-key.path;
     };
+    dotfiles.granola = {
+      enable = true;
+      tokenFile = config.age.secrets.granola-token.path;
+    };
     dotfiles.opencode.circleciTokenFile = "/run/agenix/circleci-token";
     dotfiles.opencode.agentSupportPackages = with pkgs; [
       python313Packages.databricks-sql-connector
@@ -330,6 +340,11 @@
         package = inputs.linear-cli.packages.${pkgs.stdenv.hostPlatform.system}.linear;
         name = "linear";
         description = "Linear CLI";
+      }
+      {
+        package = inputs.granola-cli.packages.${pkgs.stdenv.hostPlatform.system}.default;
+        name = "granola";
+        description = "Granola meeting notes CLI";
       }
     ];
 
