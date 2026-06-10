@@ -5,7 +5,7 @@
 - [anyrun](/docs/anyrun.md) - Anyrun launcher configuration and usage
 - [audio](/docs/audio.md) - PipeWire/WirePlumber output priority, helper commands, and Eww controls
 - [coderabbit-cli](/docs/coderabbit-cli.md) - CodeRabbit CLI package, suremac agent integration, and local review workflow
-- [granola](/docs/granola.md) - Granola CLI Home Manager module, shell completions, agenix token seeding, and suremac note sync
+- [granola](/docs/granola.md) - Granola CLI Home Manager module, shell completions, agenix token seeding, suremac note sync, and OpenCode skill
 - [helium](/docs/helium.md) - Helium browser packaging and configuration on NixOS
 - [hyprland](/docs/hyprland.md) - Hyprland window manager configuration, keybindings, and features
 - [hyprland ergonomics requirements](/docs/hyprland-ergonomics-requirements.md) - Planned tater/shared Hyprland ergonomics CLI, daemon, workspace, tray, and Eww improvements

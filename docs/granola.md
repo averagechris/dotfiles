@@ -57,17 +57,28 @@ require `granola auth logout --force` before the next activation or a manual
 `granola` to `dotfiles.opencode.agentTools`, so OpenCode primary agents see it
 in their runtime tool note and get the package in their PATH.
 
+`suremac` also installs the repo-managed `granola-meeting-context` OpenCode
+skill. The skill is intentionally minimal: it tells agents to use `granola search`,
+`granola digest`, and bounded/redacted `granola context` bundles when meeting
+notes may help with requirements, decisions, follow-ups, or project history. It
+also documents the useful SQLite FTS search fields (`title:`, `attendees:`,
+`summary_text:`, `summary_markdown:`, `folders:`, and `transcript:`) for quickly
+finding relevant meetings.
+
 `suremac` also enables `dotfiles.granola.sync.enable`, which creates a user
 LaunchAgent that runs the following command every hour:
 
 ```bash
-granola sync --quiet
+granola sync --since 12h --all --include-transcripts --quiet
 ```
 
 The job uses launchd's `StartInterval = 3600`, runs as a background, low-I/O
 process, and writes logs to `~/Library/Logs/granola-sync.log`. launchd does not
 wake a sleeping laptop for this job; it only runs while macOS is awake enough to
-service user LaunchAgents.
+service user LaunchAgents. The 12-hour rolling window is enough for the hourly
+job to pick up recently completed meetings without repeatedly scanning a large
+history, and `--include-transcripts` keeps the local FTS cache hydrated for
+transcript searches.
 
 Other hosts import the shared Home Manager module set but do not enable
 `dotfiles.granola` and do not receive the package or token.

@@ -99,6 +99,10 @@ in {
         ProgramArguments = [
           (lib.getExe cfg.package)
           "sync"
+          "--since"
+          "12h"
+          "--all"
+          "--include-transcripts"
           "--quiet"
         ];
         StartInterval = cfg.sync.intervalSeconds;

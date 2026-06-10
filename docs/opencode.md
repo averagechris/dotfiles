@@ -219,6 +219,9 @@ depending on the task.
 
 `suremac` additionally configures the repo-managed `coderabbit-cli` skill for
 its OpenCode agents only, alongside the host-specific `cr`/`coderabbit` package.
+It also configures the `granola-meeting-context` skill so agents can pull
+concise, redacted meeting-note context with the host-specific `granola` CLI when
+relevant.
 
 The jj skills recommend quiet/structured helper output for agents, especially
 `jj sync -q --fail-on-conflicts` and `jj sync --json --fail-on-conflicts`.
