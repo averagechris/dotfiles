@@ -34,6 +34,8 @@ fn run() -> Result<()> {
         "lint" => run_lint(args.collect()),
         "ship" => run_ship(parse_common_args(args.collect())?),
         "sync" => run_sync(parse_common_args(args.collect())?),
+        "tag" => run_tag(args.collect()),
+        "tag-push" => run_tag_push(parse_tag_push_args(args.collect())?),
         "pr" => run_pr(args.collect()),
         "ws" | "workspace" => run_ws(args.collect()),
         "-h" | "--help" | "help" => {
@@ -50,7 +52,7 @@ fn run() -> Result<()> {
 fn print_usage(program: &OsStr) {
     let name = program.to_string_lossy();
     eprintln!(
-        "Usage:\n  {name} lint [onboard ...]\n  {name} ship [-b|--bookmark <bookmark>] [--remote <remote>] [-- <jj git push args...>]\n  {name} sync [-b|--bookmark <bookmark>] [--remote <remote>] [--onto <revset>] [-- <jj rebase args...>]\n  {name} pr <doctor|create|update|close|watch> ...\n  {name} ws <add|list|path|forget|prune|root> ..."
+        "Usage:\n  {name} lint [onboard ...]\n  {name} ship [-b|--bookmark <bookmark>] [--remote <remote>] [--tag <tag>] [-- <jj git push args...>]\n  {name} tag push <tag> [--revision <rev>] [--remote <remote>]\n  {name} tag-push <tag> [--revision <rev>] [--remote <remote>]\n  {name} sync [-b|--bookmark <bookmark>] [--remote <remote>] [--onto <revset>] [-- <jj rebase args...>]\n  {name} pr <doctor|create|update|close|watch> ...\n  {name} ws <add|list|path|forget|prune|root> ..."
     );
 }
 
@@ -62,6 +64,7 @@ struct ParsedArgs {
     help: bool,
     quiet: bool,
     json: bool,
+    tag: Option<String>,
     noninteractive: bool,
     fail_on_conflicts: bool,
     passthrough: Vec<OsString>,
@@ -95,6 +98,19 @@ fn parse_common_args(args: Vec<OsString>) -> Result<ParsedArgs> {
                 .next()
                 .ok_or_else(|| anyhow!("missing value for {}", arg.to_string_lossy()))?;
             parsed.remote_input = Some(os_to_string(value)?);
+            continue;
+        }
+
+        if arg == OsStr::new("--tag") {
+            let value = iter
+                .next()
+                .ok_or_else(|| anyhow!("missing value for {}", arg.to_string_lossy()))?;
+            parsed.tag = Some(os_to_string(value)?);
+            continue;
+        }
+
+        if let Some(value) = take_value_after_prefix(&arg, "--tag=")? {
+            parsed.tag = Some(value);
             continue;
         }
 
@@ -173,8 +189,9 @@ fn run_ship(mut args: ParsedArgs) -> Result<()> {
     // Run lints before changing bookmarks. The `jj push` alias also runs lints,
     // but doing it there means a lint failure can leave an integration bookmark
     // moved locally and then require manual recovery. Ship should fail early
-    // while the repo graph is still untouched.
-    run_jj_status(["lint"])?;
+    // while the repo graph is still untouched. Call the internal runner instead
+    // of `jj lint` so derivation checks do not depend on user-installed aliases.
+    run_lint(Vec::new())?;
 
     let plan = ship_plan(has_working_copy_changes()?);
 
@@ -246,6 +263,24 @@ fn run_ship(mut args: ParsedArgs) -> Result<()> {
         }
 
         return Err(push_err);
+    }
+
+    if let Some(tag) = args.tag.take() {
+        let tag_args = TagPushArgs {
+            tag,
+            revision: Some(target_id.clone()),
+            remote: Some(remote.clone()),
+            allow_dirty: false,
+            allow_move: false,
+            allow_non_semver: false,
+            dry_run: false,
+            quiet: args.quiet,
+            json: false,
+            help: false,
+        };
+        tag_push(tag_args)?;
+    } else if let Err(err) = teach_unpushed_tags_at(&target_id, &remote) {
+        eprintln!("warning: couldn't check for unpushed local tags: {err:#}");
     }
 
     Ok(())
@@ -359,6 +394,10 @@ fn run_sync(mut args: ParsedArgs) -> Result<()> {
         return Ok(());
     }
 
+    if args.tag.is_some() {
+        bail!("jj sync does not support --tag; use `jj ship --tag <tag>` or `jj tag-push <tag> --revision <rev>`")
+    }
+
     let configured_remote = jj_config_string("dotfiles.sync.remote")?;
     let mut remote_for_fetch = args.remote_input.clone().or(configured_remote);
 
@@ -437,6 +476,245 @@ fn run_sync(mut args: ParsedArgs) -> Result<()> {
 
     if args.fail_on_conflicts && !conflicts.is_empty() {
         bail!("sync completed with conflicts")
+    }
+
+    Ok(())
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+struct TagPushArgs {
+    tag: String,
+    revision: Option<String>,
+    remote: Option<String>,
+    allow_dirty: bool,
+    allow_move: bool,
+    allow_non_semver: bool,
+    dry_run: bool,
+    quiet: bool,
+    json: bool,
+    help: bool,
+}
+
+fn run_tag(args: Vec<OsString>) -> Result<()> {
+    let mut iter = args.into_iter();
+    let command = match iter.next() {
+        Some(command) => command,
+        None => {
+            print_tag_usage();
+            bail!("missing tag subcommand");
+        }
+    };
+
+    match command.to_string_lossy().as_ref() {
+        "push" => run_tag_push(parse_tag_push_args(iter.collect())?),
+        "-h" | "--help" | "help" => {
+            print_tag_usage();
+            Ok(())
+        }
+        other => {
+            print_tag_usage();
+            bail!("unknown tag subcommand: {other}")
+        }
+    }
+}
+
+fn parse_tag_push_args(args: Vec<OsString>) -> Result<TagPushArgs> {
+    let mut parsed = TagPushArgs::default();
+    let mut iter = args.into_iter();
+
+    while let Some(arg) = iter.next() {
+        if arg == OsStr::new("-h") || arg == OsStr::new("--help") {
+            parsed.help = true;
+            continue;
+        }
+
+        if arg == OsStr::new("-r") || arg == OsStr::new("--revision") {
+            let value = iter
+                .next()
+                .ok_or_else(|| anyhow!("missing value for {}", arg.to_string_lossy()))?;
+            parsed.revision = Some(os_to_string(value)?);
+            continue;
+        }
+
+        if let Some(value) = take_value_after_prefix(&arg, "--revision=")? {
+            parsed.revision = Some(value);
+            continue;
+        }
+
+        if arg == OsStr::new("--remote") {
+            let value = iter
+                .next()
+                .ok_or_else(|| anyhow!("missing value for {}", arg.to_string_lossy()))?;
+            parsed.remote = Some(os_to_string(value)?);
+            continue;
+        }
+
+        if let Some(value) = take_value_after_prefix(&arg, "--remote=")? {
+            parsed.remote = Some(value);
+            continue;
+        }
+
+        match arg.to_string_lossy().as_ref() {
+            "--allow-dirty" => parsed.allow_dirty = true,
+            "--allow-move" => parsed.allow_move = true,
+            "--allow-non-semver" => parsed.allow_non_semver = true,
+            "--dry-run" => parsed.dry_run = true,
+            "-q" | "--quiet" => parsed.quiet = true,
+            "--json" => {
+                parsed.json = true;
+                parsed.quiet = true;
+            }
+            other if other.starts_with('-') => bail!("unknown jj tag-push option: {other}"),
+            other => {
+                if parsed.tag.is_empty() {
+                    parsed.tag = other.to_string();
+                } else {
+                    bail!("unexpected jj tag-push argument: {other}");
+                }
+            }
+        }
+    }
+
+    Ok(parsed)
+}
+
+fn run_tag_push(args: TagPushArgs) -> Result<()> {
+    if args.help {
+        print_tag_push_usage();
+        return Ok(());
+    }
+    tag_push(args)
+}
+
+fn tag_push(args: TagPushArgs) -> Result<()> {
+    if args.tag.is_empty() {
+        print_tag_push_usage();
+        bail!("missing tag name");
+    }
+
+    if !args.allow_non_semver {
+        validate_release_tag(&args.tag)?;
+    }
+
+    let working_copy_dirty = has_working_copy_changes()?;
+    if working_copy_dirty && !args.allow_dirty {
+        bail!("working copy has changes; commit or move them aside, or re-run with --allow-dirty")
+    }
+
+    let revision = match args.revision.as_deref() {
+        Some(revision) => revision.to_string(),
+        None if !working_copy_dirty => "@-".to_string(),
+        None => bail!(
+            "missing --revision <rev>; defaulting to @- is only allowed with a clean working copy"
+        ),
+    };
+
+    ensure_no_conflicts_in(&revision)?;
+    let target_id =
+        commit_id(&revision)?.ok_or_else(|| anyhow!("revision not found: {revision}"))?;
+    if commit_is_empty(&revision)? {
+        bail!("refusing to tag empty revision {revision}")
+    }
+    let description = commit_description_first_line(&revision)?;
+    let remote = resolve_tag_remote(args.remote.as_deref())?;
+
+    let remote_target_before = remote_tag_target(&remote, &args.tag)?;
+    if let Some(remote_target) = remote_target_before.as_deref() {
+        if remote_target == target_id {
+            if args.json {
+                print_tag_push_json(&args.tag, &revision, &target_id, &remote, true, true);
+            } else if !args.quiet {
+                println!(
+                    "remote tag {} already exists on {} -> {}",
+                    args.tag,
+                    remote,
+                    short_commit(&target_id)
+                );
+            }
+            return Ok(());
+        }
+        bail!(
+            "remote tag {} already exists on {} at {}; refusing to move it",
+            args.tag,
+            remote,
+            short_commit(remote_target)
+        );
+    }
+
+    let local_target_before = local_tag_target(&args.tag)?;
+    let needs_local_tag = match local_target_before.as_deref() {
+        Some(local_target) if local_target == target_id => false,
+        Some(local_target) if args.allow_move => {
+            if !args.quiet && !args.json {
+                println!(
+                    "moving local tag {} from {} to {}",
+                    args.tag,
+                    short_commit(local_target),
+                    short_commit(&target_id)
+                );
+            }
+            true
+        }
+        Some(local_target) => bail!(
+            "local tag {} already exists at {}; refusing to move it without --allow-move",
+            args.tag,
+            short_commit(local_target)
+        ),
+        None => true,
+    };
+
+    if args.dry_run {
+        if args.json {
+            print_tag_push_json(&args.tag, &revision, &target_id, &remote, false, false);
+        } else {
+            println!("would create/push tag {}", args.tag);
+            println!("revision: {revision}");
+            println!("commit: {} {}", short_commit(&target_id), description);
+            println!("remote: {remote}");
+        }
+        return Ok(());
+    }
+
+    if !args.quiet && !args.json {
+        println!("tag: {}", args.tag);
+        println!("revision: {revision}");
+        println!("commit: {} {}", short_commit(&target_id), description);
+        println!("remote: {remote}");
+        println!();
+    }
+
+    if needs_local_tag {
+        run_jj_status(["tag", "set", "-r", revision.as_str(), args.tag.as_str()])?;
+    } else if !args.quiet && !args.json {
+        println!(
+            "local tag {} already points to {}",
+            args.tag,
+            short_commit(&target_id)
+        );
+    }
+
+    run_jj_status(["git", "export"])?;
+    git_push_tag(&remote, &args.tag)?;
+    let verified_target = remote_tag_target(&remote, &args.tag)?
+        .ok_or_else(|| anyhow!("remote tag {} was not found after push", args.tag))?;
+    if verified_target != target_id {
+        bail!(
+            "remote tag {} points to {}, expected {}",
+            args.tag,
+            short_commit(&verified_target),
+            short_commit(&target_id)
+        )
+    }
+
+    if args.json {
+        print_tag_push_json(&args.tag, &revision, &target_id, &remote, true, true);
+    } else if !args.quiet {
+        println!(
+            "verified {} -> {} on {}",
+            args.tag,
+            short_commit(&target_id),
+            remote
+        );
     }
 
     Ok(())
@@ -4667,6 +4945,147 @@ fn git_remotes() -> Result<Vec<String>> {
         .collect())
 }
 
+fn resolve_tag_remote(explicit_remote: Option<&str>) -> Result<String> {
+    if let Some(remote) = explicit_remote {
+        return Ok(remote.to_string());
+    }
+
+    let mut remotes = git_remotes()?;
+    dedup(&mut remotes);
+    match remotes.as_slice() {
+        [] => bail!("no Git remotes configured"),
+        [remote] => Ok(remote.clone()),
+        _ if remotes.iter().any(|remote| remote == "origin") => Ok("origin".to_string()),
+        _ => pick_option("Tag push remote", &remotes, "Re-run with --remote <name>."),
+    }
+}
+
+fn validate_release_tag(tag: &str) -> Result<()> {
+    if tag.is_empty() {
+        bail!("tag cannot be empty");
+    }
+    let Some(rest) = tag.strip_prefix('v') else {
+        bail!("tag must look like vX.Y.Z; re-run with --allow-non-semver to override")
+    };
+    let parts: Vec<&str> = rest.split('.').collect();
+    if parts.len() != 3
+        || parts
+            .iter()
+            .any(|part| part.is_empty() || !part.chars().all(|ch| ch.is_ascii_digit()))
+    {
+        bail!("tag must look like vX.Y.Z; re-run with --allow-non-semver to override")
+    }
+    Ok(())
+}
+
+fn local_tag_target(tag: &str) -> Result<Option<String>> {
+    let pattern = format!("exact:{tag}");
+    let output = run_jj_capture([
+        "tag",
+        "list",
+        pattern.as_str(),
+        "--color=never",
+        "-T",
+        "if(!self.remote(), coalesce(self.normal_target().commit_id(), \"\") ++ \"\\n\", \"\")",
+    ])?;
+
+    Ok(output
+        .stdout
+        .lines()
+        .map(str::trim)
+        .find(|line| !line.is_empty())
+        .map(std::string::ToString::to_string))
+}
+
+fn local_tags_at_revset(revset: &str) -> Result<Vec<String>> {
+    let output = run_jj_capture([
+        "tag",
+        "list",
+        "-r",
+        revset,
+        "--color=never",
+        "-T",
+        "if(!self.remote(), self.name() ++ \"\\n\", \"\")",
+    ])?;
+    let mut tags: Vec<String> = output
+        .stdout
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+        .map(std::string::ToString::to_string)
+        .collect();
+    dedup(&mut tags);
+    Ok(tags)
+}
+
+fn remote_tag_target(remote: &str, tag: &str) -> Result<Option<String>> {
+    let refname = format!("refs/tags/{tag}");
+    let output = Command::new("git")
+        .args([
+            "ls-remote",
+            "--exit-code",
+            "--tags",
+            remote,
+            refname.as_str(),
+        ])
+        .output()
+        .with_context(|| format!("failed to execute git ls-remote for {remote}/{tag}"))?;
+
+    if !output.status.success() {
+        if output.status.code() == Some(2) {
+            return Ok(None);
+        }
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        bail!(
+            "git ls-remote --tags {remote} {refname} failed: {}",
+            stderr.trim()
+        )
+    }
+
+    let stdout =
+        String::from_utf8(output.stdout).context("failed to decode git ls-remote stdout")?;
+    for line in stdout.lines() {
+        let mut fields = line.split_whitespace();
+        let Some(object_id) = fields.next() else {
+            continue;
+        };
+        let Some(remote_ref) = fields.next() else {
+            continue;
+        };
+        if remote_ref == refname {
+            return Ok(Some(object_id.to_string()));
+        }
+    }
+
+    Ok(None)
+}
+
+fn git_push_tag(remote: &str, tag: &str) -> Result<()> {
+    let refspec = format!("refs/tags/{tag}");
+    let status = Command::new("git")
+        .args(["push", remote, refspec.as_str()])
+        .status()
+        .with_context(|| format!("failed to execute git push {remote} {refspec}"))?;
+    if status.success() {
+        Ok(())
+    } else {
+        bail!("git push {remote} {refspec} failed with status {status}")
+    }
+}
+
+fn teach_unpushed_tags_at(revset: &str, remote: &str) -> Result<()> {
+    let tags = local_tags_at_revset(revset)?;
+    for tag in tags {
+        if remote_tag_target(remote, &tag)?.is_none() {
+            eprintln!(
+                "note: local tag {tag} points at the shipped commit but is not on {remote}\npublish it with:\n  jj tag-push {tag} --revision {} --remote {remote}",
+                short_commit(revset)
+            );
+        }
+    }
+    Ok(())
+}
+
 fn commit_id(revset: &str) -> Result<Option<String>> {
     let output = run_jj_capture_allow_failure([
         "log",
@@ -4689,6 +5108,29 @@ fn commit_id(revset: &str) -> Result<Option<String>> {
         Ok(None)
     } else {
         Ok(Some(commit_id.to_string()))
+    }
+}
+
+fn commit_description_first_line(revset: &str) -> Result<String> {
+    let output = run_jj_capture([
+        "log",
+        "-r",
+        revset,
+        "-n",
+        "1",
+        "--no-graph",
+        "--color=never",
+        "-T",
+        "description.first_line()",
+    ])?;
+    Ok(output.stdout.trim().to_string())
+}
+
+fn short_commit(commit_id: &str) -> &str {
+    if commit_id.len() <= 12 {
+        commit_id
+    } else {
+        &commit_id[..12]
     }
 }
 
@@ -4783,7 +5225,19 @@ fn is_release_bookmark(bookmark: &str) -> bool {
 
 fn print_ship_usage() {
     eprintln!(
-        "Usage:\n  jj ship [-b|--bookmark <bookmark>] [--remote <remote>] [-- <jj git push args...>]\n\nRuns jj lint, then ships the parent of the working copy. Refuses empty targets and will not fall back to integration bookmarks unless you choose one explicitly with --bookmark."
+        "Usage:\n  jj ship [-b|--bookmark <bookmark>] [--remote <remote>] [--tag <tag>] [-- <jj git push args...>]\n\nRuns jj lint, then ships the parent of the working copy. Refuses empty targets and will not fall back to integration bookmarks unless you choose one explicitly with --bookmark. With --tag, tags the exact shipped commit and publishes that tag to the remote."
+    );
+}
+
+fn print_tag_usage() {
+    eprintln!(
+        "Usage:\n  jj tag push <tag> [--revision <rev>] [--remote <remote>]\n\nInternal helper namespace. The public jj alias is `jj tag-push <tag> ...` because jj aliases cannot override the built-in `jj tag` command."
+    );
+}
+
+fn print_tag_push_usage() {
+    eprintln!(
+        "Usage:\n  jj tag-push <tag> [--revision <rev>] [--remote <remote>] [--allow-dirty] [--allow-move] [--allow-non-semver] [--dry-run] [--json]\n\nCreates or reuses a local jj tag, exports refs to colocated Git, pushes the exact refs/tags/<tag> ref, and verifies the remote tag. If --revision is omitted with a clean working copy, @- is used. Tags must look like vX.Y.Z unless --allow-non-semver is passed."
     );
 }
 
@@ -5073,6 +5527,25 @@ fn print_sync_json(base: &str, remote: Option<&str>, conflicts: &[String]) {
     );
 }
 
+fn print_tag_push_json(
+    tag: &str,
+    revision: &str,
+    commit: &str,
+    remote: &str,
+    pushed: bool,
+    verified: bool,
+) {
+    println!(
+        "{{\"action\":\"tag-push\",\"tag\":\"{}\",\"revision\":\"{}\",\"commit\":\"{}\",\"remote\":\"{}\",\"pushed\":{},\"verified\":{}}}",
+        json_escape(tag),
+        json_escape(revision),
+        json_escape(commit),
+        json_escape(remote),
+        pushed,
+        verified
+    );
+}
+
 fn json_escape(value: &str) -> String {
     value
         .chars()
@@ -5102,15 +5575,16 @@ mod tests {
         is_validation_name, lint_config_toml, lint_display_name, lint_onboard_json,
         lint_onboard_report, makefile_targets, parse_checks_json, parse_common_args,
         parse_config_string_array, parse_duration_arg, parse_github_remote_url,
-        parse_lint_selection, parse_lints_toml, parse_review_state_json, parse_toml_string_array,
-        parse_ws_add_args, parse_ws_forget_args, parse_ws_path_args, parse_ws_prune_args,
-        python_runner, render_bookmark_template, resolve_pr_base, run_lint, run_lint_onboard,
-        run_sync, run_ws, selected_lints, ship_plan, short_description_from_title,
-        source_venv_python_usable, stale_workspace_dirs, sync_base_candidates,
-        validate_body_source, validate_pr_watch_args, validate_ticket, validate_ws_name,
-        workspace_context_for_repo, write_tracked_lint_config, FetchChoice, LintCommand,
-        LintOnboardReport, LintSuggestion, ParsedArgs, PrArgs, ProjectGroup, ShipPlan, WsAddArgs,
-        WsConfig, WsForgetArgs, WsPathArgs, WsPruneArgs,
+        parse_lint_selection, parse_lints_toml, parse_review_state_json, parse_tag_push_args,
+        parse_toml_string_array, parse_ws_add_args, parse_ws_forget_args, parse_ws_path_args,
+        parse_ws_prune_args, python_runner, render_bookmark_template, resolve_pr_base, run_lint,
+        run_lint_onboard, run_ship, run_sync, run_ws, selected_lints, ship_plan,
+        short_description_from_title, source_venv_python_usable, stale_workspace_dirs,
+        sync_base_candidates, tag_push, validate_body_source, validate_pr_watch_args,
+        validate_release_tag, validate_ticket, validate_ws_name, workspace_context_for_repo,
+        write_tracked_lint_config, FetchChoice, LintCommand, LintOnboardReport, LintSuggestion,
+        ParsedArgs, PrArgs, ProjectGroup, ShipPlan, TagPushArgs, WsAddArgs, WsConfig, WsForgetArgs,
+        WsPathArgs, WsPruneArgs,
     };
     use std::env;
     use std::ffi::OsString;
@@ -5457,6 +5931,38 @@ mod tests {
                 target_rev: "@-",
             }
         );
+    }
+
+    #[test]
+    fn tag_push_parsing_accepts_release_options() {
+        let parsed = parse_tag_push_args(vec![
+            "v0.2.1".into(),
+            "--revision".into(),
+            "main".into(),
+            "--remote=origin".into(),
+            "--allow-move".into(),
+            "--dry-run".into(),
+        ])
+        .unwrap();
+        assert_eq!(
+            parsed,
+            TagPushArgs {
+                tag: "v0.2.1".to_string(),
+                revision: Some("main".to_string()),
+                remote: Some("origin".to_string()),
+                allow_move: true,
+                dry_run: true,
+                ..TagPushArgs::default()
+            }
+        );
+    }
+
+    #[test]
+    fn tag_push_validates_semver_by_default() {
+        validate_release_tag("v0.2.1").unwrap();
+        for tag in ["0.2.1", "v0.2", "v0.2.x", "v0.2.1-beta"] {
+            assert!(validate_release_tag(tag).is_err(), "{tag} should fail");
+        }
     }
 
     #[test]
@@ -6527,6 +7033,133 @@ tests = []
             !parent_is_remote_main.trim().is_empty(),
             "expected @ to be rebased onto main@origin"
         );
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn integration_tag_push_publishes_and_verifies_remote_tag() {
+        if which::which("git").is_err() {
+            return;
+        }
+
+        let _guard = INTEGRATION_LOCK.lock().unwrap();
+        let root = named_tempdir("tag-push");
+        let origin = root.join("origin.git");
+        let repo = root.join("repo");
+
+        run(Command::new("git").arg("init").arg("--bare").arg(&origin));
+        run(Command::new("jj").arg("git").arg("init").arg(&repo));
+        jj(
+            &repo,
+            &["git", "remote", "add", "origin", origin.to_str().unwrap()],
+        );
+        fs::write(repo.join("file.txt"), "initial\n").unwrap();
+        jj(&repo, &["describe", "-m", "initial"]);
+        jj(&repo, &["bookmark", "set", "main", "-r", "@"]);
+        jj(
+            &repo,
+            &["git", "push", "--bookmark", "main", "--remote", "origin"],
+        );
+
+        let old = env::current_dir().unwrap();
+        env::set_current_dir(&repo).unwrap();
+        tag_push(TagPushArgs {
+            tag: "v0.2.1".to_string(),
+            revision: Some("main".to_string()),
+            remote: Some("origin".to_string()),
+            quiet: true,
+            ..TagPushArgs::default()
+        })
+        .unwrap();
+        env::set_current_dir(old).unwrap();
+
+        let output = Command::new("git")
+            .arg("ls-remote")
+            .arg("--exit-code")
+            .arg("--tags")
+            .arg(&origin)
+            .arg("refs/tags/v0.2.1")
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "tag missing\nstdout:\n{}\nstderr:\n{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn integration_ship_tag_tags_the_shipped_commit() {
+        if which::which("git").is_err() {
+            return;
+        }
+
+        let _guard = INTEGRATION_LOCK.lock().unwrap();
+        let root = named_tempdir("ship-tag");
+        let origin = root.join("origin.git");
+        let repo = root.join("repo");
+
+        run(Command::new("git").arg("init").arg("--bare").arg(&origin));
+        run(Command::new("jj").arg("git").arg("init").arg(&repo));
+        jj(
+            &repo,
+            &["git", "remote", "add", "origin", origin.to_str().unwrap()],
+        );
+        fs::write(repo.join("file.txt"), "release\n").unwrap();
+        jj(&repo, &["describe", "-m", "release"]);
+        let shipped_commit = jj_stdout(
+            &repo,
+            &[
+                "log",
+                "-r",
+                "@",
+                "-n",
+                "1",
+                "--no-graph",
+                "--color=never",
+                "-T",
+                "commit_id",
+            ],
+        )
+        .trim()
+        .to_string();
+
+        let old = env::current_dir().unwrap();
+        env::set_current_dir(&repo).unwrap();
+        run_ship(
+            parse_common_args(vec![
+                "--bookmark".into(),
+                "main".into(),
+                "--remote".into(),
+                "origin".into(),
+                "--tag".into(),
+                "v0.2.2".into(),
+            ])
+            .unwrap(),
+        )
+        .unwrap();
+        env::set_current_dir(old).unwrap();
+
+        let output = Command::new("git")
+            .arg("ls-remote")
+            .arg("--exit-code")
+            .arg("--tags")
+            .arg(&origin)
+            .arg("refs/tags/v0.2.2")
+            .output()
+            .unwrap();
+        assert!(output.status.success());
+        let tag_target = String::from_utf8(output.stdout)
+            .unwrap()
+            .split_whitespace()
+            .next()
+            .unwrap()
+            .to_string();
+        assert_eq!(tag_target, shipped_commit);
 
         let _ = fs::remove_dir_all(&root);
     }

@@ -40,6 +40,7 @@
         --prefix PATH : ${lib.makeBinPath [
         pkgs.fzf
         pkgs.jujutsu
+        pkgs.git
         pkgs.gh
         pkgs.direnv
         pkgs.docker
@@ -47,7 +48,7 @@
     '';
 
     meta = {
-      description = "Workflow helpers for jj ship and jj sync";
+      description = "Workflow helpers for jj ship, tag-push, and sync";
       license = lib.licenses.mit;
     };
   };
@@ -209,6 +210,10 @@ in {
           # Refuses empty targets and requires an explicit --bookmark instead of
           # silently falling back to integration bookmarks.
           ship = ["util" "exec" "--" "${jjWorkflow}/bin/jj-workflow" "ship"];
+
+          # Publish human/agent-created release tags. `jj tag push` cannot be
+          # expressed as a jj alias because aliases cannot override built-ins.
+          tag-push = ["util" "exec" "--" "${jjWorkflow}/bin/jj-workflow" "tag" "push"];
 
           # Sync with upstream: fetch, then rebase onto the integration bookmark
           sync = ["util" "exec" "--" "${jjWorkflow}/bin/jj-workflow" "sync"];

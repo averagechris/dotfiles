@@ -18,6 +18,8 @@ jj sync --json --fail-on-conflicts # structured agent/script output
 jj sync --onto <revset> # sync to explicit base when inference is wrong
 jj push                 # run lints, then push current bookmark/change; only when asked
 jj ship --bookmark <b>  # finish/publish selected work; only when asked to ship/publish
+jj ship --bookmark <b> --tag vX.Y.Z # ship and publish a human/agent-created tag
+jj tag-push vX.Y.Z --revision <rev> # publish a tag after the bookmark is already shipped
 jj pr doctor            # suremac-only GitHub PR helper preflight for jj workspaces
 jj pr watch             # compact GitHub check/review polling for an existing PR
 ```
@@ -115,6 +117,11 @@ Use when the user wants the change finished and published.
 - Refuses empty targets.
 - Requires `--bookmark` if only integration bookmarks are nearby.
 - Pushes via `jj git push` after lints pass to avoid duplicate lint runs.
+- With `--tag vX.Y.Z`, tags the exact shipped commit, exports refs, pushes `refs/tags/<tag>`, and verifies the remote tag.
+
+## Tags
+
+For human/agent-created release tags, prefer `jj ship --bookmark <b> --tag vX.Y.Z`. If the bookmark is already shipped, use `jj tag-push vX.Y.Z --revision <rev>`. Do not expect `jj git push --all` to create new remote tags; jj intentionally refuses that.
 
 ## `jj pr` on suremac
 
