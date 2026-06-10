@@ -16,6 +16,10 @@ The module defaults `dotfiles.granola.package` to
 Hosts that do not provide the input can leave the module disabled or set
 `dotfiles.granola.package` explicitly.
 
+When bumping the CLI, update both the standalone `suremac` host lock and the
+top-level aggregator lock so `nh darwin build ./flakes/hosts/suremac --hostname
+suremac` and `nh darwin build . --hostname suremac` resolve the same revision.
+
 ## Authentication
 
 Granola credentials are stored by the CLI in the OS keyring (`granola-cli` /
