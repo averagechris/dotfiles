@@ -90,6 +90,16 @@ only after manual review with `--ignore-cooldown`, or tune with
 `--cooldown-days`, `--cooldown-inputs`, `FLAKE_UPDATE_COOLDOWN_DAYS`, and
 `FLAKE_UPDATE_COOLDOWN_INPUTS`.
 
+When asked to bump a specific flake input manually, update every relevant
+`flake.lock`, not just the lockfile in the flake that declares the input. This
+multi-flake repo has nested host/module locks plus the top-level aggregator
+lock, and commands such as `nh darwin switch .#suremac` use the root
+`flake.lock`. For example, bumping suremac's `granola-cli` input requires
+updating `flakes/hosts/suremac/flake.lock` (`nix flake update granola-cli` from
+that host flake) and the root lock's nested `suremac/granola-cli` node
+(`nix flake update suremac/granola-cli` from the repo root). Verify from the
+same flake path the user will build or switch, not only from the nested flake.
+
 Pi is currently packaged from manually pinned upstream release archives rather
 than a flake input. Keep it that way unless there is a concrete need to consume
 Pi source directly, apply local patches, or track a fork. Update Pi manually only

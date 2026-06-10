@@ -218,8 +218,19 @@ nom build .#<attr> --show-trace
 nix flake check
 
 # Update a specific input
-nix flake lock --update-input <input-name>
+nix flake update <input-name>
+
+# Update an input declared inside a nested flake from the root aggregator lock
+nix flake update <host-or-flake>/<input-name>
 ```
+
+When bumping a flake input in this repo, update all relevant lockfiles. Host and
+module flakes have their own `flake.lock` files, and the root aggregator also
+locks nested inputs. If the user will run `nh darwin switch .#suremac` or build
+from the repo root, the root `flake.lock` must be updated too (for example,
+`nix flake update suremac/granola-cli`), not only
+`flakes/hosts/suremac/flake.lock`. Verify the resulting package/configuration
+from the same flake path the user will use.
 
 ### Common Issues
 
