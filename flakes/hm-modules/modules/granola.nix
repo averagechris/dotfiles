@@ -10,6 +10,16 @@
     if inputs ? granola-cli && inputs.granola-cli ? packages && builtins.hasAttr pkgs.stdenv.hostPlatform.system inputs.granola-cli.packages
     then inputs.granola-cli.packages.${pkgs.stdenv.hostPlatform.system}.default
     else null;
+  granolaCompletions = pkgs.runCommand "granola-completions" {} ''
+    install -dm755 \
+      $out/share/bash-completion/completions \
+      $out/share/fish/vendor_completions.d \
+      $out/share/zsh/site-functions
+
+    ${lib.getExe cfg.package} completions bash > $out/share/bash-completion/completions/granola
+    ${lib.getExe cfg.package} completions fish > $out/share/fish/vendor_completions.d/granola.fish
+    ${lib.getExe cfg.package} completions zsh > $out/share/zsh/site-functions/_granola
+  '';
   validateFlag = lib.optionalString cfg.validateTokenOnLogin "--validate";
 in {
   options.dotfiles.granola = {
@@ -45,6 +55,28 @@ in {
         during first-time activation.
       '';
     };
+
+    completions.enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = ''
+        Install generated Granola shell completions in the standard Home Manager
+        profile completion directories for enabled shells.
+      '';
+    };
+
+    sync = {
+      enable = lib.mkEnableOption "hourly Granola note cache sync launchd agent";
+
+      intervalSeconds = lib.mkOption {
+        type = lib.types.ints.positive;
+        default = 3600;
+        description = ''
+          Number of seconds between background `granola sync` runs. On macOS,
+          launchd does not wake a sleeping laptop to run the job.
+        '';
+      };
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -53,9 +85,29 @@ in {
         assertion = cfg.package != null;
         message = "dotfiles.granola.enable requires dotfiles.granola.package or an inputs.granola-cli flake input.";
       }
+      {
+        assertion = !cfg.sync.enable || pkgs.stdenv.isDarwin;
+        message = "dotfiles.granola.sync.enable is currently supported only on Darwin via launchd.";
+      }
     ];
 
-    home.packages = [cfg.package];
+    home.packages = [cfg.package] ++ lib.optional cfg.completions.enable granolaCompletions;
+
+    launchd.agents.granola-sync = lib.mkIf (cfg.sync.enable && pkgs.stdenv.isDarwin) {
+      enable = true;
+      config = {
+        ProgramArguments = [
+          (lib.getExe cfg.package)
+          "sync"
+          "--quiet"
+        ];
+        StartInterval = cfg.sync.intervalSeconds;
+        ProcessType = "Background";
+        LowPriorityIO = true;
+        StandardOutPath = "${config.home.homeDirectory}/Library/Logs/granola-sync.log";
+        StandardErrorPath = "${config.home.homeDirectory}/Library/Logs/granola-sync.log";
+      };
+    };
 
     home.activation.granola-auth = lib.mkIf (cfg.tokenFile != null) (lib.hm.dag.entryAfter ["writeBoundary" "installPackages"] ''
       token_file=${lib.escapeShellArg cfg.tokenFile}

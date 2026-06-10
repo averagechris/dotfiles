@@ -296,6 +296,7 @@
     dotfiles.granola = {
       enable = true;
       tokenFile = config.age.secrets.granola-token.path;
+      sync.enable = true;
     };
     dotfiles.opencode.circleciTokenFile = "/run/agenix/circleci-token";
     dotfiles.opencode.agentSupportPackages = with pkgs; [

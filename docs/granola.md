@@ -16,6 +16,19 @@ The module defaults `dotfiles.granola.package` to
 Hosts that do not provide the input can leave the module disabled or set
 `dotfiles.granola.package` explicitly.
 
+By default, the module also builds shell completions with:
+
+```bash
+granola completions bash
+granola completions fish
+granola completions zsh
+```
+
+The generated files are installed into the standard Home Manager profile
+completion directories, so Home Manager-enabled Bash, Fish, and Zsh shells can
+load the completion for whichever shell is active. Set
+`dotfiles.granola.completions.enable = false` to skip installing them.
+
 When bumping the CLI, update both the standalone `suremac` host lock and the
 top-level aggregator lock so `nh darwin build ./flakes/hosts/suremac --hostname
 suremac` and `nh darwin build . --hostname suremac` resolve the same revision.
@@ -43,6 +56,18 @@ require `granola auth logout --force` before the next activation or a manual
 `suremac` enables the module in Chris's Home Manager configuration and adds
 `granola` to `dotfiles.opencode.agentTools`, so OpenCode primary agents see it
 in their runtime tool note and get the package in their PATH.
+
+`suremac` also enables `dotfiles.granola.sync.enable`, which creates a user
+LaunchAgent that runs the following command every hour:
+
+```bash
+granola sync --quiet
+```
+
+The job uses launchd's `StartInterval = 3600`, runs as a background, low-I/O
+process, and writes logs to `~/Library/Logs/granola-sync.log`. launchd does not
+wake a sleeping laptop for this job; it only runs while macOS is awake enough to
+service user LaunchAgents.
 
 Other hosts import the shared Home Manager module set but do not enable
 `dotfiles.granola` and do not receive the package or token.
