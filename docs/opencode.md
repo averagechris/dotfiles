@@ -33,7 +33,16 @@ generates the system-prompt tool note from the configured list.
 The Build primary agent also has a bash permission allowlist for common
 development commands. Build runners such as `just` and `make` are allowed so
 agents can execute repository-provided workflows without prompting for each
-invocation.
+invocation. Host-exposed browser automation uses the same model: `rodney` and
+`rodney *` are allowed for the Build agent so agents on `suremac` can drive the
+installed Chrome automation CLI without repeated prompts, without also allowing
+similarly named commands such as `rodney_malicious`.
+
+When adding command allow rules, prefer an exact command plus a command-space
+wildcard, for example `tool` and `tool *`. Avoid bare prefix allow patterns such
+as `tool*`, because they also match unrelated executable names like
+`tool_malicious`. Conservative `ask`/`deny` override rules can be broader when
+the intent is to interrupt anything in that command family.
 
 ### Env-prefixed runner commands
 
