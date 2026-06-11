@@ -58,18 +58,27 @@ require `granola auth logout --force` before the next activation or a manual
 in their runtime tool note and get the package in their PATH.
 
 `suremac` also installs the repo-managed `granola-meeting-context` OpenCode
-skill. The skill is intentionally minimal: it tells agents to use `granola search`,
-`granola digest`, and bounded/redacted `granola context` bundles when meeting
-notes may help with requirements, decisions, follow-ups, or project history. It
-also documents the useful SQLite FTS search fields (`title:`, `attendees:`,
-`summary_text:`, `summary_markdown:`, `folders:`, and `transcript:`) for quickly
-finding relevant meetings.
+skill. The skill is intentionally minimal: it tells agents to use
+`granola notes search`, `granola digest`, and bounded/redacted `granola context`
+bundles when meeting notes may help with requirements, decisions, follow-ups, or
+project history. It also documents the useful SQLite FTS search fields
+(`title:`, `attendees:`, `summary_text:`, `summary_markdown:`, `folders:`, and
+`transcript:`) for quickly finding relevant meetings. Granola CLI v0.7 removed
+the top-level `search`, `show`, and `open` aliases, so use the `notes search`,
+`notes get`, and `notes open` subcommands. `notes get-many`, `sync`, and
+`context` use the singular `--include-transcript` flag, and `context` /
+`notes get-many` must be given an explicit selector such as note IDs/URLs,
+`--notes-file`, `--stdin`, list filters, or `--all`. Granola CLI v0.8 added
+`granola notes fields [list|search|get]` for field discovery, `--output text`
+and single-field plain-text row output for pipelines, `notes search --redact`,
+and transcript-aware `notes get --fields transcript` fetching. Use
+`granola export note NOTE --format text` for single-note text exports.
 
 `suremac` also enables `dotfiles.granola.sync.enable`, which creates a user
 LaunchAgent that runs the following command every hour:
 
 ```bash
-granola sync --since 12h --all --include-transcripts --quiet
+granola sync --since 12h --all --include-transcript --quiet
 ```
 
 The job uses launchd's `StartInterval = 3600`, runs as a background, low-I/O
@@ -77,7 +86,7 @@ process, and writes logs to `~/Library/Logs/granola-sync.log`. launchd does not
 wake a sleeping laptop for this job; it only runs while macOS is awake enough to
 service user LaunchAgents. The 12-hour rolling window is enough for the hourly
 job to pick up recently completed meetings without repeatedly scanning a large
-history, and `--include-transcripts` keeps the local FTS cache hydrated for
+history, and `--include-transcript` keeps the local FTS cache hydrated for
 transcript searches.
 
 Other hosts import the shared Home Manager module set but do not enable

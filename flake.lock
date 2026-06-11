@@ -11847,11 +11847,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1781137151,
-        "narHash": "sha256-Tfh+31OveSz2ZNvyWezncvuyYHWndOdZbQE+xi7V02A=",
+        "lastModified": 1781219316,
+        "narHash": "sha256-SfbyCRndQ0mstiMDPP/ex9yNFDzXCnODE3hzxbfhxMI=",
         "owner": "~averagechris",
         "repo": "granola-cli",
-        "rev": "804d8d1be6f9aaf65d3df77b8ed218ed6a179703",
+        "rev": "03edaaca6d11a9217c2cadc476dedfcc3f60fc03",
         "type": "sourcehut"
       },
       "original": {

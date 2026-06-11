@@ -102,7 +102,7 @@ in {
           "--since"
           "12h"
           "--all"
-          "--include-transcripts"
+          "--include-transcript"
           "--quiet"
         ];
         StartInterval = cfg.sync.intervalSeconds;
