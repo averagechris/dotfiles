@@ -24,6 +24,7 @@
 - [tater power and thermal tuning](/docs/tater-power-thermal.md) - ThinkPad T14s power, thermal, and fan-management tuning notes
 - [thorny / thelio-nixos](/docs/thorny.md) - System76 Thelio remote builder and Hyprland workstation notes
 - [tom](/docs/tom.md) - Home Assistant and Calibre-Web host deployment notes
+- [yazi](/docs/yazi.md) - Yazi Home Manager module, Colemak keybindings, wrapper name, and filetype theme rule schema
 
 ## Troubleshooting
 

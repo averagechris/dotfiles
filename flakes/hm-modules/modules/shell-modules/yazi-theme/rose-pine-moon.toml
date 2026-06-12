@@ -90,22 +90,24 @@ rules = [
   { mime = "application/json", fg = "#9ccfd8" },
   
   # Hidden files
-  { name = ".*", fg = "#56526e" },
+  # Yazi 26.5 filetype rules match names/paths with `url`; the old `name`
+  # key is only valid for icon rules.
+  { url = "**/.*", fg = "#56526e" },
   
   # Source control
-  { name = ".git", fg = "#eb6f92" },
-  { name = ".github", fg = "#eb6f92" },
-  { name = ".gitignore", fg = "#eb6f92" },
-  { name = ".gitmodules", fg = "#eb6f92" },
+  { url = "**/.git", fg = "#eb6f92" },
+  { url = "**/.github", fg = "#eb6f92" },
+  { url = "**/.gitignore", fg = "#eb6f92" },
+  { url = "**/.gitmodules", fg = "#eb6f92" },
   
   # Special files
-  { name = "Makefile", fg = "#31748f", bold = true },
-  { name = "Cargo.toml", fg = "#31748f", bold = true },
-  { name = "Cargo.lock", fg = "#56526e" },
-  { name = "flake.nix", fg = "#31748f", bold = true },
-  { name = "flake.lock", fg = "#56526e" },
-  { name = "*.nix", fg = "#31748f" },
+  { url = "**/Makefile", fg = "#31748f", bold = true },
+  { url = "**/Cargo.toml", fg = "#31748f", bold = true },
+  { url = "**/Cargo.lock", fg = "#56526e" },
+  { url = "**/flake.nix", fg = "#31748f", bold = true },
+  { url = "**/flake.lock", fg = "#56526e" },
+  { url = "**/*.nix", fg = "#31748f" },
   
   # Nix specific
-  { name = "result", fg = "#9ccfd8", bold = true },
+  { url = "**/result", fg = "#9ccfd8", bold = true },
 ]
