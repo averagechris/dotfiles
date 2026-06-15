@@ -7,11 +7,11 @@
   assets = {
     aarch64-darwin = {
       platform = "darwin-arm64";
-      hash = "sha256-FDmD+hzibKSf8EE+kv0uaP/ey/3coemKGlWxchDhhaA=";
+      hash = "sha256-hOxkKwZXS2XyENLxsgWcqi/zeNKpzv721jamqw/5Hp4=";
     };
     x86_64-darwin = {
       platform = "darwin-x64";
-      hash = "sha256-Q8NtILwwaGnidCH8f0UyvQ291O2fo1fYXjVF2lu45SI=";
+      hash = "sha256-6Wr0c0Arq4UU/tmiBlbZ2Uo7t9dov1kqluwX53zicmQ=";
     };
   };
 
@@ -21,7 +21,7 @@
 in
   stdenv.mkDerivation (finalAttrs: {
     pname = "coderabbit-cli";
-    version = "0.5.4";
+    version = "0.6.0";
 
     src = fetchurl {
       url = "https://cli.coderabbit.ai/releases/${finalAttrs.version}/coderabbit-${asset.platform}.zip";

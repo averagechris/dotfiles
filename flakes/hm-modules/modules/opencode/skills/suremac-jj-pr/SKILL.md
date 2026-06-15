@@ -59,7 +59,11 @@ The helper infers the GitHub repository from `jj git remote list` and always cal
    Notes:
    - `--sync` runs `jj sync --onto <base>@<inferred-remote> --fail-on-conflicts` before checks, usually with `origin`.
    - `--run-lints` runs `jj lint`.
-   - `--run-cr` runs `cr review` and stops on a nonzero exit.
+   - `--run-cr` runs `cr review --base <remote>/<branch>` and stops on a
+     nonzero exit. The CodeRabbit base is derived from the same jj base used for
+     sync/PR creation, converting jj remote bookmarks like `main@origin` to Git
+     refs like `origin/main` so stale local `main` bookmarks do not balloon the
+     diff.
    - Push is enabled by default. Use `--no-push` only when explicitly needed.
    - Add `--draft` for draft PRs.
    - `--dry-run` plans auto-bookmarking without creating the bookmark.
@@ -136,4 +140,7 @@ Then re-check the PR with GitHub/CircleCI tools as appropriate.
 - If `jj pr create` reports an existing PR, use `jj pr update` or ask the user whether to close/update it.
 - If push fails due to remote bookmark divergence, do not force-push automatically. Read the helper hints and ask if destructive/update semantics are needed.
 - If sync reports conflicts, load `jj-conflict-resolution` and resolve before continuing.
-- If CodeRabbit exits nonzero, inspect and address the review before retrying PR creation.
+- If CodeRabbit exits nonzero, inspect and address the review before retrying PR
+  creation. If running CodeRabbit manually for the same PR, pass the same
+  explicit base (for example `cr review --base origin/main`) instead of relying
+  on CodeRabbit's default local base selection.

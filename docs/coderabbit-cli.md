@@ -60,7 +60,7 @@ automation.
 | `cr --interactive` | Open the interactive terminal UI |
 | `cr review --agent -t uncommitted` | Review only uncommitted changes |
 | `cr review --agent -t committed` | Review committed changes only |
-| `cr review --agent --base develop` | Compare against a non-`main` base branch |
+| `cr review --agent --base origin/develop` | Compare against an explicit remote base branch |
 | `cr review --agent --base-commit <sha>` | Compare against a specific base commit |
 | `cr review findings` | Replay locally stored findings from the last review |
 | `cr review --show-prompts` | Inspect prompts saved from the last review |
@@ -78,7 +78,8 @@ For OpenCode agents on `suremac`, the generated runtime note includes `cr
 `coderabbit-cli` skill with the preferred workflow:
 
 1. inspect the intended review scope with `jj status` / `jj diff --stat`;
-2. run `cr review --agent` with the narrowest useful scope;
+2. run `cr review --agent` with the narrowest useful scope, passing an explicit
+   remote base such as `--base origin/main` in jj repositories;
 3. fix `critical` and `major` findings first;
 4. optionally address lower-severity suggestions; and
 5. re-run one verification review rather than looping indefinitely.

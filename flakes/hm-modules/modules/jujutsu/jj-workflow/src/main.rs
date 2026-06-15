@@ -1105,7 +1105,7 @@ fn pr_create(args: PrArgs) -> Result<()> {
         run_lint(Vec::new())?;
     }
     if args.run_cr {
-        run_external_status("cr", &["review"], "cr review")?;
+        run_cr_review(&base)?;
     }
     if args.push {
         let push_args = vec![
@@ -1820,16 +1820,28 @@ fn ensure_current_change_described(title: Option<&str>) -> Result<()> {
     bail!("current change has no description and cannot be pushed.{hint}")
 }
 
-fn run_external_status(program: &str, args: &[&str], label: &str) -> Result<()> {
-    let status = Command::new(program)
-        .args(args)
+fn run_cr_review(base: &PrBase) -> Result<()> {
+    let cr_base = cr_base_ref(&base.sync_base);
+    eprintln!(
+        "Running CodeRabbit against {cr_base} (from jj base {})",
+        base.sync_base
+    );
+    let status = Command::new("cr")
+        .args(["review", "--base"])
+        .arg(&cr_base)
         .status()
-        .with_context(|| format!("failed to execute {label}"))?;
+        .context("failed to execute cr review")?;
     if status.success() {
         Ok(())
     } else {
-        bail!("{label} failed with status {status}")
+        bail!("cr review --base {cr_base} failed with status {status}")
     }
+}
+
+fn cr_base_ref(sync_base: &str) -> String {
+    split_bookmark_remote(sync_base)
+        .map(|(bookmark, remote)| format!("{remote}/{bookmark}"))
+        .unwrap_or_else(|| sync_base.to_string())
 }
 
 fn gh_prs_by_head(repo: &GithubRemote, head: &str) -> Result<Vec<ExistingPr>> {
@@ -5569,7 +5581,7 @@ struct JjOutput {
 #[cfg(test)]
 mod tests {
     use super::{
-        choose_ship_bookmark, choose_sync_base, configured_lints, fetch_remote_choice,
+        choose_ship_bookmark, choose_sync_base, configured_lints, cr_base_ref, fetch_remote_choice,
         first_unsupported_pr_flag, infer_lint_name, infer_remote_integration_bookmark_from,
         is_check_only_format_script, is_integration_bookmark, is_safe_package_check_script,
         is_validation_name, lint_config_toml, lint_display_name, lint_onboard_json,
@@ -5657,6 +5669,17 @@ mod tests {
         assert_eq!(remote_base.sync_base, "main@origin");
 
         assert!(resolve_pr_base(Some("trunk()"), Some("origin")).is_err());
+    }
+
+    #[test]
+    fn pr_cr_base_uses_git_remote_ref_for_jj_remote_bookmark() {
+        assert_eq!(cr_base_ref("main@origin"), "origin/main");
+        assert_eq!(
+            cr_base_ref("release/2026.06@upstream"),
+            "upstream/release/2026.06"
+        );
+        assert_eq!(cr_base_ref("origin/main"), "origin/main");
+        assert_eq!(cr_base_ref("main"), "main");
     }
 
     #[test]

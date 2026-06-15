@@ -45,6 +45,12 @@ cr review --agent --dir <path>
 Use the narrowest scope that matches the user's request. `--dir` must point to a
 Git repository.
 
+In jj repositories with remote integration bookmarks, prefer an explicit Git
+remote base such as `--base origin/main` (the Git equivalent of jj's
+`main@origin`) instead of relying on CodeRabbit's default local base selection.
+This avoids accidentally reviewing against a stale local `main` bookmark and
+ballooning the diff.
+
 ## Agent workflow
 
 1. Run `cr auth status`; if unauthenticated, ask the user to run `cr auth login`.

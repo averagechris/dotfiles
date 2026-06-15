@@ -83,7 +83,11 @@ Behavior:
    `--sync` is passed. This is usually `origin`, but follows the inferred or
    explicit `--remote` when available.
 6. Runs `jj lint` when `--run-lints` is passed.
-7. Runs `cr review` when `--run-cr` is passed and stops on nonzero exit.
+7. Runs `cr review --base <remote>/<branch>` when `--run-cr` is passed and
+   stops on nonzero exit. The base is derived from the same jj sync base used
+   for PR creation, so a jj base like `main@origin` is passed to CodeRabbit as
+   Git's `origin/main` instead of letting CodeRabbit fall back to a stale local
+   `main` bookmark.
 8. Pushes the head bookmark by default.
 9. Fails loudly if an open PR already exists for the head bookmark.
 10. Creates the PR using `gh pr create --repo owner/repo ...`.
@@ -119,6 +123,12 @@ bookmark, it leaves that bookmark in place even if a later sync, lint,
 CodeRabbit, push, or GitHub step fails. This makes failed runs easy to resume.
 Ticket values used in the bookmark template must contain only letters, numbers,
 dot, underscore, or hyphen.
+
+`--run-cr` is intentionally tied to the resolved remote base. This prevents
+large false diffs in jj repositories where the local integration bookmark is
+stale but the remote bookmark (for example `main@origin`) is current. If you run
+CodeRabbit manually for the same PR, mirror the helper's scope with a command
+such as `cr review --base origin/main`.
 
 ### Update
 
