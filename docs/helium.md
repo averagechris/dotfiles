@@ -1,6 +1,8 @@
 # Helium Browser
 
 This repository packages the upstream Helium Linux binary tarball for NixOS via Home Manager.
+The package derivation lives at `flakes/base-lib/packages/helium-bin.nix` and is
+exposed as `pkgs.helium-bin` by the shared base-lib overlay.
 
 ## Configuration
 
@@ -45,9 +47,15 @@ Helium does not appear to have a mature NixOS package upstream, and its Linux Ap
 
 ## Updating Helium
 
-To update Helium, bump the version and hash in:
+To update Helium, prefer the manifest-driven updater:
 
-`flakes/hm-modules/modules/gui/helium.nix`
+```bash
+update-flakes --manual-packages-only --manual-package helium-bin
+```
+
+Manual updates should bump the version and hash in:
+
+`flakes/base-lib/packages/helium-bin.nix`
 
 Use the latest release from:
 

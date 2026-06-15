@@ -1,0 +1,110 @@
+{
+  "packages": [
+    {
+      "name": "pi-coding-agent",
+      "enabled": true,
+      "kind": "archive",
+      "file": "flakes/base-lib/packages/pi-coding-agent.nix",
+      "cooldown": true,
+      "latest": {
+        "kind": "github-release",
+        "owner": "earendil-works",
+        "repo": "pi",
+        "stripPrefix": "v"
+      },
+      "assets": [
+        {
+          "system": "aarch64-darwin",
+          "url": "https://github.com/earendil-works/pi/releases/download/v{version}/pi-darwin-arm64.tar.gz"
+        },
+        {
+          "system": "x86_64-darwin",
+          "url": "https://github.com/earendil-works/pi/releases/download/v{version}/pi-darwin-x64.tar.gz"
+        },
+        {
+          "system": "aarch64-linux",
+          "url": "https://github.com/earendil-works/pi/releases/download/v{version}/pi-linux-arm64.tar.gz"
+        },
+        {
+          "system": "x86_64-linux",
+          "url": "https://github.com/earendil-works/pi/releases/download/v{version}/pi-linux-x64.tar.gz"
+        }
+      ]
+    },
+    {
+      "name": "coderabbit-cli",
+      "enabled": true,
+      "kind": "archive",
+      "file": "flakes/base-lib/packages/coderabbit-cli.nix",
+      "cooldown": true,
+      "latest": {
+        "kind": "manual"
+      },
+      "assets": [
+        {
+          "system": "aarch64-darwin",
+          "url": "https://cli.coderabbit.ai/releases/{version}/coderabbit-darwin-arm64.zip"
+        },
+        {
+          "system": "x86_64-darwin",
+          "url": "https://cli.coderabbit.ai/releases/{version}/coderabbit-darwin-x64.zip"
+        }
+      ]
+    },
+    {
+      "name": "notion-cli",
+      "enabled": true,
+      "kind": "archive",
+      "file": "flakes/base-lib/packages/notion-cli.nix",
+      "cooldown": true,
+      "latest": {
+        "kind": "manual"
+      },
+      "assets": [
+        {
+          "system": "aarch64-darwin",
+          "url": "https://ntn.dev/releases/v{version}/ntn-aarch64-apple-darwin.tar.gz"
+        }
+      ]
+    },
+    {
+      "name": "helium-bin",
+      "enabled": true,
+      "kind": "archive",
+      "file": "flakes/base-lib/packages/helium-bin.nix",
+      "cooldown": true,
+      "latest": {
+        "kind": "github-release",
+        "owner": "imputnet",
+        "repo": "helium-linux"
+      },
+      "assets": [
+        {
+          "url": "https://github.com/imputnet/helium-linux/releases/download/{version}/helium-{version}-x86_64_linux.tar.xz"
+        }
+      ]
+    },
+    {
+      "name": "rodney",
+      "enabled": false,
+      "kind": "go-module",
+      "file": "flakes/base-lib/packages/rodney.nix",
+      "cooldown": true,
+      "latest": {
+        "kind": "manual"
+      },
+      "note": "Go module vendorHash automation is intentionally not enabled yet."
+    },
+    {
+      "name": "showboat",
+      "enabled": false,
+      "kind": "go-module",
+      "file": "flakes/base-lib/packages/showboat.nix",
+      "cooldown": true,
+      "latest": {
+        "kind": "manual"
+      },
+      "note": "Go module vendorHash automation is intentionally not enabled yet."
+    }
+  ]
+}

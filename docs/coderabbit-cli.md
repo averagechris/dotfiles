@@ -85,5 +85,14 @@ For OpenCode agents on `suremac`, the generated runtime note includes `cr
 5. re-run one verification review rather than looping indefinitely.
 
 The package is Nix-managed, so do not use `cr update`. To update the CLI, check
-`https://cli.coderabbit.ai/releases/latest/VERSION`, then change the version and
-Darwin archive hashes in `flakes/base-lib/packages/coderabbit-cli.nix`.
+`https://cli.coderabbit.ai/releases/latest/VERSION`, then use the manifest-driven
+updater with the reviewed version:
+
+```bash
+update-flakes --manual-packages-only \
+  --manual-package coderabbit-cli \
+  --manual-version coderabbit-cli=<version>
+```
+
+The updater changes the version and Darwin archive hashes in
+`flakes/base-lib/packages/coderabbit-cli.nix`.

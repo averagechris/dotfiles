@@ -23,6 +23,8 @@ __pycache__/
 /result-*
 flakes/hosts/*/result
 flakes/hm-modules/**/target
+scripts/**/target
+tools/**/target
 hosts/coniguration.nix.bak
 .chris.just
 *.qcow2

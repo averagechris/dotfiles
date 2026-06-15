@@ -55,9 +55,9 @@ nix flake check
 # Test (individual host)
 nix flake check ./flakes/hosts/<hostname>
 
-# Routine flake updates with supply-chain cooldowns
-./scripts/update-flakes.sh --check
-./scripts/update-flakes.sh
+# Routine flake and manifest-enrolled manual package updates with supply-chain cooldowns
+update-flakes --check
+update-flakes
 
 # Build NixOS host (preferred ergonomic wrapper)
 nh os build . --hostname <hostname>
@@ -83,12 +83,23 @@ clock/progress animation and most store-path chatter flooding captured logs. Fal
 `nixos-rebuild`, or `darwin-rebuild` only when `nh`/`nom` cannot express the
 operation or when a user explicitly asks for the lower-level command.
 
-Use `scripts/update-flakes.sh` for routine dependency updates. It applies a
-default 7-day cooldown to fast-moving agent inputs such as `opencode`, `pi`, and
-`pi-coding-agent` so new upstream commits are not pulled immediately. Override
-only after manual review with `--ignore-cooldown`, or tune with
-`--cooldown-days`, `--cooldown-inputs`, `FLAKE_UPDATE_COOLDOWN_DAYS`, and
-`FLAKE_UPDATE_COOLDOWN_INPUTS`.
+Use `update-flakes` from the dev shell (or `nix run .#update-flakes -- ...`) for
+routine dependency updates. The implementation is the Rust `update-flakes`
+package, exposed in the dev shell and as the top-level `.#update-flakes` app/package. It
+updates flake inputs plus manifest-enrolled fixed-hash packages from
+`manual-package-updates.json` unless `--no-manual-packages` is passed.
+The manifest makes package enrollment data-driven; set `enabled = false` in the
+manifest to persistently unenroll a package, or use `--skip-manual-package` /
+`--manual-package` for one-off runs. It applies a default 7-day cooldown to
+gated inputs and manual packages such as `pi` / `pi-coding-agent` so fresh
+upstream releases are not pulled immediately. Override only after manual review
+with `--ignore-cooldown`, or tune with `--cooldown-days`, `--cooldown-inputs`,
+`FLAKE_UPDATE_COOLDOWN_DAYS`, `FLAKE_UPDATE_COOLDOWN_INPUTS`, and per-package
+`cooldownDays` in `manual-package-updates.json`. GitHub-release manual packages
+select the newest non-prerelease release older than the cooldown window rather
+than skipping just because the absolute latest release is too fresh. By default,
+`update-flakes` hides noisy `nix flake update` output; pass `--show-output` only
+when raw Nix logs are needed for debugging.
 
 When asked to bump a specific flake input manually, update every relevant
 `flake.lock`, not just the lockfile in the flake that declares the input. This
@@ -100,11 +111,13 @@ that host flake) and the root lock's nested `suremac/granola-cli` node
 (`nix flake update suremac/granola-cli` from the repo root). Verify from the
 same flake path the user will build or switch, not only from the nested flake.
 
-Pi is currently packaged from manually pinned upstream release archives rather
-than a flake input. Keep it that way unless there is a concrete need to consume
-Pi source directly, apply local patches, or track a fork. Update Pi manually only
-after a cooldown/review window; see `docs/pi.md` for the update checklist and
-the tradeoffs of not making it a flake input.
+Pi is currently packaged from pinned upstream release archives rather than a
+flake input. Keep it that way unless there is a concrete need to consume Pi
+source directly, apply local patches, or track a fork. Update Pi only after a
+cooldown/review window; use the manifest-driven `update-flakes` manual package
+phase to refresh all platform hashes together. See `docs/pi.md` and
+`docs/manual-package-updates.md` for the update checklist and the tradeoffs of
+not making it a flake input.
 
 ## Documentation
 
@@ -263,7 +276,7 @@ OpenCode is sourced from the upstream `github:anomalyco/opencode` flake input ra
 
 When adding OpenCode bash permission allow rules for a command, use an exact command plus a command-space wildcard (for example, `"rodney": "allow"` and `"rodney *": "allow"`) instead of a prefix wildcard like `"rodney*": "allow"`; prefix wildcards also allow unrelated executable names such as `rodney_malicious`. Conservative `ask`/`deny` override rules can be broader when the intent is to interrupt anything in that command family.
 
-CodeRabbit CLI is packaged as `pkgs.coderabbit-cli` from the official Darwin binary archive and installed/exposed to OpenCode agents on `suremac` only (`cr`/`coderabbit`). Do not use `cr update` for this Nix-managed install; update the package version and hashes in `flakes/base-lib/packages/coderabbit-cli.nix` instead. The repo-managed `coderabbit-cli` OpenCode skill is configured for `suremac` only.
+CodeRabbit CLI is packaged as `pkgs.coderabbit-cli` from the official Darwin binary archive and installed/exposed to OpenCode agents on `suremac` only (`cr`/`coderabbit`). Do not use `cr update` for this Nix-managed install; update it through `update-flakes --manual-packages-only --manual-package coderabbit-cli --manual-version coderabbit-cli=<version>` so the package version and hashes in `flakes/base-lib/packages/coderabbit-cli.nix` change together. The repo-managed `coderabbit-cli` OpenCode skill is configured for `suremac` only.
 
 Granola CLI is packaged from the SourceHut `granola-cli` flake input and enabled only for `suremac` via `dotfiles.granola`. Its token lives in `secrets/granola-token.age` and Home Manager activation seeds the CLI's OS keyring on first run with `granola auth login --key-stdin --validate`; agents should not read or print the decrypted token. `suremac` also exposes `granola` through `dotfiles.opencode.agentTools` so OpenCode agents know the CLI is available, and installs the `granola-meeting-context` skill for concise, redacted meeting-note context lookups.
 

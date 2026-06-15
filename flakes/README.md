@@ -196,8 +196,8 @@ nh os build . --hostname HOSTNAME
 nh darwin build . --hostname suremac
 
 # Updating
-./scripts/update-flakes.sh --check           # check updates, respecting cooldowns
-./scripts/update-flakes.sh                   # update all repo flakes, respecting cooldowns
+update-flakes --check                        # check updates, respecting cooldowns
+update-flakes                                # update all repo flakes, respecting cooldowns
 nix flake update nixpkgs                     # manually update a specific input
 
 # Debugging
@@ -211,4 +211,4 @@ nix eval .#nixosConfigurations.HOSTNAME.config --apply 'x: x.networking.hostName
 - **Use `follows`** — ensures consistent dependency versions
 - **Test before committing** — run `nix flake check`
 - **Use `flake.lock`** — commit for reproducible builds
-- **Respect update cooldowns** — use `scripts/update-flakes.sh` for routine updates so fast-moving agent inputs such as `opencode`, `pi`, and `pi-coding-agent` are not pulled immediately after upstream changes
+- **Respect update cooldowns** — use `update-flakes` for routine updates so gated fast-moving agent packages such as `pi` / `pi-coding-agent` are not pulled immediately after upstream changes

@@ -57,8 +57,18 @@ ntn completions zsh
 
 When updating the package:
 
-1. Change `version` in `flakes/base-lib/packages/notion-cli.nix`.
-2. Update the platform tarball hash with `nix store prefetch-file --json`.
+1. Review the target upstream release.
+2. Prefer the manifest-driven updater with an explicit version:
+
+   ```bash
+   update-flakes --manual-packages-only \
+     --manual-package notion-cli \
+     --manual-version notion-cli=<version>
+   ```
+
+   If updating by hand, change `version` in
+   `flakes/base-lib/packages/notion-cli.nix` and update the platform tarball hash
+   with `nix store prefetch-file --json`.
 3. Confirm the tarball still contains `ntn`, `LICENSE.md`, and `README.md` under
    `ntn-<platform>/`.
 4. Update this document with the new version and release URL.

@@ -55,6 +55,10 @@ nix flake check
 # Test individual host flake
 nix flake check ./flakes/hosts/<hostname>
 
+# Routine flake and manifest-enrolled manual package updates
+update-flakes --check
+update-flakes
+
 # Build NixOS host (preferred ergonomic wrapper)
 nh os build . --hostname <hostname>
 nh os build ./flakes/hosts/<hostname> --hostname <hostname>
@@ -81,6 +85,17 @@ switches (for example, `nh os build -q --no-nom . --hostname tater`) to avoid th
 clock/progress animation and most store-path chatter flooding captured logs. Fall back to `nix`,
 `nixos-rebuild`, or `darwin-rebuild` only when `nh`/`nom` cannot express the
 operation or when a user explicitly asks for the lower-level command.
+
+Use `update-flakes` from the dev shell (or `nix run .#update-flakes -- ...`) for
+routine dependency updates. It updates flake locks plus enabled fixed-hash packages from
+`manual-package-updates.json`; use `--no-manual-packages` for flake-only
+runs, `--manual-packages-only` for fixed-hash packages only,
+`--manual-package NAME` to select one package, and `--skip-manual-package NAME`
+for one-off unenrollment. Persistently unenroll a manual package by setting
+`enabled = false` in the manifest. For GitHub-release manual packages, cooldowns
+select the newest non-prerelease release old enough for the cooldown window. Raw
+`nix flake update` output is hidden by default; pass `--show-output` only when
+debugging.
 
 ## Code Style Guidelines
 

@@ -21,9 +21,10 @@ Nix build.
 
 Tradeoffs of the current approach:
 
-- Updates require editing `flakes/base-lib/packages/pi-coding-agent.nix` by hand.
-- Routine `scripts/update-flakes.sh` runs cannot accidentally pull a fresh Pi
-  release.
+- Updates change `flakes/base-lib/packages/pi-coding-agent.nix` explicitly rather
+  than advancing a flake input.
+- Routine `update-flakes` runs apply the same cooldown gate used for
+  fast-moving agent inputs before updating Pi's pinned archives.
 - The review diff for an update is small and obvious: version plus platform
   hashes.
 - Building does not run npm, Bun, or dependency lifecycle scripts.
@@ -37,13 +38,20 @@ or revision rather than an unreviewed moving branch.
 
 ## Updating Pi
 
-Do not update Pi as part of routine flake maintenance. Before bumping Pi:
+Before bumping Pi:
 
 1. Wait at least the same cooldown window used for fast-moving agent inputs
-   (currently 7 days by default in `scripts/update-flakes.sh`).
+   (currently 7 days by default in `update-flakes`).
 2. Review the upstream release notes and recent issues for the target release.
 3. Prefer a released version over an arbitrary branch commit.
-4. Update `version` and the platform hashes in
+4. Prefer the manifest-driven updater so all platform hashes are refreshed
+   together:
+
+   ```bash
+   update-flakes --manual-packages-only --manual-package pi-coding-agent
+   ```
+
+   If updating by hand, update `version` and the platform hashes in
    `flakes/base-lib/packages/pi-coding-agent.nix`.
 5. Build the package and verify `pi --version`.
 6. Run the relevant Home Manager/module checks before committing.

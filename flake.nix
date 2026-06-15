@@ -87,6 +87,23 @@
         text = builtins.readFile ./scripts/deploy-quiet.sh;
       };
 
+      packages.update-flakes = pkgs.rustPlatform.buildRustPackage {
+        pname = "dotfiles-update-flakes";
+        version = "0.1.0";
+        src = ./tools/update-flakes;
+        cargoLock.lockFile = ./tools/update-flakes/Cargo.lock;
+        nativeBuildInputs = [pkgs.makeWrapper];
+        postInstall = ''
+          wrapProgram "$out/bin/update-flakes" \
+            --prefix PATH : ${pkgs.lib.makeBinPath [pkgs.curl pkgs.nix]}
+        '';
+      };
+
+      apps.update-flakes = {
+        type = "app";
+        program = "${self.packages.${system}.update-flakes}/bin/update-flakes";
+      };
+
       # Quiet deploy wrapper: nix run .#deploy-quiet -- hostname
       apps.deploy-quiet = {
         type = "app";
@@ -119,6 +136,7 @@
           nil # nix language server
           nixd
           pkgs."bash-language-server"
+          self.outputs.packages.${system}.update-flakes
           self.outputs.packages.${system}.agenix
           deploy-rs.packages.${system}.deploy-rs
 

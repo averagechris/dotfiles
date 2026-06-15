@@ -108,6 +108,10 @@
             pi-coding-agent = final.callPackage ../base-lib/packages/pi-coding-agent.nix {};
             pi = final.pi-coding-agent;
             coderabbit-cli = final.callPackage ../base-lib/packages/coderabbit-cli.nix {};
+            helium-bin = final.callPackage ../base-lib/packages/helium-bin.nix {};
+            notion-cli = final.callPackage ../base-lib/packages/notion-cli.nix {};
+            rodney = final.callPackage ../base-lib/packages/rodney.nix {};
+            showboat = final.callPackage ../base-lib/packages/showboat.nix {};
             opencode = final.callPackage "${opencodeInput}/nix/opencode.nix" {
               inherit node_modules;
             };
