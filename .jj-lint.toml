@@ -4,5 +4,6 @@
 lints = [
   "alejandra --check .",
   "statix check",
-  "fd -e sh -e bash -e zsh -x shellcheck"
+  "fd -e sh -e bash -e zsh -x shellcheck",
+  { name = "opencode-patches", command = "scripts/check-opencode-patches.sh" }
 ]

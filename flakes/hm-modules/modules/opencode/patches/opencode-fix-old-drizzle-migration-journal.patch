@@ -1,0 +1,49 @@
+--- a/packages/core/src/database/migration.ts
++++ b/packages/core/src/database/migration.ts
+@@ -51,15 +51,37 @@
+     if (completed.size === 0) {
+       // Existing installs used Drizzle's migration journal. Seed the new
+       // journal once so TypeScript migrations don't replay old SQL.
+-      if (
+-        yield* db.get(sql`SELECT name FROM sqlite_master WHERE type = 'table' AND name = ${"__drizzle_migrations"}`)
+-      ) {
+-        yield* db.run(sql`
+-          INSERT OR IGNORE INTO ${sql.identifier("migration")} (id, time_completed)
+-          SELECT name, ${Date.now()}
+-          FROM ${sql.identifier("__drizzle_migrations")}
+-          WHERE name IS NOT NULL
+-        `)
++      const hasDrizzleTable = yield* db.get<{ name: string }>(
++        sql`SELECT name FROM sqlite_master WHERE type = 'table' AND name = ${"__drizzle_migrations"}`,
++      )
++      if (hasDrizzleTable) {
++        // Newer Drizzle migrators added a `name` column to the journal. Older
++        // journals only have (id, hash, created_at) with empty hashes, so the
++        // migration folder names cannot be recovered. Fall back to marking the
++        // first N migrations as completed, where N is the journal row count:
++        // the TypeScript migrations were converted from the same Drizzle
++        // migrations in the same order, so the mapping is 1:1.
++        const hasNameColumn = yield* db.get<{ cnt: number }>(
++          sql`SELECT count(*) AS cnt FROM pragma_table_info('__drizzle_migrations') WHERE name = 'name'`,
++        )
++        if (hasNameColumn?.cnt) {
++          yield* db.run(sql`
++            INSERT OR IGNORE INTO ${sql.identifier("migration")} (id, time_completed)
++            SELECT name, ${Date.now()}
++            FROM ${sql.identifier("__drizzle_migrations")}
++            WHERE name IS NOT NULL
++          `)
++        } else {
++          const row = yield* db.get<{ count: number }>(
++            sql`SELECT count(*) AS count FROM ${sql.identifier("__drizzle_migrations")}`,
++          )
++          const count = row?.count ?? 0
++          for (let i = 0; i < Math.min(count, input.length); i++) {
++            yield* db.run(
++              sql`INSERT OR IGNORE INTO ${sql.identifier("migration")} (id, time_completed) VALUES (${input[i]!.id}, ${Date.now()})`,
++            )
++          }
++        }
+         completed = new Set(
+           (yield* db.all<{ id: string }>(sql`SELECT id FROM ${sql.identifier("migration")}`)).map((row) => row.id),
+         )

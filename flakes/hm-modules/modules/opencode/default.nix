@@ -47,12 +47,19 @@
       "@opencode-ai/plugin" = opencodeNpmVersion;
     };
   };
+  # Patches applied on top of the upstream opencode source (built from the
+  # `github:anomalyco/opencode` flake input). Each patch targets a specific
+  # upstream gap; when upstream incorporates the fix, the patch becomes a
+  # no-op and should be removed. Detect stale/broken patches with:
+  #   scripts/check-opencode-patches.sh
+  # See docs/opencode-patches.md for the patch lifecycle.
   patchedOpencode = pkgs.opencode.overrideAttrs (old: {
     patches =
       (old.patches or [])
       ++ [
         ./patches/opencode-allow-nix-bun-1-3-13.patch
         ./patches/opencode-strip-env-assignments.patch
+        ./patches/opencode-fix-old-drizzle-migration-journal.patch
       ];
   });
   opencodePackage =
