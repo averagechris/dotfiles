@@ -67,7 +67,6 @@ in {
     # Environment variables for consistent theming
     home.sessionVariables = {
       GTK_THEME = "rose-pine-moon";
-      QT_QPA_PLATFORMTHEME = "gtk2";
     };
 
     # Required packages

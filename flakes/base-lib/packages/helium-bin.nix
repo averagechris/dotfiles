@@ -53,11 +53,11 @@
 }:
 stdenvNoCC.mkDerivation rec {
   pname = "helium-bin";
-  version = "0.11.3.2";
+  version = "0.13.4.1";
 
   src = fetchurl {
     url = "https://github.com/imputnet/helium-linux/releases/download/${version}/helium-${version}-x86_64_linux.tar.xz";
-    hash = "sha256-DMgy1NH2+huzDGySlCqNpgj7JnLt4OtgUeCjxMCWvFs=";
+    hash = "sha256-rt//wcAnH7n1ol/PfP37axHpIUKrWXSQN6SisGtE7hw=";
   };
 
   nativeBuildInputs = [
