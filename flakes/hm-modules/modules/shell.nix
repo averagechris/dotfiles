@@ -89,7 +89,7 @@ in
       programs.helix.enable = lib.mkDefault true;
       programs.lazygit.enable = lib.mkDefault true;
       programs.starship.enable = lib.mkDefault true;
-      programs.zellij.enable = lib.mkDefault true;
+      programs.zellij.enable = lib.mkDefault false;
       programs.zsh.enable = lib.mkDefault true;
       programs.zsh.oh-my-zsh.enable = lib.mkDefault true;
       programs.jq.enable = lib.mkDefault true;

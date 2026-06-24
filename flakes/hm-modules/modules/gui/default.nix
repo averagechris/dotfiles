@@ -71,7 +71,7 @@ in
       # in several terminal emulators or an unused browser.
       programs.keepassxc.enable = mkDefault cfg.enable;
       programs.signal.enable = mkDefault cfg.enable;
-      programs.zoom.enable = mkDefault cfg.enable;
+      programs.zoom.enable = mkDefault false;
 
       services.udiskie.enable = mkDefault isLinux;
 

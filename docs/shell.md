@@ -22,3 +22,15 @@ The shell module enables direnv and nix-direnv by default for project-local dev
 shells. Direnv runs in silent mode by default (`programs.direnv.silent = true`)
 so entering a flake-backed project does not print the full environment diff such
 as `direnv: export +AR +CC ... ~PATH` on every shell activation.
+
+## Zellij
+
+Zellij is installed and configured by the shell module but is **disabled by
+default**. To enable it on a host, set:
+
+```nix
+programs.zellij.enable = true;
+```
+
+The module deploys `~/.config/zellij/config.kdl`, layouts, and themes only when
+Zellij is enabled.

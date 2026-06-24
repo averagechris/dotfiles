@@ -37,14 +37,14 @@
 
     postFixup = ''
       wrapProgram $out/bin/jj-workflow \
-        --prefix PATH : ${lib.makeBinPath [
-        pkgs.fzf
-        pkgs.jujutsu
-        pkgs.git
-        pkgs.gh
-        pkgs.direnv
-        pkgs.docker
-      ]}
+        --prefix PATH : ${lib.makeBinPath ([
+          pkgs.fzf
+          pkgs.jujutsu
+          pkgs.git
+          pkgs.direnv
+          pkgs.docker
+        ]
+        ++ lib.optional dotCfg.prWorkflow.enable pkgs.gh)}
     '';
 
     meta = {
