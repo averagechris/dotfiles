@@ -78,6 +78,22 @@
     in {
       formatter = pkgs.alejandra;
 
+      # Aggregate checks from all host flakes so the top-level `nix flake check`
+      # catches regressions without needing to run per-host flake checks
+      # manually. Strict duplicates (same value under the same name) are kept
+      # once; name collisions with different values throw.
+      checks = lib.mergeFlakeChecks [
+        suremac.checks.${system} or {}
+        trap.checks.${system} or {}
+        thorny.checks.${system} or {}
+        tom.checks.${system} or {}
+        cruber.checks.${system} or {}
+        tater.checks.${system} or {}
+        trainwreck.checks.${system} or {}
+        taz.checks.${system} or {}
+        tootsie.checks.${system} or {}
+      ];
+
       # deploy usage: nix run .#deploy -- .#hostname
       apps.deploy = deploy-rs.apps.${system}.deploy-rs;
 

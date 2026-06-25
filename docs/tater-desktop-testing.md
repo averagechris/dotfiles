@@ -10,7 +10,15 @@ The tater host flake exposes a desktop regression check:
 nix flake check ./flakes/hosts/tater
 ```
 
-This includes `checks.x86_64-linux.tater-desktop-static`, which is intentionally layered:
+This includes several checks:
+
+| Check | What it checks | Why |
+|-------|----------------|-----|
+| `tater-desktop-static` | Intentionally layered policy checks (see below) | Catches shell mistakes, known-bad greeter patterns, evaluated Nix invariants, and integration-name tripwires. |
+| `tater-hyprland-greeter-config` | `Hyprland --verify-config` against the generated greetd config | C parser errors that Nix evaluation alone cannot see, such as windowrule syntax changes, before rebooting. |
+| `tater-hyprland-home-config` | `Hyprland --verify-config` against the generated Home Manager `hypr/hyprland.conf` | Catches the same class of parser errors in the user-session config. |
+
+`checks.x86_64-linux.tater-desktop-static` is layered:
 
 | Layer | What it checks | Why |
 |-------|----------------|-----|
@@ -21,10 +29,20 @@ This includes `checks.x86_64-linux.tater-desktop-static`, which is intentionally
 
 The check deliberately avoids trying to prove every visual policy. Things like exact workspace policy, monitor preference, and bar layout can change over time; only the durable safety contracts and known pain points should become hard failures.
 
-For a narrower run:
+For narrower runs:
 
 ```bash
 nom build ./flakes/hosts/tater#checks.x86_64-linux.tater-desktop-static
+nom build ./flakes/hosts/tater#checks.x86_64-linux.tater-hyprland-greeter-config
+nom build ./flakes/hosts/tater#checks.x86_64-linux.tater-hyprland-home-config
+```
+
+The same Hyprland config validation checks exist for thorny:
+
+```bash
+nix flake check ./flakes/hosts/thorny
+nom build ./flakes/hosts/thorny#checks.x86_64-linux.thorny-hyprland-greeter-config
+nom build ./flakes/hosts/thorny#checks.x86_64-linux.thorny-hyprland-home-config
 ```
 
 ## Runtime doctor

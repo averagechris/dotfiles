@@ -23,6 +23,35 @@
     };
   };
 
+  # Validate a Hyprland config file against a specific Hyprland package.
+  # This catches parser errors that Nix evaluation alone cannot see.
+  mkHyprlandConfigCheck = {
+    name,
+    hyprlandPackage,
+    configFile,
+  }:
+    hyprlandPackage.stdenv.mkDerivation {
+      inherit name configFile;
+      nativeBuildInputs = [hyprlandPackage];
+      buildCommand = ''
+        export XDG_RUNTIME_DIR="$(mktemp -d)"
+        ${inputs.nixpkgs.lib.getExe hyprlandPackage} --config "$configFile" --verify-config
+        touch $out
+      '';
+    };
+
+  # Merge checks attrsets from multiple flakes. Keeps one copy of strict
+  # duplicates (same value under the same name) and throws if the same name
+  # is used for different checks in different flakes.
+  mergeFlakeChecks = checkSets:
+    inputs.nixpkgs.lib.zipAttrsWith (name: values:
+      if inputs.nixpkgs.lib.length values == 1
+      then inputs.nixpkgs.lib.head values
+      else if inputs.nixpkgs.lib.all (v: v == inputs.nixpkgs.lib.head values) values
+      then inputs.nixpkgs.lib.head values
+      else throw "Conflicting flake check '${name}' with different values in multiple host flakes")
+    checkSets;
+
   # Generate special arguments for modules
   # Used by mkNixosHost and mkDarwinHost
   mkSpecialArgs = {

@@ -195,7 +195,7 @@
 
   greetdFixDockedLidDisplays = pkgs.writeShellApplication {
     name = "greetd-fix-docked-lid-displays";
-    runtimeInputs = [pkgs.coreutils pkgs.gnugrep pkgs.hyprland pkgs.jq];
+    runtimeInputs = [pkgs.coreutils pkgs.gnugrep config.programs.hyprland.package pkgs.jq];
     text = ''
       # Hyprland starts before any user-level kanshi service is available. When
       # a laptop boots docked with the lid closed, the internal panel can remain
@@ -247,11 +247,16 @@
     exec-once = eww -c ${ewwGreetConfigDir} open bar
     exec-once = ${lib.getExe pkgs.regreet}; hyprctl dispatch exit
 
-    # Window rule to make ReGreet fullscreen and centered
-    windowrule = fullscreen, ^(regreet)$
-    windowrule = center, ^(regreet)$
-    windowrule = noblur, ^(regreet)$
-    windowrule = noanim, ^(regreet)$
+    # Window rule to make ReGreet fullscreen and centered.
+    # Hyprland 0.55+ uses block-style windowrule v3.
+    windowrule {
+      name = regreet
+      match:class = ^(regreet)$
+      fullscreen = 1
+      center = 1
+      no_blur = 1
+      no_anim = 1
+    }
 
     # Essential keybindings for power/reboot
     bind = SUPER+SHIFT, Q, exec, systemctl poweroff
@@ -594,7 +599,7 @@ in {
     services.greetd = {
       enable = true;
       settings.default_session = {
-        command = "${pkgs.dbus}/bin/dbus-run-session ${lib.getExe pkgs.hyprland} --config ${hyprlandGreetConfig}";
+        command = "${pkgs.dbus}/bin/dbus-run-session ${lib.getExe config.programs.hyprland.package} --config ${hyprlandGreetConfig}";
         user = "greeter";
       };
     };

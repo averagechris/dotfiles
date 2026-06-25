@@ -47,17 +47,41 @@
   outputs = inputs @ {
     self,
     base-lib,
+    nixpkgs,
     ...
   }: let
     system = "x86_64-linux";
     inherit (base-lib) lib;
-  in {
-    nixosConfigurations.thorny = lib.mkNixosHost {
+    pkgs = nixpkgs.legacyPackages.${system};
+    thornySystem = lib.mkNixosHost {
       inherit system;
       hostPath = ./configuration.nix;
       extraInputs = inputs;
     };
+    cfg = thornySystem.config;
+    hm = cfg.home-manager.users.chris;
+    greetdCommand = cfg.services.greetd.settings.default_session.command or "";
+    greetdHyprlandConfigPath =
+      if greetdCommand != ""
+      then pkgs.lib.last (pkgs.lib.splitString " " greetdCommand)
+      else "";
+  in {
+    nixosConfigurations.thorny = thornySystem;
 
     deploy.nodes.thorny = lib.mkDeploy self.nixosConfigurations.thorny;
+
+    checks.${system} = {
+      thorny-hyprland-greeter-config = lib.mkHyprlandConfigCheck {
+        name = "thorny-hyprland-greeter-config";
+        hyprlandPackage = cfg.programs.hyprland.package;
+        configFile = greetdHyprlandConfigPath;
+      };
+
+      thorny-hyprland-home-config = lib.mkHyprlandConfigCheck {
+        name = "thorny-hyprland-home-config";
+        hyprlandPackage = hm.wayland.windowManager.hyprland.finalPackage;
+        configFile = hm.xdg.configFile."hypr/hyprland.conf".source;
+      };
+    };
   };
 }
