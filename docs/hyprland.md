@@ -73,6 +73,8 @@ Hyprland config lines.
 
 The shared Hyprland module installs `hctl`, a small Rust CLI/daemon for ergonomic window workflows. Nix generates its runtime config at `~/.config/hctl/config.json`; the daemon writes Eww-facing state to `$XDG_STATE_HOME/hctl/eww-state.json` and applies smart gaps based on the focused monitor and active workspace's tiled window count. Smart-gap profiles target tater's exact `eDP-1` laptop panel and `DP-2` Dell dock first, then fall back to width ranges for other laptop/external outputs.
 
+> **Applying hctl changes:** `hctl` runs as a systemd user service (`hctl.service`) bound to `graphical-session.target` with `RefuseManualStart = true` so it does not start during home-manager activation. After changing hctl options or the hctl package, **log out and back in** to restart the daemon and pick up the new binary and config. `systemctl --user restart hctl` may be refused because of `RefuseManualStart`; if it succeeds it only restarts the daemon, not the whole graphical session.
+
 The Eww bar consumes this state for lightweight desktop context:
 
 - a scratch/named workspace indicator appears when `hctl` reports a non-numbered or special workspace, including an empty marker (`∅`)

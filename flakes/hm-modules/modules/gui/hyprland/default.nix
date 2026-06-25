@@ -796,6 +796,10 @@ in {
         Description = "hctl Hyprland ergonomics daemon";
         After = ["graphical-session.target"];
         PartOf = ["graphical-session.target"];
+        # Skip manual start during home-manager activation; the daemon needs a
+        # running graphical session and will fail/hang if sd-switch starts it
+        # from a TTY/SSH rebuild.
+        RefuseManualStart = true;
       };
       Service = {
         ExecStart = "${hctlCfg.package}/bin/hctl daemon";

@@ -78,9 +78,9 @@ in {
   ];
 
   dotfiles.hyprland-desktop.enable = true;
-  programs.hyprland.package = inputs.hyprland.packages.${pkgs.system}.hyprland;
+  programs.hyprland.package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
   xdg.portal.extraPortals = lib.mkForce [
-    inputs.hyprland.packages.${pkgs.system}.xdg-desktop-portal-hyprland
+    inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland
     pkgs.xdg-desktop-portal-gtk
   ];
 
@@ -160,6 +160,7 @@ in {
       }) [
       "hyprpaper"
       "hypridle"
+      "hctl"
       "swaync"
       "network-manager-applet"
       "udiskie"
@@ -173,7 +174,7 @@ in {
     dotfiles.hyprland-workstation.terminal = "ghostty";
     dotfiles.gui.swayidle.enable = false;
     dotfiles.gui.hyprland.waybar.enable = false;
-    wayland.windowManager.hyprland.package = inputs.hyprland.packages.${pkgs.system}.hyprland;
+    wayland.windowManager.hyprland.package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
     dotfiles.gui.hyprland.overview = {
       enable = false;
       package = null;

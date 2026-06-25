@@ -26,6 +26,7 @@ home-manager.users.chris = {config, lib, ...}: let
     "blueman-applet"
     "hyprpaper"
     "hypridle"
+    "hctl"
     "waybar"
     "swaync"
     "network-manager-applet"
@@ -53,6 +54,8 @@ in {
 |--------------|-------------------|----------|
 | GUI services | **Skipped** (no hang) | Start via `graphical-session.target` |
 | Other services | **Restart normally** | Already running |
+
+Because GUI services are skipped during activation, changes to them only take effect on the next login. To apply an updated unit or package immediately, **log out and back in** so `graphical-session.target` restarts them. `systemctl --user restart <service>` is often blocked by `RefuseManualStart` and is not reliable for these services.
 
 ## Alternative Approaches (and why they don't work)
 

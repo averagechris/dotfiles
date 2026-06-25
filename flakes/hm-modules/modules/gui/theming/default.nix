@@ -43,7 +43,7 @@ in {
     # Qt Theme
     qt = {
       enable = true;
-      platformTheme.name = "gtk";
+      platformTheme.name = "gtk3";
       style = {
         name = "kvantum";
       };

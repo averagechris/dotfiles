@@ -62,9 +62,9 @@ in {
   # Hyprspace is a Hyprland plugin and must be loaded by the exact Hyprland
   # build it was compiled against. Use the pinned tater Hyprland input for the
   # system session package as well as the Home Manager config below.
-  programs.hyprland.package = inputs.hyprland.packages.${pkgs.system}.hyprland;
+  programs.hyprland.package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
   xdg.portal.extraPortals = lib.mkForce [
-    inputs.hyprland.packages.${pkgs.system}.xdg-desktop-portal-hyprland
+    inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland
     pkgs.xdg-desktop-portal-gtk
   ];
 
@@ -223,6 +223,7 @@ in {
       "blueman-applet"
       "hyprpaper"
       "hypridle"
+      "hctl"
       "swaync"
       "network-manager-applet"
       "udiskie"
@@ -712,7 +713,7 @@ in {
     # Keep Waybar disabled while Eww owns the primary bar and native systray.
     dotfiles.gui.hyprland.waybar.enable = false;
     dotfiles.gui.hyprland.waybar.trayOnly.enable = false;
-    wayland.windowManager.hyprland.package = inputs.hyprland.packages.${pkgs.system}.hyprland;
+    wayland.windowManager.hyprland.package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
     dotfiles.gui.hyprland.overview = {
       # Keep Hyprspace disabled for now. A missing overview dispatcher after
       # reboot means the compositor started without the plugin, and the pinned
