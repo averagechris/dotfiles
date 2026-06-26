@@ -282,7 +282,7 @@ Granola CLI is packaged from the SourceHut `granola-cli` flake input and enabled
 
 Granola CLI v0.8 uses consistent note subcommands: use `granola notes search`, `granola notes get`, and `granola notes open` instead of the removed top-level `search`/`show`/`open` aliases. Use singular `--include-transcript` for syncs and multi-note/context reads that expose the flag. `granola context` and `granola notes get-many` require an explicit selector such as note IDs/URLs, `--notes-file`, `--stdin`, list filters, or `--all`; do not call them bare and assume the first page will be selected. Use `granola notes fields [list|search|get]` to discover valid fields, `--output text`/single-field output for shell pipelines, and `granola notes get NOTE --fields transcript` when transcript text is needed. Use `granola export note NOTE --format text` for single-note text exports.
 
-Upstream OpenCode's flake builds `opencode-node_modules` as a fixed-output derivation from `nix/hashes.json`; the fast-moving dev branch can temporarily publish stale hashes. Keep any local hash override in the base-lib OpenCode overlay scoped by full upstream revision, and mirror it in the hm-modules standalone overlay if needed.
+Upstream OpenCode's flake builds `opencode-node_modules` as a fixed-output derivation from `nix/hashes.json`; the fast-moving dev branch can temporarily publish stale hashes or inconsistent `bun.lock` entries. Keep any local node-modules override in the base-lib OpenCode overlay scoped by full upstream revision and system, and mirror it in the hm-modules standalone overlay if needed. If the override patches the lockfile, also update the fixed-output hash for the patched system and drop the override once upstream catches up.
 
 ## Changelog Policy
 

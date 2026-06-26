@@ -93,16 +93,29 @@
             opencodeInput = inputs.opencode;
             rev = opencodeInput.shortRev or opencodeInput.dirtyShortRev or "dirty";
             upstreamHashes = builtins.fromJSON (builtins.readFile "${opencodeInput}/nix/hashes.json");
-            nodeModulesHashOverrides = {
+            nodeModulesOverrides = {
               "3b7a5e783d59e8986dca6e5df48663613fa80722" = {
-                aarch64-darwin = "sha256-81IAmdjiYZz8IgMJt0+VxzdOS80gTHc5SendwEW/vD4=";
+                hash.aarch64-darwin = "sha256-81IAmdjiYZz8IgMJt0+VxzdOS80gTHc5SendwEW/vD4=";
+              };
+              "0f272d931d806681a0f7f19538e2f3f1d52d1832" = {
+                hash.aarch64-darwin = "sha256-+lx7mv1QM+nl3UPY9GxPcbWlhK4TKYp96rvJd51Exig=";
+                postPatch = ''
+                  substituteInPlace bun.lock \
+                    --replace-fail '"ghostty-web": ["ghostty-web@github:anomalyco/ghostty-web#20bd361", {}, "anomalyco-ghostty-web-20bd361", "sha512-dW0nwaiBBcun9y5WJSvm3HxDLe5o9V0xLCndQvWonRVubU8CS1PHxZpLffyPt1YujPWC13ez03aWxcuKBPYYGQ=="]' \
+                                   '"ghostty-web": ["ghostty-web@github:anomalyco/ghostty-web#513463a", {}, "anomalyco-ghostty-web-513463a", "sha512-GZR8LSmgGzViWnBJrqRI8MpAZRCJxhcr1Hi9Tyeh7YRooHZQjK9J97FQRD3tbBaM2wjq05gzGY2UEsG+JtZeBw=="]'
+                '';
               };
             };
-            node_modules = final.callPackage "${opencodeInput}/nix/node_modules.nix" {
-              inherit rev;
-              hash =
-                (nodeModulesHashOverrides.${opencodeInput.rev or ""} or {}).${system} or upstreamHashes.nodeModules.${system};
-            };
+            override = nodeModulesOverrides.${opencodeInput.rev or ""} or {};
+            hasSystemOverride = builtins.hasAttr system (override.hash or {});
+            node_modules =
+              (final.callPackage "${opencodeInput}/nix/node_modules.nix" {
+                inherit rev;
+                hash =
+                  (override.hash or {}).${system} or upstreamHashes.nodeModules.${system};
+              }).overrideAttrs (old: {
+                postPatch = (old.postPatch or "") + (final.lib.optionalString hasSystemOverride (override.postPatch or ""));
+              });
           in {
             titlecase = base-lib.inputs.titlecase.packages.${system}.default;
             pi-coding-agent = final.callPackage ../base-lib/packages/pi-coding-agent.nix {};

@@ -75,11 +75,12 @@ assignments can execute code before `just` starts and should fall through to the
 normal catch-all prompt.
 
 The upstream OpenCode flake builds a fixed-output `opencode-node_modules`
-derivation from `nix/hashes.json`. Because the `dev` branch moves quickly, that
-hash can temporarily lag the lockfile revision. The base-lib overlay carries any
-required per-revision node-modules hash overrides next to the upstream package
-selection, scoped by full upstream revision so future upstream hash updates are
-used automatically.
+derivation from `nix/hashes.json`. Because the `dev` branch moves quickly, the
+source, `bun.lock`, and node-modules hashes can temporarily drift from each
+other. The base-lib overlay carries any required per-revision node-modules
+overrides next to the upstream package selection, including narrow lockfile
+patches when needed. Overrides are scoped by full upstream revision and system so
+future upstream fixes are used automatically.
 
 Prefer this normalization patch over broad config patterns such as `*=* just *`.
 OpenCode permission wildcards are anchored but simple (`*` and `?` only), so a
