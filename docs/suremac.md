@@ -84,6 +84,10 @@ Nix-packaged CodeRabbit CLI as `coderabbit` / `cr`. See
 [`docs/coderabbit-cli.md`](/docs/coderabbit-cli.md) for the local review
 workflow and the Nix update policy.
 
+The Datadog Pup CLI is installed in Home Manager as `pup` and exposed to
+OpenCode agents as a host-specific Datadog tool. See
+[`docs/pup.md`](/docs/pup.md) for packaging, credential, and update notes.
+
 ## Notion CLI
 
 `suremac` installs the Nix-packaged Notion CLI as `ntn` in

@@ -85,6 +85,34 @@
       ]
     },
     {
+      "name": "pup",
+      "enabled": true,
+      "kind": "archive",
+      "file": "flakes/base-lib/packages/pup.nix",
+      "cooldown": true,
+      "latest": {
+        "kind": "manual"
+      },
+      "assets": [
+        {
+          "system": "aarch64-darwin",
+          "url": "https://github.com/DataDog/pup/releases/download/v{version}/pup_{version}_Darwin_arm64.tar.gz"
+        },
+        {
+          "system": "x86_64-darwin",
+          "url": "https://github.com/DataDog/pup/releases/download/v{version}/pup_{version}_Darwin_x86_64.tar.gz"
+        },
+        {
+          "system": "aarch64-linux",
+          "url": "https://github.com/DataDog/pup/releases/download/v{version}/pup_{version}_Linux_arm64.tar.gz"
+        },
+        {
+          "system": "x86_64-linux",
+          "url": "https://github.com/DataDog/pup/releases/download/v{version}/pup_{version}_Linux_x86_64.tar.gz"
+        }
+      ]
+    },
+    {
       "name": "rodney",
       "enabled": false,
       "kind": "go-module",

@@ -83,6 +83,7 @@ Use `--ignore-cooldown` only after reviewing fresh upstream releases.
 | `coderabbit-cli` | `flakes/base-lib/packages/coderabbit-cli.nix` | Enabled; requires explicit `--manual-version` |
 | `notion-cli` | `flakes/base-lib/packages/notion-cli.nix` | Enabled; requires explicit `--manual-version` |
 | `helium-bin` | `flakes/base-lib/packages/helium-bin.nix` | Enabled; latest version from GitHub releases |
+| `pup` | `flakes/base-lib/packages/pup.nix` | Enabled; requires explicit `--manual-version` |
 | `rodney` | `flakes/base-lib/packages/rodney.nix` | Manifest entry is disabled; Go `vendorHash` automation not enabled yet |
 | `showboat` | `flakes/base-lib/packages/showboat.nix` | Manifest entry is disabled; Go `vendorHash` automation not enabled yet |
 

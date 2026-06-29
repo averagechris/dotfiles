@@ -247,6 +247,9 @@
   };
   home-manager.users.chris = {pkgs, ...}: {
     home.stateVersion = "26.05";
+    home.packages = with pkgs; [
+      pup
+    ];
     imports = [
       inputs.hm-modules.homeManagerModules.default
       inputs.mac-app-util.homeManagerModules.default
@@ -317,6 +320,11 @@
       {
         package = databricks-cli;
         name = "databricks-cli";
+      }
+      {
+        package = pkgs.pup;
+        name = "pup";
+        description = "Datadog CLI";
       }
       {
         package = notion-cli;

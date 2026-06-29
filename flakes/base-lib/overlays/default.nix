@@ -85,6 +85,7 @@
     coderabbit-cli = final.callPackage ../packages/coderabbit-cli.nix {};
     helium-bin = final.callPackage ../packages/helium-bin.nix {};
     notion-cli = final.callPackage ../packages/notion-cli.nix {};
+    pup = final.callPackage ../packages/pup.nix {};
     rodney = final.callPackage ../packages/rodney.nix {};
     showboat = final.callPackage ../packages/showboat.nix {};
 

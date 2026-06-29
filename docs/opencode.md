@@ -136,9 +136,9 @@ module combines those with the built-in default tool list.
 
 Use `dotfiles.opencode.agentTools` for tools that should only be available to
 agents on particular hosts. For example, `suremac` adds the CircleCI CLI,
-CodeRabbit CLI, Databricks CLI, GitHub CLI, Rodney, Showboat, and the Linear
-CLI. On Darwin, this host-specific list avoids relying on unrelated system
-packages for agent workflows:
+CodeRabbit CLI, Databricks CLI, Datadog Pup CLI, GitHub CLI, Rodney, Showboat,
+and the Linear CLI. On Darwin, this host-specific list avoids relying on
+unrelated system packages for agent workflows:
 
 ```nix
 dotfiles.opencode.agentSupportPackages = with pkgs; [
@@ -149,6 +149,7 @@ dotfiles.opencode.agentTools = with pkgs; [
   { package = circleci-cli; name = "circleci"; description = "CircleCI CLI"; }
   { package = coderabbit-cli; name = "cr"; description = "CodeRabbit AI review CLI"; }
   { package = databricks-cli; name = "databricks-cli"; }
+  { package = pup; name = "pup"; description = "Datadog CLI"; }
   { package = gh; name = "gh"; description = "GitHub CLI"; }
   { package = rodney; name = "rodney"; description = "Chrome automation CLI"; }
   { package = showboat; name = "showboat"; description = "work documentation CLI"; }
@@ -167,7 +168,7 @@ example:
 > these additional tools: jj (Jujutsu VCS), nodejs (JavaScript runtime),
 > python3 (Python 3.14 runtime), rg (fast code search),
 > circleci (CircleCI CLI), cr (CodeRabbit AI review CLI), databricks-cli,
-> gh (GitHub CLI), rodney (Chrome automation CLI),
+> pup (Datadog CLI), gh (GitHub CLI), rodney (Chrome automation CLI),
 > showboat (work documentation CLI), linear (Linear CLI). The project local dev
 > shell may provide additional tooling.
 
