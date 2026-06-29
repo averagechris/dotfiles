@@ -48,6 +48,38 @@
         }
       else prev.opencode;
 
+    # Temporary workaround for https://github.com/NixOS/nixpkgs/issues/535887
+    # cantarell-fonts 0.311 fails to build with afdko 5.0.1; use afdko 4.0.2
+    # from the revision just before the 5.0.1 bump, disabling tests because
+    # they fail against current dependencies.
+    cantarell-fonts = let
+      nixpkgs-afdko4 =
+        import (final.fetchFromGitHub {
+          owner = "NixOS";
+          repo = "nixpkgs";
+          rev = "a95fcb976497422a1df26883b7d3907470c55543";
+          sha256 = "00mbdjs7yhym1f7qj4vagvxyp0fxxdcg1hxwf1cqkaz79pwyvg83";
+        }) {
+          system = final.stdenv.hostPlatform.system;
+          config = final.config;
+          overlays = [
+            (self: super: {
+              python3 = super.python3.override {
+                packageOverrides = pyself: pysuper: {
+                  afdko = pysuper.afdko.overridePythonAttrs (_: {
+                    doCheck = false;
+                    dontUsePytestCheck = true;
+                  });
+                };
+              };
+            })
+          ];
+        };
+    in
+      prev.cantarell-fonts.override {
+        inherit (nixpkgs-afdko4) python3;
+      };
+
     pi-coding-agent = final.callPackage ../packages/pi-coding-agent.nix {};
     pi = final.pi-coding-agent;
     coderabbit-cli = final.callPackage ../packages/coderabbit-cli.nix {};

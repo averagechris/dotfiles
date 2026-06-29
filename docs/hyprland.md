@@ -403,6 +403,8 @@ Lid handling is split between systemd-logind and Hyprland:
 
 The greetd/ReGreet Hyprland session has its own early display fix because user-level kanshi is not running at the login screen. During greetd startup, if the lid is closed and any external monitor is present, the greeter disables `eDP-*` so ReGreet is forced onto the visible docked display instead of rendering only on the built-in panel.
 
+Both the greetd default session and `/etc/greetd/environments` launch Hyprland through `start-hyprland` (e.g. `start-hyprland -- --config /etc/greetd/hyprland.conf`). This is the wrapper Hyprland recommends; starting the raw `Hyprland` binary directly produces a warning about not using `start-hyprland`.
+
 If a particular monitor needs exact refresh/scale/position, add a more specific tater `services.kanshi.settings` profile using the monitor model/serial from `hyprctl monitors`.
 
 ## Application Integration

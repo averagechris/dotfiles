@@ -136,7 +136,7 @@
         assert_eq "regreet enabled" ${bool cfg.programs.regreet.enable} true
         assert_eq "greetd runs as greeter" ${builtins.toJSON greetdUser} greeter
         assert_contains "greetd starts inside dbus-run-session" ${builtins.toJSON greetdCommand} dbus-run-session
-        assert_contains "greetd starts Hyprland" ${builtins.toJSON greetdCommand} Hyprland
+        assert_contains "greetd starts start-hyprland" ${builtins.toJSON greetdCommand} start-hyprland
         assert_eq "fprintd enabled" ${bool cfg.services.fprintd.enable} true
         assert_eq "fprintd TOD enabled" ${bool cfg.services.fprintd.tod.enable} true
         assert_eq "sudo uses password-first auth" ${bool cfg.security.pam.services.sudo.fprintAuth} false

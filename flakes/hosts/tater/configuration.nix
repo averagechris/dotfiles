@@ -543,7 +543,7 @@ in {
         echo
         echo "== Login and auth plumbing =="
         if active --system greetd.service; then pass "greetd system service is active"; else fail "greetd system service is not active"; fi
-        if rg -q '^Hyprland$' /etc/greetd/environments 2>/dev/null; then pass "Hyprland is listed in greetd environments"; else fail "Hyprland is missing from /etc/greetd/environments"; fi
+        if rg -q '^start-hyprland$' /etc/greetd/environments 2>/dev/null; then pass "start-hyprland is listed in greetd environments"; else fail "start-hyprland is missing from /etc/greetd/environments"; fi
         if active --system fprintd.service; then pass "fprintd system service is active"; else warn "fprintd system service is not active yet; it may be socket/dbus activated"; fi
 
         echo

@@ -599,7 +599,7 @@ in {
     services.greetd = {
       enable = true;
       settings.default_session = {
-        command = "${pkgs.dbus}/bin/dbus-run-session ${lib.getExe config.programs.hyprland.package} --config ${hyprlandGreetConfig}";
+        command = "${pkgs.dbus}/bin/dbus-run-session ${lib.getExe' config.programs.hyprland.package "start-hyprland"} -- --config ${hyprlandGreetConfig}";
         user = "greeter";
       };
     };
@@ -608,7 +608,7 @@ in {
     # successful login. Without it, password auth succeeds but the selected
     # session can immediately exit and bounce back to the greeter.
     environment.etc."greetd/environments".text = ''
-      Hyprland
+      start-hyprland
       zsh
       bash
     '';
