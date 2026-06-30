@@ -113,6 +113,21 @@
       ]
     },
     {
+      "name": "sentry",
+      "enabled": true,
+      "kind": "archive",
+      "file": "flakes/base-lib/packages/sentry.nix",
+      "cooldown": true,
+      "latest": {
+        "kind": "manual"
+      },
+      "assets": [
+        {
+          "url": "https://registry.npmjs.org/sentry/-/sentry-{version}.tgz"
+        }
+      ]
+    },
+    {
       "name": "rodney",
       "enabled": false,
       "kind": "go-module",

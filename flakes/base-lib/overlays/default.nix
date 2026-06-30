@@ -87,6 +87,7 @@
     notion-cli = final.callPackage ../packages/notion-cli.nix {};
     pup = final.callPackage ../packages/pup.nix {};
     rodney = final.callPackage ../packages/rodney.nix {};
+    sentry = final.callPackage ../packages/sentry.nix {};
     showboat = final.callPackage ../packages/showboat.nix {};
 
     # Patch for nix-openclaw to add ConditionEnvironment to node systemd service

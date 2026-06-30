@@ -255,6 +255,7 @@
     home.stateVersion = "26.05";
     home.packages = with pkgs; [
       pup
+      sentry
     ];
     imports = [
       inputs.hm-modules.homeManagerModules.default
@@ -299,6 +300,7 @@
     programs.opencode.skills.coderabbit-cli = builtins.readFile ../../hm-modules/modules/opencode/skills/coderabbit-cli/SKILL.md;
     programs.opencode.skills.granola-meeting-context = builtins.readFile ../../hm-modules/modules/opencode/skills/granola-meeting-context/SKILL.md;
     programs.opencode.skills.pup-cli = builtins.readFile ../../hm-modules/modules/opencode/skills/pup-cli/SKILL.md;
+    programs.opencode.skills.sentry-cli = builtins.readFile ../../hm-modules/modules/opencode/skills/sentry-cli/SKILL.md;
     programs.opencode.skills.suremac-jj-pr = builtins.readFile ../../hm-modules/modules/opencode/skills/suremac-jj-pr/SKILL.md;
     home.activation.install-opencode-pup-stack-hints = inputs.home-manager.lib.hm.dag.entryAfter ["linkGeneration"] ''
       skill="$HOME/.config/opencode/skills/pup-cli/SKILL.md"
@@ -353,6 +355,11 @@
         package = pkgs.pup;
         name = "pup";
         description = "Datadog CLI";
+      }
+      {
+        package = pkgs.sentry;
+        name = "sentry";
+        description = "Sentry CLI";
       }
       {
         package = notion-cli;

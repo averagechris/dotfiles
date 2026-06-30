@@ -21,6 +21,7 @@
 - [pup](/docs/pup.md) - Datadog Pup CLI package, suremac Home Manager installation, OpenCode tool exposure, and update notes
 - [gpg-signing](/docs/gpg-signing.md) - GPG signing setup for git and jj commits with agenix
 - [shell](/docs/shell.md) - Shell module configuration and PATH precedence
+- [sentry-cli](/docs/sentry-cli.md) - New Sentry CLI package, suremac OpenCode integration, module decision, and update notes
 - [suremac](/docs/suremac.md) - macOS host settings, automatic time zone behavior, and Spaces desktop shortcuts
 - [tater desktop testing](/docs/tater-desktop-testing.md) - Static and runtime checks for tater's Hyprland, greetd, Eww, display, and Wi-Fi setup
 - [tater power and thermal tuning](/docs/tater-power-thermal.md) - ThinkPad T14s power, thermal, and fan-management tuning notes
