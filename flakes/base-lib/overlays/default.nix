@@ -61,7 +61,7 @@
           sha256 = "00mbdjs7yhym1f7qj4vagvxyp0fxxdcg1hxwf1cqkaz79pwyvg83";
         }) {
           system = final.stdenv.hostPlatform.system;
-          config = final.config;
+          inherit (final) config;
           overlays = [
             (self: super: {
               python3 = super.python3.override {
