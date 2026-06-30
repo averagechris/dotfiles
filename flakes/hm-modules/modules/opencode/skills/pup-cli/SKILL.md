@@ -28,12 +28,10 @@ pup COMMAND --limit 1 --read-only --no-agent --jq 'paths(scalars)|join(".")' -o 
 - Avoid broad `paths(scalars)` on spans/logs except with `--limit 1`; jq errors can
   dump too much context.
 
-## Private stack hints
+## Sure stack context
 
-On `suremac`, Home Manager appends encrypted org-specific stack hints from an
-agenix secret to this skill at activation time. If that private section is
-present below, use it to filter Datadog results to the relevant ecosystem; do not
-add those details to the public dotfiles repo.
+On `suremac`, use `sure-stack-context` for Sure-specific service, ecosystem, and
+environment hints.
 
 ## Compact patterns
 

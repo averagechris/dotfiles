@@ -19,6 +19,7 @@ frequent releases while preserving the normal `pkgs.opencode` and home-manager
 - optional `OPENROUTER_API_KEY` shell export via `dotfiles.opencode.openrouterApiKeyFile`
 - optional `CIRCLECI_TOKEN` shell export via `dotfiles.opencode.circleciTokenFile`
 - agent-specific runtime packages and prompt metadata exposed via `dotfiles.opencode.agentTools`
+- host-specific private skill appendices materialized during Home Manager activation
 
 On Linux, the module wraps the OpenCode package with `LD_LIBRARY_PATH` pointing
 at `stdenv.cc.cc.lib`. This makes OpenCode's native file-watcher binding able to
@@ -136,9 +137,10 @@ module combines those with the built-in default tool list.
 
 Use `dotfiles.opencode.agentTools` for tools that should only be available to
 agents on particular hosts. For example, `suremac` adds the AWS CLI, CircleCI
-CLI, CodeRabbit CLI, Databricks CLI, Datadog Pup CLI, GitHub CLI, Rodney,
-Showboat, and the Linear CLI. On Darwin, this host-specific list avoids relying on
-unrelated system packages for agent workflows:
+CLI, CodeRabbit CLI, Databricks CLI, Kubernetes CLI, Datadog Pup CLI, Sentry CLI,
+GitHub CLI, Rodney, Showboat, Granola, and the Linear CLI. On Darwin, this
+host-specific list avoids relying on unrelated system packages for agent
+workflows:
 
 ```nix
 dotfiles.opencode.agentSupportPackages = with pkgs; [
@@ -150,7 +152,10 @@ dotfiles.opencode.agentTools = with pkgs; [
   { package = circleci-cli; name = "circleci"; description = "CircleCI CLI"; }
   { package = coderabbit-cli; name = "cr"; description = "CodeRabbit AI review CLI"; }
   { package = databricks-cli; name = "databricks-cli"; }
+  { package = kubectl; name = "kubectl"; description = "Kubernetes CLI"; }
   { package = pup; name = "pup"; description = "Datadog CLI"; }
+  { package = sentry; name = "sentry"; description = "Sentry CLI"; }
+  { package = notion-cli; name = "ntn"; description = "Notion CLI"; }
   { package = gh; name = "gh"; description = "GitHub CLI"; }
   { package = rodney; name = "rodney"; description = "Chrome automation CLI"; }
   { package = showboat; name = "showboat"; description = "work documentation CLI"; }
@@ -158,6 +163,11 @@ dotfiles.opencode.agentTools = with pkgs; [
     package = inputs.linear-cli.packages.${pkgs.stdenv.hostPlatform.system}.linear;
     name = "linear";
     description = "Linear CLI";
+  }
+  {
+    package = inputs.granola-cli.packages.${pkgs.stdenv.hostPlatform.system}.default;
+    name = "granola";
+    description = "Granola meeting notes CLI";
   }
 ];
 ```
@@ -169,9 +179,11 @@ example:
 > these additional tools: jj (Jujutsu VCS), nodejs (JavaScript runtime),
 > python3 (Python 3.14 runtime), rg (fast code search),
 > aws (AWS CLI), circleci (CircleCI CLI), cr (CodeRabbit AI review CLI),
-> databricks-cli, pup (Datadog CLI), gh (GitHub CLI), rodney (Chrome automation
-> CLI), showboat (work documentation CLI), linear (Linear CLI). The project
-> local dev shell may provide additional tooling.
+> databricks-cli, kubectl (Kubernetes CLI), pup (Datadog CLI), sentry (Sentry
+> CLI), ntn (Notion CLI), gh (GitHub CLI), rodney (Chrome automation CLI),
+> showboat (work documentation CLI), linear (Linear CLI), granola (Granola
+> meeting notes CLI). The project local dev shell may provide additional
+> tooling.
 
 Use `agentSupportPackages` for dependencies that a visible tool needs under the
 hood but that the agent does not need to call directly.
@@ -207,6 +219,7 @@ workflows. Current examples include:
 - `linear-cli`
 - `databricks-cli`
 - `pup-cli`
+- `sure-stack-context` (suremac only)
 
 The PR review workflow is split into a reusable core review skill plus a
 GitHub-specific wrapper. Supporting custom tools live under `.opencode/tools/`.
@@ -236,7 +249,11 @@ It also configures the `granola-meeting-context` skill so agents can pull
 concise, redacted meeting-note context with the host-specific `granola` CLI when
 relevant. The host-specific `pup-cli` skill gives agents compact Datadog CLI
 patterns centered on `--read-only`, `--no-agent`, `--jq`, bounded queries, and
-CSV/JSON output selection.
+CSV/JSON output selection. `suremac` also installs `sure-stack-context`, a
+Sure-specific investigation skill that routes between Datadog, Sentry, and
+Kubernetes tools. Its company-specific service/ecosystem appendix is decrypted
+from `secrets/opencode-sure-stack-context.age` and appended only to the local
+installed skill, not stored in public docs or skill sources.
 
 The jj skills recommend quiet/structured helper output for agents, especially
 `jj sync -q --fail-on-conflicts` and `jj sync --json --fail-on-conflicts`.

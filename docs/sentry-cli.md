@@ -1,4 +1,4 @@
-# Sentry CLI
+# Sentry (`sentry`) CLI
 
 `pkgs.sentry` packages Sentry's new CLI from the npm `sentry` package. The
 derivation lives at `flakes/base-lib/packages/sentry.nix`, uses the bundled
@@ -15,8 +15,11 @@ new CLI installs a `sentry` command and is documented at <https://cli.sentry.dev
 `suremac` installs `sentry` in Chris's Home Manager `home.packages` and exposes
 it to OpenCode agents as a host-specific tool named `sentry` with the prompt
 description `Sentry CLI`. It also installs the repo-managed `sentry-cli` OpenCode
-skill so agents prefer dedicated Sentry commands, keep result sets bounded, and
-avoid mutating Sentry resources unless explicitly asked.
+skill for the `sentry` command so agents prefer dedicated Sentry commands, keep
+result sets bounded, and avoid mutations unless explicitly asked. For Sure-specific
+incident investigation, agents should pair it with the host-specific
+`sure-stack-context` skill, whose private encrypted appendix covers company
+service/ecosystem hints shared with Datadog and Kubernetes workflows.
 
 Credentials are not managed by Nix. Authenticate interactively with the CLI and
 let it store credentials in its restricted local SQLite database under

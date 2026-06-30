@@ -29,10 +29,10 @@ formats such as `-o csv`, and explicit limits/time windows. `--no-agent` avoids
 Pup's `status`/`data`/`metadata` agent envelope when agents only need raw
 filtered output, and `--jq` is applied to the response payload before formatting.
 
-Org-specific Datadog stack and ecosystem hints are intentionally not stored in
-plaintext in this public dotfiles repo. `suremac` decrypts
-`secrets/opencode-pup-stack-hints.age` with agenix and appends it to the local
-`~/.config/opencode/skills/pup-cli/SKILL.md` during Home Manager activation.
+Org-specific stack and ecosystem hints are intentionally not stored in plaintext
+in this public dotfiles repo. They now live in the separate encrypted
+`sure-stack-context` skill appendix, shared by Datadog, Sentry, and Kubernetes
+investigations. See [sure-stack-context](/docs/sure-stack-context.md).
 For flamegraphs, the public skill tells agents to ask Chris before enabling the
 token-heavy Datadog MCP because `pup profiling` does not currently expose
 profiler data.

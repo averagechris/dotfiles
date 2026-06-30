@@ -39,8 +39,8 @@
       mode = "0400";
     };
 
-    opencode-pup-stack-hints = {
-      file = ../../../secrets/opencode-pup-stack-hints.age;
+    opencode-sure-stack-context = {
+      file = ../../../secrets/opencode-sure-stack-context.age;
       owner = "chris";
       mode = "0400";
     };
@@ -254,6 +254,7 @@
   home-manager.users.chris = {pkgs, ...}: {
     home.stateVersion = "26.05";
     home.packages = with pkgs; [
+      kubectl
       pup
       sentry
     ];
@@ -302,13 +303,27 @@
     programs.opencode.skills.pup-cli = builtins.readFile ../../hm-modules/modules/opencode/skills/pup-cli/SKILL.md;
     programs.opencode.skills.sentry-cli = builtins.readFile ../../hm-modules/modules/opencode/skills/sentry-cli/SKILL.md;
     programs.opencode.skills.suremac-jj-pr = builtins.readFile ../../hm-modules/modules/opencode/skills/suremac-jj-pr/SKILL.md;
-    home.activation.install-opencode-pup-stack-hints = inputs.home-manager.lib.hm.dag.entryAfter ["linkGeneration"] ''
+    home.activation.cleanup-opencode-pup-stack-hints = inputs.home-manager.lib.hm.dag.entryBefore ["checkFilesChanged"] ''
       skill="$HOME/.config/opencode/skills/pup-cli/SKILL.md"
-      secret="${config.age.secrets.opencode-pup-stack-hints.path}"
+      backup="$skill.hm.bak"
 
-      if [[ -r "$skill" && -r "$secret" ]]; then
+      # Older generations appended the private stack appendix directly to the
+      # Home Manager-managed pup-cli skill. Remove that generated local copy and
+      # its stale backup before checkFilesChanged so Home Manager can relink the
+      # now-public-only pup-cli skill without backup collisions.
+      if [[ -f "$skill" ]] && ${pkgs.gnugrep}/bin/grep -q '^## Sure stack hints$' "$skill"; then
+        ${pkgs.coreutils}/bin/rm -f "$skill"
+      fi
+      ${pkgs.coreutils}/bin/rm -f "$backup"
+    '';
+    home.activation.install-opencode-sure-stack-context = inputs.home-manager.lib.hm.dag.entryAfter ["linkGeneration"] ''
+      skill="$HOME/.config/opencode/skills/sure-stack-context/SKILL.md"
+      publicSkill="${../../hm-modules/modules/opencode/skills/sure-stack-context/SKILL.md}"
+      secret="${config.age.secrets.opencode-sure-stack-context.path}"
+
+      if [[ -r "$publicSkill" && -r "$secret" ]]; then
         tmp="$(${pkgs.coreutils}/bin/mktemp)"
-        ${pkgs.coreutils}/bin/cp "$skill" "$tmp"
+        ${pkgs.coreutils}/bin/cp "$publicSkill" "$tmp"
         ${pkgs.coreutils}/bin/chmod u+w "$tmp"
         ${pkgs.coreutils}/bin/printf '\n' >> "$tmp"
         ${pkgs.coreutils}/bin/cat "$secret" >> "$tmp"
@@ -350,6 +365,11 @@
       {
         package = databricks-cli;
         name = "databricks-cli";
+      }
+      {
+        package = kubectl;
+        name = "kubectl";
+        description = "Kubernetes CLI";
       }
       {
         package = pkgs.pup;
