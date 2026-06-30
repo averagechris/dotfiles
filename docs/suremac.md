@@ -79,14 +79,16 @@ of committing `.rayconfig` exports to this repository.
 Pi is installed through the minimal `programs.pi.enable = true` module; see
 [`docs/pi.md`](/docs/pi.md) for the package pinning and manual update policy.
 
-OpenCode agents on `suremac` also get host-specific CLI tools, including the
-Nix-packaged CodeRabbit CLI as `coderabbit` / `cr`. See
+OpenCode agents on `suremac` also get host-specific CLI tools, including
+`awscli2` as `aws` and the Nix-packaged CodeRabbit CLI as `coderabbit` / `cr`. See
 [`docs/coderabbit-cli.md`](/docs/coderabbit-cli.md) for the local review
 workflow and the Nix update policy.
 
 The Datadog Pup CLI is installed in Home Manager as `pup` and exposed to
-OpenCode agents as a host-specific Datadog tool. See
-[`docs/pup.md`](/docs/pup.md) for packaging, credential, and update notes.
+OpenCode agents as a host-specific Datadog tool. `suremac` also installs the
+`pup-cli` OpenCode skill so agents use bounded, filtered Pup output instead of
+dumping large Datadog payloads. See [`docs/pup.md`](/docs/pup.md) for packaging,
+credential, agent-usage, and update notes.
 
 ## Notion CLI
 

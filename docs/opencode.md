@@ -135,9 +135,9 @@ module combines those with the built-in default tool list.
 ### Host-specific additions
 
 Use `dotfiles.opencode.agentTools` for tools that should only be available to
-agents on particular hosts. For example, `suremac` adds the CircleCI CLI,
-CodeRabbit CLI, Databricks CLI, Datadog Pup CLI, GitHub CLI, Rodney, Showboat,
-and the Linear CLI. On Darwin, this host-specific list avoids relying on
+agents on particular hosts. For example, `suremac` adds the AWS CLI, CircleCI
+CLI, CodeRabbit CLI, Databricks CLI, Datadog Pup CLI, GitHub CLI, Rodney,
+Showboat, and the Linear CLI. On Darwin, this host-specific list avoids relying on
 unrelated system packages for agent workflows:
 
 ```nix
@@ -146,6 +146,7 @@ dotfiles.opencode.agentSupportPackages = with pkgs; [
 ];
 
 dotfiles.opencode.agentTools = with pkgs; [
+  { package = awscli2; name = "aws"; description = "AWS CLI"; }
   { package = circleci-cli; name = "circleci"; description = "CircleCI CLI"; }
   { package = coderabbit-cli; name = "cr"; description = "CodeRabbit AI review CLI"; }
   { package = databricks-cli; name = "databricks-cli"; }
@@ -167,10 +168,10 @@ example:
 > Your runtime is a macOS environment. By default, your environment includes
 > these additional tools: jj (Jujutsu VCS), nodejs (JavaScript runtime),
 > python3 (Python 3.14 runtime), rg (fast code search),
-> circleci (CircleCI CLI), cr (CodeRabbit AI review CLI), databricks-cli,
-> pup (Datadog CLI), gh (GitHub CLI), rodney (Chrome automation CLI),
-> showboat (work documentation CLI), linear (Linear CLI). The project local dev
-> shell may provide additional tooling.
+> aws (AWS CLI), circleci (CircleCI CLI), cr (CodeRabbit AI review CLI),
+> databricks-cli, pup (Datadog CLI), gh (GitHub CLI), rodney (Chrome automation
+> CLI), showboat (work documentation CLI), linear (Linear CLI). The project
+> local dev shell may provide additional tooling.
 
 Use `agentSupportPackages` for dependencies that a visible tool needs under the
 hood but that the agent does not need to call directly.
@@ -205,6 +206,7 @@ workflows. Current examples include:
 - `github-pr-review`
 - `linear-cli`
 - `databricks-cli`
+- `pup-cli`
 
 The PR review workflow is split into a reusable core review skill plus a
 GitHub-specific wrapper. Supporting custom tools live under `.opencode/tools/`.
@@ -232,7 +234,9 @@ depending on the task.
 its OpenCode agents only, alongside the host-specific `cr`/`coderabbit` package.
 It also configures the `granola-meeting-context` skill so agents can pull
 concise, redacted meeting-note context with the host-specific `granola` CLI when
-relevant.
+relevant. The host-specific `pup-cli` skill gives agents compact Datadog CLI
+patterns centered on `--read-only`, `--no-agent`, `--jq`, bounded queries, and
+CSV/JSON output selection.
 
 The jj skills recommend quiet/structured helper output for agents, especially
 `jj sync -q --fail-on-conflicts` and `jj sync --json --fail-on-conflicts`.

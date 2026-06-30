@@ -38,6 +38,12 @@
       owner = "chris";
       mode = "0400";
     };
+
+    opencode-pup-stack-hints = {
+      file = ../../../secrets/opencode-pup-stack-hints.age;
+      owner = "chris";
+      mode = "0400";
+    };
   };
 
   nixpkgs.config.allowUnfree = true;
@@ -292,7 +298,24 @@
     programs.opencode.enable = true;
     programs.opencode.skills.coderabbit-cli = builtins.readFile ../../hm-modules/modules/opencode/skills/coderabbit-cli/SKILL.md;
     programs.opencode.skills.granola-meeting-context = builtins.readFile ../../hm-modules/modules/opencode/skills/granola-meeting-context/SKILL.md;
+    programs.opencode.skills.pup-cli = builtins.readFile ../../hm-modules/modules/opencode/skills/pup-cli/SKILL.md;
     programs.opencode.skills.suremac-jj-pr = builtins.readFile ../../hm-modules/modules/opencode/skills/suremac-jj-pr/SKILL.md;
+    home.activation.install-opencode-pup-stack-hints = inputs.home-manager.lib.hm.dag.entryAfter ["linkGeneration"] ''
+      skill="$HOME/.config/opencode/skills/pup-cli/SKILL.md"
+      secret="${config.age.secrets.opencode-pup-stack-hints.path}"
+
+      if [[ -r "$skill" && -r "$secret" ]]; then
+        tmp="$(${pkgs.coreutils}/bin/mktemp)"
+        ${pkgs.coreutils}/bin/cp "$skill" "$tmp"
+        ${pkgs.coreutils}/bin/chmod u+w "$tmp"
+        ${pkgs.coreutils}/bin/printf '\n' >> "$tmp"
+        ${pkgs.coreutils}/bin/cat "$secret" >> "$tmp"
+        ${pkgs.coreutils}/bin/mkdir -p "$(${pkgs.coreutils}/bin/dirname "$skill")"
+        ${pkgs.coreutils}/bin/rm -f "$skill"
+        ${pkgs.coreutils}/bin/install -m 0600 "$tmp" "$skill"
+        ${pkgs.coreutils}/bin/rm -f "$tmp"
+      fi
+    '';
     programs.pi = {
       enable = true;
       openrouterApiKeyFile = config.age.secrets.openrouter-api-key.path;
@@ -307,6 +330,11 @@
       python313Packages.databricks-sql-connector
     ];
     dotfiles.opencode.agentTools = with pkgs; [
+      {
+        package = awscli2;
+        name = "aws";
+        description = "AWS CLI";
+      }
       {
         package = circleci-cli;
         name = "circleci";
