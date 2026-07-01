@@ -39,6 +39,20 @@ invocation. Host-exposed browser automation uses the same model: `rodney` and
 installed Chrome automation CLI without repeated prompts, without also allowing
 similarly named commands such as `rodney_malicious`.
 
+Host-specific investigation CLIs follow the same prompt-reduction model when the
+command family is read-oriented. The Build agent allows `pup`/`pup *` and
+`sentry`/`sentry *` so Datadog and Sentry investigations can use the dedicated
+skills without repeated approval prompts. Kubernetes is narrower: only common
+read-only investigation subcommands are allowed (`api-resources`,
+`api-versions`, `auth can-i`, `cluster-info`, `config current-context`,
+`config get-contexts`, `describe`, `events`, `explain`, `get`, `logs`, `top`,
+and `version`). Secret reads/describes remain prompt-gated, and mutating or
+session-like commands such as `apply`, `delete`, `edit`, `exec`, `patch`,
+`port-forward`, and `rollout restart` fall through to the default prompt. Prefer
+subcommand-first kubectl invocations such as `kubectl get pods -n namespace` so
+the safe allow rules match without also permitting broad flag-prefixed command
+patterns.
+
 When adding command allow rules, prefer an exact command plus a command-space
 wildcard, for example `tool` and `tool *`. Avoid bare prefix allow patterns such
 as `tool*`, because they also match unrelated executable names like
