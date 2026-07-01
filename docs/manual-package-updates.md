@@ -47,7 +47,7 @@ target version explicitly:
 ```bash
 update-flakes --manual-packages-only \
   --manual-package coderabbit-cli \
-  --manual-version coderabbit-cli=0.6.1
+  --manual-version coderabbit-cli=0.6.4
 ```
 
 The updater prefetches the manifest's release asset URLs with
