@@ -2804,6 +2804,7 @@ fn ws_add(args: Vec<OsString>) -> Result<()> {
     let mut copied_envrc = false;
     let mut venv_action = None;
     let mut direnv_allowed = false;
+    let copied_lint_config = copy_jj_lint_config_if_needed(&ctx.repo_root, &dest)?;
     if !parsed.no_envrc && config.copy_envrc != "never" {
         copied_envrc = copy_envrc_if_needed(&ctx.repo_root, &dest, &config.copy_envrc)?;
     }
@@ -2830,6 +2831,9 @@ fn ws_add(args: Vec<OsString>) -> Result<()> {
         if copied_envrc {
             println!("copied untracked .envrc");
         }
+        if copied_lint_config {
+            println!("copied .jj-lint.toml");
+        }
         if let Some(action) = venv_action {
             println!("{} untracked .venv", action.past_tense());
         }
@@ -2838,6 +2842,17 @@ fn ws_add(args: Vec<OsString>) -> Result<()> {
         }
     }
     Ok(())
+}
+
+fn copy_jj_lint_config_if_needed(src: &Path, dest: &Path) -> Result<bool> {
+    let src_lint_config = src.join(".jj-lint.toml");
+    let dest_lint_config = dest.join(".jj-lint.toml");
+    if !src_lint_config.exists() || dest_lint_config.exists() {
+        return Ok(false);
+    }
+    fs::copy(&src_lint_config, &dest_lint_config)
+        .with_context(|| format!("failed to copy {}", src_lint_config.display()))?;
+    Ok(true)
 }
 
 fn fetch_for_workspace(config: &WsConfig) -> Result<()> {
@@ -6887,9 +6902,10 @@ tests = []
                 "false",
             ],
         );
-        fs::write(repo.join(".gitignore"), ".venv\n").unwrap();
+        fs::write(repo.join(".gitignore"), ".venv\n.jj-lint.toml\n").unwrap();
         fs::write(repo.join("tracked.txt"), "hello\n").unwrap();
         fs::write(repo.join(".envrc"), "use flake\n").unwrap();
+        fs::write(repo.join(".jj-lint.toml"), "lints = [\"true\"]\n").unwrap();
         fs::create_dir_all(repo.join(".venv/bin")).unwrap();
         let source_venv = fs::canonicalize(&repo).unwrap().join(".venv");
         fs::write(
@@ -6919,6 +6935,10 @@ tests = []
         assert_eq!(
             fs::read_to_string(ws.join(".envrc")).unwrap(),
             "use flake\n"
+        );
+        assert_eq!(
+            fs::read_to_string(ws.join(".jj-lint.toml")).unwrap(),
+            "lints = [\"true\"]\n"
         );
         assert!(!fs::symlink_metadata(ws.join(".venv"))
             .unwrap()

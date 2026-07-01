@@ -64,6 +64,7 @@ Ask only if repo or workspace name cannot be inferred safely.
 
 ## Environment behavior
 
+- `.jj-lint.toml` is copied from the source checkout when it is absent in the new workspace, including ignored/untracked local lint configs.
 - Untracked `.envrc` is copied by default and `direnv allow` runs by default.
 - Untracked `.venv` is copied by default when `.venv/bin/python` is usable, with APFS/reflink clone attempts first and common virtualenv path references repaired so dependency updates stay isolated to the workspace. Broken source virtualenvs are skipped instead of copied.
 - Use `--venv=link` to share the source checkout's `.venv`, or `--no-venv` / `--venv=none` to skip virtualenv setup.

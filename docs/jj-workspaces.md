@@ -209,15 +209,23 @@ jj ws add billing-refactor -q
 
 For `jj ws forget -q`, print nothing on success. Errors still print.
 
-## `.envrc`, `.venv`, and direnv
+## `.jj-lint.toml`, `.envrc`, `.venv`, and direnv
 
 Default behavior:
 
+- if the source checkout has a `.jj-lint.toml` lint config
+- and the destination workspace does not already have `.jj-lint.toml`
+- copy it to the workspace, including when the file is ignored/untracked
 - if the source checkout has an `.envrc`
 - and `.envrc` is not checked into source control
 - and the destination workspace does not already have `.envrc`
 - copy it to the workspace
 - run `direnv allow <workspace-path>`
+
+Tracked `.jj-lint.toml` files should naturally appear in the workspace through
+Jujutsu. The explicit copy exists for repos that intentionally keep local lint
+configuration ignored but still want new managed workspaces to run the same
+`jj lint` commands.
 
 Tracked `.envrc` files should naturally appear in the workspace and should not be manually copied.
 
