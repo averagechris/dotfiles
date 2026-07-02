@@ -4,6 +4,7 @@
     ./gander.nix
     ./gpg.nix
     ./granola.nix
+    ./linear-cli.nix
     ./meganz.nix
     ./pi.nix
     ./shell.nix

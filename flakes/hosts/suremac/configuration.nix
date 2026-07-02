@@ -420,6 +420,12 @@
     programs.darktable.enable = false;
     programs.signal.enable = false;
     programs.waybar.enable = false;
+
+    dotfiles.linearCli = {
+      enable = true;
+      package = inputs.linear-cli.packages.${pkgs.stdenv.hostPlatform.system}.linear;
+      cacheRefresh.enable = true;
+    };
   };
 
   fonts.packages = [pkgs.nerd-fonts.droid-sans-mono];
