@@ -5,6 +5,18 @@
   pkgs,
   ...
 }: let
+  # Hyprland's upstream Nix package reads VERSION from its fileset-filtered
+  # source while constructing GIT_TAG. With --no-build evaluation this can try
+  # to read an unrealised source store path, so provide the tag from the flake
+  # source directly instead.
+  hyprlandPackage = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland.overrideAttrs (old: {
+    env =
+      (old.env or {})
+      // {
+        GIT_TAG = "v${lib.removeSuffix "\n" (builtins.readFile "${inputs.hyprland}/VERSION")}";
+      };
+  });
+
   skipFingerprintWhenLidClosed = pkgs.writeShellApplication {
     name = "skip-fingerprint-when-lid-closed";
     runtimeInputs = [pkgs.gnugrep];
@@ -62,7 +74,7 @@ in {
   # Hyprspace is a Hyprland plugin and must be loaded by the exact Hyprland
   # build it was compiled against. Use the pinned tater Hyprland input for the
   # system session package as well as the Home Manager config below.
-  programs.hyprland.package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
+  programs.hyprland.package = hyprlandPackage;
   xdg.portal.extraPortals = lib.mkForce [
     inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland
     pkgs.xdg-desktop-portal-gtk
@@ -714,7 +726,7 @@ in {
     # Keep Waybar disabled while Eww owns the primary bar and native systray.
     dotfiles.gui.hyprland.waybar.enable = false;
     dotfiles.gui.hyprland.waybar.trayOnly.enable = false;
-    wayland.windowManager.hyprland.package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
+    wayland.windowManager.hyprland.package = hyprlandPackage;
     dotfiles.gui.hyprland.overview = {
       # Keep Hyprspace disabled for now. A missing overview dispatcher after
       # reboot means the compositor started without the plugin, and the pinned

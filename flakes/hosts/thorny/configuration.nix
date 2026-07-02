@@ -4,6 +4,18 @@
   pkgs,
   ...
 }: let
+  # Hyprland's upstream Nix package reads VERSION from its fileset-filtered
+  # source while constructing GIT_TAG. With --no-build evaluation this can try
+  # to read an unrealised source store path, so provide the tag from the flake
+  # source directly instead.
+  hyprlandPackage = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland.overrideAttrs (old: {
+    env =
+      (old.env or {})
+      // {
+        GIT_TAG = "v${lib.removeSuffix "\n" (builtins.readFile "${inputs.hyprland}/VERSION")}";
+      };
+  });
+
   thornyStatus = pkgs.writeShellApplication {
     name = "thorny-status";
     runtimeInputs = with pkgs; [
@@ -78,7 +90,7 @@ in {
   ];
 
   dotfiles.hyprland-desktop.enable = true;
-  programs.hyprland.package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
+  programs.hyprland.package = hyprlandPackage;
   xdg.portal.extraPortals = lib.mkForce [
     inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland
     pkgs.xdg-desktop-portal-gtk
@@ -175,7 +187,7 @@ in {
     dotfiles.gander.enable = true;
     dotfiles.gui.swayidle.enable = false;
     dotfiles.gui.hyprland.waybar.enable = false;
-    wayland.windowManager.hyprland.package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
+    wayland.windowManager.hyprland.package = hyprlandPackage;
     dotfiles.gui.hyprland.overview = {
       enable = false;
       package = null;
