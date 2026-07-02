@@ -298,8 +298,8 @@ No cache is planned for v1. Listing should be cheap when scoped to the current r
 
 1. resolve the workspace name to a registered workspace path
 2. refuse to forget the current workspace
-3. check whether the workspace has non-empty work
-4. refuse unless `--force` if non-empty work exists
+3. check whether the workspace has unpublished work
+4. refuse unless `--force` if any non-empty commit in the workspace stack is not reachable from remote bookmarks or remote tags
 5. run Docker Compose cleanup if applicable and enabled
 6. run `jj workspace forget <name>`
 7. delete the workspace directory unless `--keep-dir` is set
@@ -315,6 +315,20 @@ Supported options:
 --keep-docker-volumes
 --dry-run
 -q, --quiet
+```
+
+The published-work check intentionally looks at the whole non-empty stack ending
+at the workspace's `@`, not just `@` itself. An empty `@` is only safe if its
+non-empty ancestors are already reachable from remote bookmarks or remote tags.
+This catches the case where an agent creates a new empty working copy after
+leaving unpublished work in `@-`, while still allowing the common PR workflow
+where the branch was pushed directly from the workspace's `@` commit. If
+`forget` still reports unpublished work for a branch that was just merged, fetch
+remote refs first so jj can see updated or deleted remote bookmarks:
+
+```bash
+jj --repository "$(jj ws path feature-x)" git fetch
+jj ws forget feature-x
 ```
 
 ## Docker Compose Cleanup

@@ -3292,8 +3292,8 @@ fn ws_forget(args: Vec<OsString>) -> Result<()> {
     if current.as_ref() == Some(&target) {
         bail!("refusing to forget the current workspace: {}\n\nChange to another directory first, then run `jj ws forget {name}`.", target.display());
     }
-    if !parsed.force && !commit_is_empty_in(&target, "@")? {
-        bail!("workspace {name} has non-empty work at {}\n\nReview it first with:\n  jj --repository {} status\n\nUse --force to forget and delete anyway.", target.display(), target.display());
+    if !parsed.force && workspace_has_unpublished_work(&target)? {
+        bail!("workspace {name} has unpublished work at {}\n\nReview it first with:\n  jj --repository {} status\n\nIf this workspace was already pushed or merged, fetch remote refs and retry:\n  jj --repository {} git fetch\n\nUse --force to forget and delete anyway.", target.display(), target.display(), target.display());
     }
     let config = ws_config()?;
     let has_compose = has_compose_file(&path);
@@ -3335,7 +3335,17 @@ fn ws_forget(args: Vec<OsString>) -> Result<()> {
     Ok(())
 }
 
-fn commit_is_empty_in(repo: &Path, revset: &str) -> Result<bool> {
+fn workspace_has_unpublished_work(repo: &Path) -> Result<bool> {
+    // A workspace is safe to discard only when every non-empty commit in its
+    // stack is already reachable from a remote ref. An empty `@` is not enough:
+    // agents may create a new empty working copy after leaving unpublished work
+    // in `@-`, and forgetting that workspace would otherwise delete the only
+    // checkout pointing at the unpublished stack.
+    let unpublished_revset = "(::@ ~ ::(remote_bookmarks() | remote_tags())) ~ empty()";
+    Ok(revset_has_commits_in(repo, unpublished_revset)?)
+}
+
+fn revset_has_commits_in(repo: &Path, revset: &str) -> Result<bool> {
     let output = Command::new("jj")
         .args([
             "log",
@@ -3346,14 +3356,14 @@ fn commit_is_empty_in(repo: &Path, revset: &str) -> Result<bool> {
             "--no-graph",
             "--color=never",
             "-T",
-            "empty",
+            "commit_id",
         ])
         .current_dir(repo)
         .output()?;
     if !output.status.success() {
-        return Ok(false);
+        return Ok(true);
     }
-    Ok(String::from_utf8(output.stdout)?.trim() == "true")
+    Ok(!String::from_utf8(output.stdout)?.trim().is_empty())
 }
 
 fn has_compose_file(path: &Path) -> bool {
@@ -5609,9 +5619,9 @@ mod tests {
         short_description_from_title, source_venv_python_usable, stale_workspace_dirs,
         sync_base_candidates, tag_push, validate_body_source, validate_pr_watch_args,
         validate_release_tag, validate_ticket, validate_ws_name, workspace_context_for_repo,
-        write_tracked_lint_config, FetchChoice, LintCommand, LintOnboardReport, LintSuggestion,
-        ParsedArgs, PrArgs, ProjectGroup, ShipPlan, TagPushArgs, WsAddArgs, WsConfig, WsForgetArgs,
-        WsPathArgs, WsPruneArgs,
+        workspace_has_unpublished_work, write_tracked_lint_config, FetchChoice, LintCommand,
+        LintOnboardReport, LintSuggestion, ParsedArgs, PrArgs, ProjectGroup, ShipPlan, TagPushArgs,
+        WsAddArgs, WsConfig, WsForgetArgs, WsPathArgs, WsPruneArgs,
     };
     use std::env;
     use std::ffi::OsString;
@@ -6122,6 +6132,47 @@ mod tests {
         .is_err());
         assert!(parse_ws_forget_args(vec!["feature".into(), "--pick".into()]).is_err());
         assert!(parse_ws_forget_args(vec![]).is_err());
+    }
+
+    #[test]
+    fn ws_forget_safety_allows_published_non_empty_work() {
+        if which::which("git").is_err() {
+            return;
+        }
+
+        let _guard = INTEGRATION_LOCK.lock().unwrap();
+        let root = named_tempdir("forget-published");
+        let origin = root.join("origin.git");
+        let repo = root.join("demo");
+        run(Command::new("git").arg("init").arg("--bare").arg(&origin));
+        run(Command::new("jj").arg("git").arg("init").arg(&repo));
+        jj(
+            &repo,
+            &["git", "remote", "add", "origin", origin.to_str().unwrap()],
+        );
+        fs::write(repo.join("file.txt"), "hello\n").unwrap();
+        jj(&repo, &["describe", "-m", "published"]);
+
+        assert!(workspace_has_unpublished_work(&repo).unwrap());
+
+        jj(&repo, &["bookmark", "set", "feature", "-r", "@"]);
+        jj(
+            &repo,
+            &["git", "push", "--bookmark", "feature", "--remote", "origin"],
+        );
+        assert!(!workspace_has_unpublished_work(&repo).unwrap());
+
+        jj(&repo, &["new"]);
+        assert!(!workspace_has_unpublished_work(&repo).unwrap());
+
+        fs::write(repo.join("local.txt"), "local\n").unwrap();
+        jj(&repo, &["describe", "-m", "local"]);
+        assert!(workspace_has_unpublished_work(&repo).unwrap());
+
+        jj(&repo, &["new"]);
+        assert!(workspace_has_unpublished_work(&repo).unwrap());
+
+        let _ = fs::remove_dir_all(&root);
     }
 
     #[test]
