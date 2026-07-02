@@ -370,6 +370,29 @@
         "type": "github"
       }
     },
+    "gander": {
+      "inputs": {
+        "flake-utils": [
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1782954991,
+        "narHash": "sha256-MiGAdWx28gQeboBrxF1ExJ+O4yStQq1Z/CtM/330A+o=",
+        "owner": "~averagechris",
+        "repo": "gander",
+        "rev": "2adb95ca3d3927ef4fe2d1eeece01888532f2456",
+        "type": "sourcehut"
+      },
+      "original": {
+        "owner": "~averagechris",
+        "repo": "gander",
+        "type": "sourcehut"
+      }
+    },
     "helix": {
       "inputs": {
         "nixpkgs": [
@@ -642,6 +665,7 @@
       "inputs": {
         "base-lib": "base-lib",
         "flake-utils": "flake-utils_4",
+        "gander": "gander",
         "helix": "helix",
         "home-manager": "home-manager_3",
         "linear-cli": "linear-cli",

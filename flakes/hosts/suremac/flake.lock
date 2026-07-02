@@ -1111,6 +1111,29 @@
         "type": "indirect"
       }
     },
+    "gander": {
+      "inputs": {
+        "flake-utils": [
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1782954991,
+        "narHash": "sha256-MiGAdWx28gQeboBrxF1ExJ+O4yStQq1Z/CtM/330A+o=",
+        "owner": "~averagechris",
+        "repo": "gander",
+        "rev": "2adb95ca3d3927ef4fe2d1eeece01888532f2456",
+        "type": "sourcehut"
+      },
+      "original": {
+        "owner": "~averagechris",
+        "repo": "gander",
+        "type": "sourcehut"
+      }
+    },
     "granola-cli": {
       "inputs": {
         "flake-utils": [
@@ -1900,6 +1923,7 @@
           "base-lib",
           "flake-utils"
         ],
+        "gander": "gander",
         "granola-cli": "granola-cli",
         "helix": "helix",
         "hm-modules": "hm-modules",

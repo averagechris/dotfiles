@@ -20,6 +20,11 @@
       url = "sourcehut:~averagechris/starship-jj";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    gander = {
+      url = "sourcehut:~averagechris/gander";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+    };
   };
 
   outputs = inputs @ {

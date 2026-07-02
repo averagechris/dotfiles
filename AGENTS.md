@@ -123,6 +123,7 @@ not making it a flake input.
 
 See [docs/README.md](/docs/README.md) for documentation index, including:
 - [nixos.md](/docs/nixos.md) - General NixOS configuration notes
+- [gander.md](/docs/gander.md) - Gander jj review TUI module, package input, and Colemak keybindings
 - [gpg-signing.md](/docs/gpg-signing.md) - GPG signing setup for git and jj commits with agenix
 - [opencode-pr-review.md](/docs/opencode-pr-review.md) - OpenCode PR review workflow, artifact tools, and posting flow
 - [coderabbit-cli.md](/docs/coderabbit-cli.md) - CodeRabbit CLI package, suremac agent integration, and local review workflow

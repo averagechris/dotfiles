@@ -20,6 +20,11 @@
       url = "sourcehut:~averagechris/starship-jj";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    gander = {
+      url = "sourcehut:~averagechris/gander";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+    };
     hyprland = {
       # Pinned to the revision Hyprspace currently tests against so the
       # compositor and overview plugin agree on Hyprland's internal plugin ABI.

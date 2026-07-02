@@ -172,6 +172,7 @@ in {
 
     dotfiles.hyprland-workstation.enable = true;
     dotfiles.hyprland-workstation.terminal = "ghostty";
+    dotfiles.gander.enable = true;
     dotfiles.gui.swayidle.enable = false;
     dotfiles.gui.hyprland.waybar.enable = false;
     wayland.windowManager.hyprland.package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;

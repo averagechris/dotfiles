@@ -20,6 +20,11 @@
       url = "sourcehut:~averagechris/starship-jj";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    gander = {
+      url = "sourcehut:~averagechris/gander";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+    };
     hyprland = {
       # Match tater's pinned Hyprland so the shared workstation config and
       # portal behavior stay consistent between daily GUI machines.

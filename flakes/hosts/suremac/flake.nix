@@ -27,6 +27,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };
+    gander = {
+      url = "sourcehut:~averagechris/gander";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+    };
     granola-cli = {
       url = "sourcehut:~averagechris/granola-cli";
       inputs.nixpkgs.follows = "nixpkgs";

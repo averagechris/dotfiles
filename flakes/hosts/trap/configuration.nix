@@ -55,6 +55,7 @@
     ];
     dotfiles.cosmic-workstation.enable = true;
     dotfiles.cosmic-workstation.ghostty.enable = true;
+    dotfiles.gander.enable = true;
     programs.opencode.enable = true;
     dotfiles.opencode.openrouterApiKeyFile = config.age.secrets.openrouter-api-key.path;
     programs.meganz.enable = true;

@@ -273,6 +273,7 @@
     dotfiles.gui.enable = true;
     dotfiles.wezterm.enable = true;
     dotfiles.macosHotkeys.enable = true;
+    dotfiles.gander.enable = true;
     dotfiles.gui.terminal = {
       package = lib.mkDefault pkgs.wezterm;
       args = lib.mkDefault [];

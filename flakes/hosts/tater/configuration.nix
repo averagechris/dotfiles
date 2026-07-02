@@ -646,6 +646,7 @@ in {
     # Use the unified Hyprland workstation configuration
     dotfiles.hyprland-workstation.enable = true;
     dotfiles.hyprland-workstation.terminal = "ghostty";
+    dotfiles.gander.enable = true;
 
     programs.hyprlock.settings.auth.fingerprint.enabled = true;
 

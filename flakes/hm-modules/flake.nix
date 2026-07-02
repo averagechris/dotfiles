@@ -21,6 +21,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };
+    gander = {
+      url = "sourcehut:~averagechris/gander";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+    };
     opencode = {
       url = "github:anomalyco/opencode";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -45,6 +50,7 @@
         helix = ./modules/helix/default.nix;
         opencode = ./modules/opencode/default.nix;
         pi = ./modules/pi.nix;
+        gander = ./modules/gander.nix;
         granola = ./modules/granola.nix;
         openclaw-fix = ./modules/openclaw-fix.nix;
         ghostty-fix = ./modules/ghostty-fix.nix;

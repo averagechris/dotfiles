@@ -1,6 +1,7 @@
 {dotfiles_lib, ...}: {
   imports = [
     ./gui
+    ./gander.nix
     ./gpg.nix
     ./granola.nix
     ./meganz.nix
