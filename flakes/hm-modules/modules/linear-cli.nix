@@ -326,7 +326,12 @@ in {
         # calendar time only. Not expressible in the engine and therefore
         # left to human sweeps: "canceled/duplicate without a comment" and
         # "estimate 8 without sub-issues" (comments and children are not in
-        # the entity field model).
+        # the entity field model); for projects/initiatives: problem-statement
+        # /definition-of-done structure (fragile regexes), KPI presence with
+        # its one-sprint grace, theme + commit-type labels on initiatives
+        # (confirm actual Linear label-group names before adding
+        # missing_group rules), and issue->project->initiative traceability
+        # (needs cross-entity joins).
         rules = [
           {
             id = "issue-missing-domain";
@@ -467,6 +472,132 @@ in {
               status."in" = ["Triage"];
               priority.lte = 2;
               createdAt.older_than = "2d";
+            };
+          }
+          # Project rules (sdlc conventions/50_linear/40_entity-usage.md).
+          # Project states are lowercase (backlog/planned/started/completed/
+          # canceled); initiative states are capitalized (Active/Planned).
+          #
+          # SDLC: "The creator must set a lead, or the relevant guild lead
+          # assigns one within one sprint. Projects without a lead after one
+          # sprint are flagged in the audit." Sprints are 1 week
+          # (config/linear/cycles.yaml).
+          {
+            id = "project-missing-lead";
+            entity = "project";
+            severity = "high";
+            when = {
+              state.not_in = ["completed" "canceled"];
+              lead.missing = true;
+              createdAt.older_than = "7d";
+            };
+          }
+          # SDLC: "Project descriptions must start with a problem statement
+          # and end with a definition of done." The structure itself would
+          # need fragile regexes; only presence is checked.
+          {
+            id = "project-missing-description";
+            entity = "project";
+            severity = "medium";
+            when = {
+              state.not_in = ["completed" "canceled"];
+              description.missing = true;
+            };
+          }
+          # SDLC: dates are "encouraged" only; exploratory spikes are exempt
+          # from target dates - hence low severity.
+          {
+            id = "project-started-missing-target-date";
+            entity = "project";
+            severity = "low";
+            when = {
+              state."in" = ["started"];
+              targetDate.missing = true;
+            };
+          }
+          # SDLC 70_async-communication: date changes on committed work must
+          # be updated + commented, so a past-due target date on a live
+          # project is a real violation.
+          {
+            id = "project-target-date-past";
+            entity = "project";
+            severity = "high";
+            when = {
+              state.not_in = ["completed" "canceled"];
+              targetDate.past = true;
+            };
+          }
+          # SDLC labels.yaml: "Every project must have exactly one domain
+          # project label." missing_group resolves against project labels
+          # here; verified to fire on known-unlabeled projects.
+          {
+            id = "project-missing-domain";
+            entity = "project";
+            severity = "medium";
+            when = {
+              state.not_in = ["completed" "canceled"];
+              labels.missing_group = "domain";
+            };
+          }
+          # Initiative rules. SDLC: "Required for active initiatives: All
+          # active initiatives must have these fields populated. The audit
+          # flags violations." (description, target date, health, linked
+          # projects, owner). The workspace currently has zero initiatives,
+          # so these are dormant but intentionally present.
+          {
+            id = "initiative-active-missing-description";
+            entity = "initiative";
+            severity = "high";
+            when = {
+              state."in" = ["Active"];
+              description.missing = true;
+            };
+          }
+          {
+            id = "initiative-active-missing-target-date";
+            entity = "initiative";
+            severity = "high";
+            when = {
+              state."in" = ["Active"];
+              targetDate.missing = true;
+            };
+          }
+          {
+            id = "initiative-active-missing-health";
+            entity = "initiative";
+            severity = "high";
+            when = {
+              state."in" = ["Active"];
+              health.missing = true;
+            };
+          }
+          {
+            id = "initiative-active-missing-owner";
+            entity = "initiative";
+            severity = "high";
+            when = {
+              state."in" = ["Active"];
+              owner.missing = true;
+            };
+          }
+          {
+            id = "initiative-active-no-projects";
+            entity = "initiative";
+            severity = "high";
+            when = {
+              state."in" = ["Active"];
+              linkedProjects.eq = 0;
+            };
+          }
+          # SDLC anti-pattern: "Active initiatives with no health update for
+          # more than 2 weeks are flagged in the audit."
+          {
+            id = "initiative-stale-health";
+            entity = "initiative";
+            severity = "medium";
+            when = {
+              state."in" = ["Active"];
+              healthUpdatedAt.older_than = "14d";
             };
           }
         ];
