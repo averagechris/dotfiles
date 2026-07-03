@@ -7,6 +7,7 @@
 }: let
   cfg = config.dotfiles.linearCli;
   jsonFormat = pkgs.formats.json {};
+  tomlFormat = pkgs.formats.toml {};
   inputPackage =
     if inputs ? linear-cli && inputs.linear-cli ? packages && builtins.hasAttr pkgs.stdenv.hostPlatform.system inputs.linear-cli.packages
     then inputs.linear-cli.packages.${pkgs.stdenv.hostPlatform.system}.linear
@@ -43,15 +44,17 @@
     # Match the CLI's on-disk secret hygiene: auth tokens live in the OS
     # keyring, not in the config file. Preserve workspace/profile metadata, but
     # never re-emit legacy plaintext secrets if an old config still contains
-    # them.
+    # them. Blank token values instead of deleting the keys: the CLI's config
+    # parser requires `oauth.access_token` to be present.
     data.pop("api_key", None)
     for workspace in data.get("workspaces", {}).values():
         if isinstance(workspace, dict):
             workspace["api_key"] = ""
             oauth = workspace.get("oauth")
             if isinstance(oauth, dict):
-                oauth.pop("access_token", None)
-                oauth.pop("refresh_token", None)
+                for token_key in ("access_token", "refresh_token"):
+                    if token_key in oauth:
+                        oauth[token_key] = ""
 
     data["context"] = desired_context
 
@@ -150,7 +153,16 @@
     os.chmod(tmp_path, stat.S_IRUSR | stat.S_IWUSR)
     os.replace(tmp_path, config_path)
   '';
-  contextConfigPath = "${config.xdg.configHome}/linear-cli/config.toml";
+  # The CLI resolves its user-level config dir with `dirs::config_dir()`:
+  # ~/Library/Application Support/linear-cli on Darwin and
+  # $XDG_CONFIG_HOME/linear-cli on Linux. Writing to ~/.config on Darwin
+  # produces files the CLI never reads.
+  cliConfigDir =
+    if pkgs.stdenv.isDarwin
+    then "${config.home.homeDirectory}/Library/Application Support/linear-cli"
+    else "${config.xdg.configHome}/linear-cli";
+  contextConfigPath = "${cliConfigDir}/config.toml";
+  hygieneToml = tomlFormat.generate "linear-cli-hygiene.toml" {inherit (cfg) hygiene;};
 in {
   options.dotfiles.linearCli = {
     enable = lib.mkEnableOption "Linear CLI with user/org context for agents";
@@ -298,6 +310,175 @@ in {
       '';
     };
 
+    hygiene = lib.mkOption {
+      type = lib.types.nullOr tomlFormat.type;
+      default = {
+        apply_ttl = "30m";
+        scope = {
+          exempt_labels = ["ignore-audit"];
+          teams = ["EPD"];
+          include_archived = false;
+        };
+        # Workflow-hygiene rules mirroring the org SDLC conventions
+        # (sdlc repo: scripts/linear/rules.py + config/linear/cycles.yaml).
+        # Business-day thresholds are approximated as calendar durations
+        # (5bd~7d, 3bd~4d, 2bd~3d, 1bd~2d) because the rule engine uses
+        # calendar time only. Not expressible in the engine and therefore
+        # left to human sweeps: "canceled/duplicate without a comment" and
+        # "estimate 8 without sub-issues" (comments and children are not in
+        # the entity field model).
+        rules = [
+          {
+            id = "issue-missing-domain";
+            entity = "issue";
+            severity = "medium";
+            when = {
+              status.not_in = ["Done" "Canceled" "Duplicate"];
+              labels.missing_group = "domain";
+            };
+          }
+          {
+            id = "issue-missing-type";
+            entity = "issue";
+            severity = "medium";
+            when = {
+              status.not_in = ["Done" "Canceled" "Duplicate"];
+              labels.missing_group = "type";
+            };
+          }
+          {
+            id = "missing-priority";
+            entity = "issue";
+            severity = "medium";
+            when = {
+              status.not_in = ["Done" "Canceled" "Duplicate"];
+              priority.missing = true;
+            };
+          }
+          {
+            id = "unassigned-active";
+            entity = "issue";
+            severity = "high";
+            when = {
+              status."in" = ["Todo" "Spec" "Ready" "In Progress" "In Review" "QA"];
+              assignee.missing = true;
+            };
+          }
+          {
+            id = "missing-estimate-in-cycle";
+            entity = "issue";
+            severity = "medium";
+            when = {
+              status.not_in = ["Done" "Canceled" "Duplicate"];
+              cycle.missing = false;
+              estimate.missing = true;
+            };
+          }
+          # Estimates follow the fibonacci scale {0,1,2,3,5,8}; numeric
+          # predicates have no set-membership operator, so the off-scale
+          # values get one rule each.
+          {
+            id = "estimate-nonstandard-4";
+            entity = "issue";
+            severity = "low";
+            when.estimate.eq = 4;
+          }
+          {
+            id = "estimate-nonstandard-6";
+            entity = "issue";
+            severity = "low";
+            when.estimate.eq = 6;
+          }
+          {
+            id = "estimate-nonstandard-7";
+            entity = "issue";
+            severity = "low";
+            when.estimate.eq = 7;
+          }
+          {
+            id = "estimate-above-scale";
+            entity = "issue";
+            severity = "medium";
+            when.estimate.gt = 8;
+          }
+          {
+            id = "stale-in-progress";
+            entity = "issue";
+            severity = "medium";
+            when = {
+              status."in" = ["In Progress"];
+              updatedAt.older_than = "7d";
+            };
+          }
+          {
+            id = "stale-in-review";
+            entity = "issue";
+            severity = "high";
+            when = {
+              status."in" = ["In Review"];
+              updatedAt.older_than = "3d";
+            };
+            fix.options = [
+              {
+                action = "nudge_review";
+                comment = true;
+              }
+              {
+                action = "move_back";
+                set.status = "In Progress";
+              }
+            ];
+          }
+          {
+            id = "stale-qa";
+            entity = "issue";
+            severity = "medium";
+            when = {
+              status."in" = ["QA"];
+              updatedAt.older_than = "4d";
+            };
+          }
+          {
+            id = "stale-ready";
+            entity = "issue";
+            severity = "low";
+            when = {
+              status."in" = ["Ready"];
+              updatedAt.older_than = "7d";
+            };
+          }
+          # Priority-0 and high-priority intake must be triaged within one
+          # business day; the two rules are OR branches of "priority <= high".
+          {
+            id = "triage-sla-unprioritized";
+            entity = "issue";
+            severity = "high";
+            when = {
+              status."in" = ["Triage"];
+              priority.missing = true;
+              createdAt.older_than = "2d";
+            };
+          }
+          {
+            id = "triage-sla-high-priority";
+            entity = "issue";
+            severity = "high";
+            when = {
+              status."in" = ["Triage"];
+              priority.lte = 2;
+              createdAt.older_than = "2d";
+            };
+          }
+        ];
+      };
+      description = ''
+        Contents of the CLI's user-level hygiene.toml `[hygiene]` table
+        (apply_ttl, scope, and rules for `linear hygiene check`). The default
+        encodes the org SDLC hygiene conventions. Set to null to manage
+        hygiene.toml outside Home Manager.
+      '';
+    };
+
     cacheRefresh = {
       enable = lib.mkEnableOption "periodic Linear context option cache refresh";
 
@@ -341,6 +522,13 @@ in {
     ];
 
     home.packages = [cfg.package] ++ lib.optional cfg.completions.enable linearCompletions;
+
+    # hygiene.toml is read-only for the CLI (snoozes and run artifacts live in
+    # the state dir), so a store symlink into its config dir is safe.
+    home.file."Library/Application Support/linear-cli/hygiene.toml" =
+      lib.mkIf (pkgs.stdenv.isDarwin && cfg.hygiene != null) {source = hygieneToml;};
+    xdg.configFile."linear-cli/hygiene.toml" =
+      lib.mkIf (!pkgs.stdenv.isDarwin && cfg.hygiene != null) {source = hygieneToml;};
 
     launchd.agents.linear-cli-context-refresh = lib.mkIf (cfg.cacheRefresh.enable && pkgs.stdenv.isDarwin) {
       enable = true;

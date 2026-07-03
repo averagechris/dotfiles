@@ -9,13 +9,55 @@ agents.
 - Installs the configured Linear CLI package.
 - Installs static bash, fish, and zsh completions when
   `dotfiles.linearCli.completions.enable = true`.
-- Merges `dotfiles.linearCli.context` into
-  `~/.config/linear-cli/config.toml` during Home Manager activation.
+- Merges `dotfiles.linearCli.context` into the CLI's user-level `config.toml`
+  during Home Manager activation.
+- Writes `dotfiles.linearCli.hygiene` to the CLI's user-level `hygiene.toml`
+  as a store symlink (the CLI only reads this file; snoozes and check
+  artifacts live in its state directory).
 - Optionally runs a periodic `linear context refresh` launchd job on Darwin.
+
+The CLI resolves its user-level config directory with Rust's
+`dirs::config_dir()`: `~/Library/Application Support/linear-cli` on macOS and
+`$XDG_CONFIG_HOME/linear-cli` on Linux. The module targets that platform path;
+files under `~/.config/linear-cli` on macOS are ignored by the CLI.
 
 The activation merge intentionally preserves authentication/profile metadata in
 the existing CLI config file. Credentials remain in the OS keyring via
-`linear auth login`; the module only writes non-secret context and policy hints.
+`linear auth login`; the module only writes non-secret context and policy
+hints. Legacy plaintext token values are blanked rather than removed - the
+CLI's config parser requires `oauth.access_token` to exist.
+
+## Hygiene rules
+
+`dotfiles.linearCli.hygiene` manages the `[hygiene]` table consumed by
+`linear hygiene check` / `fix` / `apply`. The default ruleset encodes the org
+SDLC hygiene conventions (sdlc repo `scripts/linear/rules.py` and
+`config/linear/cycles.yaml`), scoped to team `EPD` with the `ignore-audit`
+exempt label:
+
+- missing `domain` / `type` label on non-terminal issues
+- missing priority on non-terminal issues; missing assignee on active issues
+- missing estimate for issues in a cycle; off-fibonacci estimates (4, 6, 7,
+  and above scale)
+- staleness by status, approximating business-day thresholds as calendar
+  durations (In Progress/Ready 5bd -> `7d`, QA 3bd -> `4d`, In Review 2bd ->
+  `3d`); the In Review rule carries `nudge_review` / `move_back` fix options
+- triage SLA: unprioritized or high-priority intake older than 1bd -> `2d`
+
+Not expressible in the rule engine (comments and sub-issues are outside the
+entity field model) and left to human sweeps: "canceled/duplicate without a
+comment" and "estimate 8 without sub-issues".
+
+The rule engine is self-documenting; when editing rules use:
+
+```bash
+linear hy rules --schema --output json   # field model + operator vocabulary
+linear hy rules --init --rules PATH      # commented starter demonstrating operators
+linear hy rules --rules PATH             # validate, listing all errors (exit 1)
+```
+
+Set `dotfiles.linearCli.hygiene = null` to manage `hygiene.toml` outside Home
+Manager.
 
 ## suremac defaults
 
@@ -89,4 +131,6 @@ linear context options labels --group domain --output json --compact
 linear context refresh labels projects initiatives statuses teams
 linear context refresh projects --quiet --retry 3
 linear doctor
+linear hy check --team EPD --output json --compact
+linear hy report --by owner
 ```

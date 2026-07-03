@@ -257,6 +257,8 @@
       kubectl
       pup
       sentry
+      inputs.slack.packages.${pkgs.stdenv.hostPlatform.system}.slack
+      inputs.ctx.packages.${pkgs.stdenv.hostPlatform.system}.ctx
     ];
     imports = [
       inputs.hm-modules.homeManagerModules.default

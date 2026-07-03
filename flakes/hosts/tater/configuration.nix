@@ -818,12 +818,24 @@ in {
     programs.meganz.enable = true;
     programs.helium.enable = true;
     programs.helium.extension-simple-pip-helper.enable = true;
+    home.packages = [
+      # agentic context CLI for indexing/searching coding-agent session history
+      inputs.ctx.packages.${pkgs.stdenv.hostPlatform.system}.ctx
+      # Bluetooth and network management
+      pkgs.overskride
+      taterNetworkRecover
+      taterDisplayRefresh
+      taterHomeClamshell
+      taterHomeOpen
+      taterHomeToggle
+      taterHomeDocked
+      taterDesktopDoctor
+      thornyStatus
+    ];
 
     # GPG configuration with automatic key import
     dotfiles.gpg.enable = true;
 
-    # Bluetooth and network management
-    home.packages = [pkgs.overskride taterNetworkRecover taterDisplayRefresh taterHomeClamshell taterHomeOpen taterHomeToggle taterHomeDocked taterDesktopDoctor thornyStatus];
     services.network-manager-applet.enable = true;
   };
 }

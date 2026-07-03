@@ -3769,6 +3769,56 @@
       },
       "parent": []
     },
+    "ctx": {
+      "inputs": {
+        "flake-utils": [
+          "suremac",
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "suremac",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1783067034,
+        "narHash": "sha256-il8+DCBLrNbzt0F1mWckAHDGgifzpQxJf2+hrVMXJk8=",
+        "owner": "~averagechris",
+        "repo": "ctx",
+        "rev": "0a5cd2133b3cf18bb8c2ec4ca68c16b97dc80225",
+        "type": "sourcehut"
+      },
+      "original": {
+        "owner": "~averagechris",
+        "repo": "ctx",
+        "type": "sourcehut"
+      }
+    },
+    "ctx_2": {
+      "inputs": {
+        "flake-utils": [
+          "tater",
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "tater",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1783067034,
+        "narHash": "sha256-il8+DCBLrNbzt0F1mWckAHDGgifzpQxJf2+hrVMXJk8=",
+        "owner": "~averagechris",
+        "repo": "ctx",
+        "rev": "0a5cd2133b3cf18bb8c2ec4ca68c16b97dc80225",
+        "type": "sourcehut"
+      },
+      "original": {
+        "owner": "~averagechris",
+        "repo": "ctx",
+        "type": "sourcehut"
+      }
+    },
     "darwin": {
       "inputs": {
         "nixpkgs": [
@@ -11792,20 +11842,20 @@
     "gander": {
       "inputs": {
         "flake-utils": [
-          "suremac",
+          "hm-modules",
           "flake-utils"
         ],
         "nixpkgs": [
-          "suremac",
+          "hm-modules",
           "nixpkgs"
         ]
       },
       "locked": {
-        "lastModified": 1783056413,
-        "narHash": "sha256-9pEDzqnj3AzybnJlPJ8jZbb0hogu26Alnv2RLFP2JdY=",
+        "lastModified": 1783064003,
+        "narHash": "sha256-l0YblRHkuS+8h4a617JDhMgwwATaeSQPHzred3FZ0p0=",
         "owner": "~averagechris",
         "repo": "gander",
-        "rev": "229c6eb048de1f87747c913390010ceae41f6a59",
+        "rev": "14eb31eed4c0fd60481cc1d2eccc5c4a46f0e690",
         "type": "sourcehut"
       },
       "original": {
@@ -11817,20 +11867,20 @@
     "gander_2": {
       "inputs": {
         "flake-utils": [
-          "tater",
+          "suremac",
           "flake-utils"
         ],
         "nixpkgs": [
-          "tater",
+          "suremac",
           "nixpkgs"
         ]
       },
       "locked": {
-        "lastModified": 1782954991,
-        "narHash": "sha256-MiGAdWx28gQeboBrxF1ExJ+O4yStQq1Z/CtM/330A+o=",
+        "lastModified": 1783064003,
+        "narHash": "sha256-l0YblRHkuS+8h4a617JDhMgwwATaeSQPHzred3FZ0p0=",
         "owner": "~averagechris",
         "repo": "gander",
-        "rev": "2adb95ca3d3927ef4fe2d1eeece01888532f2456",
+        "rev": "14eb31eed4c0fd60481cc1d2eccc5c4a46f0e690",
         "type": "sourcehut"
       },
       "original": {
@@ -11842,20 +11892,22 @@
     "gander_3": {
       "inputs": {
         "flake-utils": [
-          "thorny",
+          "suremac",
+          "hm-modules",
           "flake-utils"
         ],
         "nixpkgs": [
-          "thorny",
+          "suremac",
+          "hm-modules",
           "nixpkgs"
         ]
       },
       "locked": {
-        "lastModified": 1782954991,
-        "narHash": "sha256-MiGAdWx28gQeboBrxF1ExJ+O4yStQq1Z/CtM/330A+o=",
+        "lastModified": 1783064003,
+        "narHash": "sha256-l0YblRHkuS+8h4a617JDhMgwwATaeSQPHzred3FZ0p0=",
         "owner": "~averagechris",
         "repo": "gander",
-        "rev": "2adb95ca3d3927ef4fe2d1eeece01888532f2456",
+        "rev": "14eb31eed4c0fd60481cc1d2eccc5c4a46f0e690",
         "type": "sourcehut"
       },
       "original": {
@@ -11867,6 +11919,110 @@
     "gander_4": {
       "inputs": {
         "flake-utils": [
+          "tater",
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "tater",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1783064003,
+        "narHash": "sha256-l0YblRHkuS+8h4a617JDhMgwwATaeSQPHzred3FZ0p0=",
+        "owner": "~averagechris",
+        "repo": "gander",
+        "rev": "14eb31eed4c0fd60481cc1d2eccc5c4a46f0e690",
+        "type": "sourcehut"
+      },
+      "original": {
+        "owner": "~averagechris",
+        "repo": "gander",
+        "type": "sourcehut"
+      }
+    },
+    "gander_5": {
+      "inputs": {
+        "flake-utils": [
+          "tater",
+          "hm-modules",
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "tater",
+          "hm-modules",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1783064003,
+        "narHash": "sha256-l0YblRHkuS+8h4a617JDhMgwwATaeSQPHzred3FZ0p0=",
+        "owner": "~averagechris",
+        "repo": "gander",
+        "rev": "14eb31eed4c0fd60481cc1d2eccc5c4a46f0e690",
+        "type": "sourcehut"
+      },
+      "original": {
+        "owner": "~averagechris",
+        "repo": "gander",
+        "type": "sourcehut"
+      }
+    },
+    "gander_6": {
+      "inputs": {
+        "flake-utils": [
+          "thorny",
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "thorny",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1783064003,
+        "narHash": "sha256-l0YblRHkuS+8h4a617JDhMgwwATaeSQPHzred3FZ0p0=",
+        "owner": "~averagechris",
+        "repo": "gander",
+        "rev": "14eb31eed4c0fd60481cc1d2eccc5c4a46f0e690",
+        "type": "sourcehut"
+      },
+      "original": {
+        "owner": "~averagechris",
+        "repo": "gander",
+        "type": "sourcehut"
+      }
+    },
+    "gander_7": {
+      "inputs": {
+        "flake-utils": [
+          "thorny",
+          "hm-modules",
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "thorny",
+          "hm-modules",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1783064003,
+        "narHash": "sha256-l0YblRHkuS+8h4a617JDhMgwwATaeSQPHzred3FZ0p0=",
+        "owner": "~averagechris",
+        "repo": "gander",
+        "rev": "14eb31eed4c0fd60481cc1d2eccc5c4a46f0e690",
+        "type": "sourcehut"
+      },
+      "original": {
+        "owner": "~averagechris",
+        "repo": "gander",
+        "type": "sourcehut"
+      }
+    },
+    "gander_8": {
+      "inputs": {
+        "flake-utils": [
           "trap",
           "flake-utils"
         ],
@@ -11876,11 +12032,38 @@
         ]
       },
       "locked": {
-        "lastModified": 1782954991,
-        "narHash": "sha256-MiGAdWx28gQeboBrxF1ExJ+O4yStQq1Z/CtM/330A+o=",
+        "lastModified": 1783064003,
+        "narHash": "sha256-l0YblRHkuS+8h4a617JDhMgwwATaeSQPHzred3FZ0p0=",
         "owner": "~averagechris",
         "repo": "gander",
-        "rev": "2adb95ca3d3927ef4fe2d1eeece01888532f2456",
+        "rev": "14eb31eed4c0fd60481cc1d2eccc5c4a46f0e690",
+        "type": "sourcehut"
+      },
+      "original": {
+        "owner": "~averagechris",
+        "repo": "gander",
+        "type": "sourcehut"
+      }
+    },
+    "gander_9": {
+      "inputs": {
+        "flake-utils": [
+          "trap",
+          "hm-modules",
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "trap",
+          "hm-modules",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1783064003,
+        "narHash": "sha256-l0YblRHkuS+8h4a617JDhMgwwATaeSQPHzred3FZ0p0=",
+        "owner": "~averagechris",
+        "repo": "gander",
+        "rev": "14eb31eed4c0fd60481cc1d2eccc5c4a46f0e690",
         "type": "sourcehut"
       },
       "original": {
@@ -12389,6 +12572,7 @@
       "inputs": {
         "base-lib": "base-lib_30",
         "flake-utils": "flake-utils_128",
+        "gander": "gander_9",
         "helix": "helix_18",
         "home-manager": "home-manager_73",
         "linear-cli": "linear-cli_11",
@@ -12412,6 +12596,7 @@
       "inputs": {
         "base-lib": "base-lib_6",
         "flake-utils": "flake-utils_24",
+        "gander": "gander",
         "helix": "helix_3",
         "home-manager": "home-manager_15",
         "linear-cli": "linear-cli_2",
@@ -12433,6 +12618,7 @@
       "inputs": {
         "base-lib": "base-lib_10",
         "flake-utils": "flake-utils_40",
+        "gander": "gander_3",
         "helix": "helix_5",
         "home-manager": "home-manager_25",
         "linear-cli": "linear-cli_3",
@@ -12456,6 +12642,7 @@
       "inputs": {
         "base-lib": "base-lib_12",
         "flake-utils": "flake-utils_49",
+        "gander": "gander_5",
         "helix": "helix_7",
         "home-manager": "home-manager_30",
         "linear-cli": "linear-cli_5",
@@ -12502,6 +12689,7 @@
       "inputs": {
         "base-lib": "base-lib_18",
         "flake-utils": "flake-utils_75",
+        "gander": "gander_7",
         "helix": "helix_11",
         "home-manager": "home-manager_44",
         "linear-cli": "linear-cli_7",
@@ -15402,11 +15590,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1782953642,
-        "narHash": "sha256-FNFmjKqN7IVk1dsGXswi39LlD86yaYB/NB1fLWaY7bQ=",
+        "lastModified": 1783063411,
+        "narHash": "sha256-U5i/UaA+mQczlwp1lkOIp6PhvgquJRipzehK3srF5f4=",
         "owner": "~averagechris",
         "repo": "linear-cli",
-        "rev": "965259061d3bf09f07b4f6010616d7047dedce28",
+        "rev": "0db140fecf4c73fe436d251d9e89d3713ce35364",
         "type": "sourcehut"
       },
       "original": {
@@ -15427,11 +15615,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1782953642,
-        "narHash": "sha256-FNFmjKqN7IVk1dsGXswi39LlD86yaYB/NB1fLWaY7bQ=",
+        "lastModified": 1783063411,
+        "narHash": "sha256-U5i/UaA+mQczlwp1lkOIp6PhvgquJRipzehK3srF5f4=",
         "owner": "~averagechris",
         "repo": "linear-cli",
-        "rev": "965259061d3bf09f07b4f6010616d7047dedce28",
+        "rev": "0db140fecf4c73fe436d251d9e89d3713ce35364",
         "type": "sourcehut"
       },
       "original": {
@@ -15454,11 +15642,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1782953642,
-        "narHash": "sha256-FNFmjKqN7IVk1dsGXswi39LlD86yaYB/NB1fLWaY7bQ=",
+        "lastModified": 1783063411,
+        "narHash": "sha256-U5i/UaA+mQczlwp1lkOIp6PhvgquJRipzehK3srF5f4=",
         "owner": "~averagechris",
         "repo": "linear-cli",
-        "rev": "965259061d3bf09f07b4f6010616d7047dedce28",
+        "rev": "0db140fecf4c73fe436d251d9e89d3713ce35364",
         "type": "sourcehut"
       },
       "original": {
@@ -15479,11 +15667,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1782953642,
-        "narHash": "sha256-FNFmjKqN7IVk1dsGXswi39LlD86yaYB/NB1fLWaY7bQ=",
+        "lastModified": 1783063411,
+        "narHash": "sha256-U5i/UaA+mQczlwp1lkOIp6PhvgquJRipzehK3srF5f4=",
         "owner": "~averagechris",
         "repo": "linear-cli",
-        "rev": "965259061d3bf09f07b4f6010616d7047dedce28",
+        "rev": "0db140fecf4c73fe436d251d9e89d3713ce35364",
         "type": "sourcehut"
       },
       "original": {
@@ -15506,11 +15694,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1782953642,
-        "narHash": "sha256-FNFmjKqN7IVk1dsGXswi39LlD86yaYB/NB1fLWaY7bQ=",
+        "lastModified": 1783063411,
+        "narHash": "sha256-U5i/UaA+mQczlwp1lkOIp6PhvgquJRipzehK3srF5f4=",
         "owner": "~averagechris",
         "repo": "linear-cli",
-        "rev": "965259061d3bf09f07b4f6010616d7047dedce28",
+        "rev": "0db140fecf4c73fe436d251d9e89d3713ce35364",
         "type": "sourcehut"
       },
       "original": {
@@ -15560,11 +15748,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1782953642,
-        "narHash": "sha256-FNFmjKqN7IVk1dsGXswi39LlD86yaYB/NB1fLWaY7bQ=",
+        "lastModified": 1783063411,
+        "narHash": "sha256-U5i/UaA+mQczlwp1lkOIp6PhvgquJRipzehK3srF5f4=",
         "owner": "~averagechris",
         "repo": "linear-cli",
-        "rev": "965259061d3bf09f07b4f6010616d7047dedce28",
+        "rev": "0db140fecf4c73fe436d251d9e89d3713ce35364",
         "type": "sourcehut"
       },
       "original": {
@@ -21524,6 +21712,31 @@
         "type": "github"
       }
     },
+    "slack": {
+      "inputs": {
+        "flake-utils": [
+          "suremac",
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "suremac",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1783066756,
+        "narHash": "sha256-iUCpoTaGfP8uiTKzLSs2PH4kDGVcYix/lVruMv6BJTU=",
+        "owner": "~averagechris",
+        "repo": "slack",
+        "rev": "249ba2a718a87d70e5bed0aca96cf5074856fc47",
+        "type": "sourcehut"
+      },
+      "original": {
+        "owner": "~averagechris",
+        "repo": "slack",
+        "type": "sourcehut"
+      }
+    },
     "starship-jj": {
       "inputs": {
         "fenix": "fenix_4",
@@ -21994,6 +22207,7 @@
           "agenix"
         ],
         "base-lib": "base-lib_8",
+        "ctx": "ctx",
         "darwin": [
           "suremac",
           "base-lib",
@@ -22010,7 +22224,7 @@
           "base-lib",
           "flake-utils"
         ],
-        "gander": "gander",
+        "gander": "gander_2",
         "granola-cli": "granola-cli",
         "helix": "helix_4",
         "hm-modules": "hm-modules_3",
@@ -22030,6 +22244,7 @@
           "base-lib",
           "nixpkgs"
         ],
+        "slack": "slack",
         "starship-jj": "starship-jj_5",
         "titlecase": [
           "suremac",
@@ -25582,6 +25797,7 @@
         ],
         "anyrun": "anyrun",
         "base-lib": "base-lib_11",
+        "ctx": "ctx_2",
         "deploy-rs": [
           "tater",
           "base-lib",
@@ -25593,7 +25809,7 @@
           "base-lib",
           "flake-utils"
         ],
-        "gander": "gander_2",
+        "gander": "gander_4",
         "helix": "helix_6",
         "hm-modules": "hm-modules_4",
         "home-manager": [
@@ -25697,7 +25913,7 @@
           "base-lib",
           "flake-utils"
         ],
-        "gander": "gander_3",
+        "gander": "gander_6",
         "helix": "helix_10",
         "hm-modules": "hm-modules_6",
         "home-manager": [
@@ -26720,7 +26936,7 @@
           "base-lib",
           "flake-utils"
         ],
-        "gander": "gander_4",
+        "gander": "gander_8",
         "helix": "helix_17",
         "hm-modules": "hm-modules_10",
         "home-manager": [

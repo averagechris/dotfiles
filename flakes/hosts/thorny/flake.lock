@@ -1216,11 +1216,36 @@
         ]
       },
       "locked": {
-        "lastModified": 1782954991,
-        "narHash": "sha256-MiGAdWx28gQeboBrxF1ExJ+O4yStQq1Z/CtM/330A+o=",
+        "lastModified": 1783064003,
+        "narHash": "sha256-l0YblRHkuS+8h4a617JDhMgwwATaeSQPHzred3FZ0p0=",
         "owner": "~averagechris",
         "repo": "gander",
-        "rev": "2adb95ca3d3927ef4fe2d1eeece01888532f2456",
+        "rev": "14eb31eed4c0fd60481cc1d2eccc5c4a46f0e690",
+        "type": "sourcehut"
+      },
+      "original": {
+        "owner": "~averagechris",
+        "repo": "gander",
+        "type": "sourcehut"
+      }
+    },
+    "gander_2": {
+      "inputs": {
+        "flake-utils": [
+          "hm-modules",
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "hm-modules",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1783064003,
+        "narHash": "sha256-l0YblRHkuS+8h4a617JDhMgwwATaeSQPHzred3FZ0p0=",
+        "owner": "~averagechris",
+        "repo": "gander",
+        "rev": "14eb31eed4c0fd60481cc1d2eccc5c4a46f0e690",
         "type": "sourcehut"
       },
       "original": {
@@ -1298,6 +1323,7 @@
       "inputs": {
         "base-lib": "base-lib_2",
         "flake-utils": "flake-utils_7",
+        "gander": "gander_2",
         "helix": "helix_2",
         "home-manager": "home-manager_5",
         "linear-cli": "linear-cli",
@@ -1936,11 +1962,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1782953642,
-        "narHash": "sha256-FNFmjKqN7IVk1dsGXswi39LlD86yaYB/NB1fLWaY7bQ=",
+        "lastModified": 1783063411,
+        "narHash": "sha256-U5i/UaA+mQczlwp1lkOIp6PhvgquJRipzehK3srF5f4=",
         "owner": "~averagechris",
         "repo": "linear-cli",
-        "rev": "965259061d3bf09f07b4f6010616d7047dedce28",
+        "rev": "0db140fecf4c73fe436d251d9e89d3713ce35364",
         "type": "sourcehut"
       },
       "original": {

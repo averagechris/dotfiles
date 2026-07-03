@@ -96,6 +96,19 @@ credential, agent-usage, and update notes.
 `environment.systemPackages` and exposes it to OpenCode agents as a host-specific
 tool. See [`docs/notion-cli.md`](/docs/notion-cli.md) for usage and update notes.
 
+## Personal SourceHut CLIs
+
+`suremac` installs two personal CLIs from SourceHut flake inputs in Home
+Manager `home.packages`:
+
+- `slack` (`sourcehut:~averagechris/slack`) - Slack CLI
+- `ctx` (`sourcehut:~averagechris/ctx`) - agentic context CLI for indexing and
+  searching coding-agent session history (also installed on `tater`)
+
+Both follow the host flake's `nixpkgs` and `flake-utils`. Bump them with
+`nix flake update slack ctx` in `flakes/hosts/suremac` (and `ctx` in
+`flakes/hosts/tater`), plus the matching nested nodes in the root `flake.lock`.
+
 ## Rust and Dev Cache Management
 
 `suremac` enables `dotfiles.rustDevCache` for Rust-heavy development work:

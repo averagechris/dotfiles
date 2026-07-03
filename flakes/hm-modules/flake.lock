@@ -380,11 +380,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1783056413,
-        "narHash": "sha256-9pEDzqnj3AzybnJlPJ8jZbb0hogu26Alnv2RLFP2JdY=",
+        "lastModified": 1783064003,
+        "narHash": "sha256-l0YblRHkuS+8h4a617JDhMgwwATaeSQPHzred3FZ0p0=",
         "owner": "~averagechris",
         "repo": "gander",
-        "rev": "229c6eb048de1f87747c913390010ceae41f6a59",
+        "rev": "14eb31eed4c0fd60481cc1d2eccc5c4a46f0e690",
         "type": "sourcehut"
       },
       "original": {
@@ -489,11 +489,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1782953642,
-        "narHash": "sha256-FNFmjKqN7IVk1dsGXswi39LlD86yaYB/NB1fLWaY7bQ=",
+        "lastModified": 1783063411,
+        "narHash": "sha256-U5i/UaA+mQczlwp1lkOIp6PhvgquJRipzehK3srF5f4=",
         "owner": "~averagechris",
         "repo": "linear-cli",
-        "rev": "965259061d3bf09f07b4f6010616d7047dedce28",
+        "rev": "0db140fecf4c73fe436d251d9e89d3713ce35364",
         "type": "sourcehut"
       },
       "original": {
