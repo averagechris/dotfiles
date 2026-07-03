@@ -6,6 +6,31 @@
 }: let
   cfg = config.dotfiles.rustDevCache;
 
+  # Run the sccache server supervised in the foreground with a clean launchd
+  # environment. Without this, the server is auto-started by whichever compile
+  # happens first and inherits that process's environment; a server started
+  # inside a nix shell (where DEVELOPER_DIR points at the nix Apple SDK)
+  # poisons every later C compile through /usr/bin/cc's xcselect shim with
+  # "error: tool 'clang' not found".
+  serverScript = pkgs.writeShellApplication {
+    name = "dotfiles-sccache-server";
+    runtimeInputs = [
+      pkgs.sccache
+    ];
+    text = ''
+      export SCCACHE_DIR=${lib.escapeShellArg cfg.sccache.directory}
+      export SCCACHE_CACHE_SIZE=${lib.escapeShellArg cfg.sccache.cacheSize}
+      # Never idle out: an exited server would get lazily restarted by an
+      # arbitrary client with an arbitrary environment.
+      export SCCACHE_IDLE_TIMEOUT=0
+      export SCCACHE_NO_DAEMON=1
+
+      # Take over from any rogue server started by a client.
+      sccache --stop-server >/dev/null 2>&1 || true
+      exec sccache --start-server
+    '';
+  };
+
   cleanupScript = pkgs.writeShellApplication {
     name = "dotfiles-dev-cache-cleanup";
     runtimeInputs = [
@@ -23,8 +48,7 @@
       export SCCACHE_DIR=${lib.escapeShellArg cfg.sccache.directory}
       export SCCACHE_CACHE_SIZE=${lib.escapeShellArg cfg.sccache.cacheSize}
 
-      log "starting sccache server with SCCACHE_DIR=$SCCACHE_DIR and SCCACHE_CACHE_SIZE=$SCCACHE_CACHE_SIZE"
-      sccache --start-server >/dev/null 2>&1 || true
+      log "sccache stats (server is managed by the sccache-server launchd agent)"
       sccache --show-stats || true
 
       if ! docker info >/dev/null 2>&1; then
@@ -154,6 +178,21 @@ in {
       SCCACHE_DIR = "${cfg.sccache.directory}"
       SCCACHE_CACHE_SIZE = "${cfg.sccache.cacheSize}"
     '';
+
+    launchd.agents.sccache-server = lib.mkIf pkgs.stdenv.isDarwin {
+      enable = true;
+      config = {
+        ProgramArguments = [
+          (lib.getExe serverScript)
+        ];
+        RunAtLoad = true;
+        KeepAlive = true;
+        ProcessType = "Background";
+        LowPriorityIO = true;
+        StandardOutPath = "${config.home.homeDirectory}/Library/Logs/sccache-server.log";
+        StandardErrorPath = "${config.home.homeDirectory}/Library/Logs/sccache-server.log";
+      };
+    };
 
     launchd.agents.dev-cache-cleanup = lib.mkIf (cfg.cleanup.enable && pkgs.stdenv.isDarwin) {
       enable = true;

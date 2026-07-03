@@ -115,11 +115,33 @@ Both follow the host flake's `nixpkgs` and `flake-utils`. Bump them with
 
 - installs `sccache` and configures Cargo with `rustc-wrapper = "sccache"`;
 - sets `SCCACHE_DIR=~/.cache/sccache` and a generous `SCCACHE_CACHE_SIZE=50G`;
+- runs a supervised user launchd agent named `sccache-server`;
 - installs the Docker CLI for cleanup tasks; and
 - runs a daily user launchd job named `dev-cache-cleanup`.
 
-The launchd job writes logs to `~/Library/Logs/dev-cache-cleanup.log`. It starts
-or refreshes the local `sccache` server with the configured cache limit, then
+### sccache server supervision
+
+The `sccache-server` launchd agent (logs: `~/Library/Logs/sccache-server.log`)
+runs the server in the foreground with `KeepAlive`, `SCCACHE_IDLE_TIMEOUT=0`,
+and launchd's clean environment, stopping any rogue server on startup.
+
+This exists because sccache's default behavior is to lazily start the server
+from whichever compile happens first, inheriting that process's environment
+permanently. A server started inside a nix shell (where `DEVELOPER_DIR` points
+at the nix Apple SDK) poisons every later C-compile that goes through
+`/usr/bin/cc`'s xcselect shim — cc-rs wraps the C compiler with sccache when
+`RUSTC_WRAPPER` is set — failing with:
+
+```
+sccache: caused by: Compiler not supported: "error: tool 'clang' not found"
+```
+
+If that error ever reappears, `sccache --stop-server` cures it immediately
+(launchd restarts the supervised server); check that the agent is loaded with
+`launchctl list | grep sccache`.
+
+The `dev-cache-cleanup` launchd job writes logs to
+`~/Library/Logs/dev-cache-cleanup.log`. It reports `sccache` stats, then
 uses Docker/OrbStack's Docker socket to prune old builder cache, stopped
 containers, dangling images, and unused networks older than 14 days while keeping
 Docker builder cache under about 30 GB. On `suremac`, `pruneVolumes = true` also
