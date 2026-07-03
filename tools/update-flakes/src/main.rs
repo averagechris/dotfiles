@@ -357,21 +357,34 @@ fn update_flake(
     };
 
     if config.check_only {
+        // `nix flake update` has no --dry-run; write the candidate lock to a
+        // temp file with --output-lock-file and diff it against the real one.
+        let candidate_lock = std::env::temp_dir().join(format!(
+            "update-flakes-check-{}-{}.lock",
+            std::process::id(),
+            flake_name.replace(['/', ' '], "-")
+        ));
         let mut args = vec!["flake".to_string(), "update".to_string()];
         args.extend(input_args);
         args.extend([
             "--flake".to_string(),
             flake_path.display().to_string(),
-            "--dry-run".to_string(),
+            "--output-lock-file".to_string(),
+            candidate_lock.display().to_string(),
         ]);
         let output = run_capture("nix", &args)?;
         if config.show_output {
             print_command_output(&output);
         }
-        if output.stdout.contains("would update") || output.stderr.contains("would update") {
-            log_info(&format!("  Updates available for {flake_name}"));
-        } else {
+        let changed = changed_lock_nodes(&lock_path, &candidate_lock)?;
+        let _ = fs::remove_file(&candidate_lock);
+        if changed.is_empty() {
             log_info(&format!("  {flake_name} is up to date"));
+        } else {
+            log_info(&format!(
+                "  Updates available for {flake_name}: {}",
+                changed.join(", ")
+            ));
         }
     } else {
         let mut args = vec!["flake".to_string(), "update".to_string()];
@@ -416,6 +429,58 @@ fn list_updateable_inputs(lock_path: &Path) -> Result<Vec<String>, Box<dyn std::
     }
 
     Ok(inputs)
+}
+
+/// Compare two flake.lock files and return the names of nodes whose locked
+/// source changed, using the candidate lock as the reference for node names.
+fn changed_lock_nodes(
+    current_lock: &Path,
+    candidate_lock: &Path,
+) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+    if !candidate_lock.exists() {
+        return Err(format!(
+            "nix flake update did not write candidate lock {}",
+            candidate_lock.display()
+        )
+        .into());
+    }
+    if !current_lock.exists() {
+        return Ok(vec!["<new lock file>".to_string()]);
+    }
+
+    let read_nodes =
+        |path: &Path| -> Result<serde_json::Map<String, Value>, Box<dyn std::error::Error>> {
+            let lock: Value = serde_json::from_str(&fs::read_to_string(path)?)?;
+            Ok(lock
+                .get("nodes")
+                .and_then(Value::as_object)
+                .cloned()
+                .unwrap_or_default())
+        };
+    let current_nodes = read_nodes(current_lock)?;
+    let candidate_nodes = read_nodes(candidate_lock)?;
+
+    let mut changed = Vec::new();
+    for (name, candidate_node) in &candidate_nodes {
+        if name == "root" {
+            continue;
+        }
+        let candidate_locked = candidate_node.get("locked");
+        let current_locked = current_nodes.get(name).and_then(|node| node.get("locked"));
+        if candidate_locked != current_locked {
+            // Nested duplicates are suffixed like `ctx_2`; report the base name.
+            let base = name
+                .rsplit_once('_')
+                .filter(|(_, suffix)| suffix.chars().all(|c| c.is_ascii_digit()))
+                .map_or(name.as_str(), |(base, _)| base);
+            let base = base.to_string();
+            if !changed.contains(&base) {
+                changed.push(base);
+            }
+        }
+    }
+    changed.sort();
+    Ok(changed)
 }
 
 fn input_passes_cooldown(
