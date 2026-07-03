@@ -4,7 +4,7 @@
     ./gander.nix
     ./gpg.nix
     ./granola.nix
-    ./linear-cli.nix
+    ./linear-cli
     ./meganz.nix
     ./pi.nix
     ./rust-dev-cache.nix

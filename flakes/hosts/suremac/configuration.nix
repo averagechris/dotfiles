@@ -436,6 +436,7 @@
       enable = true;
       package = inputs.linear-cli.packages.${pkgs.stdenv.hostPlatform.system}.linear;
       cacheRefresh.enable = true;
+      hygieneAutomation.enable = true;
     };
   };
 

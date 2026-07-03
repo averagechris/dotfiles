@@ -15,6 +15,10 @@ agents.
   as a store symlink (the CLI only reads this file; snoozes and check
   artifacts live in its state directory).
 - Optionally runs a periodic `linear context refresh` launchd job on Darwin.
+- Optionally runs the hygiene automation suite on Darwin
+  (`dotfiles.linearCli.hygieneAutomation`): scheduled report-cache
+  refreshes, macOS notifications, shell/prompt nudges, and an agentic
+  autofix job. See "Hygiene automation" below.
 
 The CLI resolves its user-level config directory with Rust's
 `dirs::config_dir()`: `~/Library/Application Support/linear-cli` on macOS and
@@ -58,6 +62,88 @@ linear hy rules --rules PATH             # validate, listing all errors (exit 1)
 
 Set `dotfiles.linearCli.hygiene = null` to manage `hygiene.toml` outside Home
 Manager.
+
+## Hygiene automation
+
+`dotfiles.linearCli.hygieneAutomation.enable = true` (Darwin-only; launchd +
+osascript) automates the hygiene loop around the local check artifact that
+`linear hygiene check` writes to
+`~/Library/Application Support/linear-cli/state/<profile>/hygiene-last-run.json`.
+All schedules default to weekdays only.
+
+| Job | Default schedule | What it does |
+|-----|------------------|--------------|
+| `linear-hygiene-refresh` | 10:00 and 16:00 | Refreshes the report cache with `linear hygiene check --mine --output json` |
+| `linear-hygiene-summary` | 16:05 | macOS notification when any unresolved high/medium findings exist |
+| `linear-hygiene-watch` | hourly 9:30-18:30 | Re-checks and notifies about high findings not previously seen (deduped in `~/.local/state/linear-hygiene/notified-high.json`; a finding that resolves and reappears notifies again) |
+| `linear-hygiene-autofix` | 10:20 and 16:20 | Agentically resolves low-stakes findings (see below) |
+
+Logs land in `~/Library/Logs/linear-hygiene-*.log`. All the job entry points
+are installed as commands, so any of them can be run manually
+(`linear-hygiene-refresh`, `linear-hygiene-notify summary`,
+`linear-hygiene-autofix`, ...).
+
+### Shell integration
+
+- **Starship prompt hint** (`shell.promptHint.enable`): shows a compact
+  `⚑<high> ~<medium>` segment while unresolved high/medium findings exist in
+  the local artifact. Pure local JSON read via `jq`; hidden when clean, when
+  the artifact is missing, or via severity counts of zero.
+- **New-shell greeting** (`shell.greeting.enable`): interactive zsh shells
+  print a small fun report (counts, worst high findings, per-rule medium
+  rollup, and a nudge) when findings exist. Rate-limited to once per
+  `shell.greeting.minIntervalMinutes` (default 1, which only suppresses
+  same-minute bursts like a batch of tmux panes; 0 prints on every shell);
+  disable per-shell with `LINEAR_HYGIENE_GREETING=0`. Skips stale artifacts
+  older than 7 days.
+
+Note the artifact reflects whatever the *last* check wrote: a manual org-wide
+`linear hy check -t EPD` temporarily swaps the prompt/greeting data source
+until the next scheduled `--mine` refresh.
+
+### Agentic autofix
+
+`linear-hygiene-autofix` handles only low-stakes rules where a
+wrong-but-reasonable value is cheap to correct:
+
+- `issue-missing-domain`, `issue-missing-type` (label groups)
+- `missing-estimate-in-cycle` (fibonacci estimate)
+- `missing-priority`
+
+The agent harness only *decides*; the script fetches issue context
+(`linear i get`) and allowed label-group options (`linear context options`),
+sends one batched prompt, then validates every decision against allowed
+values (fibonacci estimates, existing group labels, priority 1-4) and applies
+updates itself via `linear i update`. The agent is instructed to skip
+genuinely unclear cases; unparseable or invalid decisions are dropped. Label
+updates merge with existing labels because `linear i update -l` replaces the
+label set. Findings are retried at most 3 times (tracked in
+`~/.local/state/linear-hygiene/autofix-attempts.json`), and each run caps at
+`autofix.maxFindings` (default 8).
+
+The harness defaults to an affordable model via OpenCode and is swappable
+(for pi later) through `autofix.agentCommand`:
+
+```nix
+dotfiles.linearCli.hygieneAutomation.autofix.agentCommand = [
+  "opencode" "run" "--model" "openrouter/openai/gpt-5.5" "--variant" "low"
+  "--title" "linear-hygiene-autofix"
+];
+```
+
+### Tuning
+
+```nix
+dotfiles.linearCli.hygieneAutomation = {
+  enable = true;
+  scopeArgs = ["--mine"];               # scope for all scheduled checks
+  weekdays = [1 2 3 4 5];               # launchd Weekday values
+  refresh.times = [{hour = 10;} {hour = 16;}];
+  summaryNotification.time = {hour = 16; minute = 5;};
+  watch = {startHour = 9; endHour = 18; minute = 30;};
+  autofix.rules = ["missing-estimate-in-cycle"];  # narrow the autofix surface
+};
+```
 
 ## suremac defaults
 
