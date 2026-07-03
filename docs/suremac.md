@@ -95,3 +95,26 @@ credential, agent-usage, and update notes.
 `suremac` installs the Nix-packaged Notion CLI as `ntn` in
 `environment.systemPackages` and exposes it to OpenCode agents as a host-specific
 tool. See [`docs/notion-cli.md`](/docs/notion-cli.md) for usage and update notes.
+
+## Rust and Dev Cache Management
+
+`suremac` enables `dotfiles.rustDevCache` for Rust-heavy development work:
+
+- installs `sccache` and configures Cargo with `rustc-wrapper = "sccache"`;
+- sets `SCCACHE_DIR=~/.cache/sccache` and a generous `SCCACHE_CACHE_SIZE=50G`;
+- installs the Docker CLI for cleanup tasks; and
+- runs a daily user launchd job named `dev-cache-cleanup`.
+
+The launchd job writes logs to `~/Library/Logs/dev-cache-cleanup.log`. It starts
+or refreshes the local `sccache` server with the configured cache limit, then
+uses Docker/OrbStack's Docker socket to prune old builder cache, stopped
+containers, dangling images, and unused networks older than 14 days while keeping
+Docker builder cache under about 30 GB. On `suremac`, `pruneVolumes = true` also
+prunes unused Docker volumes; volumes attached to running containers are kept,
+but stopped development stacks may lose local database/queue state on the next
+cleanup run.
+
+Per-project Cargo `target/` directories can still grow large, especially from
+debug incremental artifacts. Deleting a stale `target/` directory is safe when a
+project is not actively building; the next build will recompile and reuse
+`sccache` where possible.

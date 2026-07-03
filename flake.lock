@@ -11801,11 +11801,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1782954991,
-        "narHash": "sha256-MiGAdWx28gQeboBrxF1ExJ+O4yStQq1Z/CtM/330A+o=",
+        "lastModified": 1783056413,
+        "narHash": "sha256-9pEDzqnj3AzybnJlPJ8jZbb0hogu26Alnv2RLFP2JdY=",
         "owner": "~averagechris",
         "repo": "gander",
-        "rev": "2adb95ca3d3927ef4fe2d1eeece01888532f2456",
+        "rev": "229c6eb048de1f87747c913390010ceae41f6a59",
         "type": "sourcehut"
       },
       "original": {

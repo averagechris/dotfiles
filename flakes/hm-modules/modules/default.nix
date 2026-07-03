@@ -7,6 +7,7 @@
     ./linear-cli.nix
     ./meganz.nix
     ./pi.nix
+    ./rust-dev-cache.nix
     ./shell.nix
     ./opencode
     ./helix

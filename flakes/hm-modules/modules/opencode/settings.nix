@@ -55,6 +55,15 @@ in {
       enabled = false;
     };
 
+    # Gander - live jj code review session (routes to the workspace's
+    # running gander TUI by cwd; snapshot fallback without one). Fails
+    # harmlessly at startup outside jj repos.
+    gander = {
+      type = "local";
+      command = ["gander" "mcp"];
+      enabled = false;
+    };
+
     github = {
       type = "remote";
       url = "https://api.githubcopilot.com/mcp/";

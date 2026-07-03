@@ -28,6 +28,10 @@
 
   defaultSettings = {
     keybindings = colemakKeybindings;
+    # Summon opencode from the TUI with `@` (or via autostart). The gander
+    # MCP server registered in opencode covers the split-pane flow; this
+    # covers the "don't leave the review" flow.
+    agent.command = "opencode run";
   };
 in {
   options.dotfiles.gander = {

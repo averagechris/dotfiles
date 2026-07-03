@@ -274,6 +274,15 @@
     dotfiles.wezterm.enable = true;
     dotfiles.macosHotkeys.enable = true;
     dotfiles.gander.enable = true;
+    dotfiles.rustDevCache = {
+      enable = true;
+      sccache.cacheSize = "50G";
+      docker = {
+        retention = "336h";
+        builderMaxUsedSpace = "30GB";
+        pruneVolumes = true;
+      };
+    };
     dotfiles.gui.terminal = {
       package = lib.mkDefault pkgs.wezterm;
       args = lib.mkDefault [];
