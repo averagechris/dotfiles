@@ -19,8 +19,8 @@ in
           "--color=spinner:#f6c177,info:#9ccfd8,separator:#44415a"
           "--color=pointer:#c4a7e7,marker:#eb6f92,prompt:#908caa"
         ];
-        fileWidgetCommand = "fd --type f --hidden";
-        changeDirWidgetCommand = "fd --type d";
+        fileWidget.command = "fd --type f --hidden";
+        changeDirWidget.command = "fd --type d";
         enableZshIntegration = true;
       };
     };
