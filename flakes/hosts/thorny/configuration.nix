@@ -107,6 +107,7 @@
     name = "dotfiles-host-build-cache";
     runtimeInputs = with pkgs; [
       coreutils
+      git
       nix
       util-linux
     ];
@@ -162,6 +163,7 @@
     name = "dotfiles-thorny-self-deploy";
     runtimeInputs = with pkgs; [
       coreutils
+      git
       jq
       nix
       systemd
