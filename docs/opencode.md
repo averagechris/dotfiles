@@ -31,17 +31,22 @@ startup failures while loading project or global files, including custom tools.
 The OpenCode module installs a small, explicit set of agent-specific tools and
 generates the system-prompt tool note from the configured list.
 
-The Build primary agent uses an open-by-default bash policy. The `coding-minion`
+The Build primary agent uses an open-by-default bash policy. The `orchestrator`
+primary agent uses the same safety posture but is tuned for ambitious projects:
+it decomposes work, tracks it with `todowrite`, delegates self-contained coding
+tracks to `coding-minion`, and tells minions to use isolated `jj ws` workspaces
+(`jj ws add <name> -q`) for parallel implementation before cleanup with
+`jj ws forget <name>` once work is integrated or abandoned. The `coding-minion`
 subagent intentionally mirrors the Build agent's prompt, tools, steps, and
 permissions, but defaults to `openrouter/openai/gpt-5.5` with `variant = "low"`
 for cheaper, faster routine coding delegation. Its description is written so
 primary orchestrator agents can recognize it as a solid lower-cost coder that is
 a bit less capable than the primary Build agent.
 
-For both Build and `coding-minion`, the catch-all rule is `"*": "allow"`, and
-narrower later rules prompt or deny known sharp edges. OpenCode evaluates the
-last matching permission rule, so keep the broad allow at the top and add
-riskier overrides below it. This reduces approval fatigue for normal
+For Build, `orchestrator`, and `coding-minion`, the catch-all rule is `"*":
+"allow"`, and narrower later rules prompt or deny known sharp edges. OpenCode
+evaluates the last matching permission rule, so keep the broad allow at the top
+and add riskier overrides below it. This reduces approval fatigue for normal
 build/test/exploration work while keeping rare high-impact decisions visible.
 
 Prompt-gated Build-agent command families include:

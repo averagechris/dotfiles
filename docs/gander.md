@@ -18,6 +18,8 @@ When enabled, the module:
 - installs `inputs.gander.packages.${system}.default` in `home.packages`
 - writes `~/.config/gander/config.toml`
 - seeds a Colemak Mod-DH-friendly keybinding layer
+- configures Gander's in-TUI OpenCode agent command as
+  `opencode run --model openrouter/openai/gpt-5.5 --variant low`
 
 The module is currently enabled for `suremac`, `tater`, `thorny`, and `trap`.
 
@@ -43,6 +45,19 @@ dotfiles.gander.settings = {
 Gander also layers project config after the XDG user config, so `gander.toml` or
 `.gander/config.toml` in a repository can override these user defaults for that
 project.
+
+## OpenCode agent command
+
+Gander can summon OpenCode from inside the TUI with `@` or via its autostart
+flow. The dotfiles default uses the lower-cost OpenRouter GPT-5.5 low variant:
+
+```toml
+[agent]
+command = "opencode run --model openrouter/openai/gpt-5.5 --variant low"
+```
+
+Override `dotfiles.gander.settings.agent.command` for a host or project-specific
+config if a review needs a different model.
 
 ## Dotfiles keybindings
 
