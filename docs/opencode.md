@@ -174,10 +174,10 @@ module combines those with the built-in default tool list.
 
 Use `dotfiles.opencode.agentTools` for tools that should only be available to
 agents on particular hosts. For example, `suremac` adds the AWS CLI, CircleCI
-CLI, CodeRabbit CLI, Databricks CLI, Kubernetes CLI, Datadog Pup CLI, Sentry CLI,
-GitHub CLI, Rodney, Showboat, Granola, and the Linear CLI. On Darwin, this
-host-specific list avoids relying on unrelated system packages for agent
-workflows:
+CLI, CodeRabbit CLI, Databricks CLI, Ctx, Kubernetes CLI, Datadog Pup CLI,
+Sentry CLI, GitHub CLI, Rodney, Showboat, Granola, and the Linear CLI. On
+Darwin, this host-specific list avoids relying on unrelated system packages for
+agent workflows:
 
 ```nix
 dotfiles.opencode.agentSupportPackages = with pkgs; [
@@ -189,6 +189,11 @@ dotfiles.opencode.agentTools = with pkgs; [
   { package = circleci-cli; name = "circleci"; description = "CircleCI CLI"; }
   { package = coderabbit-cli; name = "cr"; description = "CodeRabbit AI review CLI"; }
   { package = databricks-cli; name = "databricks-cli"; }
+  {
+    package = inputs.ctx.packages.${pkgs.stdenv.hostPlatform.system}.ctx;
+    name = "ctx";
+    description = "agent history search CLI";
+  }
   { package = kubectl; name = "kubectl"; description = "Kubernetes CLI"; }
   { package = pup; name = "pup"; description = "Datadog CLI"; }
   { package = sentry; name = "sentry"; description = "Sentry CLI"; }
@@ -216,11 +221,11 @@ example:
 > these additional tools: jj (Jujutsu VCS), nodejs (JavaScript runtime),
 > python3 (Python 3.14 runtime), rg (fast code search),
 > aws (AWS CLI), circleci (CircleCI CLI), cr (CodeRabbit AI review CLI),
-> databricks-cli, kubectl (Kubernetes CLI), pup (Datadog CLI), sentry (Sentry
-> CLI), ntn (Notion CLI), gh (GitHub CLI), rodney (Chrome automation CLI),
-> showboat (work documentation CLI), linear (Linear CLI), granola (Granola
-> meeting notes CLI). The project local dev shell may provide additional
-> tooling.
+> databricks-cli, ctx (agent history search CLI), kubectl (Kubernetes CLI), pup
+> (Datadog CLI), sentry (Sentry CLI), ntn (Notion CLI), gh (GitHub CLI), rodney
+> (Chrome automation CLI), showboat (work documentation CLI), linear (Linear
+> CLI), granola (Granola meeting notes CLI). The project local dev shell may
+> provide additional tooling.
 
 Use `agentSupportPackages` for dependencies that a visible tool needs under the
 hood but that the agent does not need to call directly.

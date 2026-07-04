@@ -258,7 +258,6 @@
       pup
       sentry
       inputs.slack.packages.${pkgs.stdenv.hostPlatform.system}.slack
-      inputs.ctx.packages.${pkgs.stdenv.hostPlatform.system}.ctx
     ];
     imports = [
       inputs.hm-modules.homeManagerModules.default
@@ -377,6 +376,11 @@
       {
         package = databricks-cli;
         name = "databricks-cli";
+      }
+      {
+        package = inputs.ctx.packages.${pkgs.stdenv.hostPlatform.system}.ctx;
+        name = "ctx";
+        description = "agent history search CLI";
       }
       {
         package = kubectl;

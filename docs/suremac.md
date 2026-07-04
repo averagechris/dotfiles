@@ -80,7 +80,8 @@ Pi is installed through the minimal `programs.pi.enable = true` module; see
 [`docs/pi.md`](/docs/pi.md) for the package pinning and manual update policy.
 
 OpenCode agents on `suremac` also get host-specific CLI tools, including
-`awscli2` as `aws` and the Nix-packaged CodeRabbit CLI as `coderabbit` / `cr`. See
+`awscli2` as `aws`, `ctx` for local agent-history search, and the Nix-packaged
+CodeRabbit CLI as `coderabbit` / `cr`. See
 [`docs/coderabbit-cli.md`](/docs/coderabbit-cli.md) for the local review
 workflow and the Nix update policy.
 
@@ -98,12 +99,13 @@ tool. See [`docs/notion-cli.md`](/docs/notion-cli.md) for usage and update notes
 
 ## Personal SourceHut CLIs
 
-`suremac` installs two personal CLIs from SourceHut flake inputs in Home
-Manager `home.packages`:
+`suremac` installs two personal CLIs from SourceHut flake inputs:
 
-- `slack` (`sourcehut:~averagechris/slack`) - Slack CLI
+- `slack` (`sourcehut:~averagechris/slack`) - Slack CLI, installed in Home
+  Manager `home.packages`
 - `ctx` (`sourcehut:~averagechris/ctx`) - agentic context CLI for indexing and
-  searching coding-agent session history (also installed on `tater`)
+  searching coding-agent session history, exposed to OpenCode agents via
+  `dotfiles.opencode.agentTools` (also installed on `tater`)
 
 Both follow the host flake's `nixpkgs` and `flake-utils`. Bump them with
 `nix flake update slack ctx` in `flakes/hosts/suremac` (and `ctx` in
