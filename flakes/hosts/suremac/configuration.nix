@@ -5,7 +5,9 @@
   lib,
   overlays,
   ...
-}: {
+}: let
+  ctxPackage = inputs.ctx.packages.${pkgs.stdenv.hostPlatform.system}.ctx;
+in {
   age.identityPaths = ["/Users/chris/.ssh/id_ed25519" "/Users/chris/.ssh/id_rsa"];
 
   age.secrets = {
@@ -348,6 +350,11 @@
       enable = true;
       openrouterApiKeyFile = config.age.secrets.openrouter-api-key.path;
     };
+    dotfiles.ctx = {
+      enable = true;
+      package = ctxPackage;
+      index.enable = true;
+    };
     dotfiles.granola = {
       enable = true;
       tokenFile = config.age.secrets.granola-token.path;
@@ -378,7 +385,7 @@
         name = "databricks-cli";
       }
       {
-        package = inputs.ctx.packages.${pkgs.stdenv.hostPlatform.system}.ctx;
+        package = ctxPackage;
         name = "ctx";
         description = "agent history search CLI";
       }

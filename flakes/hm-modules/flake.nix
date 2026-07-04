@@ -50,6 +50,7 @@
         helix = ./modules/helix/default.nix;
         opencode = ./modules/opencode/default.nix;
         pi = ./modules/pi.nix;
+        ctx = ./modules/ctx.nix;
         gander = ./modules/gander.nix;
         granola = ./modules/granola.nix;
         linearCli = ./modules/linear-cli;

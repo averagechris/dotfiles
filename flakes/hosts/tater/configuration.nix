@@ -815,12 +815,15 @@ in {
     dotfiles.shell.yazi.enable = true;
     programs.opencode.enable = true;
     dotfiles.opencode.openrouterApiKeyFile = "/run/agenix/openrouter-api-key";
+    dotfiles.ctx = {
+      enable = true;
+      package = inputs.ctx.packages.${pkgs.stdenv.hostPlatform.system}.ctx;
+      index.enable = true;
+    };
     programs.meganz.enable = true;
     programs.helium.enable = true;
     programs.helium.extension-simple-pip-helper.enable = true;
     home.packages = [
-      # agentic context CLI for indexing/searching coding-agent session history
-      inputs.ctx.packages.${pkgs.stdenv.hostPlatform.system}.ctx
       # Bluetooth and network management
       pkgs.overskride
       taterNetworkRecover

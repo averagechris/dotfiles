@@ -13,6 +13,7 @@
     ./helix
     ./helix-terminal-tools
     ./cosmic-workstation.nix
+    ./ctx.nix
     ./hyprland-workstation.nix
     ./openclaw-fix.nix
   ];
