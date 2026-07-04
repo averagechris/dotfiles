@@ -31,27 +31,44 @@ startup failures while loading project or global files, including custom tools.
 The OpenCode module installs a small, explicit set of agent-specific tools and
 generates the system-prompt tool note from the configured list.
 
-The Build primary agent also has a bash permission allowlist for common
-development commands. Build runners such as `just` and `make` are allowed so
-agents can execute repository-provided workflows without prompting for each
-invocation. Host-exposed browser automation uses the same model: `rodney` and
-`rodney *` are allowed for the Build agent so agents on `suremac` can drive the
-installed Chrome automation CLI without repeated prompts, without also allowing
-similarly named commands such as `rodney_malicious`.
+The Build primary agent uses an open-by-default bash policy. The catch-all rule
+is `"*": "allow"`, and narrower later rules prompt or deny known sharp edges.
+OpenCode evaluates the last matching permission rule, so keep the broad allow at
+the top and add riskier overrides below it. This reduces approval fatigue for
+normal build/test/exploration work while keeping rare high-impact decisions
+visible.
 
-Host-specific investigation CLIs follow the same prompt-reduction model when the
-command family is read-oriented. The Build agent allows `pup`/`pup *` and
-`sentry`/`sentry *` so Datadog and Sentry investigations can use the dedicated
-skills without repeated approval prompts. Kubernetes is narrower: only common
-read-only investigation subcommands are allowed (`api-resources`,
-`api-versions`, `auth can-i`, `cluster-info`, `config current-context`,
-`config get-contexts`, `describe`, `events`, `explain`, `get`, `logs`, `top`,
-and `version`). Secret reads/describes remain prompt-gated, and mutating or
-session-like commands such as `apply`, `delete`, `edit`, `exec`, `patch`,
-`port-forward`, and `rollout restart` fall through to the default prompt. Prefer
-subcommand-first kubectl invocations such as `kubectl get pods -n namespace` so
-the safe allow rules match without also permitting broad flag-prefixed command
-patterns.
+Prompt-gated Build-agent command families include:
+
+- reads of encrypted secret material via common text/search commands, plus
+  `.env*`, `agenix`, and `sops`; creating or updating encrypted secret files is
+  still allowed so agents can run normal secret-editing workflows
+- remote copy/login, deployment, and system switches (`ssh`, `scp`, `rsync`,
+  `nix run .#deploy*`,
+  `nixos-rebuild switch`, `darwin-rebuild switch`, `nh * switch`)
+- privilege escalation (`sudo`, `doas`, `su`) is denied because it is not useful
+  non-interactively and would require a human password anyway
+- broad or sensitive deletion targets (`rm -rf /`, home-directory deletes, and
+  secret-path deletes); ordinary temp-file cleanup with `rm` is allowed
+- destructive ownership/permission/disk commands (`chmod`, `chown`, `chgrp`,
+  `dd`, `diskutil`; `mkfs*` is denied)
+- process/service control (`kill`, `killall`, `pkill`, `systemctl`,
+  `launchctl`); Docker Compose teardown/prune commands remain allowed
+- VCS history or publication operations (`git`, selected mutating `jj`
+  subcommands, `jj push`, `jj ship`, `jj tag-push`)
+- GitHub org/repo/auth/issue administration (`gh auth*`, `gh org*`,
+  `gh repo*`, `gh issue*`)
+
+Host-exposed browser automation follows the open default: `rodney` commands are
+allowed for the Build agent on `suremac` unless they hit a later risky pattern.
+
+Host-specific investigation CLIs follow the same prompt-reduction model. The
+Build agent allows `pup`, `sentry`, and read-oriented `kubectl` investigation by
+default. Kubernetes secret reads/describes and mutating/session-like subcommands
+such as `apply`, `delete`, `edit`, `exec`, `patch`, `port-forward`, and
+`rollout` are prompt-gated by explicit overrides. Prefer subcommand-first
+kubectl invocations such as `kubectl get pods -n namespace` so the narrow
+override rules can still catch risky subcommands.
 
 When adding command allow rules, prefer an exact command plus a command-space
 wildcard, for example `tool` and `tool *`. Avoid bare prefix allow patterns such
