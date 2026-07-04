@@ -1,4 +1,5 @@
 {
+  config,
   inputs,
   lib,
   pkgs,
@@ -264,6 +265,36 @@
       exit 1
     '';
   };
+  histerBackup = pkgs.writeShellApplication {
+    name = "hister-backup";
+    runtimeInputs = with pkgs; [
+      coreutils
+      findutils
+      gnutar
+      systemd
+      zstd
+    ];
+    text = ''
+      set -euo pipefail
+
+      backup_dir="/var/backups/hister"
+      keep=14
+
+      systemctl stop hister.service
+      trap 'systemctl start hister.service' EXIT
+
+      tar --zstd -cf "$backup_dir/hister-$(date +%Y%m%d).tar.zst" -C /var/lib hister
+
+      # Prune to the newest $keep archives. Date-stamped names sort
+      # lexicographically in chronological order.
+      mapfile -t archives < <(find "$backup_dir" -maxdepth 1 -name 'hister-*.tar.zst' | sort -r)
+      if [ "''${#archives[@]}" -gt "$keep" ]; then
+        for old in "''${archives[@]:$keep}"; do
+          rm -f "$old"
+        done
+      fi
+    '';
+  };
 in {
   imports = [
     inputs.nixos-modules.nixosModules.common
@@ -276,6 +307,7 @@ in {
     inputs.nixos-modules.nixosModules.isRemoteBuilder
     inputs.nixos-modules.nixosModules.users.chris
     inputs.nixos-modules.nixosModules.hyprlandDesktop
+    inputs.hister.nixosModules.hister
     ./hardware.nix
     inputs.agenix.nixosModules.default
     inputs.nixos-hardware.nixosModules.system76
@@ -330,6 +362,70 @@ in {
 
   services.fwupd.enable = true;
 
+  # Hister — self-hosted personal web search engine. Served publicly at
+  # https://hister.thesogu.com via Caddy on trainwreck, which reverse-proxies
+  # to thorny over the tailnet. Port 4433 is intentionally NOT opened in the
+  # firewall: the shared tailscale module trusts tailscale0, so trainwreck can
+  # reach it while the LAN stays blocked.
+  #
+  # The encrypted env file may not exist yet (create it with
+  # `agenix -e secrets/thorny/hister-env.age`; it is registered in
+  # secrets/secrets.nix). Guard on existence so the config evaluates before
+  # the secret is created; once the file is committed, the secret and
+  # environmentFile wire up automatically.
+  age.secrets = lib.mkIf (builtins.pathExists ../../../secrets/thorny/hister-env.age) {
+    hister-env = {
+      file = ../../../secrets/thorny/hister-env.age;
+      # Read by systemd as root via EnvironmentFile.
+      mode = "0400";
+    };
+  };
+
+  services.hister = {
+    enable = true;
+    # Contains HISTER__SERVER__OAUTH__GITHUB__CLIENT_SECRET=...
+    environmentFile =
+      lib.mkIf (builtins.pathExists ../../../secrets/thorny/hister-env.age)
+      config.age.secrets.hister-env.path;
+    settings = {
+      app.user_handling = true;
+      server = {
+        address = "0.0.0.0:4433";
+        base_url = "https://hister.thesogu.com";
+        oauth_only = true;
+        oauth.github = {
+          # The client_id is not secret; fill in after creating the GitHub
+          # OAuth app (callback:
+          # https://hister.thesogu.com/api/oauth/callback?provider=github).
+          # The client_secret comes from the environmentFile above.
+          client_id = "REPLACE-WITH-GITHUB-OAUTH-CLIENT-ID";
+          allowed_users = ["averagechris"]; # extend with friends' GitHub logins
+        };
+      };
+    };
+  };
+
+  # Nightly hister backup: stop the service, archive its state directory
+  # (/var/lib/hister via StateDirectory), restart, and prune old archives.
+  systemd.services.hister-backup = {
+    description = "Back up hister state to /var/backups/hister";
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = lib.getExe histerBackup;
+    };
+  };
+
+  systemd.timers.hister-backup = {
+    description = "Nightly hister state backup";
+    wantedBy = ["timers.target"];
+    timerConfig = {
+      OnCalendar = "daily";
+      Persistent = true;
+      RandomizedDelaySec = "15m";
+      Unit = "hister-backup.service";
+    };
+  };
+
   systemd.services.averagechris-site-refresh = {
     description = "Submit the averagechris.srht.site refresh-pages SourceHut build";
     after = ["network-online.target"];
@@ -361,6 +457,7 @@ in {
     "d /var/lib/dotfiles-host-build-cache/results 0755 chris users - -"
     "d /var/lib/dotfiles-host-build-cache/logs 0755 chris users - -"
     "d /var/lib/dotfiles-thorny-self-deploy 0755 root root - -"
+    "d /var/backups/hister 0700 root root - -"
   ];
 
   systemd.services.dotfiles-host-build-cache = {

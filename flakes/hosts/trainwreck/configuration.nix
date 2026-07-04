@@ -210,6 +210,19 @@ in {
   # Passwordless sudo for deploy-rs
   dotfiles.sudoNoPassword.enable = true;
 
+  # Public front door for hister (the service and its data live on thorny).
+  # Caddy terminates TLS here and reverse-proxies over the tailnet.
+  # "thorny" resolves via Tailscale MagicDNS (nameserver 100.100.100.100 is
+  # configured by the shared tailscale module); the tailnet's full MagicDNS
+  # domain is not recorded in this repo, so the bare name is used.
+  services.caddy = {
+    enable = true;
+    virtualHosts."hister.thesogu.com".extraConfig = ''
+      reverse_proxy thorny:4433
+    '';
+  };
+  networking.firewall.allowedTCPPorts = [80 443];
+
   # Agenix secrets
   age.secrets = {
     telegram-bot-token = {

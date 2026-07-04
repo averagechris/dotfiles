@@ -28,6 +28,10 @@ in {
   "granola-token.age".publicKeys = [suremac-key];
   "opencode-sure-stack-context.age".publicKeys = [suremac-key];
 
+  # Thorny secrets (hister)
+  # Contains HISTER__SERVER__OAUTH__GITHUB__CLIENT_SECRET for the GitHub OAuth app.
+  "thorny/hister-env.age".publicKeys = systems-keys ++ [suremac-key];
+
   # Trainwreck secrets (clawdbot)
   "trainwreck/telegram-bot-token.age".publicKeys = trainwreck-keys ++ systems-keys;
   "trainwreck/telegram-bot-token-staging.age".publicKeys = trainwreck-keys ++ systems-keys;

@@ -47,6 +47,10 @@
       url = "git+https://git.sr.ht/~averagechris/pip-chrome-extension";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    hister = {
+      url = "git+https://git.sr.ht/~averagechris/hister";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = inputs @ {

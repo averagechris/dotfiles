@@ -2530,7 +2530,7 @@
     },
     "cl-nix-lite_18": {
       "inputs": {
-        "flake-parts": "flake-parts_20",
+        "flake-parts": "flake-parts_21",
         "nixpkgs": "nixpkgs_90",
         "systems": "systems_132",
         "treefmt-nix": "treefmt-nix_35"
@@ -2551,7 +2551,7 @@
     },
     "cl-nix-lite_19": {
       "inputs": {
-        "flake-parts": "flake-parts_21",
+        "flake-parts": "flake-parts_22",
         "nixpkgs": "nixpkgs_96",
         "systems": "systems_142",
         "treefmt-nix": "treefmt-nix_37"
@@ -2593,7 +2593,7 @@
     },
     "cl-nix-lite_20": {
       "inputs": {
-        "flake-parts": "flake-parts_22",
+        "flake-parts": "flake-parts_23",
         "nixpkgs": "nixpkgs_101",
         "systems": "systems_150",
         "treefmt-nix": "treefmt-nix_39"
@@ -2614,7 +2614,7 @@
     },
     "cl-nix-lite_21": {
       "inputs": {
-        "flake-parts": "flake-parts_23",
+        "flake-parts": "flake-parts_24",
         "nixpkgs": "nixpkgs_106",
         "systems": "systems_156",
         "treefmt-nix": "treefmt-nix_41"
@@ -2635,7 +2635,7 @@
     },
     "cl-nix-lite_22": {
       "inputs": {
-        "flake-parts": "flake-parts_24",
+        "flake-parts": "flake-parts_25",
         "nixpkgs": "nixpkgs_112",
         "systems": "systems_164",
         "treefmt-nix": "treefmt-nix_43"
@@ -2656,7 +2656,7 @@
     },
     "cl-nix-lite_23": {
       "inputs": {
-        "flake-parts": "flake-parts_25",
+        "flake-parts": "flake-parts_26",
         "nixpkgs": "nixpkgs_117",
         "systems": "systems_172",
         "treefmt-nix": "treefmt-nix_45"
@@ -2677,7 +2677,7 @@
     },
     "cl-nix-lite_24": {
       "inputs": {
-        "flake-parts": "flake-parts_26",
+        "flake-parts": "flake-parts_27",
         "nixpkgs": "nixpkgs_122",
         "systems": "systems_178",
         "treefmt-nix": "treefmt-nix_47"
@@ -2698,7 +2698,7 @@
     },
     "cl-nix-lite_25": {
       "inputs": {
-        "flake-parts": "flake-parts_27",
+        "flake-parts": "flake-parts_28",
         "nixpkgs": "nixpkgs_128",
         "systems": "systems_186",
         "treefmt-nix": "treefmt-nix_49"
@@ -2719,7 +2719,7 @@
     },
     "cl-nix-lite_26": {
       "inputs": {
-        "flake-parts": "flake-parts_28",
+        "flake-parts": "flake-parts_29",
         "nixpkgs": "nixpkgs_133",
         "systems": "systems_194",
         "treefmt-nix": "treefmt-nix_51"
@@ -2740,7 +2740,7 @@
     },
     "cl-nix-lite_27": {
       "inputs": {
-        "flake-parts": "flake-parts_29",
+        "flake-parts": "flake-parts_30",
         "nixpkgs": "nixpkgs_138",
         "systems": "systems_200",
         "treefmt-nix": "treefmt-nix_53"
@@ -2761,7 +2761,7 @@
     },
     "cl-nix-lite_28": {
       "inputs": {
-        "flake-parts": "flake-parts_30",
+        "flake-parts": "flake-parts_31",
         "nixpkgs": "nixpkgs_144",
         "systems": "systems_209",
         "treefmt-nix": "treefmt-nix_55"
@@ -2782,7 +2782,7 @@
     },
     "cl-nix-lite_29": {
       "inputs": {
-        "flake-parts": "flake-parts_31",
+        "flake-parts": "flake-parts_32",
         "nixpkgs": "nixpkgs_150",
         "systems": "systems_217",
         "treefmt-nix": "treefmt-nix_57"
@@ -2824,7 +2824,7 @@
     },
     "cl-nix-lite_30": {
       "inputs": {
-        "flake-parts": "flake-parts_32",
+        "flake-parts": "flake-parts_33",
         "nixpkgs": "nixpkgs_155",
         "systems": "systems_223",
         "treefmt-nix": "treefmt-nix_59"
@@ -2845,7 +2845,7 @@
     },
     "cl-nix-lite_31": {
       "inputs": {
-        "flake-parts": "flake-parts_33",
+        "flake-parts": "flake-parts_34",
         "nixpkgs": "nixpkgs_161",
         "systems": "systems_231",
         "treefmt-nix": "treefmt-nix_61"
@@ -8825,14 +8825,18 @@
     },
     "flake-parts_20": {
       "inputs": {
-        "nixpkgs-lib": "nixpkgs-lib_18"
+        "nixpkgs-lib": [
+          "thorny",
+          "hister",
+          "nixpkgs"
+        ]
       },
       "locked": {
-        "lastModified": 1765835352,
-        "narHash": "sha256-XswHlK/Qtjasvhd1nOa1e8MgZ8GS//jBoTqWtrS1Giw=",
+        "lastModified": 1778716662,
+        "narHash": "sha256-m1Yf0wZ8j1OHjTc2UwHwyQRSnNeSgLJOd7q5Y45hzi4=",
         "owner": "hercules-ci",
         "repo": "flake-parts",
-        "rev": "a34fae9c08a15ad73f295041fec82323541400a9",
+        "rev": "f7c1a2d347e4c52d5fb8d10cb4d94b5884e546fb",
         "type": "github"
       },
       "original": {
@@ -8843,7 +8847,7 @@
     },
     "flake-parts_21": {
       "inputs": {
-        "nixpkgs-lib": "nixpkgs-lib_19"
+        "nixpkgs-lib": "nixpkgs-lib_18"
       },
       "locked": {
         "lastModified": 1765835352,
@@ -8861,7 +8865,7 @@
     },
     "flake-parts_22": {
       "inputs": {
-        "nixpkgs-lib": "nixpkgs-lib_20"
+        "nixpkgs-lib": "nixpkgs-lib_19"
       },
       "locked": {
         "lastModified": 1765835352,
@@ -8879,7 +8883,7 @@
     },
     "flake-parts_23": {
       "inputs": {
-        "nixpkgs-lib": "nixpkgs-lib_21"
+        "nixpkgs-lib": "nixpkgs-lib_20"
       },
       "locked": {
         "lastModified": 1765835352,
@@ -8897,7 +8901,7 @@
     },
     "flake-parts_24": {
       "inputs": {
-        "nixpkgs-lib": "nixpkgs-lib_22"
+        "nixpkgs-lib": "nixpkgs-lib_21"
       },
       "locked": {
         "lastModified": 1765835352,
@@ -8915,7 +8919,7 @@
     },
     "flake-parts_25": {
       "inputs": {
-        "nixpkgs-lib": "nixpkgs-lib_23"
+        "nixpkgs-lib": "nixpkgs-lib_22"
       },
       "locked": {
         "lastModified": 1765835352,
@@ -8933,7 +8937,7 @@
     },
     "flake-parts_26": {
       "inputs": {
-        "nixpkgs-lib": "nixpkgs-lib_24"
+        "nixpkgs-lib": "nixpkgs-lib_23"
       },
       "locked": {
         "lastModified": 1765835352,
@@ -8951,7 +8955,7 @@
     },
     "flake-parts_27": {
       "inputs": {
-        "nixpkgs-lib": "nixpkgs-lib_25"
+        "nixpkgs-lib": "nixpkgs-lib_24"
       },
       "locked": {
         "lastModified": 1765835352,
@@ -8969,7 +8973,7 @@
     },
     "flake-parts_28": {
       "inputs": {
-        "nixpkgs-lib": "nixpkgs-lib_26"
+        "nixpkgs-lib": "nixpkgs-lib_25"
       },
       "locked": {
         "lastModified": 1765835352,
@@ -8987,7 +8991,7 @@
     },
     "flake-parts_29": {
       "inputs": {
-        "nixpkgs-lib": "nixpkgs-lib_27"
+        "nixpkgs-lib": "nixpkgs-lib_26"
       },
       "locked": {
         "lastModified": 1765835352,
@@ -9023,7 +9027,7 @@
     },
     "flake-parts_30": {
       "inputs": {
-        "nixpkgs-lib": "nixpkgs-lib_28"
+        "nixpkgs-lib": "nixpkgs-lib_27"
       },
       "locked": {
         "lastModified": 1765835352,
@@ -9041,7 +9045,7 @@
     },
     "flake-parts_31": {
       "inputs": {
-        "nixpkgs-lib": "nixpkgs-lib_29"
+        "nixpkgs-lib": "nixpkgs-lib_28"
       },
       "locked": {
         "lastModified": 1765835352,
@@ -9059,7 +9063,7 @@
     },
     "flake-parts_32": {
       "inputs": {
-        "nixpkgs-lib": "nixpkgs-lib_30"
+        "nixpkgs-lib": "nixpkgs-lib_29"
       },
       "locked": {
         "lastModified": 1765835352,
@@ -9076,6 +9080,24 @@
       }
     },
     "flake-parts_33": {
+      "inputs": {
+        "nixpkgs-lib": "nixpkgs-lib_30"
+      },
+      "locked": {
+        "lastModified": 1765835352,
+        "narHash": "sha256-XswHlK/Qtjasvhd1nOa1e8MgZ8GS//jBoTqWtrS1Giw=",
+        "owner": "hercules-ci",
+        "repo": "flake-parts",
+        "rev": "a34fae9c08a15ad73f295041fec82323541400a9",
+        "type": "github"
+      },
+      "original": {
+        "owner": "hercules-ci",
+        "repo": "flake-parts",
+        "type": "github"
+      }
+    },
+    "flake-parts_34": {
       "inputs": {
         "nixpkgs-lib": "nixpkgs-lib_31"
       },
@@ -12678,6 +12700,28 @@
         "owner": "helix-editor",
         "repo": "helix",
         "type": "github"
+      }
+    },
+    "hister": {
+      "inputs": {
+        "flake-parts": "flake-parts_20",
+        "nixpkgs": [
+          "thorny",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1783191950,
+        "narHash": "sha256-OBqLs1PwfIm5ArCDLvACMohj+0nqXYMpkfc6VW6xq2o=",
+        "ref": "refs/heads/main",
+        "rev": "ec4f0efb7800dc69f2a85d60c54748c23343d365",
+        "revCount": 1569,
+        "type": "git",
+        "url": "https://git.sr.ht/~averagechris/hister"
+      },
+      "original": {
+        "type": "git",
+        "url": "https://git.sr.ht/~averagechris/hister"
       }
     },
     "hm-modules": {
@@ -26055,6 +26099,7 @@
         ],
         "gander": "gander_8",
         "helix": "helix_10",
+        "hister": "hister",
         "hm-modules": "hm-modules_6",
         "home-manager": [
           "thorny",
