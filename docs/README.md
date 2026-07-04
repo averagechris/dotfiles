@@ -28,7 +28,7 @@
 - [suremac](/docs/suremac.md) - macOS host settings, automatic time zone behavior, Spaces desktop shortcuts, Rust `sccache`, and dev cache cleanup
 - [tater desktop testing](/docs/tater-desktop-testing.md) - Static and runtime checks for tater's Hyprland, greetd, Eww, display, and Wi-Fi setup
 - [tater power and thermal tuning](/docs/tater-power-thermal.md) - ThinkPad T14s power, thermal, and fan-management tuning notes
-- [thorny / thelio-nixos](/docs/thorny.md) - System76 Thelio remote builder and Hyprland workstation notes
+- [thorny / thelio-nixos](/docs/thorny.md) - System76 Thelio remote builder, Hyprland workstation, homepage refresh scheduler, dotfiles build-cache, and self-deploy notes
 - [tom](/docs/tom.md) - Home Assistant and Calibre-Web host deployment notes
 - [yazi](/docs/yazi.md) - Yazi Home Manager module, Colemak keybindings, wrapper name, and filetype theme rule schema
 

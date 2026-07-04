@@ -11,6 +11,11 @@ used locally.
 - Local desktop workstation with the shared Hyprland setup used by `tater`.
 - Desktop/gaming-capable machine; it keeps Steam, GameMode, 32-bit graphics,
   controller support, Podman, and libvirt enabled.
+- Hourly scheduler for the homepage metadata refresh build on builds.sr.ht.
+- Build-cache maintainer for active NixOS host system closures from dotfiles
+  `main`, so client host switches can reuse work already realized by `thorny`.
+- Pull-based self-deployer for `thorny` itself, with post-activation health
+  checks and automatic rollback to the previous running system on failure.
 
 ## Remote builder configuration
 
@@ -32,6 +37,98 @@ available CPU cores. The free-space thresholds keep the existing shared 14-day
 GC policy while letting Nix automatically free store paths if builder activity
 pushes the disk toward low space. Client machines still need their own
 `nix.buildMachines` entry pointing at `thorny`/`thelio-nixos`.
+
+## Homepage refresh scheduler
+
+`thorny` runs `averagechris-site-refresh.timer` hourly with a small randomized
+delay. The timer submits an unlisted builds.sr.ht job tagged
+`averagechris.srht.site/cron/refresh-pages`; the submitted manifest runs
+`nix run .#refresh-pages` in `~averagechris/averagechris.srht.site`, which only
+publishes when the generated homepage/tools metadata differs from the live site.
+
+The systemd service runs as `chris` and uses hut's normal user configuration from
+`/home/chris/.config/hut`. If the timer starts failing with authentication
+errors, initialize hut for `chris` on `thorny` or manage the hut config/token with
+agenix before re-enabling the timer.
+
+Useful checks on `thorny`:
+
+```bash
+systemctl status averagechris-site-refresh.timer
+systemctl status averagechris-site-refresh.service
+journalctl -u averagechris-site-refresh.service
+```
+
+## Dotfiles host build cache
+
+`thorny` runs `dotfiles-host-build-cache.timer` every six hours, with a 30-minute
+randomized delay and persistent catch-up after downtime. The service builds the
+current `main` branch of `~averagechris/dotfiles` for the active NixOS hosts:
+
+- `trap`
+- `thorny`
+- `tom`
+- `cruber`
+- `tater`
+- `trainwreck`
+
+Each build uses a result link under `/var/lib/dotfiles-host-build-cache/results`,
+which keeps the realized system closures available on `thorny` for later remote
+builder clients and local switches. Per-host logs are written to
+`/var/lib/dotfiles-host-build-cache/logs/<host>.log`. `suremac` is intentionally
+excluded because Darwin systems are not built on Linux; inactive hosts such as
+`taz` and `tootsie` are not part of the warm cache.
+
+Useful checks on `thorny`:
+
+```bash
+systemctl status dotfiles-host-build-cache.timer
+systemctl status dotfiles-host-build-cache.service
+journalctl -u dotfiles-host-build-cache.service
+ls -l /var/lib/dotfiles-host-build-cache/results
+```
+
+The old per-host SourceHut build manifests were removed because they duplicated
+work that is more useful when performed on `thorny` itself.
+
+## Thorny self-deploy
+
+`thorny` runs `dotfiles-thorny-self-deploy.timer` every two hours, with a
+15-minute randomized delay and persistent catch-up after downtime. The service
+checks latest `main` from `~averagechris/dotfiles`; if that revision has not
+already been successfully deployed, it builds:
+
+```text
+git+https://git.sr.ht/~averagechris/dotfiles?ref=main#nixosConfigurations.thorny.config.system.build.toplevel
+```
+
+The service records the previous `/run/current-system`, activates the new system
+with `switch-to-configuration switch`, then verifies that these required units are
+active:
+
+- `sshd.service`
+- `tailscaled.service`
+- `nix-daemon.service`
+- `NetworkManager.service`
+
+It also requires `systemctl is-system-running --quiet` to pass. If activation or
+the health check fails, it immediately switches back to the previous system. State
+is kept under `/var/lib/dotfiles-thorny-self-deploy/` so repeated timer runs skip
+the already-deployed revision and only ever attempt the latest `main`; there is no
+per-commit deployment backlog.
+
+Useful checks from another machine, especially `tater`:
+
+```bash
+thorny-status-remote
+ssh thorny systemctl status dotfiles-thorny-self-deploy.timer
+ssh thorny systemctl status dotfiles-thorny-self-deploy.service
+ssh thorny journalctl -u dotfiles-thorny-self-deploy.service
+```
+
+Notifications are intentionally not wired in yet. If something feels off, use
+`thorny-status-remote` first; it reports host health, active build-looking
+processes, thermals, System76 power status, and Tailscale status.
 
 `thorny` also enables `boot.binfmt.emulatedSystems = ["aarch64-linux"]` so it can
 build `trainwreck`'s aarch64-linux system closure under QEMU/binfmt. This is
