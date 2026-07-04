@@ -380,11 +380,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1783121358,
-        "narHash": "sha256-T9gQ+jKoPDJeSyquNy58VW+YVA2ZFZI1v0KbYhhP8rg=",
+        "lastModified": 1783148800,
+        "narHash": "sha256-uJF3Iun7uTlleRu4lxFliDhP2j5O3f1w/RSpux6bizI=",
         "owner": "~averagechris",
         "repo": "gander",
-        "rev": "0310a70b0ba927da313da74b450d2f63fcbc3275",
+        "rev": "b3c5359c391bc6b65b531a0aa714c9ad16930083",
         "type": "sourcehut"
       },
       "original": {
