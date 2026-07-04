@@ -27,6 +27,7 @@
 - [sentry-cli](/docs/sentry-cli.md) - New `sentry` CLI package, suremac OpenCode integration, module decision, and update notes
 - [sure-stack-context](/docs/sure-stack-context.md) - suremac private OpenCode stack-context skill for Datadog, Sentry, and Kubernetes investigations
 - [suremac](/docs/suremac.md) - macOS host settings, automatic time zone behavior, Spaces desktop shortcuts, Rust `sccache`, and dev cache cleanup
+- [dev-cache](/docs/dev-cache.md) - `dotfiles.devCache` module: sccache, periodic nix GC, cargo-sweep, Docker pruning, and the darwin root GC reminder
 - [tater desktop testing](/docs/tater-desktop-testing.md) - Static and runtime checks for tater's Hyprland, greetd, Eww, display, and Wi-Fi setup
 - [tater power and thermal tuning](/docs/tater-power-thermal.md) - ThinkPad T14s power, thermal, and fan-management tuning notes
 - [thorny / thelio-nixos](/docs/thorny.md) - System76 Thelio remote builder, Hyprland workstation, homepage refresh scheduler, dotfiles build-cache, and self-deploy notes

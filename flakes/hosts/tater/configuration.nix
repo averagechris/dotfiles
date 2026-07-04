@@ -659,6 +659,10 @@ in {
     dotfiles.hyprland-workstation.enable = true;
     dotfiles.hyprland-workstation.terminal = "ghostty";
     dotfiles.gander.enable = true;
+    # sccache + daily cleanup (nix user GC, cargo sweep). The docker phase
+    # stays enabled and prunes via podman's docker-compatible socket when
+    # available, skipping gracefully otherwise.
+    dotfiles.devCache.enable = true;
 
     programs.hyprlock.settings.auth.fingerprint.enabled = true;
 

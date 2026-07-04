@@ -563,6 +563,12 @@ in {
     dotfiles.hyprland-workstation.enable = true;
     dotfiles.hyprland-workstation.terminal = "ghostty";
     dotfiles.gander.enable = true;
+    # sccache + daily cleanup (nix user GC, cargo sweep); docker pruning is
+    # not useful here (podman host, little container churn).
+    dotfiles.devCache = {
+      enable = true;
+      docker.enable = false;
+    };
     dotfiles.gui.swayidle.enable = false;
     dotfiles.gui.hyprland.waybar.enable = false;
     wayland.windowManager.hyprland.package = hyprlandPackage;

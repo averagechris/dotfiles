@@ -277,9 +277,15 @@ in {
     dotfiles.wezterm.enable = true;
     dotfiles.macosHotkeys.enable = true;
     dotfiles.gander.enable = true;
-    dotfiles.rustDevCache = {
+    dotfiles.devCache = {
       enable = true;
       sccache.cacheSize = "50G";
+      # --recursive picks up nested checkouts too, including managed jj
+      # workspaces under ~/projects/ws/<repo>/* and ~/sureapp/ws/<repo>/*.
+      cargoSweep.roots = [
+        "/Users/chris/projects"
+        "/Users/chris/sureapp"
+      ];
       docker = {
         retention = "336h";
         builderMaxUsedSpace = "30GB";

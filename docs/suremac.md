@@ -113,45 +113,24 @@ Both follow the host flake's `nixpkgs` and `flake-utils`. Bump them with
 
 ## Rust and Dev Cache Management
 
-`suremac` enables `dotfiles.rustDevCache` for Rust-heavy development work:
+`suremac` enables `dotfiles.devCache` for Rust-heavy development work. See
+[dev-cache.md](/docs/dev-cache.md) for the full module documentation
+(sccache setup and server supervision, nix GC behavior and the root GC
+reminder, cargo-sweep, and Docker pruning).
 
-- installs `sccache` and configures Cargo with `rustc-wrapper = "sccache"`;
-- sets `SCCACHE_DIR=~/.cache/sccache` and a generous `SCCACHE_CACHE_SIZE=50G`;
-- runs a supervised user launchd agent named `sccache-server`;
-- installs the Docker CLI for cleanup tasks; and
-- runs a daily user launchd job named `dev-cache-cleanup`.
+Host specifics:
 
-### sccache server supervision
+- `SCCACHE_CACHE_SIZE=50G`;
+- cargo-sweep roots are `~/projects` and `~/sureapp` (recursive, so managed jj
+  workspaces under `~/projects/ws/` and `~/sureapp/ws/` are covered);
+- the Docker phase prunes OrbStack's daemon with `pruneVolumes = true`:
+  volumes attached to running containers are kept, but stopped development
+  stacks may lose local database/queue state on the next cleanup run;
+- logs: `~/Library/Logs/sccache-server.log` and
+  `~/Library/Logs/dev-cache-cleanup.log`.
 
-The `sccache-server` launchd agent (logs: `~/Library/Logs/sccache-server.log`)
-runs the server in the foreground with `KeepAlive`, `SCCACHE_IDLE_TIMEOUT=0`,
-and launchd's clean environment, stopping any rogue server on startup.
-
-This exists because sccache's default behavior is to lazily start the server
-from whichever compile happens first, inheriting that process's environment
-permanently. A server started inside a nix shell (where `DEVELOPER_DIR` points
-at the nix Apple SDK) poisons every later C-compile that goes through
-`/usr/bin/cc`'s xcselect shim — cc-rs wraps the C compiler with sccache when
-`RUSTC_WRAPPER` is set — failing with:
-
-```
-sccache: caused by: Compiler not supported: "error: tool 'clang' not found"
-```
-
-If that error ever reappears, `sccache --stop-server` cures it immediately
-(launchd restarts the supervised server); check that the agent is loaded with
-`launchctl list | grep sccache`.
-
-The `dev-cache-cleanup` launchd job writes logs to
-`~/Library/Logs/dev-cache-cleanup.log`. It reports `sccache` stats, then
-uses Docker/OrbStack's Docker socket to prune old builder cache, stopped
-containers, dangling images, and unused networks older than 14 days while keeping
-Docker builder cache under about 30 GB. On `suremac`, `pruneVolumes = true` also
-prunes unused Docker volumes; volumes attached to running containers are kept,
-but stopped development stacks may lose local database/queue state on the next
-cleanup run.
-
-Per-project Cargo `target/` directories can still grow large, especially from
-debug incremental artifacts. Deleting a stale `target/` directory is safe when a
-project is not actively building; the next build will recompile and reuse
-`sccache` where possible.
+Because the cleanup job runs unprivileged, root-owned darwin system profile
+generations are never garbage collected automatically; the job posts a macOS
+notification when they pile up, and the manual command it suggests keeps the
+most recent generations so the immediately previous darwin profile always
+remains a rollback target.
