@@ -1,5 +1,6 @@
 {
   lib,
+  managedJjWorkspaceExternalDirectories,
   pkgs,
 }: let
   npxMcp = pkgs.writeShellApplication {
@@ -10,6 +11,11 @@
     '';
   };
 in {
+  # Managed jj workspaces live outside the OpenCode process's project root when
+  # the orchestrator asks coding-minion subagents to create parallel checkouts.
+  # Trust only those canonical workspace namespaces, not the whole project group.
+  permission.external_directory = managedJjWorkspaceExternalDirectories;
+
   # MCP Servers - External tool integrations
   mcp = {
     # Context7 - Search documentation for various tools and frameworks

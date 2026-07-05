@@ -43,6 +43,16 @@ for cheaper, faster routine coding delegation. Its description is written so
 primary orchestrator agents can recognize it as a solid lower-cost coder that is
 a bit less capable than the primary Build agent.
 
+OpenCode normally prompts before any tool touches a path outside the project it
+was started in. To keep delegated `coding-minion` work smooth without opening up
+entire project trees, the Home Manager module derives
+`permission.external_directory` allow rules from
+`dotfiles.jujutsu.workspaces.projectGroups`: each canonical managed workspace
+namespace (`<project-group>/<workspace-dir>/**`, such as `~/projects/ws/**` and
+on `suremac` also `~/sureapp/ws/**`) is trusted by default. This covers files
+created by `jj ws add` while preserving prompts for unrelated external
+directories.
+
 For Build, `orchestrator`, and `coding-minion`, the catch-all rule is `"*":
 "allow"`, and narrower later rules prompt or deny known sharp edges. OpenCode
 evaluates the last matching permission rule, so keep the broad allow at the top

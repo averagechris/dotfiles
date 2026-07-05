@@ -83,6 +83,11 @@
   installedAgentTools = defaultAgentTools ++ cfg.agentTools;
   agentToolNote = lib.concatStringsSep ", " (map renderToolNote installedAgentTools);
   runtimeNote = "Your runtime is a ${systemName} environment. By default, your environment includes these additional tools: ${agentToolNote}. The project local dev shell may provide additional tooling.";
+  managedJjWorkspaceExternalDirectories = lib.listToAttrs (map (group: {
+      name = "${group.path}/${group.workspaceDir}/**";
+      value = "allow";
+    })
+    config.dotfiles.jujutsu.workspaces.projectGroups);
 in {
   options.dotfiles.opencode = {
     openrouterApiKeyFile = lib.mkOption {
@@ -189,7 +194,7 @@ in {
         # SETTINGS - OpenCode configuration (written to config.json)
         # ============================================================================
 
-        settings = import ./settings.nix {inherit lib pkgs;};
+        settings = import ./settings.nix {inherit lib pkgs managedJjWorkspaceExternalDirectories;};
       };
 
       home.packages = (map (tool: tool.package) installedAgentTools) ++ cfg.agentSupportPackages;

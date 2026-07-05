@@ -6,6 +6,7 @@
 - [audio](/docs/audio.md) - PipeWire/WirePlumber output priority, helper commands, and Eww controls
 - [coderabbit-cli](/docs/coderabbit-cli.md) - CodeRabbit CLI package, suremac agent integration, and local review workflow
 - [ctx](/docs/ctx.md) - Ctx local agent-history search CLI package and frequent background indexing job
+- [deploy](/docs/deploy.md) - deploy-rs, quiet deploy wrapper, Darwin switch notes, and activation wrapper architecture
 - [gander](/docs/gander.md) - Gander jj review TUI Home Manager module, package input, and Colemak keybindings
 - [granola](/docs/granola.md) - Granola CLI Home Manager module, shell completions, agenix token seeding, suremac note sync, and OpenCode skill
 - [helium](/docs/helium.md) - Helium browser packaging and configuration on NixOS
@@ -32,6 +33,7 @@
 - [tater power and thermal tuning](/docs/tater-power-thermal.md) - ThinkPad T14s power, thermal, and fan-management tuning notes
 - [thorny / thelio-nixos](/docs/thorny.md) - System76 Thelio remote builder, Hyprland workstation, homepage refresh scheduler, dotfiles build-cache, and self-deploy notes
 - [tom](/docs/tom.md) - Home Assistant and Calibre-Web host deployment notes
+- [trainwreck](/docs/trainwreck.md) - trainwreck Openclaw instances, service notes, encrypted personality docs, and deployment
 - [yazi](/docs/yazi.md) - Yazi Home Manager module, Colemak keybindings, wrapper name, and filetype theme rule schema
 
 ## Troubleshooting
