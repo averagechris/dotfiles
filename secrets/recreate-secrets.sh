@@ -94,10 +94,21 @@ edit_secret() {
         return 0
     fi
     
-    # Encrypt the new content
-    # We need to use a custom EDITOR that copies our temp file
-    EDITOR="cp '$tmpfile'" agenix -e "$secret"
-    rm -f "$tmpfile"
+    # Encrypt the new content. agenix only accepts content through $EDITOR, so
+    # point it at a tiny editor wrapper that copies our already-edited temp file
+    # over agenix's editor target. Avoid embedding shell quotes in EDITOR: agenix
+    # splits EDITOR as a command, so literal quotes become part of the filename.
+    local editor_script
+    editor_script=$(mktemp)
+    cat > "$editor_script" <<EOF
+#!/usr/bin/env bash
+set -euo pipefail
+cp "$tmpfile" "\$1"
+EOF
+    chmod +x "$editor_script"
+
+    EDITOR="$editor_script" agenix -e "$secret"
+    rm -f "$editor_script" "$tmpfile"
     
     echo -e "${GREEN}✓${NC} Saved $secret"
     return 0
