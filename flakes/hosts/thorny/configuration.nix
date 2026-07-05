@@ -183,7 +183,11 @@
               else:
                   stale_reasons.append(f"{project['name']}: failed to query {repo!r}: {exc}")
                   continue
-          published = state.get(project["name"], state.get(repo, {}))
+          # state.json nests per-project pins under "projects", keyed by
+          # pages_subdir (== name for every repo except slack-rs, whose
+          # srht_repo matches its subdir).
+          projects_state = state.get("projects") if isinstance(state.get("projects"), dict) else {}
+          published = projects_state.get(project["name"], projects_state.get(repo, {}))
           if published.get("tag") != remote["tag"] or published.get("main_sha") != remote["main_sha"]:
               stale_reasons.append(
                   f"{project['name']}: published tag={published.get('tag')!r} main_sha={published.get('main_sha')!r}; "
