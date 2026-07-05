@@ -34,8 +34,11 @@ in {
   # service skips itself while the placeholder is in place.
   "cachix-auth-token.age".publicKeys = systems-keys ++ [suremac-key];
 
-  # Thorny secrets (hister)
-  # Contains HISTER__SERVER__OAUTH__GITHUB__CLIENT_SECRET for the GitHub OAuth app.
+  # Thorny secrets
+  "thorny/hut-access-token.age".publicKeys = systems-keys ++ [suremac-key];
+
+  # Hister: contains HISTER__SERVER__OAUTH__GITHUB__CLIENT_SECRET for the
+  # GitHub OAuth app.
   "thorny/hister-env.age".publicKeys = systems-keys ++ [suremac-key];
 
   # Trainwreck secrets (clawdbot)

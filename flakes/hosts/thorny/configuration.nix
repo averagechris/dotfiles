@@ -243,6 +243,12 @@
     '';
   };
 
+  hutConfig = pkgs.writeText "thorny-hut-config" ''
+    instance "sr.ht" {
+      access-token-cmd ${pkgs.coreutils}/bin/cat ${config.age.secrets.hut-access-token.path}
+    }
+  '';
+
   dotfilesHostBuildCache = pkgs.writeShellApplication {
     name = "dotfiles-host-build-cache";
     runtimeInputs = with pkgs; [
@@ -611,7 +617,10 @@ in {
   # firewall: the shared tailscale module trusts tailscale0, so trainwreck can
   # reach it while the LAN stays blocked.
   #
-  # The encrypted env file may not exist yet (create it with
+  # The hut token is read by hut's normal user config below when submitting
+  # SourceHut build jobs as chris.
+  #
+  # The encrypted hister env file may not exist yet (create it with
   # `agenix -e secrets/thorny/hister-env.age`; it is registered in
   # secrets/secrets.nix). Guard on existence so the config evaluates before
   # the secret is created; once the file is committed, the secret and
@@ -623,6 +632,13 @@ in {
       # REPLACE_ME until provisioned; the warmer skips itself until then.
       cachix-auth-token = {
         file = ../../../secrets/cachix-auth-token.age;
+        owner = "chris";
+        group = "users";
+        mode = "0400";
+      };
+
+      hut-access-token = {
+        file = ../../../secrets/thorny/hut-access-token.age;
         owner = "chris";
         group = "users";
         mode = "0400";
@@ -879,7 +895,8 @@ in {
 
     dotfiles.shell.yazi.enable = true;
     programs.opencode.enable = true;
+    xdg.configFile."hut/config".source = hutConfig;
     services.network-manager-applet.enable = true;
-    home.packages = [pkgs.claude-code];
+    home.packages = [pkgs.claude-code pkgs.hut];
   };
 }

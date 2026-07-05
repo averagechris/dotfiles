@@ -50,9 +50,17 @@ delay. The timer submits an unlisted builds.sr.ht job tagged
 publishes when the generated homepage/tools metadata differs from the live site.
 
 The systemd service runs as `chris` and uses hut's normal user configuration from
-`/home/chris/.config/hut`. If the timer starts failing with authentication
-errors, initialize hut for `chris` on `thorny` or manage the hut config/token with
-agenix before re-enabling the timer.
+`/home/chris/.config/hut/config`. Home Manager manages that config on `thorny`;
+it contains an `access-token-cmd` that reads the agenix-decrypted SourceHut token
+from `/run/agenix/hut-access-token`. The encrypted token lives at
+`secrets/thorny/hut-access-token.age` and is registered in `secrets/secrets.nix`.
+
+If the timer starts failing with authentication errors, confirm that the token
+secret exists and is readable by `chris`, then test hut under the same account:
+
+```bash
+sudo -u chris hut meta show
+```
 
 Useful checks on `thorny`:
 
