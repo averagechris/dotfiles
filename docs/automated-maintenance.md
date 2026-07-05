@@ -61,8 +61,11 @@ that only handles the dotfiles happy path.
 Failures are expected to be graceful and boring:
 
 - The script exits nonzero so `systemd` records the failed unit.
-- The run log goes to journald, and a concise failure marker is written under
-  `/var/lib/thorny-maintenance/`.
+- The run log goes to journald and to a durable per-run directory under
+  `/var/lib/thorny-maintenance/logs/<timestamp>/`.
+- A concise failure marker is written under
+  `/var/lib/thorny-maintenance/state/last-failure.json` with at least the run id,
+  phase, profile, exit status, checkout path, and log directory.
 - Any unpushed maintenance change is abandoned before exit, so the next run starts
   from a clean `main` instead of accumulating failed attempts.
 - The same failing upstream state may be retried on the next timer run, but each
@@ -89,11 +92,18 @@ nix run .#dotfiles-maintenance-gate -- --profile full
 Profiles:
 
 - `smoke` reads flake metadata and evaluates the top-level maintenance packages
-  for the current system.
+  for the current system. This is quick local sanity only; it is not sufficient
+  for unattended direct-to-`main` pushes.
 - `thorny` runs `smoke` plus evaluation of the `thorny` system derivation path.
+  This is still eval-only; it does not build the system closure.
 - `no-build` runs the top-level `nix flake check --no-build`; on a cold cache,
   this can still be slow because it checks every exported host configuration.
 - `full` runs the top-level `nix flake check` with builds enabled.
+
+The future unattended timer must pass an explicit profile rather than relying on
+the app default. `smoke` is intentionally the default for quick manual runs; the
+first direct-to-`main` timer should use the measured `thorny` profile or a
+stronger profile documented here before the timer is enabled.
 
 Then add targeted build checks only where they buy confidence for automated
 flake-input updates. If a broader check is needed, prefer one Nix invocation that
@@ -124,6 +134,30 @@ Until that is fast enough, split the gate into a documented fast path and a
 slower manual/agent path. Do not push auto-updates without at least the fast path
 passing, and do not silently promote the slower path into the daily timer without
 recording why the runtime is acceptable.
+
+### Timer implementation notes
+
+Before enabling the daily systemd service, make the operational contract concrete
+in code and docs:
+
+- **Durable logs:** invoke the gate with an explicit per-run log directory such
+  as `/var/lib/thorny-maintenance/logs/$(date -u +%Y%m%dT%H%M%SZ)`; journald is
+  useful for status, but the handoff should not depend on journal retention.
+- **Failure marker:** write `/var/lib/thorny-maintenance/state/last-failure.json`
+  atomically. Suggested fields: `run_id`, `started_at`, `phase`, `profile`,
+  `exit_status`, `checkout`, `log_dir`, `head_before`, and `message`. Remove or
+  archive it only after a successful run.
+- **jj cleanup:** on every pre-push failure, abandon the unpushed maintenance
+  change and return the checkout to a fresh empty working-copy commit on top of
+  the fetched integration bookmark. The concrete cleanup sequence should be based
+  on the recorded maintenance change id, e.g. `jj abandon <change-id>` followed
+  by `jj new main@origin`, rather than relying on whatever `@` happens to be
+  after an error.
+- **Allow-list source:** keep changed-path validation data-driven. The first
+  allow-list can be hard-coded in the timer script, but it must include only
+  lockfiles plus package files enrolled in `manual-package-updates.json`; do not
+  allow arbitrary `flakes/base-lib/packages/*.nix` changes unless the package is
+  in that manifest.
 
 ### Operations
 

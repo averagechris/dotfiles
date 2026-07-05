@@ -132,7 +132,18 @@ run_step() {
   start=$(date +%s)
   status=0
   if [ -n "$log_file" ] && [ "$show_output" = true ]; then
-    "$@" 2>&1 | tee "$log_file" || status=${PIPESTATUS[0]}
+    if "$@" 2>&1 | tee "$log_file"; then
+      status=0
+    else
+      pipe_status=("${PIPESTATUS[@]}")
+      command_status=${pipe_status[0]}
+      tee_status=${pipe_status[1]}
+      if [ "$command_status" -ne 0 ]; then
+        status=$command_status
+      else
+        status=$tee_status
+      fi
+    fi
   elif [ -n "$log_file" ]; then
     "$@" >"$log_file" 2>&1 || status=$?
   else
@@ -163,11 +174,11 @@ fi
 
 run_smoke() {
   run_step "flake metadata" \
-    nix flake metadata --json --no-write-lock-file "$repo"
+    nix flake metadata --accept-flake-config --json --no-write-lock-file "$repo"
   run_step "update-flakes package eval" \
-    nix eval --raw "$repo#packages.$system.update-flakes.name"
+    nix eval --accept-flake-config --no-write-lock-file --raw "$repo#packages.$system.update-flakes.name"
   run_step "maintenance gate package eval" \
-    nix eval --raw "$repo#packages.$system.dotfiles-maintenance-gate.name"
+    nix eval --accept-flake-config --no-write-lock-file --raw "$repo#packages.$system.dotfiles-maintenance-gate.name"
 }
 
 case "$profile" in
@@ -177,15 +188,15 @@ case "$profile" in
   thorny)
     run_smoke
     run_step "thorny system derivation eval" \
-      nix eval --raw "$repo#nixosConfigurations.thorny.config.system.build.toplevel.drvPath"
+      nix eval --accept-flake-config --no-write-lock-file --raw "$repo#nixosConfigurations.thorny.config.system.build.toplevel.drvPath"
     ;;
   no-build)
     run_step "top-level flake check no-build" \
-      nix flake check --accept-flake-config --no-build "$repo"
+      nix flake check --accept-flake-config --no-write-lock-file --no-build "$repo"
     ;;
   full)
     run_step "top-level flake check full" \
-      nix flake check --accept-flake-config "$repo"
+      nix flake check --accept-flake-config --no-write-lock-file "$repo"
     ;;
 esac
 
