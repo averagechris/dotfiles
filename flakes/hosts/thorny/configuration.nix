@@ -74,33 +74,172 @@
     name = "averagechris-site-refresh";
     runtimeInputs = with pkgs; [
       coreutils
+      git
       hut
+      python3
     ];
     text = ''
       set -euo pipefail
 
-      manifest=$(mktemp)
-      trap 'rm -f "$manifest"' EXIT
+      python3 - <<'PY'
+      import json
+      import os
+      import re
+      import subprocess
+      import sys
+      import tempfile
+      import urllib.error
+      import urllib.request
 
-      cat >"$manifest" <<'MANIFEST'
-      image: nixos/unstable
-      arch: x86_64
-      oauth: pages.sr.ht/PAGES:RW
-      environment:
-        NIX_CONFIG: "experimental-features = nix-command flakes"
-      sources:
-        - https://git.sr.ht/~averagechris/averagechris.srht.site
-      tasks:
-        - refresh: |
-            cd averagechris.srht.site
-            nix run .#refresh-pages
-      MANIFEST
+      try:
+          import tomllib
+      except ModuleNotFoundError:
+          import tomli as tomllib
 
-      hut builds submit \
-        --visibility unlisted \
-        --tags averagechris.srht.site/cron/refresh-pages \
-        --note "averagechris.srht.site scheduled refresh" \
-        "$manifest"
+      STATE_URL = "https://averagechris.srht.site/state.json"
+      FLEET_URL = "https://git.sr.ht/~averagechris/averagechris.srht.site/blob/main/fleet.toml"
+      MANIFEST_URL = "https://git.sr.ht/~averagechris/averagechris.srht.site/blob/main/.builds/refresh-pages.yml"
+      REPO_BASE = "https://git.sr.ht/~averagechris"
+      TRIGGER_SOURCE = "thorny-timer"
+
+      semver_tag = re.compile(r"^refs/tags/v([0-9]+)\.([0-9]+)\.([0-9]+)$")
+
+      def fetch_bytes(url):
+          request = urllib.request.Request(url, headers={"User-Agent": "thorny fleet pages refresh"})
+          with urllib.request.urlopen(request, timeout=30) as response:
+              return response.read()
+
+      def fetch_text(url):
+          return fetch_bytes(url).decode("utf-8")
+
+      stale_reasons = []
+      try:
+          state = json.loads(fetch_text(STATE_URL))
+          if not isinstance(state, dict):
+              raise ValueError("state.json top-level value is not an object")
+      except Exception as exc:
+          state = {}
+          stale_reasons.append(f"state.json unavailable or invalid: {exc}")
+
+      fleet = tomllib.loads(fetch_text(FLEET_URL))
+      projects = fleet.get("repos", fleet.get("project", fleet.get("projects", [])))
+      if isinstance(projects, dict):
+          projects = list(projects.values())
+
+      repos = []
+      for project in projects:
+          if not isinstance(project, dict):
+              continue
+          name = project.get("name")
+          repo = project.get("srht_repo") or name
+          if repo:
+              repos.append({
+                  "name": str(name or repo),
+                  "repo": str(repo),
+                  "fallback_repo": str(project.get("pages_subdir") or ""),
+              })
+
+      if not repos:
+          raise RuntimeError("fleet.toml did not contain any srht_repo/name entries")
+
+      def latest_remote_pins(repo):
+          output = subprocess.check_output(
+              ["git", "ls-remote", f"{REPO_BASE}/{repo}"],
+              stderr=subprocess.DEVNULL,
+              text=True,
+              timeout=60,
+          )
+          latest_tag = None
+          latest_version = None
+          main_sha = None
+          for line in output.splitlines():
+              sha, ref = line.split("\t", 1)
+              if ref == "refs/heads/main":
+                  main_sha = sha
+              match = semver_tag.match(ref)
+              if match:
+                  version = tuple(int(part) for part in match.groups())
+                  if latest_version is None or version > latest_version:
+                      latest_version = version
+                      latest_tag = ref.removeprefix("refs/tags/")
+          return {"tag": latest_tag, "main_sha": main_sha}
+
+      for project in repos:
+          repo = project["repo"]
+          try:
+              remote = latest_remote_pins(repo)
+          except Exception as exc:
+              fallback_repo = project["fallback_repo"]
+              if fallback_repo and fallback_repo != repo:
+                  try:
+                      repo = fallback_repo
+                      remote = latest_remote_pins(repo)
+                  except Exception as fallback_exc:
+                      stale_reasons.append(
+                          f"{project['name']}: failed to query {project['repo']!r} ({exc}) "
+                          f"or fallback {fallback_repo!r} ({fallback_exc})"
+                      )
+                      continue
+              else:
+                  stale_reasons.append(f"{project['name']}: failed to query {repo!r}: {exc}")
+                  continue
+          published = state.get(project["name"], state.get(repo, {}))
+          if published.get("tag") != remote["tag"] or published.get("main_sha") != remote["main_sha"]:
+              stale_reasons.append(
+                  f"{project['name']}: published tag={published.get('tag')!r} main_sha={published.get('main_sha')!r}; "
+                  f"remote tag={remote['tag']!r} main_sha={remote['main_sha']!r}"
+              )
+
+      if not stale_reasons:
+          print("fleet pages up to date")
+          sys.exit(0)
+
+      print("fleet pages stale:")
+      for reason in stale_reasons:
+          print(f"- {reason}")
+
+      manifest = fetch_text(MANIFEST_URL)
+      lines = manifest.splitlines()
+      env_index = next((index for index, line in enumerate(lines) if line == "environment:"), None)
+      if env_index is None:
+          lines.extend(["environment:", f"  TRIGGER_SOURCE: {TRIGGER_SOURCE}"])
+      else:
+          insert_at = env_index + 1
+          while insert_at < len(lines) and (lines[insert_at].startswith("  ") or not lines[insert_at].strip()):
+              insert_at += 1
+          env_lines = lines[env_index + 1 : insert_at]
+          replaced = False
+          for offset, line in enumerate(env_lines, start=env_index + 1):
+              if re.match(r"^  TRIGGER_SOURCE:", line):
+                  lines[offset] = f"  TRIGGER_SOURCE: {TRIGGER_SOURCE}"
+                  replaced = True
+                  break
+          if not replaced:
+              lines.insert(insert_at, f"  TRIGGER_SOURCE: {TRIGGER_SOURCE}")
+      manifest = "\n".join(lines) + "\n"
+
+      if os.environ.get("DRY_RUN"):
+          print("DRY_RUN set; would submit SourceHut build manifest:")
+          print(manifest)
+          sys.exit(0)
+
+      with tempfile.NamedTemporaryFile("w", delete=False) as handle:
+          handle.write(manifest)
+          manifest_path = handle.name
+      try:
+          subprocess.check_call([
+              "hut",
+              "builds",
+              "submit",
+              "--visibility",
+              "unlisted",
+              "--note",
+              "fleet pages refresh (thorny timer)",
+              manifest_path,
+          ])
+      finally:
+          os.unlink(manifest_path)
+      PY
     '';
   };
 
@@ -427,7 +566,7 @@ in {
   };
 
   systemd.services.averagechris-site-refresh = {
-    description = "Submit the averagechris.srht.site refresh-pages SourceHut build";
+    description = "Submit a SourceHut fleet pages refresh build when the published site is stale";
     after = ["network-online.target"];
     wants = ["network-online.target"];
     serviceConfig = {
@@ -442,7 +581,7 @@ in {
   };
 
   systemd.timers.averagechris-site-refresh = {
-    description = "Hourly averagechris.srht.site refresh-pages SourceHut build submission";
+    description = "Hourly fleet pages refresh safety-net check";
     wantedBy = ["timers.target"];
     timerConfig = {
       OnCalendar = "hourly";
