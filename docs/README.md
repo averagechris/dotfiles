@@ -3,6 +3,7 @@
 ## Configuration
 
 - [anyrun](/docs/anyrun.md) - Anyrun launcher configuration and usage
+- [automated maintenance](/docs/automated-maintenance.md) - Thorny-driven daily update automation plan, short-term safeguards, and long-term project fleet vision
 - [audio](/docs/audio.md) - PipeWire/WirePlumber output priority, helper commands, and Eww controls
 - [coderabbit-cli](/docs/coderabbit-cli.md) - CodeRabbit CLI package, suremac agent integration, and local review workflow
 - [ctx](/docs/ctx.md) - Ctx local agent-history search CLI package and frequent background indexing job
