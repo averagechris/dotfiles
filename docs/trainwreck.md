@@ -113,5 +113,31 @@ nix run .#deploy-quiet -- trainwreck
 `trainwreck` is aarch64-linux, so its deploy-rs activation wrapper must also be
 `aarch64-linux`; see the deploy doc for the architecture failure mode.
 
+`trainwreck` is also enrolled in the pull-based `dotfiles.selfDeploy` module. It
+waits 120 minutes after boot, then checks every six hours with a 30-minute
+randomized delay. This intentionally runs after `thorny` has had time to warm the
+current `trainwreck` system closure through its host build-cache timer.
+
+The self-deploy service currently waits for these system units to be active after
+activation, and rolls back to the previous system if they are not:
+
+- `sshd.service`
+- `tailscaled.service`
+- `nix-daemon.service`
+- `caddy.service`
+
+Openclaw gateway checks are intentionally left for the planned future smart
+post-activation checks, because those are Home Manager user units and should be
+validated with richer host-specific logic than the initial system-unit health
+gate.
+
+Useful checks on `trainwreck`:
+
+```bash
+systemctl status dotfiles-trainwreck-self-deploy.timer
+systemctl status dotfiles-trainwreck-self-deploy.service
+journalctl -u dotfiles-trainwreck-self-deploy.service
+```
+
 If deploy-rs is unavailable, rebuild on trainwreck directly only after confirming
 the desired remote workflow with the user.

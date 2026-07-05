@@ -181,6 +181,7 @@ in {
     inputs.nixos-modules.nixosModules.common
     inputs.nixos-modules.nixosModules.tailscale
     inputs.nixos-modules.nixosModules.sudoDeploy
+    inputs.nixos-modules.nixosModules.selfDeploy
     inputs.nixos-modules.nixosModules.users.chrisMinimal
     inputs.nixos-modules.nixosModules.isRemoteBuilder
     inputs.nixos-modules.nixosModules.useRemoteBuilds
@@ -209,6 +210,21 @@ in {
 
   # Passwordless sudo for deploy-rs
   dotfiles.sudoNoPassword.enable = true;
+
+  dotfiles.selfDeploy = {
+    enable = true;
+    requiredSystemUnits = [
+      "sshd.service"
+      "tailscaled.service"
+      "nix-daemon.service"
+      "caddy.service"
+    ];
+    timer = {
+      onBootSec = "120m";
+      onUnitActiveSec = "6h";
+      randomizedDelaySec = "30m";
+    };
+  };
 
   # Public front door for hister (the service and its data live on thorny).
   # Caddy terminates TLS here and reverse-proxies over the tailnet.

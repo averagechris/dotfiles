@@ -7,6 +7,7 @@
     inputs.nixos-modules.nixosModules.common
     inputs.nixos-modules.nixosModules.desktopCommon
     inputs.nixos-modules.nixosModules.sudoDeploy
+    inputs.nixos-modules.nixosModules.selfDeploy
     inputs.nixos-modules.nixosModules.tailscale
     inputs.nixos-modules.nixosModules.useRemoteBuilds
     inputs.nixos-modules.nixosModules.users.chrisMinimal
@@ -44,6 +45,24 @@
 
   # Passwordless sudo for deploy-rs
   dotfiles.sudoNoPassword.enable = true;
+
+  dotfiles.selfDeploy = {
+    enable = true;
+    unitCheckTimeoutSec = 300;
+    requiredSystemUnits = [
+      "sshd.service"
+      "tailscaled.service"
+      "nix-daemon.service"
+      "home-assistant.service"
+      "postgresql.service"
+      "calibre-web.service"
+    ];
+    timer = {
+      onBootSec = "90m";
+      onUnitActiveSec = "6h";
+      randomizedDelaySec = "30m";
+    };
+  };
 
   services.calibre-web = {
     enable = true;

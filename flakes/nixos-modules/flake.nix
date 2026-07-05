@@ -29,6 +29,7 @@
       graphical = ./modules/graphical.nix;
       searx = ./modules/searx.nix;
       sudoDeploy = ./modules/sudo-deploy.nix;
+      selfDeploy = ./modules/self-deploy.nix;
       users = {
         chris = ./modules/users/chris.nix;
         chrisMinimal = ./modules/users/chris-minimal.nix;

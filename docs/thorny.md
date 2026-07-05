@@ -18,7 +18,10 @@ used locally.
   the `averagechris-dotfiles` cachix cache so builds.sr.ht jobs substitute
   instead of building.
 - Pull-based self-deployer for `thorny` itself, with post-activation health
-  checks and automatic rollback to the previous running system on failure.
+  checks and automatic rollback to the previous running system on failure. The
+  same reusable self-deploy module is used by enrolled server hosts such as
+  `tom` and `trainwreck`; `thorny` remains the build/cache warmer rather than a
+  central deploy-rs pusher.
 
 ## Remote builder configuration
 
@@ -154,9 +157,10 @@ ls -l /var/lib/fleet-cache-warmer
 ## Thorny self-deploy
 
 `thorny` runs `dotfiles-thorny-self-deploy.timer` every two hours, with a
-15-minute randomized delay and persistent catch-up after downtime. The service
-checks latest `main` from `~averagechris/dotfiles`; if that revision has not
-already been successfully deployed, it builds:
+15-minute randomized delay and persistent catch-up after downtime. The service is
+provided by the shared `dotfiles.selfDeploy` module. It checks latest `main` from
+`~averagechris/dotfiles`; if that revision has not already been successfully
+deployed, it builds:
 
 ```text
 git+https://git.sr.ht/~averagechris/dotfiles?ref=main#nixosConfigurations.thorny.config.system.build.toplevel
@@ -189,6 +193,11 @@ ssh thorny journalctl -u dotfiles-thorny-self-deploy.service
 Notifications are intentionally not wired in yet. If something feels off, use
 `thorny-status-remote` first; it reports host health, active build-looking
 processes, thermals, System76 power status, and Tailscale status.
+
+The staggered fleet model is: `thorny` warms host system builds, then enrolled
+hosts pull and activate their own latest system. `tom` waits 90 minutes after
+boot before first self-deploy; `trainwreck` waits 120 minutes. Both repeat every
+six hours with a 30-minute randomized delay.
 
 `thorny` also enables `boot.binfmt.emulatedSystems = ["aarch64-linux"]` so it can
 build `trainwreck`'s aarch64-linux system closure under QEMU/binfmt. This is

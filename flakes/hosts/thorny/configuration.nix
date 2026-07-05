@@ -309,111 +309,6 @@
     '';
   };
 
-  dotfilesThornySelfDeploy = pkgs.writeShellApplication {
-    name = "dotfiles-thorny-self-deploy";
-    runtimeInputs = with pkgs; [
-      coreutils
-      git
-      jq
-      nix
-      systemd
-      util-linux
-    ];
-    text = ''
-      set -euo pipefail
-
-      state_dir="/var/lib/dotfiles-thorny-self-deploy"
-      lock_file="$state_dir/deploy.lock"
-      last_success_rev_file="$state_dir/last-success-rev"
-      last_attempt_rev_file="$state_dir/last-attempt-rev"
-      last_failure_rev_file="$state_dir/last-failure-rev"
-      flake_ref="git+https://git.sr.ht/~averagechris/dotfiles?ref=main"
-      attr="nixosConfigurations.thorny.config.system.build.toplevel"
-
-      mkdir -p "$state_dir"
-
-      exec 9>"$lock_file"
-      if ! flock -n 9; then
-        echo "Another thorny self-deploy run is already active; exiting."
-        exit 0
-      fi
-
-      latest_rev=$(nix flake metadata --json "$flake_ref" | jq -r '.revision // .locked.rev // empty')
-      if [ -z "$latest_rev" ]; then
-        echo "Could not determine latest revision for $flake_ref" >&2
-        exit 1
-      fi
-
-      if [ -f "$last_success_rev_file" ] && [ "$(cat "$last_success_rev_file")" = "$latest_rev" ]; then
-        echo "thorny is already deployed at $latest_rev"
-        exit 0
-      fi
-
-      printf '%s\n' "$latest_rev" >"$last_attempt_rev_file"
-
-      previous_system=$(readlink -f /run/current-system)
-      echo "Previous system: $previous_system"
-      echo "Building thorny from $flake_ref at $latest_rev"
-
-      if ! new_system=$(nix build \
-        --accept-flake-config \
-        --no-link \
-        --print-out-paths \
-        --print-build-logs \
-        "$flake_ref#$attr"); then
-        echo "Build failed for $latest_rev" >&2
-        printf '%s\n' "$latest_rev" >"$last_failure_rev_file"
-        exit 1
-      fi
-
-      echo "New system: $new_system"
-
-      health_check() {
-        local failed=0
-
-        for unit in sshd.service tailscaled.service nix-daemon.service NetworkManager.service; do
-          if ! systemctl is-active --quiet "$unit"; then
-            echo "Required unit is not active: $unit" >&2
-            failed=1
-          fi
-        done
-
-        if ! systemctl is-system-running --quiet; then
-          state=$(systemctl is-system-running || true)
-          echo "System state after activation: $state" >&2
-          systemctl --failed --no-pager >&2 || true
-          failed=1
-        fi
-
-        return "$failed"
-      }
-
-      echo "Activating $new_system"
-      if ! "$new_system/bin/switch-to-configuration" switch; then
-        echo "Activation failed; attempting rollback to $previous_system" >&2
-        "$previous_system/bin/switch-to-configuration" switch || true
-        printf '%s\n' "$latest_rev" >"$last_failure_rev_file"
-        exit 1
-      fi
-
-      if health_check; then
-        printf '%s\n' "$latest_rev" >"$last_success_rev_file"
-        rm -f "$last_failure_rev_file"
-        echo "Successfully deployed thorny at $latest_rev"
-        exit 0
-      fi
-
-      echo "Health check failed; rolling back to $previous_system" >&2
-      if "$previous_system/bin/switch-to-configuration" switch && health_check; then
-        echo "Rollback succeeded after failed deployment of $latest_rev" >&2
-      else
-        echo "Rollback failed or system is still unhealthy after rollback" >&2
-      fi
-
-      printf '%s\n' "$latest_rev" >"$last_failure_rev_file"
-      exit 1
-    '';
-  };
   fleetCacheWarmer = pkgs.writeShellApplication {
     name = "fleet-cache-warmer";
     runtimeInputs = with pkgs; [
@@ -555,6 +450,7 @@ in {
     inputs.nixos-modules.nixosModules.networking
     inputs.nixos-modules.nixosModules.sound
     inputs.nixos-modules.nixosModules.sudoDeploy
+    inputs.nixos-modules.nixosModules.selfDeploy
     inputs.nixos-modules.nixosModules.tailscale
     inputs.nixos-modules.nixosModules.virtualization
     inputs.nixos-modules.nixosModules.isRemoteBuilder
@@ -601,6 +497,23 @@ in {
 
   # Passwordless sudo for deploy-rs / remote rebuilds from trusted SSH keys.
   dotfiles.sudoNoPassword.enable = true;
+
+  dotfiles.selfDeploy = {
+    enable = true;
+    serviceName = "dotfiles-thorny-self-deploy";
+    stateDir = "/var/lib/dotfiles-thorny-self-deploy";
+    requiredSystemUnits = [
+      "sshd.service"
+      "tailscaled.service"
+      "nix-daemon.service"
+      "NetworkManager.service"
+    ];
+    timer = {
+      onBootSec = "45m";
+      onUnitActiveSec = "2h";
+      randomizedDelaySec = "15m";
+    };
+  };
 
   nix.settings = {
     # Thorny/thelio is intended to be a high-core-count remote builder. Allow
@@ -731,7 +644,6 @@ in {
     "d /var/lib/dotfiles-host-build-cache 0755 chris users - -"
     "d /var/lib/dotfiles-host-build-cache/results 0755 chris users - -"
     "d /var/lib/dotfiles-host-build-cache/logs 0755 chris users - -"
-    "d /var/lib/dotfiles-thorny-self-deploy 0755 root root - -"
     "d /var/lib/fleet-cache-warmer 0755 chris users - -"
     "d /var/backups/hister 0700 root root - -"
   ];
@@ -792,31 +704,6 @@ in {
       Persistent = true;
       RandomizedDelaySec = "10m";
       Unit = "fleet-cache-warmer.service";
-    };
-  };
-
-  systemd.services.dotfiles-thorny-self-deploy = {
-    description = "Pull and activate the latest thorny system from dotfiles main";
-    after = ["network-online.target"];
-    wants = ["network-online.target"];
-    serviceConfig = {
-      Type = "oneshot";
-      ExecStart = lib.getExe dotfilesThornySelfDeploy;
-      Nice = 10;
-      IOSchedulingClass = "best-effort";
-      IOSchedulingPriority = 6;
-    };
-  };
-
-  systemd.timers.dotfiles-thorny-self-deploy = {
-    description = "Regularly self-deploy thorny from dotfiles main";
-    wantedBy = ["timers.target"];
-    timerConfig = {
-      OnBootSec = "45m";
-      OnUnitActiveSec = "2h";
-      Persistent = true;
-      RandomizedDelaySec = "15m";
-      Unit = "dotfiles-thorny-self-deploy.service";
     };
   };
 
