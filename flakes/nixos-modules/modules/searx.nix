@@ -3,7 +3,7 @@
 in {
   services.searx = {
     enable = true;
-    runInUwsgi = true;
+    configureUwsgi = true;
     uwsgiConfig = {
       inherit socket;
       disable-logging = true;

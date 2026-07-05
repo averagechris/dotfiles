@@ -95,7 +95,13 @@
       ];
 
       # deploy usage: nix run .#deploy -- .#hostname
-      apps.deploy = deploy-rs.apps.${system}.deploy-rs;
+      apps.deploy =
+        deploy-rs.apps.${system}.deploy-rs
+        // {
+          meta = {
+            description = "Deploy a NixOS host with deploy-rs";
+          };
+        };
 
       packages.deploy-quiet = pkgs.writeShellApplication {
         name = "deploy-quiet";
@@ -118,12 +124,18 @@
       apps.update-flakes = {
         type = "app";
         program = "${self.packages.${system}.update-flakes}/bin/update-flakes";
+        meta = {
+          description = "Update enrolled flake inputs and fixed-hash packages";
+        };
       };
 
       # Quiet deploy wrapper: nix run .#deploy-quiet -- hostname
       apps.deploy-quiet = {
         type = "app";
         program = "${self.packages.${system}.deploy-quiet}/bin/deploy-quiet";
+        meta = {
+          description = "Run a quieter target-scoped deploy-rs workflow";
+        };
       };
 
       # Setup script for Darwin
@@ -135,6 +147,9 @@
       apps.setup-darwin-determinate-substituters = {
         type = "app";
         program = "${self.packages.${system}.setup-darwin-determinate-substituters}/bin/setup-darwin-determinate-substituters";
+        meta = {
+          description = "Configure Determinate Nix substituters on Darwin";
+        };
       };
 
       # agenix package

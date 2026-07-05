@@ -38,6 +38,11 @@
   # Select internationalization properties.
   i18n.defaultLocale = "en_US.UTF-8";
 
+  # Avoid evaluating/building the generated NixOS manual and options JSON for
+  # every host. Re-enable temporarily in a host or ad-hoc module when local
+  # `nixos-help`, `configuration.nix(5)`, or offline option docs are needed.
+  documentation.nixos.enable = false;
+
   environment.systemPackages = with pkgs; [
     git
     nh

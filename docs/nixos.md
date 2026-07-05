@@ -28,6 +28,45 @@ animation and most store-path chatter do not repeat in captured output.
 
 The Darwin host also installs these tools directly in its host configuration.
 
+## Local generated option documentation
+
+The shared NixOS common module disables generated NixOS documentation with
+`documentation.nixos.enable = false`. These configs do not normally use local
+`nixos-help`, `configuration.nix(5)`, or the generated offline NixOS options
+JSON, and disabling them keeps `nix flake check` from evaluating the option-doc
+generator for every host.
+
+The shared `chrisMinimal` NixOS user module also disables generated Home Manager
+manpages with `manual.manpages.enable = false`, because that Home Manager manual
+path uses the same option-doc generator and is the source of the `options.json`
+warning during system evaluation.
+
+If an agent or debugging session needs those local docs, temporarily re-enable
+them in a host config or an ad-hoc module:
+
+```nix
+{
+  documentation.nixos.enable = true;
+
+  home-manager.users.chris.manual.manpages.enable = true;
+}
+```
+
+## Flake check warnings
+
+`nix flake check` may still print warnings that come from outside this
+repository's Nix modules:
+
+- `Copying ... to the store again` warnings for upstream flakes that package
+  themselves with `./.`. Fixing those requires changing the referenced upstream
+  flake, not this aggregator.
+- `unknown flake output 'deploy'` for the deploy-rs `deploy.nodes` output. This
+  output is intentionally kept because `nix run .#deploy -- .#<hostname>` and
+  deploy-rs tooling consume it.
+- `The check omitted these incompatible systems` when checking from a single
+  platform. Use `nix flake check --all-systems` only when you intentionally want
+  to evaluate every declared system.
+
 ## Graphical host post-install checklist
 
 For any new graphical workstation host, configure KeePassXC's native tray behavior
