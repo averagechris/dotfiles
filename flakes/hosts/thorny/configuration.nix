@@ -404,6 +404,110 @@
       exit 1
     '';
   };
+  fleetCacheWarmer = pkgs.writeShellApplication {
+    name = "fleet-cache-warmer";
+    runtimeInputs = with pkgs; [
+      cachix
+      coreutils
+      git
+      nix
+      util-linux
+    ];
+    text = ''
+      set -euo pipefail
+
+      state_dir="/var/lib/fleet-cache-warmer"
+      lock_file="$state_dir/warm.lock"
+      token_file=${lib.escapeShellArg config.age.secrets.cachix-auth-token.path}
+      cache_name="averagechris-dotfiles"
+      repo_base="https://git.sr.ht/~averagechris"
+
+      mkdir -p "$state_dir"
+
+      exec 9>"$lock_file"
+      if ! flock -n 9; then
+        echo "Another fleet cache warmer run is already active; exiting."
+        exit 0
+      fi
+
+      if [ ! -r "$token_file" ]; then
+        echo "cachix token file missing or unreadable at $token_file; skipping"
+        exit 0
+      fi
+      if [ "$(cat "$token_file")" = "REPLACE_ME" ]; then
+        echo "cachix token not provisioned yet; skipping"
+        exit 0
+      fi
+
+      CACHIX_AUTH_TOKEN="$(cat "$token_file")"
+      export CACHIX_AUTH_TOKEN
+
+      # Build a flake output from the current main of a sourcehut repo and
+      # push its closure to cachix, skipping if that rev was already pushed.
+      warm() {
+        local name="$1" repo="$2" attr="$3"
+        local rev_file="$state_dir/last-pushed-$name"
+        local rev out_paths
+
+        if ! rev=$(git ls-remote "$repo_base/$repo" refs/heads/main | cut -f1) \
+          || [ -z "$rev" ]; then
+          echo "Failed to resolve main rev for $repo" >&2
+          return 1
+        fi
+
+        if [ -f "$rev_file" ] && [ "$(cat "$rev_file")" = "$rev" ]; then
+          echo "$name#$attr already pushed at $rev"
+          return 0
+        fi
+
+        echo "== Warming $name#$attr at $rev =="
+        if ! out_paths=$(nix build \
+          --accept-flake-config \
+          --no-link \
+          --print-out-paths \
+          "git+$repo_base/$repo?ref=main&rev=$rev#$attr"); then
+          echo "Failed to build $name#$attr at $rev" >&2
+          return 1
+        fi
+
+        if ! printf '%s\n' "$out_paths" | cachix push "$cache_name"; then
+          echo "Failed to push $name closure to $cache_name" >&2
+          return 1
+        fi
+
+        printf '%s\n' "$rev" >"$rev_file"
+        echo "Pushed $name#$attr at $rev"
+      }
+
+      failures=()
+
+      # The hourly refresh-pages CI job substitutes this closure instead of
+      # rebuilding the site tooling on builds.sr.ht.
+      warm averagechris.srht.site averagechris.srht.site fleet-ci-closure \
+        || failures+=("averagechris.srht.site")
+
+      fleet_repos=(
+        linear-cli
+        slack
+        granola-cli
+        ctx
+        starship-jj
+        workctl
+        gander
+      )
+      for repo in "''${fleet_repos[@]}"; do
+        warm "$repo" "$repo" release-artifact || failures+=("$repo")
+      done
+
+      if [ "''${#failures[@]}" -gt 0 ]; then
+        echo "fleet cache warmer failed for: ''${failures[*]}" >&2
+        exit 1
+      fi
+
+      echo "fleet cache warmer complete"
+    '';
+  };
+
   histerBackup = pkgs.writeShellApplication {
     name = "hister-backup";
     runtimeInputs = with pkgs; [
@@ -512,13 +616,25 @@ in {
   # secrets/secrets.nix). Guard on existence so the config evaluates before
   # the secret is created; once the file is committed, the secret and
   # environmentFile wire up automatically.
-  age.secrets = lib.mkIf (builtins.pathExists ../../../secrets/thorny/hister-env.age) {
-    hister-env = {
-      file = ../../../secrets/thorny/hister-env.age;
-      # Read by systemd as root via EnvironmentFile.
-      mode = "0400";
+  age.secrets =
+    {
+      # Cachix auth token for the fleet-cache-warmer service below. Readable
+      # by chris because the warmer runs as chris. Ships as the placeholder
+      # REPLACE_ME until provisioned; the warmer skips itself until then.
+      cachix-auth-token = {
+        file = ../../../secrets/cachix-auth-token.age;
+        owner = "chris";
+        group = "users";
+        mode = "0400";
+      };
+    }
+    // lib.optionalAttrs (builtins.pathExists ../../../secrets/thorny/hister-env.age) {
+      hister-env = {
+        file = ../../../secrets/thorny/hister-env.age;
+        # Read by systemd as root via EnvironmentFile.
+        mode = "0400";
+      };
     };
-  };
 
   services.hister = {
     enable = true;
@@ -596,6 +712,7 @@ in {
     "d /var/lib/dotfiles-host-build-cache/results 0755 chris users - -"
     "d /var/lib/dotfiles-host-build-cache/logs 0755 chris users - -"
     "d /var/lib/dotfiles-thorny-self-deploy 0755 root root - -"
+    "d /var/lib/fleet-cache-warmer 0755 chris users - -"
     "d /var/backups/hister 0700 root root - -"
   ];
 
@@ -623,6 +740,38 @@ in {
       Persistent = true;
       RandomizedDelaySec = "30m";
       Unit = "dotfiles-host-build-cache.service";
+    };
+  };
+
+  systemd.services.fleet-cache-warmer = {
+    description = "Push fleet CI closures from sourcehut main branches to cachix";
+    after = ["network-online.target"];
+    wants = ["network-online.target"];
+    serviceConfig = {
+      Type = "oneshot";
+      User = "chris";
+      Environment = [
+        "HOME=/home/chris"
+        "XDG_CONFIG_HOME=/home/chris/.config"
+      ];
+      WorkingDirectory = "/var/lib/fleet-cache-warmer";
+      ExecStart = lib.getExe fleetCacheWarmer;
+      # Rust release-artifact builds can take a long time on a cold store.
+      TimeoutStartSec = "4h";
+      Nice = 10;
+      IOSchedulingClass = "best-effort";
+      IOSchedulingPriority = 6;
+    };
+  };
+
+  systemd.timers.fleet-cache-warmer = {
+    description = "Hourly fleet CI closure cache warm-up";
+    wantedBy = ["timers.target"];
+    timerConfig = {
+      OnCalendar = "hourly";
+      Persistent = true;
+      RandomizedDelaySec = "10m";
+      Unit = "fleet-cache-warmer.service";
     };
   };
 

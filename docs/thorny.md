@@ -14,6 +14,9 @@ used locally.
 - Hourly scheduler for the homepage metadata refresh build on builds.sr.ht.
 - Build-cache maintainer for active NixOS host system closures from dotfiles
   `main`, so client host switches can reuse work already realized by `thorny`.
+- Cache warmer for fleet CI closures, pushing sourcehut `main` build outputs to
+  the `averagechris-dotfiles` cachix cache so builds.sr.ht jobs substitute
+  instead of building.
 - Pull-based self-deployer for `thorny` itself, with post-activation health
   checks and automatic rollback to the previous running system on failure.
 
@@ -90,6 +93,55 @@ ls -l /var/lib/dotfiles-host-build-cache/results
 
 The old per-host SourceHut build manifests were removed because they duplicated
 work that is more useful when performed on `thorny` itself.
+
+## Fleet cache warmer
+
+`thorny` runs `fleet-cache-warmer.timer` hourly, with a 10-minute randomized
+delay and persistent catch-up after downtime. The service runs as `chris` and
+pushes CI-relevant closures from sourcehut `main` branches to the
+`averagechris-dotfiles` cachix cache, so builds.sr.ht jobs (which trust that
+cache as a substituter) download instead of rebuilding:
+
+- `~averagechris/averagechris.srht.site` → `#fleet-ci-closure`, the runtime
+  closure of the `build-pages`/`refresh-pages` tooling used by the hourly
+  refresh CI job.
+- Each fleet repo (`linear-cli`, `slack`, `granola-cli`, `ctx`, `starship-jj`,
+  `workctl`, `gander`) → `#release-artifact` for x86_64-linux.
+
+For each target the warmer resolves the current `main` rev with
+`git ls-remote`, skips it if that rev was already pushed, and otherwise runs
+`nix build --no-link --print-out-paths` on the rev-pinned flake ref and pipes
+the outputs to `cachix push averagechris-dotfiles`. A failure for one repo does
+not stop the others; the service exits nonzero at the end if anything failed.
+State (per-repo `last-pushed-*` rev files and the run lock) lives under
+`/var/lib/fleet-cache-warmer/`.
+
+The cachix auth token comes from the agenix secret
+`secrets/cachix-auth-token.age`, exposed to `chris` at
+`/run/agenix/cachix-auth-token`. The secret ships as the literal placeholder
+`REPLACE_ME`, and the warmer logs "cachix token not provisioned yet; skipping"
+and exits 0 until the real token is in place. To provision it:
+
+1. Generate a write-capable token for the `averagechris-dotfiles` cache (from
+   the cachix dashboard, or `cachix authtoken` output on a machine already
+   authenticated).
+2. Re-encrypt the secret with the real value using the normal recreate flow:
+
+   ```bash
+   ./secrets/recreate-secrets.sh cachix-auth-token.age
+   ```
+
+3. Deploy `thorny` (or wait for self-deploy) so agenix picks up the new
+   ciphertext.
+
+Useful checks on `thorny`:
+
+```bash
+systemctl status fleet-cache-warmer.timer
+systemctl status fleet-cache-warmer.service
+journalctl -u fleet-cache-warmer.service
+ls -l /var/lib/fleet-cache-warmer
+```
 
 ## Thorny self-deploy
 

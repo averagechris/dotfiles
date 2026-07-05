@@ -28,6 +28,12 @@ in {
   "granola-token.age".publicKeys = [suremac-key];
   "opencode-sure-stack-context.age".publicKeys = [suremac-key];
 
+  # Thorny secrets (fleet-cache-warmer)
+  # Cachix auth token with write access to the averagechris-dotfiles cache.
+  # Ships as the literal placeholder REPLACE_ME until provisioned; the warmer
+  # service skips itself while the placeholder is in place.
+  "cachix-auth-token.age".publicKeys = systems-keys ++ [suremac-key];
+
   # Thorny secrets (hister)
   # Contains HISTER__SERVER__OAUTH__GITHUB__CLIENT_SECRET for the GitHub OAuth app.
   "thorny/hister-env.age".publicKeys = systems-keys ++ [suremac-key];
