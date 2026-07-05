@@ -52,8 +52,16 @@ fn run() -> Result<()> {
 fn print_usage(program: &OsStr) {
     let name = program.to_string_lossy();
     eprintln!(
-        "Usage:\n  {name} lint [onboard ...]\n  {name} ship [-b|--bookmark <bookmark>] [--remote <remote>] [--tag <tag>] [-- <jj git push args...>]\n  {name} tag push <tag> [--revision <rev>] [--remote <remote>]\n  {name} tag-push <tag> [--revision <rev>] [--remote <remote>]\n  {name} sync [-b|--bookmark <bookmark>] [--remote <remote>] [--onto <revset>] [-- <jj rebase args...>]\n  {name} pr <doctor|create|update|close|watch> ...\n  {name} ws <add|list|path|forget|prune|root> ..."
+            "Usage:\n  {name} lint [onboard ...]\n  {name} ship [-b|--bookmark <bookmark>] [--remote <remote>] [--tag <tag>] [--sign|--no-sign] [-- <jj git push args...>]\n  {name} tag push <tag> [--revision <rev>] [--remote <remote>] [-m|--message <message>] [--sign|--no-sign]\n  {name} tag-push <tag> [--revision <rev>] [--remote <remote>] [-m|--message <message>] [--sign|--no-sign]\n  {name} sync [-b|--bookmark <bookmark>] [--remote <remote>] [--onto <revset>] [-- <jj rebase args...>]\n  {name} pr <doctor|create|update|close|watch> ...\n  {name} ws <add|list|path|forget|prune|root> ..."
     );
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+enum TagSigning {
+    #[default]
+    Auto,
+    Sign,
+    NoSign,
 }
 
 #[derive(Debug, Default, PartialEq, Eq)]
@@ -65,6 +73,7 @@ struct ParsedArgs {
     quiet: bool,
     json: bool,
     tag: Option<String>,
+    tag_signing: TagSigning,
     noninteractive: bool,
     fail_on_conflicts: bool,
     passthrough: Vec<OsString>,
@@ -112,6 +121,18 @@ fn parse_common_args(args: Vec<OsString>) -> Result<ParsedArgs> {
         if let Some(value) = take_value_after_prefix(&arg, "--tag=")? {
             parsed.tag = Some(value);
             continue;
+        }
+
+        match arg.to_string_lossy().as_ref() {
+            "--sign" => {
+                set_tag_signing(&mut parsed.tag_signing, TagSigning::Sign)?;
+                continue;
+            }
+            "--no-sign" => {
+                set_tag_signing(&mut parsed.tag_signing, TagSigning::NoSign)?;
+                continue;
+            }
+            _ => {}
         }
 
         if arg == OsStr::new("--onto") {
@@ -180,10 +201,25 @@ fn os_to_string(value: OsString) -> Result<String> {
         .map_err(|_| anyhow!("argument contains invalid UTF-8"))
 }
 
+fn set_tag_signing(current: &mut TagSigning, next: TagSigning) -> Result<()> {
+    match (*current, next) {
+        (TagSigning::Auto, _) | (_, TagSigning::Auto) => {
+            *current = next;
+            Ok(())
+        }
+        (left, right) if left == right => Ok(()),
+        _ => bail!("pass only one of --sign or --no-sign"),
+    }
+}
+
 fn run_ship(mut args: ParsedArgs) -> Result<()> {
     if args.help {
         print_ship_usage();
         return Ok(());
+    }
+
+    if args.tag.is_none() && args.tag_signing != TagSigning::Auto {
+        bail!("jj ship --sign/--no-sign requires --tag <tag>")
     }
 
     // Run lints before changing bookmarks. The `jj push` alias also runs lints,
@@ -270,6 +306,8 @@ fn run_ship(mut args: ParsedArgs) -> Result<()> {
             tag,
             revision: Some(target_id.clone()),
             remote: Some(remote.clone()),
+            message: None,
+            signing: args.tag_signing,
             allow_dirty: false,
             allow_move: false,
             allow_non_semver: false,
@@ -397,6 +435,9 @@ fn run_sync(mut args: ParsedArgs) -> Result<()> {
     if args.tag.is_some() {
         bail!("jj sync does not support --tag; use `jj ship --tag <tag>` or `jj tag-push <tag> --revision <rev>`")
     }
+    if args.tag_signing != TagSigning::Auto {
+        bail!("jj sync does not support --sign/--no-sign; use `jj ship --tag <tag>` or `jj tag-push <tag> --revision <rev>`")
+    }
 
     let configured_remote = jj_config_string("dotfiles.sync.remote")?;
     let mut remote_for_fetch = args.remote_input.clone().or(configured_remote);
@@ -486,6 +527,8 @@ struct TagPushArgs {
     tag: String,
     revision: Option<String>,
     remote: Option<String>,
+    message: Option<String>,
+    signing: TagSigning,
     allow_dirty: bool,
     allow_move: bool,
     allow_non_semver: bool,
@@ -554,7 +597,22 @@ fn parse_tag_push_args(args: Vec<OsString>) -> Result<TagPushArgs> {
             continue;
         }
 
+        if arg == OsStr::new("-m") || arg == OsStr::new("--message") {
+            let value = iter
+                .next()
+                .ok_or_else(|| anyhow!("missing value for {}", arg.to_string_lossy()))?;
+            parsed.message = Some(os_to_string(value)?);
+            continue;
+        }
+
+        if let Some(value) = take_value_after_prefix(&arg, "--message=")? {
+            parsed.message = Some(value);
+            continue;
+        }
+
         match arg.to_string_lossy().as_ref() {
+            "--sign" => set_tag_signing(&mut parsed.signing, TagSigning::Sign)?,
+            "--no-sign" => set_tag_signing(&mut parsed.signing, TagSigning::NoSign)?,
             "--allow-dirty" => parsed.allow_dirty = true,
             "--allow-move" => parsed.allow_move = true,
             "--allow-non-semver" => parsed.allow_non_semver = true,
@@ -617,15 +675,26 @@ fn tag_push(args: TagPushArgs) -> Result<()> {
     }
     let description = commit_description_first_line(&revision)?;
     let remote = resolve_tag_remote(args.remote.as_deref())?;
+    let signing = resolve_tag_signing(args.signing)?;
 
-    let remote_target_before = remote_tag_target(&remote, &args.tag)?;
-    if let Some(remote_target) = remote_target_before.as_deref() {
+    let remote_tag_before = remote_tag_ref(&remote, &args.tag)?;
+    if let Some(remote_tag) = remote_tag_before.as_ref() {
+        let remote_target = remote_tag.target();
         if remote_target == target_id {
+            if !remote_tag.is_annotated() {
+                bail!(
+                    "remote tag {} already exists on {} at {} but is lightweight; release artifacts on hosts like sourcehut require an annotated tag. Re-create it as annotated on the same commit and force-push only refs/tags/{}.",
+                    args.tag,
+                    remote,
+                    short_commit(remote_target),
+                    args.tag
+                );
+            }
             if args.json {
                 print_tag_push_json(&args.tag, &revision, &target_id, &remote, true, true);
             } else if !args.quiet {
                 println!(
-                    "remote tag {} already exists on {} -> {}",
+                    "remote annotated tag {} already exists on {} -> {}",
                     args.tag,
                     remote,
                     short_commit(&target_id)
@@ -641,9 +710,21 @@ fn tag_push(args: TagPushArgs) -> Result<()> {
         );
     }
 
-    let local_target_before = local_tag_target(&args.tag)?;
+    let local_git_tag_before = local_git_tag_ref(&args.tag)?;
+    let local_target_before = local_tag_target(&args.tag)?.or_else(|| {
+        local_git_tag_before
+            .as_ref()
+            .map(|tag_ref| tag_ref.target().to_string())
+    });
+    let local_tag_is_annotated_at_target = matches!(
+        local_git_tag_before.as_ref(),
+        Some(tag_ref) if tag_ref.is_annotated() && tag_ref.target() == target_id
+    );
     let needs_local_tag = match local_target_before.as_deref() {
-        Some(local_target) if local_target == target_id => false,
+        Some(local_target) if local_target == target_id && local_tag_is_annotated_at_target => {
+            false
+        }
+        Some(local_target) if local_target == target_id => true,
         Some(local_target) if args.allow_move => {
             if !args.quiet && !args.json {
                 println!(
@@ -671,6 +752,7 @@ fn tag_push(args: TagPushArgs) -> Result<()> {
             println!("revision: {revision}");
             println!("commit: {} {}", short_commit(&target_id), description);
             println!("remote: {remote}");
+            println!("signed: {}", signing.description());
         }
         return Ok(());
     }
@@ -680,23 +762,45 @@ fn tag_push(args: TagPushArgs) -> Result<()> {
         println!("revision: {revision}");
         println!("commit: {} {}", short_commit(&target_id), description);
         println!("remote: {remote}");
+        println!("signed: {}", signing.description());
         println!();
     }
 
     if needs_local_tag {
-        run_jj_status(["tag", "set", "-r", revision.as_str(), args.tag.as_str()])?;
+        let message = args
+            .message
+            .clone()
+            .unwrap_or_else(|| default_tag_message(&args.tag));
+        create_annotated_git_tag(
+            &args.tag,
+            &target_id,
+            &message,
+            local_target_before.is_some(),
+            &signing,
+        )?;
+        if signing.sign {
+            verify_signed_git_tag(&args.tag)?;
+        }
+        run_jj_status(["git", "import"])?;
     } else if !args.quiet && !args.json {
         println!(
-            "local tag {} already points to {}",
+            "local annotated tag {} already points to {}",
             args.tag,
             short_commit(&target_id)
         );
     }
 
-    run_jj_status(["git", "export"])?;
     git_push_tag(&remote, &args.tag)?;
-    let verified_target = remote_tag_target(&remote, &args.tag)?
+    let verified_tag = remote_tag_ref(&remote, &args.tag)?
         .ok_or_else(|| anyhow!("remote tag {} was not found after push", args.tag))?;
+    if !verified_tag.is_annotated() {
+        bail!(
+            "remote tag {} on {} is lightweight after push; expected an annotated tag",
+            args.tag,
+            remote
+        );
+    }
+    let verified_target = verified_tag.target().to_string();
     if verified_target != target_id {
         bail!(
             "remote tag {} points to {}, expected {}",
@@ -704,6 +808,16 @@ fn tag_push(args: TagPushArgs) -> Result<()> {
             short_commit(&verified_target),
             short_commit(&target_id)
         )
+    }
+    let local_tag_after = local_git_tag_ref(&args.tag)?
+        .ok_or_else(|| anyhow!("local tag {} was not found after push", args.tag))?;
+    if local_tag_after.object_id != verified_tag.object_id {
+        bail!(
+            "remote tag {} object {} differs from local tag object {}",
+            args.tag,
+            short_commit(&verified_tag.object_id),
+            short_commit(&local_tag_after.object_id)
+        );
     }
 
     if args.json {
@@ -5055,15 +5169,185 @@ fn local_tags_at_revset(revset: &str) -> Result<Vec<String>> {
     Ok(tags)
 }
 
-fn remote_tag_target(remote: &str, tag: &str) -> Result<Option<String>> {
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct TagRef {
+    object_id: String,
+    peeled_target: Option<String>,
+}
+
+impl TagRef {
+    fn target(&self) -> &str {
+        self.peeled_target.as_deref().unwrap_or(&self.object_id)
+    }
+
+    fn is_annotated(&self) -> bool {
+        self.peeled_target.is_some()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct ResolvedTagSigning {
+    sign: bool,
+    key: Option<String>,
+    source: &'static str,
+}
+
+impl ResolvedTagSigning {
+    fn description(&self) -> String {
+        if self.sign {
+            match self.key.as_deref() {
+                Some(key) => format!("yes ({}, key {key})", self.source),
+                None => format!("yes ({}, default GPG key)", self.source),
+            }
+        } else {
+            format!("no ({})", self.source)
+        }
+    }
+}
+
+fn jj_git_root() -> Result<PathBuf> {
+    let output = run_jj_capture(["git", "root"])?;
+    Ok(PathBuf::from(output.stdout.trim()))
+}
+
+fn git_in_jj_repo() -> Result<Command> {
+    let git_dir = jj_git_root()?;
+    let mut command = Command::new("git");
+    command.arg("--git-dir").arg(git_dir);
+    Ok(command)
+}
+
+fn git_capture_in_jj_repo(args: &[&str]) -> Result<std::process::Output> {
+    let mut command = git_in_jj_repo()?;
+    command.args(args);
+    command
+        .output()
+        .with_context(|| format!("failed to execute git {}", args.join(" ")))
+}
+
+fn git_config_string(key: &str) -> Result<Option<String>> {
+    let output = git_capture_in_jj_repo(&["config", "--get", key])?;
+    if !output.status.success() {
+        return Ok(None);
+    }
+    let value = String::from_utf8(output.stdout)
+        .context("failed to decode git config stdout")?
+        .trim()
+        .trim_matches('"')
+        .to_string();
+    Ok((!value.is_empty()).then_some(value))
+}
+
+fn jj_tag_signing_key() -> Result<Option<String>> {
+    for key in ["signing.key", "user.signing-key"] {
+        if let Some(value) = jj_config_string(key)? {
+            return Ok(Some(value));
+        }
+    }
+    git_config_string("user.signingkey")
+}
+
+fn jj_gpg_signing_enabled() -> Result<bool> {
+    let backend = jj_config_string("signing.backend")?;
+    if backend.as_deref() != Some("gpg") {
+        return Ok(false);
+    }
+
+    let behavior = jj_config_string("signing.behavior")?;
+    Ok(!matches!(
+        behavior.as_deref(),
+        Some("drop" | "never" | "none" | "disabled")
+    ))
+}
+
+fn resolve_tag_signing(requested: TagSigning) -> Result<ResolvedTagSigning> {
+    let key = jj_tag_signing_key()?;
+    match requested {
+        TagSigning::NoSign => Ok(ResolvedTagSigning {
+            sign: false,
+            key: None,
+            source: "--no-sign",
+        }),
+        TagSigning::Sign => Ok(ResolvedTagSigning {
+            sign: true,
+            key,
+            source: "--sign",
+        }),
+        TagSigning::Auto if jj_gpg_signing_enabled()? => Ok(ResolvedTagSigning {
+            sign: true,
+            key,
+            source: "jj signing.backend=gpg",
+        }),
+        TagSigning::Auto => Ok(ResolvedTagSigning {
+            sign: false,
+            key: None,
+            source: "jj gpg signing not configured",
+        }),
+    }
+}
+
+fn local_git_tag_ref(tag: &str) -> Result<Option<TagRef>> {
     let refname = format!("refs/tags/{tag}");
-    let output = Command::new("git")
+    let output = git_capture_in_jj_repo(&["rev-parse", "--verify", refname.as_str()])?;
+    if !output.status.success() {
+        return Ok(None);
+    }
+    let object_id = String::from_utf8(output.stdout)
+        .context("failed to decode git rev-parse stdout")?
+        .lines()
+        .next()
+        .unwrap_or_default()
+        .trim()
+        .to_string();
+    if object_id.is_empty() {
+        return Ok(None);
+    }
+
+    let object_type_output = git_capture_in_jj_repo(&["cat-file", "-t", object_id.as_str()])?;
+    if !object_type_output.status.success() {
+        let stderr = String::from_utf8_lossy(&object_type_output.stderr);
+        bail!("git cat-file -t {object_id} failed: {}", stderr.trim())
+    }
+    let object_type = String::from_utf8(object_type_output.stdout)
+        .context("failed to decode git cat-file stdout")?;
+    let peeled_target = if object_type.trim() == "tag" {
+        let peel = format!("{refname}^{{}}");
+        let peel_output = git_capture_in_jj_repo(&["rev-parse", "--verify", peel.as_str()])?;
+        if !peel_output.status.success() {
+            let stderr = String::from_utf8_lossy(&peel_output.stderr);
+            bail!("git rev-parse --verify {peel} failed: {}", stderr.trim())
+        }
+        Some(
+            String::from_utf8(peel_output.stdout)
+                .context("failed to decode git rev-parse peeled stdout")?
+                .lines()
+                .next()
+                .unwrap_or_default()
+                .trim()
+                .to_string(),
+        )
+    } else {
+        None
+    };
+
+    Ok(Some(TagRef {
+        object_id,
+        peeled_target,
+    }))
+}
+
+fn remote_tag_ref(remote: &str, tag: &str) -> Result<Option<TagRef>> {
+    let refname = format!("refs/tags/{tag}");
+    let peel_refname = format!("{refname}^{{}}");
+    let mut command = git_in_jj_repo()?;
+    let output = command
         .args([
             "ls-remote",
             "--exit-code",
             "--tags",
             remote,
             refname.as_str(),
+            peel_refname.as_str(),
         ])
         .output()
         .with_context(|| format!("failed to execute git ls-remote for {remote}/{tag}"))?;
@@ -5081,25 +5365,121 @@ fn remote_tag_target(remote: &str, tag: &str) -> Result<Option<String>> {
 
     let stdout =
         String::from_utf8(output.stdout).context("failed to decode git ls-remote stdout")?;
+    let mut object_id = None;
+    let mut peeled_target = None;
     for line in stdout.lines() {
         let mut fields = line.split_whitespace();
-        let Some(object_id) = fields.next() else {
+        let Some(id) = fields.next() else {
             continue;
         };
         let Some(remote_ref) = fields.next() else {
             continue;
         };
         if remote_ref == refname {
-            return Ok(Some(object_id.to_string()));
+            object_id = Some(id.to_string());
+        } else if remote_ref == peel_refname {
+            peeled_target = Some(id.to_string());
         }
     }
 
-    Ok(None)
+    Ok(object_id.map(|object_id| TagRef {
+        object_id,
+        peeled_target,
+    }))
+}
+
+fn remote_tag_target(remote: &str, tag: &str) -> Result<Option<String>> {
+    Ok(remote_tag_ref(remote, tag)?.map(|tag_ref| tag_ref.target().to_string()))
+}
+
+fn default_tag_message(tag: &str) -> String {
+    let repo_name = jj_root()
+        .ok()
+        .and_then(|root| {
+            root.file_name()
+                .map(|name| name.to_string_lossy().to_string())
+        })
+        .filter(|name| !name.is_empty())
+        .unwrap_or_else(|| "release".to_string());
+    format!("{repo_name} {tag}")
+}
+
+fn create_annotated_git_tag(
+    tag: &str,
+    target_id: &str,
+    message: &str,
+    force: bool,
+    signing: &ResolvedTagSigning,
+) -> Result<()> {
+    let mut command = git_in_jj_repo()?;
+    if !signing.sign {
+        command.arg("-c").arg("tag.gpgSign=false");
+    }
+    if let Some(name) = jj_config_string("user.name")? {
+        command.arg("-c").arg(format!("user.name={name}"));
+    }
+    if let Some(email) = jj_config_string("user.email")? {
+        command.arg("-c").arg(format!("user.email={email}"));
+    }
+    command.arg("tag");
+    if force {
+        command.arg("-f");
+    }
+    if signing.sign {
+        command.arg("-s");
+        if let Some(key) = signing.key.as_deref() {
+            command.args(["-u", key]);
+        }
+    } else {
+        command.arg("-a");
+    }
+    command.args(["-m", message, tag, target_id]);
+    let output = command
+        .output()
+        .with_context(|| format!("failed to execute git tag for {tag}"))?;
+    let status = output.status;
+    if status.success() {
+        Ok(())
+    } else if signing.sign {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        bail!(
+            "failed to create signed tag {tag}{}\n\n{}\n\nChecks:\n  gpg --list-secret-keys{}\n  echo test | gpg --clearsign\n  gpg-agent-recover\n\nOr explicitly create an unsigned annotated tag:\n  jj tag-push {tag} --revision {target_id} --no-sign",
+            signing
+                .key
+                .as_deref()
+                .map(|key| format!(" with GPG key {key}"))
+                .unwrap_or_default(),
+            stderr.trim(),
+            signing
+                .key
+                .as_deref()
+                .map(|key| format!(" {key}"))
+                .unwrap_or_default()
+        )
+    } else {
+        bail!("git tag -a {tag} failed with status {status}")
+    }
+}
+
+fn verify_signed_git_tag(tag: &str) -> Result<()> {
+    let refname = format!("refs/tags/{tag}");
+    let output = git_in_jj_repo()?
+        .args(["verify-tag", refname.as_str()])
+        .output()
+        .with_context(|| format!("failed to execute git verify-tag {refname}"))?;
+    if output.status.success() {
+        Ok(())
+    } else {
+        bail!(
+            "signed tag {tag} was created but git verify-tag failed:\n{}",
+            String::from_utf8_lossy(&output.stderr).trim()
+        )
+    }
 }
 
 fn git_push_tag(remote: &str, tag: &str) -> Result<()> {
     let refspec = format!("refs/tags/{tag}");
-    let status = Command::new("git")
+    let status = git_in_jj_repo()?
         .args(["push", remote, refspec.as_str()])
         .status()
         .with_context(|| format!("failed to execute git push {remote} {refspec}"))?;
@@ -5262,19 +5642,19 @@ fn is_release_bookmark(bookmark: &str) -> bool {
 
 fn print_ship_usage() {
     eprintln!(
-        "Usage:\n  jj ship [-b|--bookmark <bookmark>] [--remote <remote>] [--tag <tag>] [-- <jj git push args...>]\n\nRuns jj lint, then ships the parent of the working copy. Refuses empty targets and will not fall back to integration bookmarks unless you choose one explicitly with --bookmark. With --tag, tags the exact shipped commit and publishes that tag to the remote."
+        "Usage:\n  jj ship [-b|--bookmark <bookmark>] [--remote <remote>] [--tag <tag>] [--sign|--no-sign] [-- <jj git push args...>]\n\nRuns jj lint, then ships the parent of the working copy. Refuses empty targets and will not fall back to integration bookmarks unless you choose one explicitly with --bookmark. With --tag, creates an annotated Git tag for the exact shipped commit and publishes that tag to the remote. Tags are signed by default when jj GPG signing is configured; use --no-sign for an unsigned annotated tag."
     );
 }
 
 fn print_tag_usage() {
     eprintln!(
-        "Usage:\n  jj tag push <tag> [--revision <rev>] [--remote <remote>]\n\nInternal helper namespace. The public jj alias is `jj tag-push <tag> ...` because jj aliases cannot override the built-in `jj tag` command."
+        "Usage:\n  jj tag push <tag> [--revision <rev>] [--remote <remote>] [-m|--message <message>] [--sign|--no-sign]\n\nInternal helper namespace. The public jj alias is `jj tag-push <tag> ...` because jj aliases cannot override the built-in `jj tag` command."
     );
 }
 
 fn print_tag_push_usage() {
     eprintln!(
-        "Usage:\n  jj tag-push <tag> [--revision <rev>] [--remote <remote>] [--allow-dirty] [--allow-move] [--allow-non-semver] [--dry-run] [--json]\n\nCreates or reuses a local jj tag, exports refs to colocated Git, pushes the exact refs/tags/<tag> ref, and verifies the remote tag. If --revision is omitted with a clean working copy, @- is used. Tags must look like vX.Y.Z unless --allow-non-semver is passed."
+        "Usage:\n  jj tag-push <tag> [--revision <rev>] [--remote <remote>] [-m|--message <message>] [--sign|--no-sign] [--allow-dirty] [--allow-move] [--allow-non-semver] [--dry-run] [--json]\n\nCreates or reuses an annotated Git tag in the jj-backed Git store, imports it into jj, pushes the exact refs/tags/<tag> ref, and verifies that the remote tag is annotated and peels to the requested commit. Tags are signed by default when jj GPG signing is configured; use --no-sign for an unsigned annotated tag. If --revision is omitted with a clean working copy, @- is used. Tags must look like vX.Y.Z unless --allow-non-semver is passed."
     );
 }
 
@@ -5621,11 +6001,13 @@ mod tests {
         validate_release_tag, validate_ticket, validate_ws_name, workspace_context_for_repo,
         workspace_has_unpublished_work, write_tracked_lint_config, FetchChoice, LintCommand,
         LintOnboardReport, LintSuggestion, ParsedArgs, PrArgs, ProjectGroup, ShipPlan, TagPushArgs,
-        WsAddArgs, WsConfig, WsForgetArgs, WsPathArgs, WsPruneArgs,
+        TagSigning, WsAddArgs, WsConfig, WsForgetArgs, WsPathArgs, WsPruneArgs,
     };
     use std::env;
     use std::ffi::OsString;
     use std::fs;
+    #[cfg(unix)]
+    use std::os::unix::fs::PermissionsExt;
     use std::path::{Path, PathBuf};
     use std::process::Command;
     use std::sync::Mutex;
@@ -5639,6 +6021,48 @@ mod tests {
 
     fn lint_commands(lints: &[super::LintCommand]) -> Vec<String> {
         lints.iter().map(|lint| lint.command.clone()).collect()
+    }
+
+    fn assert_remote_annotated_tag(origin: &Path, tag: &str, expected_target: &str) {
+        let refname = format!("refs/tags/{tag}");
+        let peel_refname = format!("{refname}^{{}}");
+        let output = Command::new("git")
+            .arg("ls-remote")
+            .arg("--exit-code")
+            .arg("--tags")
+            .arg(origin)
+            .arg(&refname)
+            .arg(&peel_refname)
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "tag missing\nstdout:\n{}\nstderr:\n{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+
+        let stdout = String::from_utf8(output.stdout).unwrap();
+        let mut tag_object = None;
+        let mut peeled_target = None;
+        for line in stdout.lines() {
+            let mut fields = line.split_whitespace();
+            let object_id = fields.next().unwrap_or_default();
+            let remote_ref = fields.next().unwrap_or_default();
+            if remote_ref == refname {
+                tag_object = Some(object_id.to_string());
+            } else if remote_ref == peel_refname {
+                peeled_target = Some(object_id.to_string());
+            }
+        }
+
+        let tag_object = tag_object.unwrap_or_else(|| panic!("missing tag object for {tag}"));
+        let peeled_target = peeled_target.unwrap_or_else(|| panic!("missing peeled ref for {tag}"));
+        assert_eq!(peeled_target, expected_target);
+        assert_ne!(
+            tag_object, expected_target,
+            "{tag} should be annotated, not lightweight"
+        );
     }
 
     #[test]
@@ -5862,6 +6286,49 @@ mod tests {
         String::from_utf8(output.stdout).unwrap()
     }
 
+    struct PathGuard {
+        previous: Option<OsString>,
+    }
+
+    impl PathGuard {
+        fn prepend(dir: &Path) -> Self {
+            let previous = env::var_os("PATH");
+            let mut paths = vec![dir.to_path_buf()];
+            if let Some(previous_path) = previous.as_ref() {
+                paths.extend(env::split_paths(previous_path));
+            }
+            let next = env::join_paths(paths).unwrap();
+            env::set_var("PATH", next);
+            Self { previous }
+        }
+    }
+
+    impl Drop for PathGuard {
+        fn drop(&mut self) {
+            if let Some(previous) = self.previous.as_ref() {
+                env::set_var("PATH", previous);
+            } else {
+                env::remove_var("PATH");
+            }
+        }
+    }
+
+    #[cfg(unix)]
+    fn install_fake_npm(root: &Path) -> PathBuf {
+        let bin = root.join("bin");
+        fs::create_dir_all(&bin).unwrap();
+        let npm = bin.join("npm");
+        fs::write(
+            &npm,
+            "#!/bin/sh\ncase \"$1:$2\" in\n  run:lint|test:) exit 0 ;;\n  *) echo \"unexpected fake npm args: $*\" >&2; exit 64 ;;\nesac\n",
+        )
+        .unwrap();
+        let mut permissions = fs::metadata(&npm).unwrap().permissions();
+        permissions.set_mode(0o755);
+        fs::set_permissions(&npm, permissions).unwrap();
+        bin
+    }
+
     #[test]
     fn sync_prefers_develop_by_default() {
         let bookmarks = strings(&["develop", "main"]);
@@ -5988,6 +6455,9 @@ mod tests {
             "--revision".into(),
             "main".into(),
             "--remote=origin".into(),
+            "--message".into(),
+            "repo v0.2.1".into(),
+            "--no-sign".into(),
             "--allow-move".into(),
             "--dry-run".into(),
         ])
@@ -5998,6 +6468,8 @@ mod tests {
                 tag: "v0.2.1".to_string(),
                 revision: Some("main".to_string()),
                 remote: Some("origin".to_string()),
+                message: Some("repo v0.2.1".to_string()),
+                signing: TagSigning::NoSign,
                 allow_move: true,
                 dry_run: true,
                 ..TagPushArgs::default()
@@ -6011,6 +6483,22 @@ mod tests {
         for tag in ["0.2.1", "v0.2", "v0.2.x", "v0.2.1-beta"] {
             assert!(validate_release_tag(tag).is_err(), "{tag} should fail");
         }
+    }
+
+    #[test]
+    fn tag_signing_flags_are_exclusive() {
+        let err = parse_tag_push_args(vec!["v0.2.1".into(), "--sign".into(), "--no-sign".into()])
+            .unwrap_err();
+        assert!(err.to_string().contains("only one of --sign or --no-sign"));
+
+        let err = parse_common_args(vec![
+            "--tag".into(),
+            "v0.2.1".into(),
+            "--sign".into(),
+            "--no-sign".into(),
+        ])
+        .unwrap_err();
+        assert!(err.to_string().contains("only one of --sign or --no-sign"));
     }
 
     #[test]
@@ -7155,6 +7643,22 @@ tests = []
             &repo,
             &["git", "push", "--bookmark", "main", "--remote", "origin"],
         );
+        let target_commit = jj_stdout(
+            &repo,
+            &[
+                "log",
+                "-r",
+                "main",
+                "-n",
+                "1",
+                "--no-graph",
+                "--color=never",
+                "-T",
+                "commit_id",
+            ],
+        )
+        .trim()
+        .to_string();
 
         let old = env::current_dir().unwrap();
         env::set_current_dir(&repo).unwrap();
@@ -7162,25 +7666,90 @@ tests = []
             tag: "v0.2.1".to_string(),
             revision: Some("main".to_string()),
             remote: Some("origin".to_string()),
+            signing: TagSigning::NoSign,
             quiet: true,
             ..TagPushArgs::default()
         })
         .unwrap();
         env::set_current_dir(old).unwrap();
 
-        let output = Command::new("git")
-            .arg("ls-remote")
-            .arg("--exit-code")
-            .arg("--tags")
-            .arg(&origin)
-            .arg("refs/tags/v0.2.1")
-            .output()
-            .unwrap();
+        assert_remote_annotated_tag(&origin, "v0.2.1", &target_commit);
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn integration_tag_push_rejects_existing_remote_lightweight_tag() {
+        if which::which("git").is_err() {
+            return;
+        }
+
+        let _guard = INTEGRATION_LOCK.lock().unwrap();
+        let root = named_tempdir("tag-push-lightweight");
+        let origin = root.join("origin.git");
+        let repo = root.join("repo");
+
+        run(Command::new("git").arg("init").arg("--bare").arg(&origin));
+        run(Command::new("jj").arg("git").arg("init").arg(&repo));
+        jj(
+            &repo,
+            &["git", "remote", "add", "origin", origin.to_str().unwrap()],
+        );
+        fs::write(repo.join("file.txt"), "initial\n").unwrap();
+        jj(&repo, &["describe", "-m", "initial"]);
+        jj(&repo, &["bookmark", "set", "main", "-r", "@"]);
+        jj(
+            &repo,
+            &["git", "push", "--bookmark", "main", "--remote", "origin"],
+        );
+        let target_commit = jj_stdout(
+            &repo,
+            &[
+                "log",
+                "-r",
+                "main",
+                "-n",
+                "1",
+                "--no-graph",
+                "--color=never",
+                "-T",
+                "commit_id",
+            ],
+        )
+        .trim()
+        .to_string();
+        let git_dir = jj_stdout(&repo, &["git", "root"]).trim().to_string();
+        run(Command::new("git")
+            .arg("-c")
+            .arg("tag.gpgSign=false")
+            .arg("--git-dir")
+            .arg(&git_dir)
+            .arg("tag")
+            .arg("v0.2.3")
+            .arg(&target_commit));
+        run(Command::new("git")
+            .arg("--git-dir")
+            .arg(&git_dir)
+            .arg("push")
+            .arg("origin")
+            .arg("refs/tags/v0.2.3"));
+
+        let old = env::current_dir().unwrap();
+        env::set_current_dir(&repo).unwrap();
+        let err = tag_push(TagPushArgs {
+            tag: "v0.2.3".to_string(),
+            revision: Some("main".to_string()),
+            remote: Some("origin".to_string()),
+            signing: TagSigning::NoSign,
+            quiet: true,
+            ..TagPushArgs::default()
+        })
+        .unwrap_err();
+        env::set_current_dir(old).unwrap();
+
         assert!(
-            output.status.success(),
-            "tag missing\nstdout:\n{}\nstderr:\n{}",
-            String::from_utf8_lossy(&output.stdout),
-            String::from_utf8_lossy(&output.stderr)
+            err.to_string().contains("is lightweight"),
+            "unexpected error: {err:#}"
         );
 
         let _ = fs::remove_dir_all(&root);
@@ -7232,28 +7801,14 @@ tests = []
                 "origin".into(),
                 "--tag".into(),
                 "v0.2.2".into(),
+                "--no-sign".into(),
             ])
             .unwrap(),
         )
         .unwrap();
         env::set_current_dir(old).unwrap();
 
-        let output = Command::new("git")
-            .arg("ls-remote")
-            .arg("--exit-code")
-            .arg("--tags")
-            .arg(&origin)
-            .arg("refs/tags/v0.2.2")
-            .output()
-            .unwrap();
-        assert!(output.status.success());
-        let tag_target = String::from_utf8(output.stdout)
-            .unwrap()
-            .split_whitespace()
-            .next()
-            .unwrap()
-            .to_string();
-        assert_eq!(tag_target, shipped_commit);
+        assert_remote_annotated_tag(&origin, "v0.2.2", &shipped_commit);
 
         let _ = fs::remove_dir_all(&root);
     }
@@ -7262,6 +7817,8 @@ tests = []
     fn integration_lint_onboard_writes_and_runs_package_lints() {
         let _guard = INTEGRATION_LOCK.lock().unwrap();
         let root = named_tempdir("lint-run");
+        #[cfg(unix)]
+        let _path_guard = PathGuard::prepend(&install_fake_npm(&root));
         run(Command::new("jj").arg("git").arg("init").arg(&root));
         fs::write(
             root.join("package.json"),

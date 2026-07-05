@@ -27,8 +27,11 @@ The dotfiles repository includes an automated GPG signing configuration that:
    - Enables GPG agent with 7-day passphrase cache
 
 3. **Git Configuration**
-   - Signing key is written by activation from `/run/agenix/gpg-key-id`
-   - Commits are signed by default (`commit.gpgsign = true`)
+    - Signing key is written by activation from `/run/agenix/gpg-key-id`
+    - Commits are signed by default (`commit.gpgsign = true`)
+    - `jj tag-push`/`jj ship --tag` create signed annotated release tags by
+      default when jj GPG signing is configured; pass `--no-sign` for unsigned
+      annotated tags in automation or backfills
 
 4. **Jujutsu Configuration**
    - Signing key is written by activation from `/run/agenix/gpg-key-id`
@@ -131,6 +134,10 @@ To add GPG signing to a new machine:
 
 - Git automatically signs all commits with the configured key
 - Jujutsu automatically signs all commits with the same key
+- The repo-managed `jj tag-push` and `jj ship --tag` helpers sign annotated
+  release tags by default when jj GPG signing is configured. They invoke Git
+  with `--git-dir "$(jj git root)"`, so tag signing works from non-colocated jj
+  workspaces that do not have a `.git` directory at the workspace root.
 - **GPG agent caches the passphrase for 7 days** - you only need to enter it once per week
 - The key persists in the GPG keyring across rebuilds
 - The key ID is read from agenix on each rebuild

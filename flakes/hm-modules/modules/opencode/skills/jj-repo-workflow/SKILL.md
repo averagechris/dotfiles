@@ -117,11 +117,11 @@ Use when the user wants the change finished and published.
 - Refuses empty targets.
 - Requires `--bookmark` if only integration bookmarks are nearby.
 - Pushes via `jj git push` after lints pass to avoid duplicate lint runs.
-- With `--tag vX.Y.Z`, tags the exact shipped commit, exports refs, pushes `refs/tags/<tag>`, and verifies the remote tag.
+- With `--tag vX.Y.Z`, creates an annotated Git tag for the exact shipped commit, pushes `refs/tags/<tag>`, and verifies the remote tag is annotated and peels to that commit. Tags are signed by default when jj GPG signing is configured; use `--no-sign` for unsigned annotated tags in automation/backfills.
 
 ## Tags
 
-For human/agent-created release tags, prefer `jj ship --bookmark <b> --tag vX.Y.Z`. If the bookmark is already shipped, use `jj tag-push vX.Y.Z --revision <rev>`. Do not expect `jj git push --all` to create new remote tags; jj intentionally refuses that.
+For human/agent-created release tags, prefer `jj ship --bookmark <b> --tag vX.Y.Z`. If the bookmark is already shipped, use `jj tag-push vX.Y.Z --revision <rev>`. Use `--sign` to require signing and `--no-sign` to force unsigned annotated tags. Do not use `jj tag set` for release tags that need artifacts: it creates lightweight tags, while hosts like sourcehut require annotated tags. Do not expect `jj git push --all` to create new remote tags; jj intentionally refuses that.
 
 ## `jj pr` on suremac
 

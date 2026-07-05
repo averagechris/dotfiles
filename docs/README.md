@@ -13,7 +13,7 @@
 - [hyprland](/docs/hyprland.md) - Hyprland window manager configuration, keybindings, and features
 - [hyprland ergonomics requirements](/docs/hyprland-ergonomics-requirements.md) - Planned tater/shared Hyprland ergonomics CLI, daemon, workspace, tray, and Eww improvements
 - [jj PR workflow](/docs/jj-pr-workflow.md) - suremac-only `jj pr` helper for creating GitHub PRs from jj workspaces
-- [jj tag workflow](/docs/jj-tag-workflow.md) - Optional `jj ship --tag` and `jj tag-push` flow for human/agent-created release tags
+- [jj tag workflow](/docs/jj-tag-workflow.md) - Optional `jj ship --tag` and `jj tag-push` flow for annotated human/agent-created release tags
 - [jj workspaces](/docs/jj-workspaces.md) - Design decisions and implementation checklist for ergonomic jj workspace management
 - [linear-cli](/docs/linear-cli.md) - Linear CLI Home Manager module, completions, agent-facing context defaults, and hygiene automation (scheduled checks, notifications, prompt nudges, agentic autofix)
 - [manual package updates](/docs/manual-package-updates.md) - Rust flake/manual package updater, manifest enrollment, cooldowns, and fixed-hash package pins
