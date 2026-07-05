@@ -150,7 +150,7 @@ only when the compact summary is insufficient.
 
 ```bash
 jj status --no-pager --color=never
-jj log -n 8 --no-pager --color=never
+jj log-recent || jj log -n 8 --no-pager --color=never
 ```
 
 - Changelog entry is the `jj describe` message; keep it concise and Conventional-Commit style.

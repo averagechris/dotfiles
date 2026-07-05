@@ -7,6 +7,18 @@
 }: let
   cfg = config.programs.jujutsu;
   dotCfg = config.dotfiles.jujutsu;
+  compactLogTemplate = lib.concatStrings [
+    "if(current_working_copy, \"@ \", \"  \")"
+    " ++ change_id.short()"
+    " ++ \" \" ++ commit_id.short()"
+    " ++ \" \" ++ if(empty, \"(empty) \", \"\")"
+    " ++ if(bookmarks, bookmarks ++ \" \", \"\")"
+    " ++ if(tags, tags ++ \" \", \"\")"
+    " ++ coalesce(description.first_line(), \"(no description set)\")"
+    " ++ \"\\n\""
+  ];
+  compactLogArgs = ["log" "--no-graph" "--no-pager" "--color=never" "-T" compactLogTemplate];
+  compactLogRevset = revset: compactLogArgs ++ ["-r" revset];
   jjWorkflow = pkgs.rustPlatform.buildRustPackage {
     pname = "jj-workflow";
     version = "0.1.0";
@@ -108,6 +120,14 @@ in {
           ld = ["log" "-r" "descendants(@)"];
           la = ["log" "-r" "ancestors(@)"];
           log-all = ["log" "-r" "all()"];
+          # Agent-friendly compact log forms. `log-summary` accepts normal
+          # `jj log` flags, so e.g. `jj log-summary -r 'trunk()::' --limit 10`
+          # replaces the long hand-written template agents often reach for.
+          log-summary = compactLogArgs;
+          log-recent = compactLogArgs ++ ["--limit" "10"];
+          log-here = compactLogRevset "@ | @-";
+          log-stack = compactLogRevset "trunk()::@";
+          log-ahead = compactLogRevset "trunk()..@";
           # Move the closest ancestor bookmark to the parent of your working copy (@-):
           tug = ["bookmark" "move" "--from" "heads(::@- & bookmarks())" "--to" "@-"];
 

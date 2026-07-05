@@ -19,7 +19,7 @@ Default to CLI use. Prefer noninteractive, compact output:
 ```bash
 jj status --no-pager --color=never
 jj diff --stat --no-pager --color=never
-jj log -n 20 --no-pager --color=never
+jj log-recent || jj log -n 20 --no-pager --color=never
 ```
 
 Never use interactive `jj` flows from an agent.

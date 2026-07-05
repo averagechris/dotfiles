@@ -26,14 +26,17 @@ jj status --no-pager --color=never              # current working-copy summary
 jj diff --stat --no-pager --color=never         # changed files/size
 jj diff --no-pager --color=never                # full patch
 jj show --stat --no-pager --color=never         # current change metadata + stat
-jj log -n 20 --no-pager --color=never           # nearby history
-jj log -n 20 --no-graph --no-pager --color=never # compact machine-readable-ish history
+jj log-recent || jj log -n 20 --no-pager --color=never # nearby history
 ```
 
 When available, prefer dotfiles aliases:
 
 ```bash
 jj df --stat --no-pager --color=never       # diff from trunk(); good before review/PR
+jj log-here                                 # compact @ and @-
+jj log-stack                                # compact trunk()::@
+jj log-ahead                                # compact trunk()..@
+jj log-summary -r '<revset>' --limit 10     # compact custom revset
 jj ll --no-pager --color=never              # local stack context around @
 jj ld --no-pager --color=never              # descendants of @
 jj la --no-pager --color=never              # ancestors of @
