@@ -121,11 +121,25 @@
         '';
       };
 
+      packages.dotfiles-maintenance-gate = pkgs.writeShellApplication {
+        name = "dotfiles-maintenance-gate";
+        runtimeInputs = [pkgs.coreutils pkgs.nix];
+        text = builtins.readFile ./scripts/dotfiles-maintenance-gate.sh;
+      };
+
       apps.update-flakes = {
         type = "app";
         program = "${self.packages.${system}.update-flakes}/bin/update-flakes";
         meta = {
           description = "Update enrolled flake inputs and fixed-hash packages";
+        };
+      };
+
+      apps.dotfiles-maintenance-gate = {
+        type = "app";
+        program = "${self.packages.${system}.dotfiles-maintenance-gate}/bin/dotfiles-maintenance-gate";
+        meta = {
+          description = "Run the timed dotfiles maintenance check gate";
         };
       };
 
@@ -167,6 +181,7 @@
           nil # nix language server
           nixd
           pkgs."bash-language-server"
+          self.outputs.packages.${system}.dotfiles-maintenance-gate
           self.outputs.packages.${system}.update-flakes
           self.outputs.packages.${system}.agenix
           deploy-rs.packages.${system}.deploy-rs

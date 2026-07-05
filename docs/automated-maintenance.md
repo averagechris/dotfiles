@@ -76,11 +76,24 @@ explicit and cheap enough to run every day. A full `nix flake check` is valuable
 but it is slow in this repo and should not be the first thing that makes the
 maintenance loop unpleasant to operate.
 
-The first gate should prefer fast, high-signal checks such as:
+The first gate is exposed as a flake app so it can be measured before wiring it
+into unattended pushes:
 
 ```bash
-nix flake check --no-build
+nix run .#dotfiles-maintenance-gate -- --profile smoke
+nix run .#dotfiles-maintenance-gate -- --profile thorny --log-dir /tmp/dotfiles-maintenance-gate
+nix run .#dotfiles-maintenance-gate -- --profile no-build
+nix run .#dotfiles-maintenance-gate -- --profile full
 ```
+
+Profiles:
+
+- `smoke` reads flake metadata and evaluates the top-level maintenance packages
+  for the current system.
+- `thorny` runs `smoke` plus evaluation of the `thorny` system derivation path.
+- `no-build` runs the top-level `nix flake check --no-build`; on a cold cache,
+  this can still be slow because it checks every exported host configuration.
+- `full` runs the top-level `nix flake check` with builds enabled.
 
 Then add targeted build checks only where they buy confidence for automated
 flake-input updates. If a broader check is needed, prefer one Nix invocation that
