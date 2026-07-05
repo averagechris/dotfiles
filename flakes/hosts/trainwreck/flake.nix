@@ -42,8 +42,7 @@
       extraInputs = inputs;
       extraOverlays = [
         inputs.nix-openclaw.overlays.default
-        # Local workaround removed: upstream nix-openclaw now uses fetchPnpmDeps
-        # with fetcherVersion = 3. Re-enable here if another overlay patch is needed.
+        (import ./openclaw-overlay.nix)
       ];
     };
 

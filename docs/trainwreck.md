@@ -141,3 +141,37 @@ journalctl -u dotfiles-trainwreck-self-deploy.service
 
 If deploy-rs is unavailable, rebuild on trainwreck directly only after confirming
 the desired remote workflow with the user.
+
+## Build notes
+
+`openclaw-gateway` uses upstream `nix-openclaw`'s `fetchPnpmDeps`, which by
+default downloads every platform variant of large optional native packages
+(Claude agent SDK, OpenAI Codex, GitHub Copilot, node-llama-cpp, etc.).
+`flakes/hosts/trainwreck/openclaw-overlay.nix` removes `--force` from the
+fetcher so pnpm only downloads the aarch64-linux variants, shrinking the
+download from multi-GB to a fraction of that. The overlay also rebuilds the
+`openclaw` bundle on top of the patched gateway. Keep the overlay in
+`flakes/hosts/trainwreck/flake.nix` unless upstream resolves this.
+
+### Building natively on trainwreck
+
+The `openclaw-gateway` TypeScript build is CPU-intensive. When built on the
+`thorny` remote builder via QEMU emulation, it can take 20+ minutes. Building
+natively on trainwreck (aarch64-linux) is much faster (~3 minutes for the
+`tsdown` step).
+
+To build and activate directly on trainwreck:
+
+```bash
+# Sync dotfiles to trainwreck first (rsync or git), then:
+ssh chris@trainwreck 'cd ~/dotfiles && git add -A'
+ssh chris@trainwreck 'sudo nixos-rebuild switch --flake ~/dotfiles#trainwreck'
+```
+
+If Home Manager fails with "Existing file '.../openclaw.json' would be
+clobbered", remove the old config symlinks and re-run:
+
+```bash
+ssh chris@trainwreck 'rm ~/.openclaw-*/openclaw.json'
+ssh chris@trainwreck 'sudo nixos-rebuild switch --flake ~/dotfiles#trainwreck'
+```
