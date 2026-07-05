@@ -25,6 +25,11 @@ tasks:
   - check: |
       cd ~/dotfiles
       echo "Checking top-level flake..."
+      # FOLLOW-UP (2026-07-05): this task evaluates every host system and is
+      # too heavy for the build VM — it has been OOM-killed and has hit the
+      # job timeout. Options: shard per-host, eval-only checks, or drop in
+      # favor of thorny's dotfiles-host-build-cache timer (docs/thorny.md),
+      # which already builds all hosts from main with real hardware.
       nix flake check --accept-flake-config
 
   - check-host-flakes: |
