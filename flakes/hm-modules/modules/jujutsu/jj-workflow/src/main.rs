@@ -1,4 +1,5 @@
 use anyhow::{anyhow, bail, Context, Result};
+use clap::{Args, Parser, Subcommand};
 use serde_json::json;
 use std::env;
 use std::ffi::{OsStr, OsString};
@@ -18,42 +19,137 @@ fn main() {
     }
 }
 
-fn run() -> Result<()> {
-    let mut args = env::args_os();
-    let program = args.next().unwrap_or_else(|| OsString::from("jj-workflow"));
-
-    let command = match args.next() {
-        Some(command) => command,
-        None => {
-            print_usage(&program);
-            bail!("missing subcommand");
-        }
-    };
-
-    match command.to_string_lossy().as_ref() {
-        "lint" => run_lint(args.collect()),
-        "ship" => run_ship(parse_common_args(args.collect())?),
-        "sync" => run_sync(parse_common_args(args.collect())?),
-        "tag" => run_tag(args.collect()),
-        "tag-push" => run_tag_push(parse_tag_push_args(args.collect())?),
-        "pr" => run_pr(args.collect()),
-        "ws" | "workspace" => run_ws(args.collect()),
-        "-h" | "--help" | "help" => {
-            print_usage(&program);
-            Ok(())
-        }
-        other => {
-            print_usage(&program);
-            bail!("unknown subcommand: {other}")
-        }
-    }
+#[derive(Debug, Parser)]
+#[command(
+    name = "jj-workflow",
+    about = "Workflow helpers for jj lint, ship, sync, tags, PRs, and workspaces",
+    arg_required_else_help = true,
+    disable_version_flag = true
+)]
+struct Cli {
+    #[command(subcommand)]
+    command: CliCommand,
 }
 
-fn print_usage(program: &OsStr) {
-    let name = program.to_string_lossy();
-    eprintln!(
-            "Usage:\n  {name} lint [onboard ...]\n  {name} ship [-b|--bookmark <bookmark>] [--remote <remote>] [--tag <tag>] [--sign|--no-sign] [-- <jj git push args...>]\n  {name} tag push <tag> [--revision <rev>] [--remote <remote>] [-m|--message <message>] [--sign|--no-sign]\n  {name} tag-push <tag> [--revision <rev>] [--remote <remote>] [-m|--message <message>] [--sign|--no-sign]\n  {name} sync [-b|--bookmark <bookmark>] [--remote <remote>] [--onto <revset>] [-- <jj rebase args...>]\n  {name} pr <doctor|create|update|close|watch> ...\n  {name} ws <add|list|path|forget|prune|root> ..."
-    );
+#[derive(Debug, Subcommand)]
+enum CliCommand {
+    /// Run repo-configured lints or lint onboarding helpers.
+    Lint(ForwardArgs),
+    /// Finish and publish the current change/stack.
+    Ship(ShipCli),
+    /// Fetch and rebase the current stack onto an integration base.
+    Sync(SyncCli),
+    /// Internal tag helper namespace.
+    Tag(TagCli),
+    /// Publish a human/agent-created release tag.
+    #[command(name = "tag-push")]
+    TagPush(TagPushCli),
+    /// GitHub PR helper commands.
+    Pr(ForwardArgs),
+    /// Managed jj workspace commands.
+    #[command(visible_alias = "workspace")]
+    Ws(ForwardArgs),
+}
+
+#[derive(Debug, Args)]
+struct ForwardArgs {
+    #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
+    args: Vec<OsString>,
+}
+
+#[derive(Debug, Args)]
+struct ShipCli {
+    #[arg(short = 'b', long = "bookmark")]
+    bookmark_input: Option<String>,
+    #[arg(long)]
+    remote: Option<String>,
+    #[arg(long)]
+    tag: Option<String>,
+    #[command(flatten)]
+    signing: TagSigningCli,
+    #[arg(short, long)]
+    quiet: bool,
+    #[arg(last = true)]
+    passthrough: Vec<OsString>,
+}
+
+#[derive(Debug, Args)]
+struct SyncCli {
+    #[arg(short = 'b', long = "bookmark")]
+    bookmark_input: Option<String>,
+    #[arg(long)]
+    remote: Option<String>,
+    #[arg(long)]
+    onto: Option<String>,
+    #[arg(short, long)]
+    quiet: bool,
+    #[arg(long)]
+    json: bool,
+    #[arg(long)]
+    noninteractive: bool,
+    #[arg(long)]
+    fail_on_conflicts: bool,
+    #[arg(last = true)]
+    passthrough: Vec<OsString>,
+}
+
+#[derive(Debug, Args)]
+struct TagCli {
+    #[command(subcommand)]
+    command: TagCommand,
+}
+
+#[derive(Debug, Subcommand)]
+enum TagCommand {
+    /// Publish a release tag.
+    Push(TagPushCli),
+}
+
+#[derive(Debug, Args)]
+struct TagPushCli {
+    tag: String,
+    #[arg(short = 'r', long = "revision")]
+    revision: Option<String>,
+    #[arg(long)]
+    remote: Option<String>,
+    #[arg(short = 'm', long = "message")]
+    message: Option<String>,
+    #[command(flatten)]
+    signing: TagSigningCli,
+    #[arg(long)]
+    allow_dirty: bool,
+    #[arg(long)]
+    allow_move: bool,
+    #[arg(long)]
+    allow_non_semver: bool,
+    #[arg(long)]
+    dry_run: bool,
+    #[arg(short, long)]
+    quiet: bool,
+    #[arg(long)]
+    json: bool,
+}
+
+#[derive(Debug, Args)]
+struct TagSigningCli {
+    #[arg(long, conflicts_with = "no_sign")]
+    sign: bool,
+    #[arg(long)]
+    no_sign: bool,
+}
+
+fn run() -> Result<()> {
+    match Cli::parse().command {
+        CliCommand::Lint(args) => run_lint(args.args),
+        CliCommand::Ship(args) => run_ship(args.into()),
+        CliCommand::Sync(args) => run_sync(args.into()),
+        CliCommand::Tag(args) => match args.command {
+            TagCommand::Push(args) => run_tag_push(args.into()),
+        },
+        CliCommand::TagPush(args) => run_tag_push(args.into()),
+        CliCommand::Pr(args) => run_pr(args.args),
+        CliCommand::Ws(args) => run_ws(args.args),
+    }
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -79,6 +175,7 @@ struct ParsedArgs {
     passthrough: Vec<OsString>,
 }
 
+#[cfg(test)]
 fn parse_common_args(args: Vec<OsString>) -> Result<ParsedArgs> {
     let mut parsed = ParsedArgs::default();
     let mut iter = args.into_iter();
@@ -201,6 +298,7 @@ fn os_to_string(value: OsString) -> Result<String> {
         .map_err(|_| anyhow!("argument contains invalid UTF-8"))
 }
 
+#[cfg(test)]
 fn set_tag_signing(current: &mut TagSigning, next: TagSigning) -> Result<()> {
     match (*current, next) {
         (TagSigning::Auto, _) | (_, TagSigning::Auto) => {
@@ -209,6 +307,67 @@ fn set_tag_signing(current: &mut TagSigning, next: TagSigning) -> Result<()> {
         }
         (left, right) if left == right => Ok(()),
         _ => bail!("pass only one of --sign or --no-sign"),
+    }
+}
+
+impl From<TagSigningCli> for TagSigning {
+    fn from(args: TagSigningCli) -> Self {
+        if args.sign {
+            TagSigning::Sign
+        } else if args.no_sign {
+            TagSigning::NoSign
+        } else {
+            TagSigning::Auto
+        }
+    }
+}
+
+impl From<ShipCli> for ParsedArgs {
+    fn from(args: ShipCli) -> Self {
+        ParsedArgs {
+            bookmark_input: args.bookmark_input,
+            remote_input: args.remote,
+            quiet: args.quiet,
+            tag: args.tag,
+            tag_signing: args.signing.into(),
+            passthrough: args.passthrough,
+            ..ParsedArgs::default()
+        }
+    }
+}
+
+impl From<SyncCli> for ParsedArgs {
+    fn from(args: SyncCli) -> Self {
+        ParsedArgs {
+            bookmark_input: args.bookmark_input,
+            remote_input: args.remote,
+            onto: args.onto,
+            quiet: args.quiet || args.json,
+            json: args.json,
+            noninteractive: args.noninteractive || args.json,
+            fail_on_conflicts: args.fail_on_conflicts,
+            passthrough: args.passthrough,
+            ..ParsedArgs::default()
+        }
+    }
+}
+
+impl From<TagPushCli> for TagPushArgs {
+    fn from(args: TagPushCli) -> Self {
+        TagPushArgs {
+            tag: args.tag,
+            revision: args.revision,
+            remote: args.remote,
+            message: args.message,
+            signing: args.signing.into(),
+            allow_dirty: args.allow_dirty,
+            allow_move: args.allow_move,
+            allow_non_semver: args.allow_non_semver,
+            dry_run: args.dry_run,
+            quiet: args.quiet || args.json,
+            json: args.json,
+            help: false,
+        }
     }
 }
 
@@ -538,29 +697,7 @@ struct TagPushArgs {
     help: bool,
 }
 
-fn run_tag(args: Vec<OsString>) -> Result<()> {
-    let mut iter = args.into_iter();
-    let command = match iter.next() {
-        Some(command) => command,
-        None => {
-            print_tag_usage();
-            bail!("missing tag subcommand");
-        }
-    };
-
-    match command.to_string_lossy().as_ref() {
-        "push" => run_tag_push(parse_tag_push_args(iter.collect())?),
-        "-h" | "--help" | "help" => {
-            print_tag_usage();
-            Ok(())
-        }
-        other => {
-            print_tag_usage();
-            bail!("unknown tag subcommand: {other}")
-        }
-    }
-}
-
+#[cfg(test)]
 fn parse_tag_push_args(args: Vec<OsString>) -> Result<TagPushArgs> {
     let mut parsed = TagPushArgs::default();
     let mut iter = args.into_iter();
@@ -5646,12 +5783,6 @@ fn print_ship_usage() {
     );
 }
 
-fn print_tag_usage() {
-    eprintln!(
-        "Usage:\n  jj tag push <tag> [--revision <rev>] [--remote <remote>] [-m|--message <message>] [--sign|--no-sign]\n\nInternal helper namespace. The public jj alias is `jj tag-push <tag> ...` because jj aliases cannot override the built-in `jj tag` command."
-    );
-}
-
 fn print_tag_push_usage() {
     eprintln!(
         "Usage:\n  jj tag-push <tag> [--revision <rev>] [--remote <remote>] [-m|--message <message>] [--sign|--no-sign] [--allow-dirty] [--allow-move] [--allow-non-semver] [--dry-run] [--json]\n\nCreates or reuses an annotated Git tag in the jj-backed Git store, imports it into jj, pushes the exact refs/tags/<tag> ref, and verifies that the remote tag is annotated and peels to the requested commit. Tags are signed by default when jj GPG signing is configured; use --no-sign for an unsigned annotated tag. If --revision is omitted with a clean working copy, @- is used. Tags must look like vX.Y.Z unless --allow-non-semver is passed."
@@ -5999,10 +6130,12 @@ mod tests {
         short_description_from_title, source_venv_python_usable, stale_workspace_dirs,
         sync_base_candidates, tag_push, validate_body_source, validate_pr_watch_args,
         validate_release_tag, validate_ticket, validate_ws_name, workspace_context_for_repo,
-        workspace_has_unpublished_work, write_tracked_lint_config, FetchChoice, LintCommand,
-        LintOnboardReport, LintSuggestion, ParsedArgs, PrArgs, ProjectGroup, ShipPlan, TagPushArgs,
-        TagSigning, WsAddArgs, WsConfig, WsForgetArgs, WsPathArgs, WsPruneArgs,
+        workspace_has_unpublished_work, write_tracked_lint_config, Cli, CliCommand, FetchChoice,
+        LintCommand, LintOnboardReport, LintSuggestion, ParsedArgs, PrArgs, ProjectGroup, ShipPlan,
+        TagCommand, TagPushArgs, TagSigning, WsAddArgs, WsConfig, WsForgetArgs, WsPathArgs,
+        WsPruneArgs,
     };
+    use clap::Parser;
     use std::env;
     use std::ffi::OsString;
     use std::fs;
@@ -6231,6 +6364,71 @@ mod tests {
         assert_eq!(comments.len(), 1);
         assert_eq!(comments[0].author, "coderabbitai");
         assert_eq!(comments[0].first_line, "First line");
+    }
+
+    #[test]
+    fn clap_parses_public_release_commands_and_forwards_legacy_namespaces() {
+        let cli = Cli::try_parse_from([
+            "jj-workflow",
+            "tag-push",
+            "v0.2.1",
+            "--revision",
+            "main",
+            "--no-sign",
+        ])
+        .unwrap();
+        match cli.command {
+            CliCommand::TagPush(args) => {
+                assert_eq!(args.tag, "v0.2.1");
+                assert_eq!(args.revision.as_deref(), Some("main"));
+                assert!(args.signing.no_sign);
+            }
+            other => panic!("unexpected command: {other:?}"),
+        }
+
+        let cli = Cli::try_parse_from(["jj-workflow", "tag", "push", "v0.2.1", "--sign"]).unwrap();
+        match cli.command {
+            CliCommand::Tag(tag) => match tag.command {
+                TagCommand::Push(args) => {
+                    assert_eq!(args.tag, "v0.2.1");
+                    assert!(args.signing.sign);
+                }
+            },
+            other => panic!("unexpected command: {other:?}"),
+        }
+
+        let cli = Cli::try_parse_from([
+            "jj-workflow",
+            "ship",
+            "--bookmark",
+            "main",
+            "--tag",
+            "v0.2.1",
+            "--",
+            "--allow-new",
+        ])
+        .unwrap();
+        match cli.command {
+            CliCommand::Ship(args) => {
+                assert_eq!(args.bookmark_input.as_deref(), Some("main"));
+                assert_eq!(args.tag.as_deref(), Some("v0.2.1"));
+                assert_eq!(args.passthrough, vec![OsString::from("--allow-new")]);
+            }
+            other => panic!("unexpected command: {other:?}"),
+        }
+
+        let cli = Cli::try_parse_from(["jj-workflow", "pr", "create", "--title", "demo"]).unwrap();
+        match cli.command {
+            CliCommand::Pr(args) => assert_eq!(
+                args.args,
+                vec![
+                    OsString::from("create"),
+                    OsString::from("--title"),
+                    OsString::from("demo"),
+                ]
+            ),
+            other => panic!("unexpected command: {other:?}"),
+        }
     }
 
     fn test_config(group: &Path) -> WsConfig {
