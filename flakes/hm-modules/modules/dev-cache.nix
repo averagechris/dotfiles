@@ -49,8 +49,60 @@
         printf '[%s] %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "$*"
       }
 
+      available_kib() {
+        df -Pk "$1" | tail -n 1 | tr -s ' ' | cut -d ' ' -f 4
+      }
+
+      root_available_kib() {
+        local available
+        available=$(available_kib / 2>/dev/null || printf '0')
+        if [ -z "$available" ]; then
+          available=0
+        fi
+        printf '%s\n' "$available"
+      }
+
+      root_available_gib() {
+        local available
+        available=$(root_available_kib)
+        printf '%s\n' "$((available / 1024 / 1024))"
+      }
+
+      root_is_low_disk() {
+        local available
+        available=$(root_available_kib)
+        [ "$available" -lt ${toString (cfg.cleanup.lowDisk.minFreeGiB * 1024 * 1024)} ]
+      }
+
+      pressure_mode=0
+      case "''${1:-}" in
+        --pressure)
+          pressure_mode=1
+          ;;
+        "")
+          ;;
+        *)
+          log "unknown argument: $1"
+          exit 2
+          ;;
+      esac
+
+      lock_dir="''${XDG_RUNTIME_DIR:-''${TMPDIR:-/tmp}}/dotfiles-dev-cache-cleanup.lock"
+      if mkdir "$lock_dir" 2>/dev/null; then
+        cleanup_lock() {
+          rmdir "$lock_dir" 2>/dev/null || true
+        }
+        trap cleanup_lock EXIT
+      else
+        log "another dev-cache-cleanup instance is running; exiting"
+        exit 0
+      fi
+
       export SCCACHE_DIR=${lib.escapeShellArg cfg.sccache.directory}
       export SCCACHE_CACHE_SIZE=${lib.escapeShellArg cfg.sccache.cacheSize}
+
+      log "root filesystem usage before cleanup"
+      df -h / || true
 
       log "sccache stats (server is managed by the supervised sccache-server service)"
       sccache --show-stats || true
@@ -128,6 +180,97 @@
           docker system df || true
         fi
       ''}
+
+      ${lib.optionalString cfg.cleanup.lowDisk.enable ''
+        if [ "$pressure_mode" -eq 1 ] || root_is_low_disk; then
+          log "low-disk pressure cleanup triggered: $(root_available_gib) GiB free on /; threshold is ${toString cfg.cleanup.lowDisk.minFreeGiB} GiB"
+          ${lib.optionalString (cfg.cleanup.lowDisk.notify && pkgs.stdenv.isDarwin) ''
+          /usr/bin/osascript -e "display notification \"Low disk cleanup started ($(root_available_gib) GiB free; threshold ${toString cfg.cleanup.lowDisk.minFreeGiB} GiB).\" with title \"Dev cache cleanup\"" || true
+        ''}
+
+          ${lib.optionalString cfg.nixGc.enable ''
+          log "low-disk: aggressively collecting nix garbage"
+          ${lib.optionalString cfg.cleanup.lowDisk.deleteOldUserGenerations ''
+            log "low-disk: deleting all old user profile generations before store GC"
+            nix-collect-garbage -d || true
+          ''}
+          log "low-disk: collecting unreferenced nix store paths"
+          nix store gc || true
+          log "low-disk: nix store usage after aggressive garbage collection"
+          df -h /nix || true
+        ''}
+
+          ${lib.optionalString cfg.cargoSweep.enable ''
+          log "low-disk: sweeping cargo target artifacts untouched for ${toString cfg.cleanup.lowDisk.cargoSweepStaleDays} days"
+          ${lib.concatMapStringsSep "\n" (root: ''
+              if [ -d ${lib.escapeShellArg root} ]; then
+                cargo-sweep sweep --recursive --time ${toString cfg.cleanup.lowDisk.cargoSweepStaleDays} ${lib.escapeShellArg root} || true
+              else
+                log "cargo sweep root ${lib.escapeShellArg root} does not exist; skipping"
+              fi
+            '')
+            cfg.cargoSweep.roots}
+        ''}
+
+          ${lib.optionalString cfg.docker.enable ''
+          if ! docker info >/dev/null 2>&1; then
+            log "low-disk: docker daemon is unavailable; skipping Docker/OrbStack cleanup"
+          else
+            log "low-disk: pruning Docker/OrbStack builder cache older than ${cfg.cleanup.lowDisk.dockerRetention} with max-used-space ${cfg.cleanup.lowDisk.dockerBuilderMaxUsedSpace}"
+            docker builder prune \
+              --all \
+              --force \
+              --filter ${lib.escapeShellArg "until=${cfg.cleanup.lowDisk.dockerRetention}"} \
+              --max-used-space ${lib.escapeShellArg cfg.cleanup.lowDisk.dockerBuilderMaxUsedSpace} || true
+
+            log "low-disk: pruning stopped containers, dangling images, and unused networks older than ${cfg.cleanup.lowDisk.dockerRetention}"
+            docker container prune --force --filter ${lib.escapeShellArg "until=${cfg.cleanup.lowDisk.dockerRetention}"} || true
+            docker image prune --force --filter ${lib.escapeShellArg "until=${cfg.cleanup.lowDisk.dockerRetention}"} || true
+            docker network prune --force --filter ${lib.escapeShellArg "until=${cfg.cleanup.lowDisk.dockerRetention}"} || true
+
+            ${lib.optionalString cfg.docker.pruneVolumes ''
+            log "low-disk: pruning unused Docker volumes"
+            docker volume prune --force || true
+          ''}
+
+            log "low-disk: docker disk usage after pressure cleanup"
+            docker system df || true
+          fi
+        ''}
+        else
+          log "low-disk pressure cleanup not needed: $(root_available_gib) GiB free on /; threshold is ${toString cfg.cleanup.lowDisk.minFreeGiB} GiB"
+        fi
+      ''}
+
+      log "root filesystem usage after cleanup"
+      df -h / || true
+    '';
+  };
+
+  lowDiskCleanupScript = pkgs.writeShellApplication {
+    name = "dotfiles-dev-cache-low-disk-cleanup";
+    runtimeInputs = [
+      pkgs.coreutils
+    ];
+    text = ''
+      set -uo pipefail
+
+      available_kib() {
+        df -Pk / | tail -n 1 | tr -s ' ' | cut -d ' ' -f 4
+      }
+
+      available=$(available_kib 2>/dev/null || printf '0')
+      if [ -z "$available" ]; then
+        available=0
+      fi
+
+      threshold=${toString (cfg.cleanup.lowDisk.minFreeGiB * 1024 * 1024)}
+      if [ "$available" -lt "$threshold" ]; then
+        printf '[%s] low disk detected: %s GiB free on /; threshold is ${toString cfg.cleanup.lowDisk.minFreeGiB} GiB\n' \
+          "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
+          "$((available / 1024 / 1024))"
+        exec ${lib.getExe cleanupScript}
+      fi
     '';
   };
 in {
@@ -170,6 +313,86 @@ in {
           Number of seconds between cleanup runs. On macOS, launchd does not wake
           a sleeping laptop to run the job.
         '';
+      };
+
+      lowDisk = {
+        enable = lib.mkOption {
+          type = lib.types.bool;
+          default = false;
+          description = ''
+            Enable a lightweight low-disk monitor that checks the root filesystem
+            more frequently than the full periodic cleanup. When free space drops
+            below <literal>minFreeGiB</literal>, it runs the cleanup job, which
+            can escalate to the low-disk pressure cleanup phase.
+          '';
+        };
+
+        checkIntervalSeconds = lib.mkOption {
+          type = lib.types.ints.positive;
+          default = 1800;
+          description = ''
+            Number of seconds between low-disk checks. The check is intentionally
+            cheap and only starts the full cleanup when the root filesystem is
+            below <literal>minFreeGiB</literal>.
+          '';
+        };
+
+        minFreeGiB = lib.mkOption {
+          type = lib.types.ints.positive;
+          default = 30;
+          description = ''
+            Minimum desired free space on the root filesystem. If a cleanup run
+            ends below this threshold, the low-disk pressure phase runs.
+          '';
+        };
+
+        deleteOldUserGenerations = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = ''
+            During low-disk pressure cleanup, run
+            <literal>nix-collect-garbage -d</literal> before
+            <literal>nix store gc</literal>. This removes old user profile
+            generations but still cannot remove root-owned darwin system
+            generations from an unprivileged job.
+          '';
+        };
+
+        cargoSweepStaleDays = lib.mkOption {
+          type = lib.types.ints.positive;
+          default = 1;
+          description = ''
+            More aggressive Cargo artifact staleness window used only during the
+            low-disk pressure cleanup phase.
+          '';
+        };
+
+        dockerRetention = lib.mkOption {
+          type = lib.types.nonEmptyStr;
+          default = "24h";
+          description = ''
+            More aggressive Docker prune age filter used only during the
+            low-disk pressure cleanup phase.
+          '';
+        };
+
+        dockerBuilderMaxUsedSpace = lib.mkOption {
+          type = lib.types.nonEmptyStr;
+          default = "10GB";
+          description = ''
+            Tighter Docker builder cache budget used only during the low-disk
+            pressure cleanup phase.
+          '';
+        };
+
+        notify = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = ''
+            On macOS, post a notification when the low-disk pressure cleanup
+            phase starts.
+          '';
+        };
       };
     };
 
@@ -296,8 +519,10 @@ in {
   config = lib.mkIf cfg.enable {
     home.packages =
       [
+        cleanupScript
         pkgs.sccache
       ]
+      ++ lib.optional cfg.cleanup.lowDisk.enable lowDiskCleanupScript
       ++ lib.optional cfg.docker.enable pkgs.docker-client;
 
     home.sessionVariables = {
@@ -344,6 +569,20 @@ in {
       };
     };
 
+    launchd.agents.dev-cache-low-disk-cleanup = lib.mkIf (cfg.cleanup.enable && cfg.cleanup.lowDisk.enable && pkgs.stdenv.isDarwin) {
+      enable = true;
+      config = {
+        ProgramArguments = [
+          (lib.getExe lowDiskCleanupScript)
+        ];
+        StartInterval = cfg.cleanup.lowDisk.checkIntervalSeconds;
+        ProcessType = "Background";
+        LowPriorityIO = true;
+        StandardOutPath = "${config.home.homeDirectory}/Library/Logs/dev-cache-cleanup.log";
+        StandardErrorPath = "${config.home.homeDirectory}/Library/Logs/dev-cache-cleanup.log";
+      };
+    };
+
     systemd.user.services.sccache-server = lib.mkIf pkgs.stdenv.isLinux {
       Unit = {
         Description = "Supervised sccache server";
@@ -372,6 +611,18 @@ in {
       };
     };
 
+    systemd.user.services.dev-cache-low-disk-cleanup = lib.mkIf (cfg.cleanup.enable && cfg.cleanup.lowDisk.enable && pkgs.stdenv.isLinux) {
+      Unit = {
+        Description = "Dev cache low-disk cleanup check";
+      };
+      Service = {
+        Type = "oneshot";
+        ExecStart = lib.getExe lowDiskCleanupScript;
+        Nice = 10;
+        IOSchedulingClass = "idle";
+      };
+    };
+
     systemd.user.timers.dev-cache-cleanup = lib.mkIf (cfg.cleanup.enable && pkgs.stdenv.isLinux) {
       Unit = {
         Description = "Periodic dev cache cleanup";
@@ -379,6 +630,19 @@ in {
       Timer = {
         OnStartupSec = "15min";
         OnUnitActiveSec = "${toString cfg.cleanup.intervalSeconds}s";
+      };
+      Install = {
+        WantedBy = ["timers.target"];
+      };
+    };
+
+    systemd.user.timers.dev-cache-low-disk-cleanup = lib.mkIf (cfg.cleanup.enable && cfg.cleanup.lowDisk.enable && pkgs.stdenv.isLinux) {
+      Unit = {
+        Description = "Periodic dev cache low-disk cleanup check";
+      };
+      Timer = {
+        OnStartupSec = "5min";
+        OnUnitActiveSec = "${toString cfg.cleanup.lowDisk.checkIntervalSeconds}s";
       };
       Install = {
         WantedBy = ["timers.target"];

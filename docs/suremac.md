@@ -121,6 +121,14 @@ reminder, cargo-sweep, and Docker pruning).
 Host specifics:
 
 - `SCCACHE_CACHE_SIZE=50G`;
+- normal cleanup runs every 6 hours instead of daily;
+- a low-disk checker runs every 15 minutes and starts cleanup when `/` has less
+  than 10 GiB free;
+- the pressure cleanup phase runs `nix-collect-garbage -d` plus `nix store gc`,
+  tightens Cargo sweeping to artifacts untouched for 1 day, and trims
+  OrbStack/Docker builder cache to 10GB when free space is still below the
+  threshold;
+- normal Nix user-generation and Cargo target retention are 3 days;
 - cargo-sweep roots are `~/projects` and `~/sureapp` (recursive, so managed jj
   workspaces under `~/projects/ws/` and `~/sureapp/ws/` are covered);
 - the Docker phase prunes OrbStack's daemon with `pruneVolumes = true`:

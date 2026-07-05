@@ -280,12 +280,28 @@ in {
     dotfiles.devCache = {
       enable = true;
       sccache.cacheSize = "50G";
+      cleanup = {
+        # This laptop churns through Nix/Cargo/Docker artifacts quickly while
+        # agents work in parallel. Run the normal cleanup more than daily, and
+        # check for disk pressure often enough to recover before builds wedge.
+        intervalSeconds = 21600;
+        lowDisk = {
+          enable = true;
+          checkIntervalSeconds = 900;
+          minFreeGiB = 10;
+          dockerBuilderMaxUsedSpace = "10GB";
+        };
+      };
+      nixGc.olderThanDays = 3;
       # --recursive picks up nested checkouts too, including managed jj
       # workspaces under ~/projects/ws/<repo>/* and ~/sureapp/ws/<repo>/*.
-      cargoSweep.roots = [
-        "/Users/chris/projects"
-        "/Users/chris/sureapp"
-      ];
+      cargoSweep = {
+        staleDays = 3;
+        roots = [
+          "/Users/chris/projects"
+          "/Users/chris/sureapp"
+        ];
+      };
       docker = {
         retention = "336h";
         builderMaxUsedSpace = "30GB";
@@ -459,45 +475,6 @@ in {
 
   fonts.packages = [pkgs.nerd-fonts.droid-sans-mono];
   programs.gnupg.agent.enable = true;
-
-  launchd.user.agents.nix-gc = {
-    serviceConfig = {
-      ProgramArguments = [
-        "/bin/sh"
-        "-c"
-        "/nix/var/nix/profiles/default/bin/nix-collect-garbage --delete-older-than 14d"
-      ];
-      StartCalendarInterval = [
-        {
-          Weekday = 1; # Monday
-          Hour = 12;
-          Minute = 0;
-        }
-        {
-          Weekday = 2; # Tuesday
-          Hour = 12;
-          Minute = 0;
-        }
-        {
-          Weekday = 3; # Wednesday
-          Hour = 12;
-          Minute = 0;
-        }
-        {
-          Weekday = 4; # Thursday
-          Hour = 12;
-          Minute = 0;
-        }
-        {
-          Weekday = 5; # Friday
-          Hour = 12;
-          Minute = 0;
-        }
-      ];
-      StandardOutPath = "/tmp/nix-gc.log";
-      StandardErrorPath = "/tmp/nix-gc.log";
-    };
-  };
 
   system.activationScripts.locationAwareTime.text = ''
     echo "configuring location-aware time..." >&2
