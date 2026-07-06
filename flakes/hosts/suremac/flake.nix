@@ -34,6 +34,10 @@
     starship-jj.follows = "hm-modules/starship-jj";
     linear-cli.follows = "hm-modules/linear-cli";
     gander.follows = "hm-modules/gander";
+    srht = {
+      url = "sourcehut:~averagechris/srht";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     granola-cli = {
       url = "sourcehut:~averagechris/granola-cli";
       inputs.nixpkgs.follows = "nixpkgs";

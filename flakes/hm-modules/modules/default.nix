@@ -5,6 +5,7 @@
     ./gpg.nix
     ./granola.nix
     ./linear-cli
+    ./srht.nix
     ./meganz.nix
     ./pi.nix
     ./dev-cache.nix

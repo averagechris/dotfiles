@@ -8,6 +8,7 @@
   ...
 }: let
   ctxPackage = inputs.ctx.packages.${pkgs.stdenv.hostPlatform.system}.ctx;
+  srhtPackage = inputs.srht.packages.${pkgs.stdenv.hostPlatform.system}.srht;
   # The nixpkgs Darwin WezTerm build embeds the absolute clang-wrapper path in
   # OpenSSL compiler metadata inside the app binaries. That single non-runtime
   # string keeps the full clang/LLVM/Apple SDK closure alive in the user profile,
@@ -462,6 +463,7 @@ in {
       tokenFile = config.age.secrets.granola-token.path;
       sync.enable = true;
     };
+    dotfiles.srht.enable = true;
     dotfiles.opencode.agentSupportPackages = [];
     dotfiles.opencode.agentTools = with pkgs; [
       {
@@ -518,6 +520,11 @@ in {
         package = inputs.granola-cli.packages.${pkgs.stdenv.hostPlatform.system}.default;
         name = "granola";
         description = "Granola meeting notes CLI";
+      }
+      {
+        package = srhtPackage;
+        name = "srht";
+        description = "SourceHut CLI";
       }
     ];
 

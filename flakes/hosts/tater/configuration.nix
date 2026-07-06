@@ -819,6 +819,14 @@ in {
     dotfiles.shell.yazi.enable = true;
     programs.opencode.enable = true;
     dotfiles.opencode.openrouterApiKeyFile = "/run/agenix/openrouter-api-key";
+    dotfiles.srht.enable = true;
+    dotfiles.opencode.agentTools = [
+      {
+        package = inputs.srht.packages.${pkgs.stdenv.hostPlatform.system}.srht;
+        name = "srht";
+        description = "SourceHut CLI";
+      }
+    ];
     dotfiles.ctx = {
       enable = true;
       package = inputs.ctx.packages.${pkgs.stdenv.hostPlatform.system}.ctx;

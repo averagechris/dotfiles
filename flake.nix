@@ -11,6 +11,7 @@
       inputs.starship-jj.follows = "hm-modules/starship-jj";
       inputs.linear-cli.follows = "hm-modules/linear-cli";
       inputs.gander.follows = "hm-modules/gander";
+      inputs.srht.follows = "srht";
       inputs.ctx.follows = "ctx";
     };
     trap = {
@@ -32,6 +33,7 @@
       inputs.helix.follows = "hm-modules/helix";
       inputs.starship-jj.follows = "hm-modules/starship-jj";
       inputs.gander.follows = "hm-modules/gander";
+      inputs.srht.follows = "srht";
       inputs.hyprland.follows = "hyprland";
       inputs.Hyprspace.follows = "Hyprspace";
       inputs.hypridle.follows = "hypridle";
@@ -66,6 +68,7 @@
       inputs.helix.follows = "hm-modules/helix";
       inputs.starship-jj.follows = "hm-modules/starship-jj";
       inputs.gander.follows = "hm-modules/gander";
+      inputs.srht.follows = "srht";
       inputs.hyprland.follows = "hyprland";
       inputs.Hyprspace.follows = "Hyprspace";
       inputs.hypridle.follows = "hypridle";
@@ -143,6 +146,10 @@
       url = "sourcehut:~averagechris/ctx/dfc57f34a0861dee14507c9791649951750b1e52";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
+    };
+    srht = {
+      url = "sourcehut:~averagechris/srht";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
     systems.url = "github:nix-systems/default-linux";
     hyprland = {

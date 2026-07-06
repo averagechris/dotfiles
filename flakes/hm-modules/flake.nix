@@ -21,6 +21,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };
+    srht = {
+      url = "sourcehut:~averagechris/srht";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     gander = {
       url = "sourcehut:~averagechris/gander";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -46,6 +50,7 @@
         gander = ./modules/gander.nix;
         granola = ./modules/granola.nix;
         linearCli = ./modules/linear-cli;
+        srht = ./modules/srht.nix;
         ghostty-fix = ./modules/ghostty-fix.nix;
 
         meganz = ./modules/meganz.nix;

@@ -31,6 +31,7 @@
 - [flake hygiene](/docs/flake-hygiene.md) - Top-level flake input following, lock de-duplication, and Darwin closure-size checks
 - [shell](/docs/shell.md) - Shell module configuration and PATH precedence
 - [sentry-cli](/docs/sentry-cli.md) - New `sentry` CLI package, suremac OpenCode integration, module decision, and update notes
+- [srht](/docs/srht.md) - SourceHut CLI Home Manager module, completions, OpenCode skills, and host enablement
 - [sure-stack-context](/docs/sure-stack-context.md) - suremac private OpenCode stack-context skill for Datadog, Sentry, and Kubernetes investigations
 - [suremac](/docs/suremac.md) - macOS host settings, automatic time zone behavior, Spaces desktop shortcuts, Rust `sccache`, and dev cache cleanup
 - [dev-cache](/docs/dev-cache.md) - `dotfiles.devCache` module: sccache, periodic nix GC, cargo-sweep, Docker pruning, and the darwin root GC reminder

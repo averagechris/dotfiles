@@ -28,6 +28,10 @@
     helix.follows = "hm-modules/helix";
     starship-jj.follows = "hm-modules/starship-jj";
     gander.follows = "hm-modules/gander";
+    srht = {
+      url = "sourcehut:~averagechris/srht";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     hyprland = {
       # Match tater's pinned Hyprland so the shared workstation config and
       # portal behavior stay consistent between daily GUI machines.

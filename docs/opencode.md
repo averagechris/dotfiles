@@ -262,10 +262,11 @@ All MCP servers are defined in `flakes/hm-modules/modules/opencode/settings.nix`
 | `serena` | local | disabled | Launched via `uvx` from the upstream repository |
 | `sentry` | remote | disabled | Hosted Sentry MCP endpoint using OAuth |
 
-## Repo-managed skills
+## Installed skills
 
 This repo also ships a small set of local skills for common tool-specific
-workflows. Current examples include:
+workflows, and a few tool modules install their own bundled skills during Home
+Manager activation. Current examples include:
 
 - `jj-vcs`
 - `jj-change-management`
@@ -275,6 +276,9 @@ workflows. Current examples include:
 - `changes-review-core`
 - `github-pr-review`
 - `linear-cli`
+- `srht-issues` (installed by `dotfiles.srht`)
+- `srht-ci` (installed by `dotfiles.srht`)
+- `srht-setup` (installed by `dotfiles.srht`)
 - `databricks-cli`
 - `pup-cli`
 - `sure-stack-context` (suremac only)

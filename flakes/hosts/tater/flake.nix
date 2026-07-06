@@ -28,6 +28,10 @@
     helix.follows = "hm-modules/helix";
     starship-jj.follows = "hm-modules/starship-jj";
     gander.follows = "hm-modules/gander";
+    srht = {
+      url = "sourcehut:~averagechris/srht";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     ctx = {
       url = "sourcehut:~averagechris/ctx";
       inputs.nixpkgs.follows = "nixpkgs";
