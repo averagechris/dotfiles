@@ -2,12 +2,10 @@
   description = "Home-manager modules for dotfiles";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    flake-utils.url = "github:numtide/flake-utils";
-    home-manager = {
-      url = "github:nix-community/home-manager/master";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    base-lib.url = "path:../base-lib";
+    nixpkgs.follows = "base-lib/nixpkgs";
+    flake-utils.follows = "base-lib/flake-utils";
+    home-manager.follows = "base-lib/home-manager";
     helix = {
       url = "github:helix-editor/helix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -27,14 +25,7 @@
       url = "sourcehut:~averagechris/gander";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    opencode = {
-      url = "github:anomalyco/opencode";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    base-lib = {
-      url = "path:../base-lib";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    opencode.follows = "base-lib/opencode";
   };
 
   outputs = inputs @ {

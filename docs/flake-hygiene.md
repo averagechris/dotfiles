@@ -29,6 +29,12 @@ and `hm-modules` should follow the host's `base-lib`, `nixpkgs`, `flake-utils`,
 `nix flake check ./flakes/hosts/thorny --no-build` from locking a second copy of
 the shared module stack.
 
+For standalone shared module flakes, prefer following `base-lib`'s graph rather
+than declaring a second root copy of common framework inputs. For example,
+`hm-modules` follows `base-lib/nixpkgs`, `base-lib/flake-utils`,
+`base-lib/home-manager`, and `base-lib/opencode`; the top-level aggregator and
+host flakes may still override those follows back to their own rooted graph.
+
 Host inputs that are intentionally shared by multiple hosts should also be rooted
 once in the top-level aggregator and followed from each path flake. Current shared
 examples include `nixos-hardware`, `disko`, and the pinned Hyprland desktop inputs
