@@ -1,8 +1,10 @@
 {
+  config,
   pkgs,
   lib,
   ...
 }: let
+  hyprlandPackage = config.programs.hyprland.package or pkgs.hyprland;
   hyprlandGreetConfig = pkgs.writeText "greetd-hyprland-config" ''
     env=GDK_BACKEND,wayland
     env=XCURSOR_SIZE,24
@@ -45,7 +47,7 @@ in {
   services.greetd = {
     vt = 2; # on tty 2 cause systemd logs are on tty 1
     enable = true;
-    settings.default_session.command = "${pkgs.dbus}/bin/dbus-run-session ${lib.getExe' pkgs.hyprland "start-hyprland"} -- --config ${hyprlandGreetConfig}";
+    settings.default_session.command = "${pkgs.dbus}/bin/dbus-run-session ${lib.getExe' hyprlandPackage "start-hyprland"} -- --config ${hyprlandGreetConfig}";
   };
   environment.etc."greetd/environments".text = ''
     start-hyprland

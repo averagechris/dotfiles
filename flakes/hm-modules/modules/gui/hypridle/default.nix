@@ -6,6 +6,10 @@
   ...
 }: let
   cfg = config.dotfiles.hypridle;
+  hyprlandPackage =
+    config.wayland.windowManager.hyprland.finalPackage
+    or config.wayland.windowManager.hyprland.package
+    or pkgs.hyprland;
   dimScreen = pkgs.writeShellApplication {
     name = "hypridle-dim-screen";
     runtimeInputs = [pkgs.brightnessctl pkgs.coreutils];
@@ -28,7 +32,7 @@
   };
   idleInhibit = pkgs.writeShellApplication {
     name = "dotfiles-idle-inhibit";
-    runtimeInputs = [pkgs.coreutils pkgs.gawk pkgs.hyprland pkgs.jq];
+    runtimeInputs = [pkgs.coreutils pkgs.gawk hyprlandPackage pkgs.jq];
     text = ''
       set -euo pipefail
 

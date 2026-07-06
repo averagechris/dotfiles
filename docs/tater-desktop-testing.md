@@ -102,6 +102,10 @@ used there:
 - Firefox is not part of the shared GUI defaults; browser usage is through Zen
   installed outside this host profile and Helium from Home Manager.
 - Darktable is opt-in rather than part of the shared GUI defaults.
+- Host-local Hyprland helper scripts should use the pinned `hyprlandPackage`
+  selected for `programs.hyprland.package`, not raw `pkgs.hyprland`, so PATH
+  wrappers and generated scripts do not retain a duplicate nixpkgs Hyprland
+  runtime alongside the pinned compositor/portal stack.
 
 When auditing profile size, start with:
 

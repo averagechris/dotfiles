@@ -7,6 +7,10 @@
 }: let
   cfg = config.dotfiles.gui.hyprland;
   hctlCfg = cfg.hctl;
+  hyprlandPackage =
+    config.wayland.windowManager.hyprland.finalPackage
+    or config.wayland.windowManager.hyprland.package
+    or pkgs.hyprland;
   term = config.dotfiles.gui.terminal.binPath;
   hctlPackage = pkgs.rustPlatform.buildRustPackage {
     pname = "hctl";
@@ -19,7 +23,7 @@
     nativeBuildInputs = [pkgs.makeWrapper];
     postFixup = ''
       wrapProgram $out/bin/hctl \
-        --prefix PATH : ${lib.makeBinPath ([pkgs.hyprland pkgs.keepassxc pkgs.signal-desktop] ++ lib.optionals (pkgs ? telegram-desktop) [pkgs.telegram-desktop])}
+        --prefix PATH : ${lib.makeBinPath [hyprlandPackage]}
     '';
     meta = {
       description = "Hyprland ergonomics control CLI and daemon";
@@ -38,7 +42,7 @@
     name = "disable-builtin-display-when-lid-closed";
     script = pkgs.writeShellApplication {
       inherit name;
-      runtimeInputs = [pkgs.coreutils pkgs.hyprland pkgs.jq config.programs.eww.package];
+      runtimeInputs = [pkgs.coreutils hyprlandPackage pkgs.jq config.programs.eww.package];
       text = ''
         refresh_bars() {
           external_bar_for_monitor() {
@@ -75,7 +79,7 @@
           fi
         }
 
-        external_count="$(${pkgs.hyprland}/bin/hyprctl monitors -j | ${pkgs.jq}/bin/jq '[.[] | select(.name != "eDP-1" and (((.disabled // false) | not)))] | length')"
+        external_count="$(hyprctl monitors -j | jq '[.[] | select(.name != "eDP-1" and (((.disabled // false) | not)))] | length')"
 
         if grep -q open /proc/acpi/button/lid/LID0/state; then
             hyprctl keyword monitor "eDP-1,preferred,auto,1"
@@ -93,7 +97,7 @@
     name = "lock-on-undocked-lid-close";
     script = pkgs.writeShellApplication {
       inherit name;
-      runtimeInputs = [pkgs.coreutils pkgs.hyprland pkgs.jq];
+      runtimeInputs = [pkgs.coreutils hyprlandPackage pkgs.jq];
       text = ''
         external_count="$(hyprctl monitors -j | jq '[.[] | select(.name != "eDP-1")] | length')"
 
@@ -107,7 +111,7 @@
     name = "hypr-window-opacity";
     script = pkgs.writeShellApplication {
       inherit name;
-      runtimeInputs = [pkgs.coreutils pkgs.hyprland pkgs.jq pkgs.libnotify pkgs.python3];
+      runtimeInputs = [pkgs.coreutils hyprlandPackage pkgs.jq pkgs.libnotify pkgs.python3];
       text = ''
                 usage() {
                   printf 'Usage: %s up|down|reset|set <0.35-1.00>\n' "$0" >&2
@@ -938,7 +942,7 @@ in {
         })
         (writeShellApplication {
           name = "hyprland-workspace-overview";
-          runtimeInputs = [pkgs.coreutils pkgs.hyprland pkgs.jq pkgs.wofi];
+          runtimeInputs = [pkgs.coreutils hyprlandPackage pkgs.jq pkgs.wofi];
           text = ''
             #!/usr/bin/env bash
             set -euo pipefail

@@ -73,6 +73,16 @@ Hyprland config lines.
 
 The shared Hyprland module installs `hctl`, a small Rust CLI/daemon for ergonomic window workflows. Nix generates its runtime config at `~/.config/hctl/config.json`; the daemon writes Eww-facing state to `$XDG_STATE_HOME/hctl/eww-state.json` and applies smart gaps based on the focused monitor and active workspace's tiled window count. Smart-gap profiles target tater's exact `eDP-1` laptop panel and `DP-2` Dell dock first, then fall back to width ranges for other laptop/external outputs.
 
+The Hyprland Home Manager helpers (`hctl`, Eww wrappers, idle inhibit, workspace
+overview, and related scripts) should depend on
+`wayland.windowManager.hyprland.finalPackage` rather than raw `pkgs.hyprland`.
+Tater and thorny pin Hyprland from the shared flake input; using the final active
+package keeps helper wrappers from retaining a second nixpkgs Hyprland/portal
+closure. `hctl` only wraps `hyprctl` into its service PATH; application launch
+commands such as `signal-desktop`, `Telegram`, and `keepassxc` intentionally stay
+plain command names so the user profile PATH resolves them without making the
+`hctl` package itself retain chat-app closures.
+
 > **Applying hctl changes:** `hctl` runs as a systemd user service (`hctl.service`) bound to `graphical-session.target` with `RefuseManualStart = true` so it does not start during home-manager activation. After changing hctl options or the hctl package, **log out and back in** to restart the daemon and pick up the new binary and config. `systemctl --user restart hctl` may be refused because of `RefuseManualStart`; if it succeeds it only restarts the daemon, not the whole graphical session.
 
 The Eww bar consumes this state for lightweight desktop context:

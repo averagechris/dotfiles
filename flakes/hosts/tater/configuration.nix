@@ -310,7 +310,7 @@ in {
     };
     taterDisplayRefresh = pkgs.writeShellApplication {
       name = "tater-display-refresh";
-      runtimeInputs = [pkgs.coreutils config.programs.eww.package pkgs.hyprland pkgs.jq];
+      runtimeInputs = [pkgs.coreutils config.programs.eww.package hyprlandPackage pkgs.jq];
       text = ''
         set -euo pipefail
 
@@ -437,7 +437,7 @@ in {
     };
     taterHomeClamshell = pkgs.writeShellApplication {
       name = "tater-home-clamshell";
-      runtimeInputs = [pkgs.hyprland taterDisplayRefresh];
+      runtimeInputs = [hyprlandPackage taterDisplayRefresh];
       text = ''
         set -euo pipefail
 
@@ -448,7 +448,7 @@ in {
     };
     taterHomeOpen = pkgs.writeShellApplication {
       name = "tater-home-open";
-      runtimeInputs = [pkgs.hyprland taterDisplayRefresh];
+      runtimeInputs = [hyprlandPackage taterDisplayRefresh];
       text = ''
         set -euo pipefail
 
@@ -459,7 +459,7 @@ in {
     };
     taterHomeToggle = pkgs.writeShellApplication {
       name = "tater-home-toggle";
-      runtimeInputs = [pkgs.hyprland pkgs.jq pkgs.libnotify taterDisplayRefresh];
+      runtimeInputs = [hyprlandPackage pkgs.jq pkgs.libnotify taterDisplayRefresh];
       text = ''
         set -euo pipefail
 
@@ -487,7 +487,7 @@ in {
     };
     taterHomeDocked = pkgs.writeShellApplication {
       name = "tater-home-docked";
-      runtimeInputs = [pkgs.hyprland pkgs.jq];
+      runtimeInputs = [hyprlandPackage pkgs.jq];
       text = ''
         set -euo pipefail
 
@@ -527,7 +527,7 @@ in {
     };
     taterDesktopDoctor = pkgs.writeShellApplication {
       name = "tater-desktop-doctor";
-      runtimeInputs = [pkgs.coreutils config.programs.eww.package pkgs.hyprland pkgs.jq pkgs.kmod pkgs.networkmanager pkgs.ripgrep pkgs.systemd];
+      runtimeInputs = [pkgs.coreutils config.programs.eww.package hyprlandPackage pkgs.jq pkgs.kmod pkgs.networkmanager pkgs.ripgrep pkgs.systemd];
       text = ''
         set -uo pipefail
 

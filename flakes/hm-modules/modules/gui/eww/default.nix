@@ -6,6 +6,10 @@
   ...
 }: let
   cfg = config.dotfiles.eww;
+  hyprlandPackage =
+    config.wayland.windowManager.hyprland.finalPackage
+    or config.wayland.windowManager.hyprland.package
+    or pkgs.hyprland;
 
   # Rose Pine Moon colors
   colors = {
@@ -27,7 +31,7 @@
   };
   eww = pkgs.writeShellApplication {
     name = "eww";
-    runtimeInputs = [pkgs.coreutils pkgs.hyprland pkgs.jq];
+    runtimeInputs = [pkgs.coreutils hyprlandPackage pkgs.jq];
     text = ''
       set -euo pipefail
 
@@ -84,7 +88,7 @@
   };
   ewwOpenBars = pkgs.writeShellApplication {
     name = "eww-open-bars";
-    runtimeInputs = [eww pkgs.hyprland pkgs.jq];
+    runtimeInputs = [eww hyprlandPackage pkgs.jq];
     text = ''
       set -euo pipefail
 
