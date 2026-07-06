@@ -5,7 +5,6 @@
 }: {
   imports = [
     inputs.nixos-modules.nixosModules.common
-    inputs.nixos-modules.nixosModules.desktopCommon
     inputs.nixos-modules.nixosModules.sudoDeploy
     inputs.nixos-modules.nixosModules.selfDeploy
     inputs.nixos-modules.nixosModules.tailscale
@@ -32,6 +31,20 @@
   networking.hostName = "tom";
   networking.networkmanager.enable = false;
   time.timeZone = "America/New_York";
+  services.timesyncd = {
+    enable = true;
+    servers = [
+      "time.cloudflare.com"
+      "time.google.com"
+      "pool.ntp.org"
+    ];
+    fallbackServers = [
+      "0.nixos.pool.ntp.org"
+      "1.nixos.pool.ntp.org"
+      "2.nixos.pool.ntp.org"
+      "3.nixos.pool.ntp.org"
+    ];
+  };
   services.openssh = {
     enable = true;
     settings.PermitRootLogin = "no";

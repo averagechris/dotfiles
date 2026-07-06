@@ -2,6 +2,17 @@
 
 `tom` is the NixOS host for Home Assistant and Calibre-Web.
 
+`tom` intentionally does not import the shared `desktopCommon` module. It is a
+headless service host, so keeping bootloader, OpenSSH, timezone, and time-sync
+settings host-local avoids retaining workstation defaults such as graphics,
+printing, and GUI-oriented system packages in the runtime closure.
+
+After removing `desktopCommon`, the patched `tom` system closure measured on
+`thorny` dropped from about 5.2 GiB to 4.2 GiB. The remaining largest application
+closures are Home Assistant and Calibre-Web; the remaining firmware closure comes
+from the hardware profile and should only be trimmed after confirming the real
+device does not need the firmware or microcode it enables.
+
 ## Deployment
 
 Deploy from the repository root with deploy-rs:
