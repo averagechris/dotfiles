@@ -413,6 +413,11 @@
     '';
   };
 
+  # Hister is not yet ready for prime time. Flip this to true to re-enable
+  # the service, its env secret, the nightly backup service/timer, and the
+  # /var/backups/hister tmpfiles rule together.
+  histerEnabled = false;
+
   histerBackup = pkgs.writeShellApplication {
     name = "hister-backup";
     runtimeInputs = with pkgs; [
@@ -561,7 +566,7 @@ in {
         mode = "0400";
       };
     }
-    // lib.optionalAttrs (builtins.pathExists ../../../secrets/thorny/hister-env.age) {
+    // lib.optionalAttrs (histerEnabled && builtins.pathExists ../../../secrets/thorny/hister-env.age) {
       hister-env = {
         file = ../../../secrets/thorny/hister-env.age;
         # Read by systemd as root via EnvironmentFile.
@@ -569,7 +574,7 @@ in {
       };
     };
 
-  services.hister = {
+  services.hister = lib.mkIf histerEnabled {
     enable = true;
     # Contains HISTER__SERVER__OAUTH__GITHUB__CLIENT_SECRET=...
     environmentFile =
@@ -595,7 +600,7 @@ in {
 
   # Nightly hister backup: stop the service, archive its state directory
   # (/var/lib/hister via StateDirectory), restart, and prune old archives.
-  systemd.services.hister-backup = {
+  systemd.services.hister-backup = lib.mkIf histerEnabled {
     description = "Back up hister state to /var/backups/hister";
     serviceConfig = {
       Type = "oneshot";
@@ -603,7 +608,7 @@ in {
     };
   };
 
-  systemd.timers.hister-backup = {
+  systemd.timers.hister-backup = lib.mkIf histerEnabled {
     description = "Nightly hister state backup";
     wantedBy = ["timers.target"];
     timerConfig = {
@@ -640,13 +645,14 @@ in {
     };
   };
 
-  systemd.tmpfiles.rules = [
-    "d /var/lib/dotfiles-host-build-cache 0755 chris users - -"
-    "d /var/lib/dotfiles-host-build-cache/results 0755 chris users - -"
-    "d /var/lib/dotfiles-host-build-cache/logs 0755 chris users - -"
-    "d /var/lib/fleet-cache-warmer 0755 chris users - -"
-    "d /var/backups/hister 0700 root root - -"
-  ];
+  systemd.tmpfiles.rules =
+    [
+      "d /var/lib/dotfiles-host-build-cache 0755 chris users - -"
+      "d /var/lib/dotfiles-host-build-cache/results 0755 chris users - -"
+      "d /var/lib/dotfiles-host-build-cache/logs 0755 chris users - -"
+      "d /var/lib/fleet-cache-warmer 0755 chris users - -"
+    ]
+    ++ lib.optional histerEnabled "d /var/backups/hister 0700 root root - -";
 
   systemd.services.dotfiles-host-build-cache = {
     description = "Keep current dotfiles host system builds realized on thorny";
