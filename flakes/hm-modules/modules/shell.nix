@@ -19,6 +19,7 @@ in
       ./shell-modules/calibre-utils.nix
       ./shell-modules/audio-output.nix
       ./shell-modules/fzf.nix
+      ./shell-modules/lan-ssh.nix
       ./shell-modules/lazygit.nix
       ./shell-modules/less.nix
       ./shell-modules/pipx.nix

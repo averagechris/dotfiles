@@ -4,6 +4,7 @@
   inputs,
   lib,
   overlays,
+  sshKeys,
   ...
 }: let
   ctxPackage = inputs.ctx.packages.${pkgs.stdenv.hostPlatform.system}.ctx;
@@ -323,7 +324,14 @@ in {
   users.users.chris = {
     name = "chris";
     home = "/Users/chris";
+    openssh.authorizedKeys.keys = [
+      sshKeys.chris.thelio
+      sshKeys.system.tater
+    ];
   };
+
+  services.openssh.enable = true;
+
   home-manager.users.chris = {pkgs, ...}: {
     home.stateVersion = "26.05";
     home.packages = with pkgs; [

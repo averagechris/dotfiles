@@ -2,6 +2,14 @@
 
 `suremac` is the Darwin/macOS host configured in `flakes/hosts/suremac/`.
 
+## LAN SSH
+
+`suremac` enables macOS Remote Login through nix-darwin so local NixOS machines
+can SSH in on trusted LANs. It authorizes thorny's `chris.thelio` user key and
+tater's `system.tater` host key; see [LAN SSH](/docs/lan-ssh.md) for the
+DHCP-friendly `dotfiles-lan-hosts`, `ssh-lan`, and `ssh-suremac-lan` helpers and
+for the current key-trust caveat around a future dedicated `chris@tater` user key.
+
 ## Time Zone
 
 `suremac` does not pin `time.timeZone` to a fixed IANA zone. Instead, the host

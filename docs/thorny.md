@@ -37,6 +37,11 @@ thorny over the local network, even when the agent session is not on the
 personal tailnet and therefore cannot use the usual `thorny`/`thelio-nixos`
 MagicDNS names.
 
+For DHCP-heavy LAN access, prefer `ssh-lan thorny` or `ssh-thorny-lan` from the
+shared shell profile. Those helpers discover the current local IP and use
+`UserKnownHostsFile=/dev/null`/`StrictHostKeyChecking=no` so changing LAN
+addresses do not poison `known_hosts`; see [LAN SSH](/docs/lan-ssh.md).
+
 The Nix daemon is configured for builder use:
 
 - `nix.settings.trusted-users = ["@wheel" "chris"]`
