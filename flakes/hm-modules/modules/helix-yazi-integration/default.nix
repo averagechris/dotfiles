@@ -34,7 +34,10 @@ in {
       default = pkgs.rustPlatform.buildRustPackage {
         pname = "helix-yazi-integration";
         version = "0.1.0";
-        src = ./.;
+        src = builtins.path {
+          path = ./.;
+          name = "helix-yazi-integration-source";
+        };
 
         cargoLock = {
           lockFile = ./Cargo.lock;

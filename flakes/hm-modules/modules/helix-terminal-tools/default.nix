@@ -30,7 +30,10 @@ in {
       default = pkgs.rustPlatform.buildRustPackage {
         pname = "helix-terminal-tools";
         version = "0.1.0";
-        src = ./.;
+        src = builtins.path {
+          path = ./.;
+          name = "helix-terminal-tools-source";
+        };
 
         cargoLock = {
           lockFile = ./Cargo.lock;
