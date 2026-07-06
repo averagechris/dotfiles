@@ -9,8 +9,10 @@ used locally.
 
 - Remote Nix builder reachable over Tailscale/SSH.
 - Local desktop workstation with the shared Hyprland setup used by `tater`.
-- Desktop/gaming-capable machine; it keeps Steam, GameMode, 32-bit graphics,
-  controller support, Podman, and libvirt enabled.
+- Desktop/builder machine with Podman and libvirt enabled. The old Steam,
+  GameMode, and controller-support stack was removed because `thorny` is no
+  longer used as a gaming box and those packages significantly inflate the
+  workstation closure.
 - Hourly scheduler for the homepage metadata refresh build on builds.sr.ht.
 - Build-cache maintainer for active NixOS host system closures from dotfiles
   `main`, so client host switches can reuse work already realized by `thorny`.

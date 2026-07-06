@@ -5,16 +5,113 @@
   ...
 }: let
   cfg = config.dotfiles.shell.calibre-utils;
+  backupCommand =
+    if cfg.backup.enable
+    then ''
+      import json
+      import os
+      import shutil
+      import tempfile
+
+
+      def _get_default_calibre_library_path() -> Path:
+          cfg_dir = Path(os.environ.get("XDG_CONFIG_HOME", "~/.config")).absolute()  # noqa: E501
+          if (cfg_file := cfg_dir / "calibre/global.py.json") and cfg_file.exists():
+              calibre_config = json.loads(cfg_file.read_text())
+              _lib_path = calibre_config.get("library_path")
+              if (lib_path := _lib_path) and Path(lib_path).exists():
+                  return Path(lib_path)
+          print("[red]Unable to determine default calibre library path.[/red]")
+          raise typer.Exit(5)
+
+
+      @cli.command()
+      def backup(
+          calibre_library: Path = typer.Argument(
+              default_factory=_get_default_calibre_library_path,
+              help="calibre library directory to backub",
+              exists=True,
+              file_okay=False,
+              dir_okay=True,
+          ),
+      ) -> None:
+          """
+          Export the default calibre library to a tmpdir, create
+          bz2 compressed tarball and optionally upload it to mega
+          """
+          with tempfile.TemporaryDirectory() as tmpdir_name:
+              export_library_dir = (Path(tmpdir_name) / "CalibreLibray").absolute()
+              export_library_dir.mkdir()
+
+              if calibre_library.exists():
+                  print(f"[green]✓[/green] Exporting library at {calibre_library} into {export_library_dir}")  # noqa: E501
+
+              subprocess.run(
+                  [
+                      "${pkgs.calibre}/bin/calibredb",  # noqa: E501
+                      "export",
+                      "--all",
+                      f"--to-dir={export_library_dir.as_posix()}",
+                  ],
+                  capture_output=True,
+                  text=True,
+                  check=True,
+              )
+              now = datetime.now().strftime("%Y-%m-%d")
+              tmpdir = Path(tmpdir_name)
+              tarball = (tmpdir / f"CalibreLibrary_on_{now}.tar.bz2").absolute()  # noqa: E501
+              print(f"[green]✓[/green] Compressing as {tarball}")
+              subprocess.run(
+                  [
+                      "${pkgs.gnutar}/bin/tar",  # noqa: E501
+                      "--create",
+                      "--bzip2",
+                      "--preserve-permissions",
+                      "--file",
+                      f"{tarball.as_posix()}",
+                      f"{export_library_dir.as_posix()}",
+                  ],
+                  capture_output=True,
+                  text=True,
+                  check=True,
+              )
+              if Confirm.ask("Upload to mega?"):
+                  print(f"[green]✓[/green] Uploading {tarball.absolute()} to mega at /calibre_library_backups/{tarball.name}")  # noqa: E501
+                  subprocess.run(
+                      [
+                          "${pkgs.megacmd}/bin/mega-put",  # noqa: E501
+                          f"{tarball.absolute().as_posix()}",
+                          f"/calibre_library_backups/{tarball.name}",  # noqa: E501
+                      ],
+                      capture_output=True,
+                      text=True,
+                      check=True,
+                  )
+
+              else:
+                  print(f"[green]✓[/green] Completed. Moving tarball to {Path.cwd().absolute()}.")  # noqa: E501
+                  shutil.move(tarball.as_posix(), ".")
+
+              print(f"[green]✓[/green] Removing all temporary files at {tmpdir.absolute()}")  # noqa: E501
+    ''
+    else ''
+      @cli.command()
+      def backup() -> None:
+          """Explain how to enable the optional Calibre backup helper."""
+          print(
+              "[yellow]calibre-utils backup is disabled in this "
+              "Home Manager profile.[/yellow]\n"
+              "Enable dotfiles.shell.calibre-utils.backup.enable to install the "
+              "Calibre and MEGAcmd runtime dependencies needed for backups."
+          )
+          raise typer.Exit(2)
+    '';
   calibre-utils = pkgs.writers.writePython3Bin "calibre-utils" {libraries = with pkgs.python3Packages; [tabulate typer rich];} ''
     import contextlib
-    import json
-    import os
     import re
     import statistics
-    import shutil
     import subprocess
     import sys
-    import tempfile
     from dataclasses import dataclass
     from datetime import datetime
     from pathlib import Path
@@ -327,86 +424,7 @@
                 (Path(".") / "chapters.txt").unlink()
 
 
-    def _get_default_calibre_library_path() -> Path:
-        cfg_dir = Path(os.environ.get("XDG_CONFIG_HOME", "~/.config")).absolute()  # noqa: E501
-        if (cfg_file := cfg_dir / "calibre/global.py.json") and cfg_file.exists():
-            calibre_config = json.loads(cfg_file.read_text())
-            _lib_path = calibre_config.get("library_path")
-            if (lib_path := _lib_path) and Path(lib_path).exists():
-                return Path(lib_path)
-        print("[red]Unable to determine default calibre library path.[/red]")
-        raise typer.Exit(5)
-
-
-    @cli.command()
-    def backup(
-        calibre_library: Path = typer.Argument(
-            default_factory=_get_default_calibre_library_path,
-            help="calibre library directory to backub",
-            exists=True,
-            file_okay=False,
-            dir_okay=True,
-        ),
-    ) -> None:
-        """
-        Export the default calibre library to a tmpdir, create
-        bz2 compressed tarball and optionally upload it to mega
-        """
-        with tempfile.TemporaryDirectory() as tmpdir_name:
-            export_library_dir = (Path(tmpdir_name) / "CalibreLibray").absolute()
-            export_library_dir.mkdir()
-
-            if calibre_library.exists():
-                print(f"[green]✓[/green] Exporting library at {calibre_library} into {export_library_dir}")  # noqa: E501
-
-            subprocess.run(
-                [
-                    "${pkgs.calibre}/bin/calibredb",  # noqa: E501
-                    "export",
-                    "--all",
-                    f"--to-dir={export_library_dir.as_posix()}",
-                ],
-                capture_output=True,
-                text=True,
-                check=True,
-            )
-            now = datetime.now().strftime("%Y-%m-%d")
-            tmpdir = Path(tmpdir_name)
-            tarball = (tmpdir / f"CalibreLibrary_on_{now}.tar.bz2").absolute()  # noqa: E501
-            print(f"[green]✓[/green] Compressing as {tarball}")
-            subprocess.run(
-                [
-                    "${pkgs.gnutar}/bin/tar",  # noqa: E501
-                    "--create",
-                    "--bzip2",
-                    "--preserve-permissions",
-                    "--file",
-                    f"{tarball.as_posix()}",
-                    f"{export_library_dir.as_posix()}",
-                ],
-                capture_output=True,
-                text=True,
-                check=True,
-            )
-            if Confirm.ask("Upload to mega?"):
-                print(f"[green]✓[/green] Uploading {tarball.absolute()} to mega at /calibre_library_backups/{tarball.name}")  # noqa: E501
-                subprocess.run(
-                    [
-                        "${pkgs.megacmd}/bin/mega-put",  # noqa: E501
-                        f"{tarball.absolute().as_posix()}",
-                        f"/calibre_library_backups/{tarball.name}",  # noqa: E501
-                    ],
-                    capture_output=True,
-                    text=True,
-                    check=True,
-                )
-
-            else:
-                print(f"[green]✓[/green] Completed. Moving tarball to {Path.cwd().absolute()}.")  # noqa: E501
-                shutil.move(tarball.as_posix(), ".")
-
-            print(f"[green]✓[/green] Removing all temporary files at {tmpdir.absolute()}")  # noqa: E501
-
+    ${backupCommand}
 
     if __name__ == "__main__":
         cli()
@@ -414,6 +432,11 @@
 in {
   options.dotfiles.shell.calibre-utils = {
     enable = lib.mkEnableOption "enable my calibre-utils python scripts cli";
+    backup.enable = lib.mkEnableOption ''
+      the Calibre library backup subcommand. This retains the full Calibre and
+      MEGAcmd runtime closures, so leave it disabled on hosts that only use the
+      audio helpers.
+    '';
   };
   config = lib.mkIf cfg.enable {
     home.packages = [calibre-utils];

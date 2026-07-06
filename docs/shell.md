@@ -34,3 +34,20 @@ programs.zellij.enable = true;
 
 The module deploys `~/.config/zellij/config.kdl`, layouts, and themes only when
 Zellij is enabled.
+
+## `calibre-utils`
+
+`dotfiles.shell.calibre-utils.enable` installs the `calibre-utils` helper CLI.
+By default it keeps only the audiobook-oriented helpers and their lighter runtime
+dependencies, such as Python, Rich/Typer/Tabulate, and FFmpeg.
+
+The `backup` subcommand, which exports a Calibre library and can upload the
+archive with MEGAcmd, is optional because it retains the full Calibre and MEGAcmd
+closures. Enable it only on hosts that actually perform Calibre library backups:
+
+```nix
+dotfiles.shell.calibre-utils.backup.enable = true;
+```
+
+When backup support is disabled, `calibre-utils backup` remains present as a stub
+that explains how to enable the heavy optional dependency set.

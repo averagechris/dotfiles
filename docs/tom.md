@@ -48,3 +48,10 @@ Manual deploy-rs remains available for immediate deploys or recovery.
 dependency metadata. The upstream `0.6.27b0` wheel currently declares
 `requests < 2.33`, while nixpkgs provides `requests 2.33.1`; without the overlay,
 the Python runtime dependency check fails during deployment.
+
+Book upload remains enabled, but Calibre-Web book conversion is intentionally
+disabled. The current web UI is only used for browsing/serving the library, and
+conversion pulls the full Calibre runtime into `tom`'s system closure. If web-side
+conversion becomes important again, prefer revisiting this as part of a future
+Calibre-Web fork or package customization rather than casually re-enabling the
+large default conversion closure.

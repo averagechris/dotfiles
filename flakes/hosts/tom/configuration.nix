@@ -71,7 +71,7 @@
 
     openFirewall = true;
     listen.ip = "0.0.0.0";
-    options.enableBookConversion = true;
+    options.enableBookConversion = false;
     options.enableBookUploading = true;
   };
 }
