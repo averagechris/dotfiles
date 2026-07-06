@@ -11,6 +11,7 @@
       inputs.starship-jj.follows = "hm-modules/starship-jj";
       inputs.linear-cli.follows = "hm-modules/linear-cli";
       inputs.gander.follows = "hm-modules/gander";
+      inputs.ctx.follows = "ctx";
     };
     trap = {
       url = "path:./flakes/hosts/trap";
@@ -36,6 +37,7 @@
       inputs.hypridle.follows = "hypridle";
       inputs.anyrun.follows = "anyrun";
       inputs.pip-chrome-extension.follows = "pip-chrome-extension";
+      inputs.systems.follows = "systems";
     };
     tom = {
       url = "path:./flakes/hosts/tom";
@@ -70,6 +72,8 @@
       inputs.anyrun.follows = "anyrun";
       inputs.pip-chrome-extension.follows = "pip-chrome-extension";
       inputs.disko.follows = "disko";
+      inputs.ctx.follows = "ctx";
+      inputs.systems.follows = "systems";
     };
     trainwreck = {
       url = "path:./flakes/hosts/trainwreck";
@@ -135,23 +139,33 @@
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    ctx = {
+      url = "sourcehut:~averagechris/ctx/dfc57f34a0861dee14507c9791649951750b1e52";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+    };
+    systems.url = "github:nix-systems/default-linux";
     hyprland = {
       # Pinned to the revision Hyprspace currently tests against so tater and
       # thorny share one compositor/portal lock graph.
       url = "github:hyprwm/Hyprland/0002f148c9a4fe421a9d33c0faa5528cdc411e62";
       inputs.nixpkgs.follows = "nixpkgs";
+      inputs.systems.follows = "systems";
     };
     Hyprspace = {
       url = "github:KZDKM/Hyprspace";
       inputs.hyprland.follows = "hyprland";
+      inputs.systems.follows = "systems";
     };
     hypridle = {
       url = "github:hyprwm/hypridle";
       inputs.nixpkgs.follows = "nixpkgs";
+      inputs.systems.follows = "systems";
     };
     anyrun = {
       url = "github:anyrun-org/anyrun";
       inputs.nixpkgs.follows = "nixpkgs";
+      inputs.systems.follows = "systems";
     };
     pip-chrome-extension = {
       url = "git+https://git.sr.ht/~averagechris/pip-chrome-extension";
@@ -209,6 +223,32 @@
     }
     // flake-utils.lib.eachDefaultSystem (system: let
       pkgs = inputs.nixpkgs.legacyPackages.${system};
+      commonDevPackages = with pkgs; [
+        alejandra
+        cachix
+        mdl
+        shellcheck
+        statix
+        yj # for parsing .jj-lint.toml
+        self.outputs.packages.${system}.dotfiles-maintenance-gate
+        self.outputs.packages.${system}.update-flakes
+        self.outputs.packages.${system}.agenix
+        deploy-rs.packages.${system}.deploy-rs
+      ];
+      rustDevPackages = with pkgs; [
+        cargo
+        rustc
+        rustfmt
+        clippy
+        pkg-config
+        openssl.dev
+      ];
+      ideDevPackages = with pkgs; [
+        nil # nix language server
+        nixd
+        pkgs."bash-language-server"
+        rust-analyzer
+      ];
     in {
       formatter = pkgs.alejandra;
 
@@ -305,30 +345,15 @@
 
       # Development shell
       devShells.default = pkgs.mkShell {
-        buildInputs = with pkgs; [
-          alejandra
-          cachix
-          mdl
-          shellcheck
-          statix
-          yj # for parsing .jj-lint.toml
-          nil # nix language server
-          nixd
-          pkgs."bash-language-server"
-          self.outputs.packages.${system}.dotfiles-maintenance-gate
-          self.outputs.packages.${system}.update-flakes
-          self.outputs.packages.${system}.agenix
-          deploy-rs.packages.${system}.deploy-rs
+        packages = commonDevPackages;
+      };
 
-          # Rust development
-          cargo
-          rustc
-          rustfmt
-          clippy
-          rust-analyzer
-          pkg-config
-          openssl.dev
-        ];
+      devShells.rust = pkgs.mkShell {
+        packages = commonDevPackages ++ rustDevPackages;
+      };
+
+      devShells.ide = pkgs.mkShell {
+        packages = commonDevPackages ++ rustDevPackages ++ ideDevPackages;
       };
     });
 }

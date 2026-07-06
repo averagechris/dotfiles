@@ -3,9 +3,21 @@
 
   inputs = {
     base-lib.url = "path:../../base-lib";
-    nixos-modules.url = "path:../../nixos-modules";
-    hm-modules.url = "path:../../hm-modules";
     nixpkgs.follows = "base-lib/nixpkgs";
+    nixos-modules = {
+      url = "path:../../nixos-modules";
+      inputs.base-lib.follows = "base-lib";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+    };
+    hm-modules = {
+      url = "path:../../hm-modules";
+      inputs.base-lib.follows = "base-lib";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+      inputs.home-manager.follows = "home-manager";
+      inputs.opencode.follows = "base-lib/opencode";
+    };
     home-manager.follows = "base-lib/home-manager";
     flake-utils.follows = "base-lib/flake-utils";
     agenix.follows = "base-lib/agenix";
@@ -19,7 +31,7 @@
     };
 
     # starship-jj for jujutsu starship prompt integration
-    starship-jj.url = "sourcehut:~averagechris/starship-jj";
+    starship-jj.follows = "hm-modules/starship-jj";
   };
 
   outputs = inputs @ {

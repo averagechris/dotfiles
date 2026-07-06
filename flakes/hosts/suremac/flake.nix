@@ -3,9 +3,23 @@
 
   inputs = {
     base-lib.url = "path:../../base-lib";
-    hm-modules.url = "path:../../hm-modules";
-    darwin-modules.url = "path:../../darwin-modules";
     nixpkgs.follows = "base-lib/nixpkgs";
+    hm-modules = {
+      url = "path:../../hm-modules";
+      inputs.base-lib.follows = "base-lib";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+      inputs.home-manager.follows = "home-manager";
+      inputs.opencode.follows = "base-lib/opencode";
+    };
+    darwin-modules = {
+      url = "path:../../darwin-modules";
+      inputs.base-lib.follows = "base-lib";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+      inputs.home-manager.follows = "home-manager";
+      inputs.darwin.follows = "darwin";
+    };
     darwin.follows = "base-lib/darwin";
     home-manager.follows = "base-lib/home-manager";
     flake-utils.follows = "base-lib/flake-utils";
@@ -17,19 +31,9 @@
       # from helix.cachix.org (avoids building Swift/dotnet for tree-sitter grammars)
       url = "github:helix-editor/helix";
     };
-    starship-jj = {
-      url = "sourcehut:~averagechris/starship-jj";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    linear-cli = {
-      url = "sourcehut:~averagechris/linear-cli";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.flake-utils.follows = "flake-utils";
-    };
-    gander = {
-      url = "sourcehut:~averagechris/gander";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    starship-jj.follows = "hm-modules/starship-jj";
+    linear-cli.follows = "hm-modules/linear-cli";
+    gander.follows = "hm-modules/gander";
     granola-cli = {
       url = "sourcehut:~averagechris/granola-cli";
       inputs.nixpkgs.follows = "nixpkgs";

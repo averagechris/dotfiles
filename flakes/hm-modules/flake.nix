@@ -15,6 +15,8 @@
     starship-jj = {
       url = "sourcehut:~averagechris/starship-jj";
       inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+      inputs.systems.follows = "flake-utils/systems";
     };
     linear-cli = {
       url = "sourcehut:~averagechris/linear-cli";

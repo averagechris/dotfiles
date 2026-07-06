@@ -3,27 +3,31 @@
 
   inputs = {
     base-lib.url = "path:../../base-lib";
-    nixos-modules.url = "path:../../nixos-modules";
-    hm-modules.url = "path:../../hm-modules";
     nixpkgs.follows = "base-lib/nixpkgs";
+    nixos-modules = {
+      url = "path:../../nixos-modules";
+      inputs.base-lib.follows = "base-lib";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+    };
+    hm-modules = {
+      url = "path:../../hm-modules";
+      inputs.base-lib.follows = "base-lib";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+      inputs.home-manager.follows = "home-manager";
+      inputs.opencode.follows = "base-lib/opencode";
+    };
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
     home-manager.follows = "base-lib/home-manager";
     flake-utils.follows = "base-lib/flake-utils";
+    systems.url = "github:nix-systems/default-linux";
     agenix.follows = "base-lib/agenix";
     deploy-rs.follows = "base-lib/deploy-rs";
     titlecase.follows = "base-lib/titlecase";
-    helix = {
-      url = "github:helix-editor/helix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    starship-jj = {
-      url = "sourcehut:~averagechris/starship-jj";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    gander = {
-      url = "sourcehut:~averagechris/gander";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    helix.follows = "hm-modules/helix";
+    starship-jj.follows = "hm-modules/starship-jj";
+    gander.follows = "hm-modules/gander";
     ctx = {
       url = "sourcehut:~averagechris/ctx";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -34,18 +38,22 @@
       # compositor and overview plugin agree on Hyprland's internal plugin ABI.
       url = "github:hyprwm/Hyprland/0002f148c9a4fe421a9d33c0faa5528cdc411e62";
       inputs.nixpkgs.follows = "nixpkgs";
+      inputs.systems.follows = "systems";
     };
     Hyprspace = {
       url = "github:KZDKM/Hyprspace";
       inputs.hyprland.follows = "hyprland";
+      inputs.systems.follows = "systems";
     };
     hypridle = {
       url = "github:hyprwm/hypridle";
       inputs.nixpkgs.follows = "nixpkgs";
+      inputs.systems.follows = "systems";
     };
     anyrun = {
       url = "github:anyrun-org/anyrun";
       inputs.nixpkgs.follows = "nixpkgs";
+      inputs.systems.follows = "systems";
     };
     pip-chrome-extension = {
       url = "git+https://git.sr.ht/~averagechris/pip-chrome-extension";

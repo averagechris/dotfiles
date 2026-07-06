@@ -21,12 +21,23 @@ import it. If a host pins a package flake that is already exposed by `hm-modules
 (for example `starship-jj`, `linear-cli`, or `gander`), make the host input
 follow the `hm-modules/...` input so the root lock keeps one node.
 
+Standalone host flakes should also make their local module path flakes follow the
+host's own shared graph. In a NixOS host flake, `nixos-modules.inputs.base-lib`
+should follow `base-lib`; `nixos-modules.inputs.nixpkgs` should follow `nixpkgs`;
+and `hm-modules` should follow the host's `base-lib`, `nixpkgs`, `flake-utils`,
+`home-manager`, and `base-lib/opencode` inputs. This keeps commands such as
+`nix flake check ./flakes/hosts/thorny --no-build` from locking a second copy of
+the shared module stack.
+
 Host inputs that are intentionally shared by multiple hosts should also be rooted
 once in the top-level aggregator and followed from each path flake. Current shared
 examples include `nixos-hardware`, `disko`, and the pinned Hyprland desktop inputs
 used by both `tater` and `thorny` (`hyprland`, `Hyprspace`, `hypridle`, `anyrun`,
-and `pip-chrome-extension`). This keeps standalone host flakes usable while
-avoiding duplicate transitive lock graphs in the root flake.
+and `pip-chrome-extension`). Root shared package inputs such as `ctx` the same
+way when multiple hosts consume them directly. For Hyprland ecosystem flakes that
+use `nix-systems/default-linux`, also root a shared `systems` input and make each
+consumer follow it. This keeps standalone host flakes usable while avoiding
+duplicate transitive lock graphs in the root flake.
 
 One intentional exception is `suremac/helix`: it keeps Helix's own `nixpkgs` so
 the cached upstream Helix runtime can be fetched from `helix.cachix.org` instead
@@ -37,6 +48,18 @@ After changing input topology, run `nix flake lock` and sanity-check the lock fo
 duplicate local graphs. Large repeated groups of `base-lib_*`, `hm-modules_*`,
 `nixos-modules_*`, `home-manager_*`, or `opencode_*` nodes usually mean a new path
 input is not following the root graph.
+
+The root development shells are split so everyday checks do not require IDE and
+Rust toolchain closures:
+
+```bash
+nix develop        # lean lint/deploy/update helper shell
+nix develop .#rust # default tools plus cargo/rustc/rustfmt/clippy/pkg-config/OpenSSL
+nix develop .#ide  # rust shell plus nil, nixd, bash-language-server, rust-analyzer
+```
+
+Keep heavyweight language servers and compile toolchains out of
+`devShells.default` unless they are needed for normal repository checks.
 
 For runtime closure work on Darwin, check for build-only toolchain retention with:
 

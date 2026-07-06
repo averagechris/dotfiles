@@ -3,23 +3,29 @@
 
   inputs = {
     base-lib.url = "path:../../base-lib";
-    nixos-modules.url = "path:../../nixos-modules";
-    hm-modules.url = "path:../../hm-modules";
     nixpkgs.follows = "base-lib/nixpkgs";
+    nixos-modules = {
+      url = "path:../../nixos-modules";
+      inputs.base-lib.follows = "base-lib";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+    };
+    hm-modules = {
+      url = "path:../../hm-modules";
+      inputs.base-lib.follows = "base-lib";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+      inputs.home-manager.follows = "home-manager";
+      inputs.opencode.follows = "base-lib/opencode";
+    };
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
     home-manager.follows = "base-lib/home-manager";
     flake-utils.follows = "base-lib/flake-utils";
     agenix.follows = "base-lib/agenix";
     deploy-rs.follows = "base-lib/deploy-rs";
     titlecase.follows = "base-lib/titlecase";
-    helix = {
-      url = "github:helix-editor/helix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    starship-jj = {
-      url = "sourcehut:~averagechris/starship-jj";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    helix.follows = "hm-modules/helix";
+    starship-jj.follows = "hm-modules/starship-jj";
   };
 
   outputs = inputs @ {

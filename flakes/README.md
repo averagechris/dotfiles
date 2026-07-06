@@ -43,7 +43,9 @@ This directory contains the modular flake-based architecture for the dotfiles re
 - `darwinConfigurations.*` - All Darwin system configurations
 - `deploy.nodes.*` - All deployable nodes
 - `apps.deploy` - Deploy-rs application
-- `devShells.default` - Development environment
+- `devShells.default` - Lean lint/deploy/update development environment
+- `devShells.rust` - Default tools plus Rust package development toolchain
+- `devShells.ide` - Rust shell plus Nix/Bash/Rust language servers
 - `checks.*` - Pre-commit hooks and linting
 
 ### Base Library Flake (`base-lib/flake.nix`)
