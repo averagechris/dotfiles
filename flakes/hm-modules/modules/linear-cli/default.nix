@@ -204,7 +204,9 @@ in {
         # its one-sprint grace, theme + commit-type labels on initiatives
         # (confirm actual Linear label-group names before adding
         # missing_group rules), and issue->project->initiative traceability
-        # (needs cross-entity joins).
+        # (needs cross-entity joins). Stale GitHub PRs are out of scope for
+        # this engine (GitHub PRs are not a hygiene entity) - use gh/jj pr
+        # sweeps for that.
         rules = [
           {
             id = "issue-missing-domain";
@@ -325,6 +327,26 @@ in {
               updatedAt.older_than = "7d";
             };
           }
+          # Queued work also goes stale. Todo/Spec after a month means the
+          # plan drifted; Backlog gets a quarter before it counts as rot.
+          {
+            id = "stale-todo";
+            entity = "issue";
+            severity = "low";
+            when = {
+              status."in" = ["Todo" "Spec"];
+              updatedAt.older_than = "30d";
+            };
+          }
+          {
+            id = "stale-backlog";
+            entity = "issue";
+            severity = "low";
+            when = {
+              status."in" = ["Backlog"];
+              updatedAt.older_than = "90d";
+            };
+          }
           # Priority-0 and high-priority intake must be triaged within one
           # business day; the two rules are OR branches of "priority <= high".
           {
@@ -378,14 +400,25 @@ in {
             };
           }
           # SDLC: dates are "encouraged" only; exploratory spikes are exempt
-          # from target dates - hence low severity.
+          # from target dates - hence low severity. Planned projects are also
+          # expected to carry dates, and anything past planning needs a start
+          # date.
           {
             id = "project-started-missing-target-date";
             entity = "project";
             severity = "low";
             when = {
-              state."in" = ["started"];
+              state."in" = ["planned" "started"];
               targetDate.missing = true;
+            };
+          }
+          {
+            id = "project-missing-start-date";
+            entity = "project";
+            severity = "medium";
+            when = {
+              state."in" = ["planned" "started"];
+              startDate.missing = true;
             };
           }
           # SDLC 70_async-communication: date changes on committed work must
@@ -410,6 +443,28 @@ in {
             when = {
               state.not_in = ["completed" "canceled"];
               labels.missing_group = "domain";
+            };
+          }
+          # Started projects need a health update every two weeks, matching
+          # the initiative cadence; at-risk/off-track projects get a tighter
+          # one-week leash.
+          {
+            id = "project-stale-health";
+            entity = "project";
+            severity = "medium";
+            when = {
+              state."in" = ["started"];
+              healthUpdatedAt.older_than = "14d";
+            };
+          }
+          {
+            id = "project-at-risk-no-update";
+            entity = "project";
+            severity = "high";
+            when = {
+              state.not_in = ["completed" "canceled"];
+              health."in" = ["atRisk" "offTrack"];
+              healthUpdatedAt.older_than = "7d";
             };
           }
           # Initiative rules. SDLC: "Required for active initiatives: All
