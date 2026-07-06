@@ -21,6 +21,13 @@ import it. If a host pins a package flake that is already exposed by `hm-modules
 (for example `starship-jj`, `linear-cli`, or `gander`), make the host input
 follow the `hm-modules/...` input so the root lock keeps one node.
 
+Host inputs that are intentionally shared by multiple hosts should also be rooted
+once in the top-level aggregator and followed from each path flake. Current shared
+examples include `nixos-hardware`, `disko`, and the pinned Hyprland desktop inputs
+used by both `tater` and `thorny` (`hyprland`, `Hyprspace`, `hypridle`, `anyrun`,
+and `pip-chrome-extension`). This keeps standalone host flakes usable while
+avoiding duplicate transitive lock graphs in the root flake.
+
 One intentional exception is `suremac/helix`: it keeps Helix's own `nixpkgs` so
 the cached upstream Helix runtime can be fetched from `helix.cachix.org` instead
 of building Darwin grammars locally. The Home Manager module trims that runtime

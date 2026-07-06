@@ -17,54 +17,85 @@
       inputs.base-lib.follows = "base-lib";
       inputs.nixos-modules.follows = "nixos-modules";
       inputs.hm-modules.follows = "hm-modules";
+      inputs.nixos-hardware.follows = "nixos-hardware";
+      inputs.helix.follows = "hm-modules/helix";
+      inputs.starship-jj.follows = "hm-modules/starship-jj";
+      inputs.gander.follows = "hm-modules/gander";
     };
     thorny = {
       url = "path:./flakes/hosts/thorny";
       inputs.base-lib.follows = "base-lib";
       inputs.nixos-modules.follows = "nixos-modules";
       inputs.hm-modules.follows = "hm-modules";
+      inputs.nixos-hardware.follows = "nixos-hardware";
       inputs.helix.follows = "hm-modules/helix";
       inputs.starship-jj.follows = "hm-modules/starship-jj";
       inputs.gander.follows = "hm-modules/gander";
+      inputs.hyprland.follows = "hyprland";
+      inputs.Hyprspace.follows = "Hyprspace";
+      inputs.hypridle.follows = "hypridle";
+      inputs.anyrun.follows = "anyrun";
+      inputs.pip-chrome-extension.follows = "pip-chrome-extension";
     };
     tom = {
       url = "path:./flakes/hosts/tom";
       inputs.base-lib.follows = "base-lib";
       inputs.nixos-modules.follows = "nixos-modules";
       inputs.hm-modules.follows = "hm-modules";
+      inputs.nixos-hardware.follows = "nixos-hardware";
+      inputs.helix.follows = "hm-modules/helix";
+      inputs.starship-jj.follows = "hm-modules/starship-jj";
     };
     cruber = {
       url = "path:./flakes/hosts/cruber";
       inputs.base-lib.follows = "base-lib";
       inputs.nixos-modules.follows = "nixos-modules";
       inputs.hm-modules.follows = "hm-modules";
+      inputs.nixos-hardware.follows = "nixos-hardware";
+      inputs.helix.follows = "hm-modules/helix";
+      inputs.starship-jj.follows = "hm-modules/starship-jj";
     };
     tater = {
       url = "path:./flakes/hosts/tater";
       inputs.base-lib.follows = "base-lib";
       inputs.nixos-modules.follows = "nixos-modules";
       inputs.hm-modules.follows = "hm-modules";
+      inputs.nixos-hardware.follows = "nixos-hardware";
       inputs.helix.follows = "hm-modules/helix";
       inputs.starship-jj.follows = "hm-modules/starship-jj";
       inputs.gander.follows = "hm-modules/gander";
+      inputs.hyprland.follows = "hyprland";
+      inputs.Hyprspace.follows = "Hyprspace";
+      inputs.hypridle.follows = "hypridle";
+      inputs.anyrun.follows = "anyrun";
+      inputs.pip-chrome-extension.follows = "pip-chrome-extension";
+      inputs.disko.follows = "disko";
     };
     trainwreck = {
       url = "path:./flakes/hosts/trainwreck";
       inputs.base-lib.follows = "base-lib";
       inputs.nixos-modules.follows = "nixos-modules";
       inputs.hm-modules.follows = "hm-modules";
+      inputs.disko.follows = "disko";
+      inputs.starship-jj.follows = "hm-modules/starship-jj";
     };
     taz = {
       url = "path:./flakes/hosts/taz";
       inputs.base-lib.follows = "base-lib";
       inputs.nixos-modules.follows = "nixos-modules";
       inputs.hm-modules.follows = "hm-modules";
+      inputs.nixos-hardware.follows = "nixos-hardware";
+      inputs.helix.follows = "hm-modules/helix";
+      inputs.starship-jj.follows = "hm-modules/starship-jj";
     };
     tootsie = {
       url = "path:./flakes/hosts/tootsie";
       inputs.base-lib.follows = "base-lib";
       inputs.nixos-modules.follows = "nixos-modules";
       inputs.hm-modules.follows = "hm-modules";
+      inputs.nixos-hardware.follows = "nixos-hardware";
+      inputs.helix.follows = "hm-modules/helix";
+      inputs.starship-jj.follows = "hm-modules/starship-jj";
     };
 
     # Development dependencies
@@ -96,6 +127,36 @@
     nixpkgs.follows = "base-lib/nixpkgs";
     flake-utils.follows = "base-lib/flake-utils";
     deploy-rs.follows = "base-lib/deploy-rs";
+    nixos-hardware = {
+      url = "github:NixOS/nixos-hardware/master";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    disko = {
+      url = "github:nix-community/disko";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    hyprland = {
+      # Pinned to the revision Hyprspace currently tests against so tater and
+      # thorny share one compositor/portal lock graph.
+      url = "github:hyprwm/Hyprland/0002f148c9a4fe421a9d33c0faa5528cdc411e62";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    Hyprspace = {
+      url = "github:KZDKM/Hyprspace";
+      inputs.hyprland.follows = "hyprland";
+    };
+    hypridle = {
+      url = "github:hyprwm/hypridle";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    anyrun = {
+      url = "github:anyrun-org/anyrun";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    pip-chrome-extension = {
+      url = "git+https://git.sr.ht/~averagechris/pip-chrome-extension";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = inputs @ {
