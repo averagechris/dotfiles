@@ -87,9 +87,17 @@ Use this when you only need the local stack entries that are ahead of trunk.
 
 ## Existing workflow aliases
 
-The same module also installs higher-level helpers documented elsewhere:
+The same module also installs higher-level helpers documented elsewhere when
+`dotfiles.jujutsu.workflowAliases.enable` is true, which is the default:
 
 - [`jj ws`](/docs/jj-workspaces.md) for managed workspaces
 - [`jj pr`](/docs/jj-pr-workflow.md) on hosts that enable the GitHub PR helper
 - [`jj ship` and `jj tag-push`](/docs/jj-tag-workflow.md) for publishing and
   annotated release tags
+
+Minimal servers that only need basic `jj` commands can disable those helper
+aliases to avoid retaining the `jj-workflow` runtime closure:
+
+```nix
+dotfiles.jujutsu.workflowAliases.enable = false;
+```

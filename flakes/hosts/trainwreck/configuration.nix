@@ -88,24 +88,20 @@ in {
   system.stateVersion = "26.05";
 
   # Home Manager configuration for chris
-  home-manager.users.chris = {lib, ...}: {
+  home-manager.users.chris = {...}: {
     home.stateVersion = "26.05";
 
     imports = [inputs.hm-modules.homeManagerModules.default];
 
-    # Minimal shell setup for server
-    dotfiles.shell = {
-      enable = true;
-      shell_scripts.enable = false;
-      pipx.enable = false;
-      gpg.enable = false;
-    };
-
-    # Disable programs that require flake inputs not available on this host
-    programs.helix.enable = lib.mkForce false;
+    # Keep the VPS profile narrow. The shared shell profile is workstation-oriented
+    # and pulls in file-manager, media, and audio tooling that trainwreck does not
+    # need for deploys, Caddy, self-deploy, or bot experimentation.
+    dotfiles.shell.enable = false;
+    dotfiles.gpg.enable = false;
 
     # Enable jj and opencode
     programs.jujutsu.enable = true;
+    dotfiles.jujutsu.workflowAliases.enable = false;
     programs.opencode.enable = true;
     dotfiles.opencode.openrouterApiKeyFile = nixosConfig.age.secrets.openrouter-api-key.path;
     programs.starship.enable = false;

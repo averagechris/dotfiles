@@ -77,14 +77,10 @@
       # pressure_mode is only meaningful when the low-disk pressure phase is
       # enabled; keep the --pressure flag accepted (as a no-op) otherwise so
       # the documented CLI stays stable across hosts.
-      ${lib.optionalString cfg.cleanup.lowDisk.enable ''
-        pressure_mode=0
-      ''}
+      pressure_mode=0
       case "''${1:-}" in
         --pressure)
-          ${lib.optionalString cfg.cleanup.lowDisk.enable ''
-        pressure_mode=1
-      ''}
+          pressure_mode=1
           ;;
         "")
           ;;
@@ -93,6 +89,12 @@
           exit 2
           ;;
       esac
+
+      ${lib.optionalString (!cfg.cleanup.lowDisk.enable) ''
+        if [ "$pressure_mode" -eq 1 ]; then
+          log "--pressure requested but low-disk pressure cleanup is disabled; running normal cleanup"
+        fi
+      ''}
 
       lock_dir="''${XDG_RUNTIME_DIR:-''${TMPDIR:-/tmp}}/dotfiles-dev-cache-cleanup.lock"
       if mkdir "$lock_dir" 2>/dev/null; then

@@ -4,6 +4,14 @@
 for SSH, Tailscale, deploy/self-deploy plumbing, Caddy's public `hister` reverse
 proxy, and lightweight agent tooling.
 
+Home Manager intentionally disables the shared `dotfiles.shell` workstation
+profile on this host. Keep only explicit server/agent tools such as basic `jj`
+and OpenCode here; the shared shell profile brings media, file-manager, audio,
+and desktop-adjacent packages that are excessive for a narrow VPS closure.
+Trainwreck also disables the heavier `jj-workflow` alias set (`jj ship`,
+`jj sync`, `jj ws`, etc.) because those helpers retain extra workflow runtimes
+that are useful on workstations but unnecessary for self-deploying this VPS.
+
 The previous Telegram bot stack was removed from this host because it was not in
 active use and its gateway dependency graph made trainwreck builds
 disproportionately slow. Do not reintroduce the old gateway services, extension

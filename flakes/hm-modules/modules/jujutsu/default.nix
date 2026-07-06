@@ -107,6 +107,17 @@ in {
     };
   };
 
+  options.dotfiles.jujutsu.workflowAliases.enable = lib.mkOption {
+    type = lib.types.bool;
+    default = true;
+    description = ''
+      Enable repository workflow aliases backed by jj-workflow, including lint,
+      ship, sync, push, tag-push, workspace helpers, and optional PR helpers.
+      Disable this on narrow servers that only need basic jj commands and should
+      not retain the workflow helper runtime closure.
+    '';
+  };
+
   config.programs.jujutsu = lib.mkIf cfg.enable {
     settings = {
       user = {
@@ -220,7 +231,8 @@ in {
               '';
             };
           in ["util" "exec" "--" "${script}/bin/jj-prune-stale"];
-
+        }
+        // lib.optionalAttrs dotCfg.workflowAliases.enable {
           # Run repo-configured lints without pushing; `jj lint onboard` discovers
           # candidate commands when a repo has not been configured yet.
           lint = ["util" "exec" "--" "${jjWorkflow}/bin/jj-workflow" "lint"];
@@ -260,7 +272,7 @@ in {
             };
           in ["util" "exec" "--" "${script}/bin/jj-push"];
         }
-        // lib.optionalAttrs dotCfg.prWorkflow.enable {
+        // lib.optionalAttrs (dotCfg.workflowAliases.enable && dotCfg.prWorkflow.enable) {
           # GitHub PR workflow for jj workspaces. Disabled by default and enabled
           # only on hosts that use GitHub work repositories from non-colocated jj
           # workspaces.
