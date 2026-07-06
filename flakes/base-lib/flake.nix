@@ -20,7 +20,6 @@
       url = "github:ryantm/agenix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    mac-app-util.url = "github:hraban/mac-app-util";
     titlecase = {
       url = "sourcehut:~averagechris/titlecase";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -38,7 +37,6 @@
     darwin,
     deploy-rs,
     agenix,
-    mac-app-util,
     titlecase,
     ...
   }: let
@@ -47,7 +45,7 @@
 
     # Import library functions
     lib = import ./lib/default.nix {
-      inherit inputs nixpkgs flake-utils home-manager darwin deploy-rs agenix mac-app-util titlecase sshKeys;
+      inherit inputs nixpkgs flake-utils home-manager darwin deploy-rs agenix titlecase sshKeys;
     };
 
     # Import overlays

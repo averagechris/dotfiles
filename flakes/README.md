@@ -56,7 +56,7 @@ This directory contains the modular flake-based architecture for the dotfiles re
 - `darwin` - nix-darwin framework
 - `deploy-rs` - Deployment tool
 - `agenix` - Secrets management
-- Other utilities (pre-commit-hooks, mac-app-util, titlecase)
+- Other utilities (pre-commit-hooks, titlecase)
 
 **Exports**:
 - `lib.mkHost` - Function to create system configurations

@@ -51,8 +51,10 @@
   ];
 
   system.stateVersion = "26.05";
-  home-manager.users.chris = {pkgs, ...}: {
+  home-manager.users.chris = {...}: {
     home.stateVersion = "26.05";
+    dotfiles.shell.enable = false;
+    dotfiles.gpg.enable = false;
   };
 
   time.timeZone = "UTC";

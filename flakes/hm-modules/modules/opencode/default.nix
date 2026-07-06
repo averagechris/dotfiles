@@ -160,8 +160,8 @@ in {
   };
 
   config = lib.mkMerge [
-    # Base opencode configuration (always applied when programs.opencode.enable = true)
-    {
+    # Base opencode configuration (applied only when programs.opencode.enable = true)
+    (lib.mkIf config.programs.opencode.enable {
       programs.opencode = {
         package = lib.mkDefault opencodePackage;
 
@@ -217,7 +217,7 @@ in {
         ${pkgs.coreutils}/bin/cp -R "${reviewToolsPath}" "$target"
         ${pkgs.coreutils}/bin/chmod -R u+w "$target"
       '';
-    }
+    })
 
     # OpenRouter API key configuration (only when openrouterApiKeyFile is set)
     (lib.mkIf (cfg.openrouterApiKeyFile != null) {

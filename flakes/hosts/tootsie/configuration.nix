@@ -61,6 +61,8 @@
   system.stateVersion = "26.05";
   home-manager.users.chris = {...}: {
     home.stateVersion = "26.05";
+    dotfiles.shell.enable = false;
+    dotfiles.gpg.enable = false;
     programs.meganz.enable = true;
   };
 

@@ -87,7 +87,7 @@ in
       programs.git.enable = lib.mkDefault true;
       programs.gitui.enable = lib.mkDefault false;
       programs.helix.enable = lib.mkDefault true;
-      programs.lazygit.enable = lib.mkDefault true;
+      programs.lazygit.enable = lib.mkDefault false;
       programs.starship.enable = lib.mkDefault true;
       programs.zellij.enable = lib.mkDefault false;
       programs.zsh.enable = lib.mkDefault true;

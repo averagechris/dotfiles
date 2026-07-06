@@ -41,6 +41,8 @@
   users.users.chris.extraGroups = ["calibre-web"];
   home-manager.users.chris = {...}: {
     home.stateVersion = "26.05";
+    dotfiles.shell.enable = false;
+    dotfiles.gpg.enable = false;
   };
 
   # Passwordless sudo for deploy-rs

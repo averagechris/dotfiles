@@ -9,7 +9,6 @@
     darwin.follows = "base-lib/darwin";
     home-manager.follows = "base-lib/home-manager";
     flake-utils.follows = "base-lib/flake-utils";
-    mac-app-util.follows = "base-lib/mac-app-util";
     agenix.follows = "base-lib/agenix";
     deploy-rs.follows = "base-lib/deploy-rs";
     titlecase.follows = "base-lib/titlecase";

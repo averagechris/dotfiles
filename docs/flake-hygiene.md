@@ -17,9 +17,9 @@ host = {
 ```
 
 Darwin hosts should follow `darwin-modules` instead of `nixos-modules` when they
-import it. If a host also pins a package flake that is already exposed by
-`hm-modules` (for example `starship-jj`, `linear-cli`, or `gander`), make the
-host input follow the `hm-modules/...` input so the root lock keeps one node.
+import it. If a host pins a package flake that is already exposed by `hm-modules`
+(for example `starship-jj`, `linear-cli`, or `gander`), make the host input
+follow the `hm-modules/...` input so the root lock keeps one node.
 
 One intentional exception is `suremac/helix`: it keeps Helix's own `nixpkgs` so
 the cached upstream Helix runtime can be fetched from `helix.cachix.org` instead
@@ -39,6 +39,28 @@ nix why-depends .#darwinConfigurations.suremac.system /nix/store/...-clang-wrapp
 ```
 
 Prefer smaller runtime variants when behavior allows. For example, the shared
-Home Manager Git module defaults to `pkgs.gitMinimal`, because the full Darwin
-`git` package can retain Python and the Darwin compiler/SDK toolchain while the
-minimal package covers normal CLI, signing, and jj interoperability workflows.
+Home Manager Git module and shared NixOS system package set default to
+`pkgs.gitMinimal`, because the full Darwin `git` package can retain Python and
+the Darwin compiler/SDK toolchain while the minimal package covers normal CLI,
+fetch/clone, signing, and jj interoperability workflows.
+
+For NixOS hosts, start with:
+
+```bash
+nix path-info --closure-size --human-readable .#nixosConfigurations.<host>.config.system.build.toplevel
+nix path-info -rS .#nixosConfigurations.<host>.config.system.build.toplevel
+nix why-depends .#nixosConfigurations.<host>.config.system.build.toplevel /nix/store/...-suspect-package
+```
+
+When checking Linux systems from Darwin, these commands can only report complete
+runtime closure sizes for paths that are already realised or substitutable from a
+configured cache. If Nix reports that required `x86_64-linux` or `aarch64-linux`
+builds are unavailable locally, run the same inspection on a Linux host or remote
+builder such as `thorny`.
+
+Warnings from upstream flakes that copy their source to the store again are eval
+hygiene issues, not automatically runtime closure issues. Fix owned projects by
+using the `self` flake input or `builtins.path { path = ./.; name = "source"; }`
+instead of raw `./.` package sources. For fast-moving third-party flakes such as
+Hyprland ecosystem inputs, prefer upstream PRs and only carry a local patch when
+measurement shows the source copy is a significant evaluation bottleneck.

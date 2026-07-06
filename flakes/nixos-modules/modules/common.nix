@@ -44,7 +44,7 @@
   documentation.nixos.enable = false;
 
   environment.systemPackages = with pkgs; [
-    git
+    gitMinimal
     nh
     nix-index
     nix-output-monitor

@@ -28,6 +28,30 @@ animation and most store-path chatter do not repeat in captured output.
 
 The Darwin host also installs these tools directly in its host configuration.
 
+`nixosModules.common` installs `gitMinimal` rather than full `git`. This covers
+normal CLI Git, fetch/clone operations used by Nix helper scripts, signing, and
+jj interoperability without retaining optional full-Git runtime dependencies in
+every host system closure. The shared Home Manager Git module also avoids
+installing Delta, lazygit, or custom Git branch aliases by default now that jj is
+the daily VCS interface. Use full `pkgs.git`, a Git TUI, or extra Git aliases
+only on hosts or scripts that need a specific non-minimal Git workflow.
+
+Minimal server hosts should opt out of the shared Home Manager shell profile when
+they do not need an interactive workstation toolchain. The shell profile brings
+Helix, Yazi, lazygit, jj, Starship, and related CLI helpers; that is useful on
+workstations but excessive for narrow service hosts. `tom`, `taz`, and `tootsie`
+therefore set:
+
+```nix
+home-manager.users.chris.dotfiles.shell.enable = false;
+home-manager.users.chris.dotfiles.gpg.enable = false;
+```
+
+Keep server-specific tools in `environment.systemPackages`, service packages, or
+small host-local Home Manager package lists instead of re-enabling the full shell
+profile by default. Disable the GPG signing helper on servers that do not have
+the matching agenix key material or do not make signed commits locally.
+
 ## Local generated option documentation
 
 The shared NixOS common module disables generated NixOS documentation with

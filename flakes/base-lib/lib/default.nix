@@ -6,7 +6,6 @@
   darwin,
   deploy-rs,
   agenix,
-  mac-app-util,
   titlecase,
   sshKeys,
 }: rec {
@@ -145,7 +144,6 @@
       modules = [
         hostPath
         home-manager.darwinModules.home-manager
-        mac-app-util.darwinModules.default
         agenix.darwinModules.default
         ({config, ...}: {
           home-manager.extraSpecialArgs =

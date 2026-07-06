@@ -7,16 +7,84 @@
   ...
 }: let
   ctxPackage = inputs.ctx.packages.${pkgs.stdenv.hostPlatform.system}.ctx;
+  # The nixpkgs Darwin WezTerm build embeds the absolute clang-wrapper path in
+  # OpenSSL compiler metadata inside the app binaries. That single non-runtime
+  # string keeps the full clang/LLVM/Apple SDK closure alive in the user profile,
+  # so copy the cached package and scrub only that build-time reference.
+  weztermPackage =
+    pkgs.runCommand "${pkgs.wezterm.name}-without-compiler-references" {
+      inherit (pkgs.wezterm) meta passthru;
+      nativeBuildInputs = [pkgs.removeReferencesTo];
+    } ''
+      mkdir -p "$out"
+      cp -R --no-preserve=ownership ${pkgs.wezterm}/. "$out"
+      chmod -R u+w "$out"
+
+      for bin in \
+        "$out/Applications/WezTerm.app/wezterm" \
+        "$out/Applications/WezTerm.app/wezterm-gui" \
+        "$out/Applications/WezTerm.app/wezterm-mux-server"; do
+        remove-references-to -t ${pkgs.stdenv.cc} "$bin"
+      done
+    '';
+  appTrampolinePackage = pkgs.writeShellApplication {
+    name = "dotfiles-mac-app-trampolines";
+    runtimeInputs = [pkgs.coreutils];
+    text = ''
+      set -euo pipefail
+
+      usage() {
+        printf 'usage: %s sync-trampolines SOURCE_DIR TARGET_DIR\n' "$0" >&2
+      }
+
+      if [[ "''${1:-}" != sync-trampolines || $# -ne 3 ]]; then
+        usage
+        exit 2
+      fi
+
+      source_dir="$2"
+      target_dir="$3"
+      mkdir -p "$target_dir"
+
+      shopt -s nullglob
+      for source_app in "$source_dir"/*.app; do
+        app_name="$(basename "$source_app")"
+        bundle_name="''${app_name%.app}"
+        target_app="$target_dir/$app_name"
+        executable="$target_app/Contents/MacOS/open-source-app"
+
+        rm -rf "$target_app"
+        mkdir -p "$target_app/Contents/MacOS"
+
+        cat >"$target_app/Contents/Info.plist" <<PLIST
+      <?xml version="1.0" encoding="UTF-8"?>
+      <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+      <plist version="1.0">
+      <dict>
+        <key>CFBundleExecutable</key>
+        <string>open-source-app</string>
+        <key>CFBundleIdentifier</key>
+        <string>com.thesogu.dotfiles.trampoline.$bundle_name</string>
+        <key>CFBundleName</key>
+        <string>$bundle_name</string>
+        <key>CFBundlePackageType</key>
+        <string>APPL</string>
+      </dict>
+      </plist>
+      PLIST
+
+        cat >"$executable" <<SCRIPT
+      #!/bin/sh
+      exec /usr/bin/open "$source_app" --args "\$@"
+      SCRIPT
+        chmod +x "$executable"
+      done
+    '';
+  };
 in {
   age.identityPaths = ["/Users/chris/.ssh/id_ed25519" "/Users/chris/.ssh/id_rsa"];
 
   age.secrets = {
-    circleci-token = {
-      file = ../../../secrets/circleci-token.age;
-      owner = "chris";
-      mode = "0400";
-    };
-
     openrouter-api-key = {
       file = ../../../secrets/openrouter-api-key.age;
       owner = "chris";
@@ -60,6 +128,9 @@ in {
 
   nixpkgs.config.allowUnsupportedSystem = true;
   nixpkgs.overlays = lib.attrValues overlays;
+  system.activationScripts.postActivation.text = lib.mkAfter ''
+    ${appTrampolinePackage}/bin/dotfiles-mac-app-trampolines sync-trampolines "/Applications/Nix Apps" "/Applications/Nix Trampolines"
+  '';
   nix = {
     enable = false; # must be false with determinate nix trying that out :shrug:
     package = pkgs.nixVersions.stable;
@@ -260,10 +331,14 @@ in {
     ];
     imports = [
       inputs.hm-modules.homeManagerModules.default
-      inputs.mac-app-util.homeManagerModules.default
       ./aws.nix
     ];
     targets.darwin.copyApps.enableChecks = false;
+    home.activation.trampolineApps = inputs.home-manager.lib.hm.dag.entryAfter ["writeBoundary"] ''
+      fromDir="$HOME/Applications/Home Manager Apps"
+      toDir="$HOME/Applications/Home Manager Trampolines"
+      ${appTrampolinePackage}/bin/dotfiles-mac-app-trampolines sync-trampolines "$fromDir" "$toDir"
+    '';
     dotfiles.shell = {
       enable = true;
       shell_scripts.enable = false;
@@ -272,7 +347,8 @@ in {
     };
     dotfiles.gui.enable = true;
     dotfiles.wezterm.enable = true;
-    dotfiles.macosHotkeys.enable = true;
+    programs.wezterm.package = weztermPackage;
+    dotfiles.macosHotkeys.enable = false;
     dotfiles.gander.enable = true;
     dotfiles.devCache = {
       enable = true;
@@ -306,9 +382,9 @@ in {
       };
     };
     dotfiles.gui.terminal = {
-      package = lib.mkDefault pkgs.wezterm;
+      package = lib.mkDefault weztermPackage;
       args = lib.mkDefault [];
-      binPath = lib.mkDefault "${pkgs.wezterm}/bin/wezterm";
+      binPath = lib.mkDefault "${weztermPackage}/bin/wezterm";
     };
     programs.git.settings = {
       user.name = "Chris Cummings";
@@ -330,7 +406,6 @@ in {
       }
     ];
     programs.opencode.enable = true;
-    programs.opencode.skills.coderabbit-cli = builtins.readFile ../../hm-modules/modules/opencode/skills/coderabbit-cli/SKILL.md;
     programs.opencode.skills.granola-meeting-context = builtins.readFile ../../hm-modules/modules/opencode/skills/granola-meeting-context/SKILL.md;
     programs.opencode.skills.pup-cli = builtins.readFile ../../hm-modules/modules/opencode/skills/pup-cli/SKILL.md;
     programs.opencode.skills.sentry-cli = builtins.readFile ../../hm-modules/modules/opencode/skills/sentry-cli/SKILL.md;
@@ -379,29 +454,12 @@ in {
       tokenFile = config.age.secrets.granola-token.path;
       sync.enable = true;
     };
-    dotfiles.opencode.circleciTokenFile = "/run/agenix/circleci-token";
-    dotfiles.opencode.agentSupportPackages = with pkgs; [
-      python313Packages.databricks-sql-connector
-    ];
+    dotfiles.opencode.agentSupportPackages = [];
     dotfiles.opencode.agentTools = with pkgs; [
       {
         package = awscli2;
         name = "aws";
         description = "AWS CLI";
-      }
-      {
-        package = circleci-cli;
-        name = "circleci";
-        description = "CircleCI CLI";
-      }
-      {
-        package = pkgs.coderabbit-cli;
-        name = "cr";
-        description = "CodeRabbit AI review CLI";
-      }
-      {
-        package = databricks-cli;
-        name = "databricks-cli";
       }
       {
         package = ctxPackage;
@@ -455,8 +513,8 @@ in {
       }
     ];
 
-    # programs.firefox.package = pkgs.firefox-devedition-bin;
     programs.firefox.enable = false;
+    programs.kitty.enable = false;
     programs.zoom.enable = false;
     programs.darktable.enable = false;
     programs.signal.enable = false;
@@ -480,12 +538,8 @@ in {
 
   homebrew = {
     enable = false;
-    casks = [
-      "firefox-developer-edition"
-    ];
-    taps = [
-      "homebrew/cask-versions"
-    ];
+    casks = [];
+    taps = [];
   };
 
   # Let macOS set the timezone from the current network-derived location instead

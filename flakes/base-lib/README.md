@@ -71,7 +71,6 @@ Creates a Darwin (macOS) system configuration.
 
 **Features**:
 - Integrates home-manager with global packages enabled
-- Includes mac-app-util module for app management
 - Configures special arguments for all modules
 - Supports custom overlays via extraInputs
 
@@ -338,7 +337,6 @@ The base-lib flake depends on several external inputs:
 | `deploy-rs` | github:serokell/deploy-rs | Remote deployment |
 | `pre-commit-hooks` | github:cachix/pre-commit-hooks.nix | Git hooks |
 | `agenix` | github:ryantm/agenix | Secrets management |
-| `mac-app-util` | github:hraban/mac-app-util | macOS app management |
 | `titlecase` | sourcehut:~averagechris/titlecase | Text utility |
 | `flake-utils` | github:numtide/flake-utils | Flake utilities |
 

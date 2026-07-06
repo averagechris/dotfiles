@@ -10,7 +10,7 @@ in {
   options.dotfiles.shell.ranger = with dotfiles_lib.options; {
     enable = mkDefaultEnabledOption "enables ranger, the tui file manager.";
   };
-  config = lib.mkIf cfg.enable {
+  config = lib.mkIf (config.dotfiles.shell.enable && cfg.enable) {
     home.packages = [pkgs.ranger];
     xdg.configFile = lib.mkIf cfg.enable {
       "ranger/rc.conf".text = ''

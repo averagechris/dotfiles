@@ -74,9 +74,9 @@
     name = "averagechris-site-refresh";
     runtimeInputs = with pkgs; [
       coreutils
-      git
+      gitMinimal
       hut
-      python3
+      python3Minimal
     ];
     text = ''
       set -euo pipefail
@@ -257,7 +257,7 @@
     name = "dotfiles-host-build-cache";
     runtimeInputs = with pkgs; [
       coreutils
-      git
+      gitMinimal
       nix
       util-linux
     ];
@@ -314,7 +314,7 @@
     runtimeInputs = with pkgs; [
       cachix
       coreutils
-      git
+      gitMinimal
       nix
       util-linux
     ];

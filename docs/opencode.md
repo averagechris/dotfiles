@@ -29,7 +29,10 @@ startup failures while loading project or global files, including custom tools.
 ## Agent-exposed tools
 
 The OpenCode module installs a small, explicit set of agent-specific tools and
-generates the system-prompt tool note from the configured list.
+generates the system-prompt tool note from the configured list when
+`programs.opencode.enable = true`. Hosts that leave OpenCode disabled do not get
+the agent runtime tools or generated OpenCode config files in their Home Manager
+profile.
 
 The Build primary agent uses an open-by-default bash policy. The `orchestrator`
 primary agent uses the same safety posture but is tuned for ambitious projects:

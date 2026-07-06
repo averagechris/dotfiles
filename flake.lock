@@ -2457,11 +2457,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1782436101,
-        "narHash": "sha256-BFwyI+JwsRpsGlYEw3s6gpA+6XDgmQ57TfUgWwDe8zg=",
+        "lastModified": 1783301173,
+        "narHash": "sha256-zR5l3JjSrVWN3BnNJyrrbXJH63hoIqpEKGiTf3rJqqc=",
         "ref": "refs/heads/main",
-        "rev": "c280d9c05e969606156c6755465881d40938aca7",
-        "revCount": 423,
+        "rev": "1cacf93845ca181bfc51be126355f9f4598d0a62",
+        "revCount": 424,
         "type": "git",
         "url": "https://git.sr.ht/~averagechris/nix-openclaw"
       },
@@ -2827,11 +2827,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1778390663,
-        "narHash": "sha256-Rxp+vKW8amcYbUhYgP6s6ybUg2mla7feR0yab9QjQUk=",
+        "lastModified": 1783301025,
+        "narHash": "sha256-IEYF3b5oGGJAdPsXVBqHUlY/w8Zu5sJgiH4hvRWyZcY=",
         "ref": "refs/heads/main",
-        "rev": "e56e932a6bd63e99281f9c3c77cca2a4880615ae",
-        "revCount": 28,
+        "rev": "43a13261589f64e2e6aefedb7ab6b48e47cc00aa",
+        "revCount": 29,
         "type": "git",
         "url": "https://git.sr.ht/~averagechris/pip-chrome-extension"
       },
@@ -2848,11 +2848,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1778390663,
-        "narHash": "sha256-Rxp+vKW8amcYbUhYgP6s6ybUg2mla7feR0yab9QjQUk=",
+        "lastModified": 1783301025,
+        "narHash": "sha256-IEYF3b5oGGJAdPsXVBqHUlY/w8Zu5sJgiH4hvRWyZcY=",
         "ref": "refs/heads/main",
-        "rev": "e56e932a6bd63e99281f9c3c77cca2a4880615ae",
-        "revCount": 28,
+        "rev": "43a13261589f64e2e6aefedb7ab6b48e47cc00aa",
+        "revCount": 29,
         "type": "git",
         "url": "https://git.sr.ht/~averagechris/pip-chrome-extension"
       },
