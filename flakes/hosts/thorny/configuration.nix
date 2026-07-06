@@ -491,7 +491,7 @@ in {
     thornyStatus
   ];
   hardware.graphics.enable = true;
-  hardware.graphics.enable32Bit = true;
+  hardware.graphics.enable32Bit = lib.mkForce false;
   hardware.enableRedistributableFirmware = true;
   hardware.system76.enableAll = true;
 

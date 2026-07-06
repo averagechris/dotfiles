@@ -12,7 +12,10 @@ used locally.
 - Desktop/builder machine with Podman and libvirt enabled. The old Steam,
   GameMode, and controller-support stack was removed because `thorny` is no
   longer used as a gaming box and those packages significantly inflate the
-  workstation closure.
+  workstation closure. 32-bit graphics support is disabled for the same reason;
+  re-enable it only if Steam/Wine or another 32-bit graphics workload returns to
+  thorny. With the chat/browser app trim already applied, disabling 32-bit
+  graphics reduced the patched closure from about 10.9 GiB to 10.1 GiB.
 - Signal and Helium are disabled on `thorny`. Chat/browser workflows live on
   `tater`/`suremac`; keeping those Electron/browser apps out of thorny's Home
   Manager profile leaves the local Hyprland session available without bloating
