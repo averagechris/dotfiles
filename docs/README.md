@@ -37,7 +37,7 @@
 - [tater power and thermal tuning](/docs/tater-power-thermal.md) - ThinkPad T14s power, thermal, and fan-management tuning notes
 - [thorny / thelio-nixos](/docs/thorny.md) - System76 Thelio remote builder, Hyprland workstation, homepage refresh scheduler, dotfiles build-cache, and self-deploy notes
 - [tom](/docs/tom.md) - Home Assistant and Calibre-Web host deployment notes
-- [trainwreck](/docs/trainwreck.md) - trainwreck Openclaw instances, service notes, encrypted personality docs, and deployment
+- [trainwreck](/docs/trainwreck.md) - trainwreck VPS role, deployment, and self-deploy notes
 - [yazi](/docs/yazi.md) - Yazi Home Manager module, Colemak keybindings, wrapper name, and filetype theme rule schema
 
 ## Troubleshooting

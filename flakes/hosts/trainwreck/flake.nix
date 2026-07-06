@@ -1,5 +1,5 @@
 {
-  description = "Trainwreck NixOS system configuration - Hetzner VPS for clawdbot";
+  description = "Trainwreck NixOS system configuration - Hetzner VPS";
 
   inputs = {
     base-lib.url = "path:../../base-lib";
@@ -11,12 +11,6 @@
     agenix.follows = "base-lib/agenix";
     deploy-rs.follows = "base-lib/deploy-rs";
     titlecase.follows = "base-lib/titlecase";
-
-    # Openclaw - personal AI assistant (fork with NixOS compatibility fixes)
-    nix-openclaw = {
-      url = "git+https://git.sr.ht/~averagechris/nix-openclaw";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
 
     # Disko for declarative disk partitioning
     disko = {
@@ -40,10 +34,6 @@
       inherit system;
       hostPath = ./configuration.nix;
       extraInputs = inputs;
-      extraOverlays = [
-        inputs.nix-openclaw.overlays.default
-        (import ./openclaw-overlay.nix)
-      ];
     };
 
     deploy.nodes.trainwreck = lib.mkDeploy self.nixosConfigurations.trainwreck;

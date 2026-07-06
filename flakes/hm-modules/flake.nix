@@ -53,7 +53,6 @@
         gander = ./modules/gander.nix;
         granola = ./modules/granola.nix;
         linearCli = ./modules/linear-cli;
-        openclaw-fix = ./modules/openclaw-fix.nix;
         ghostty-fix = ./modules/ghostty-fix.nix;
 
         meganz = ./modules/meganz.nix;

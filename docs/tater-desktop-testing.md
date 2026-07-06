@@ -88,15 +88,15 @@ Use `tater-network-recover` when the MT7925e card wedges or NetworkManager stops
 
 ## Profile-size policy
 
-Tater is a dev laptop, not a gaming or Openclaw node host. Keep the system
+Tater is a dev laptop, not a gaming or bot-runtime node host. Keep the system
 closure lean by avoiding host-local heavyweight packages that are not actively
 used there:
 
 - Steam, GameMode, and 32-bit graphics support are disabled on tater.
   The nixos-hardware AMD GPU profile enables 32-bit Mesa by default, so tater
   overrides that explicitly because it does not use Steam/Wine workloads.
-- Openclaw node/gateway tooling is not imported on tater unless it is needed
-  again for active laptop-side testing.
+- Bot runtime tooling is not imported on tater unless it is needed again for
+  active laptop-side testing.
 - Ghostty is the selected terminal. The shared GUI module does not install
   additional terminal emulators by default.
 - Firefox is not part of the shared GUI defaults; browser usage is through Zen

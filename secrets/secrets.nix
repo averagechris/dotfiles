@@ -40,34 +40,4 @@ in {
   # Hister: contains HISTER__SERVER__OAUTH__GITHUB__CLIENT_SECRET for the
   # GitHub OAuth app.
   "thorny/hister-env.age".publicKeys = systems-keys ++ [suremac-key];
-
-  # Trainwreck secrets (clawdbot)
-  "trainwreck/telegram-bot-token.age".publicKeys = trainwreck-keys ++ systems-keys;
-  "trainwreck/telegram-bot-token-staging.age".publicKeys = trainwreck-keys ++ systems-keys;
-  "trainwreck/telegram-user-ids.age".publicKeys = trainwreck-keys ++ systems-keys;
-  "trainwreck/openrouter-api-key.age".publicKeys = trainwreck-keys ++ systems-keys;
-  "trainwreck/kagi-api-token.age".publicKeys = trainwreck-keys ++ systems-keys;
-  "trainwreck/gateway-auth-token.age".publicKeys = trainwreck-keys ++ systems-keys;
-  "trainwreck/imgflip-username.age".publicKeys = trainwreck-keys ++ systems-keys;
-  "trainwreck/imgflip-password.age".publicKeys = trainwreck-keys ++ systems-keys;
-
-  # Grem personality documents (contain personal info)
-  "trainwreck/grem-AGENTS.md.age".publicKeys = trainwreck-keys ++ systems-keys ++ [suremac-key];
-  "trainwreck/grem-SOUL.md.age".publicKeys = trainwreck-keys ++ systems-keys ++ [suremac-key];
-  "trainwreck/grem-TOOLS.md.age".publicKeys = trainwreck-keys ++ systems-keys ++ [suremac-key];
-
-  # Mira personality documents (Grem's baby sister)
-  "trainwreck/mira-AGENTS.md.age".publicKeys = trainwreck-keys ++ systems-keys ++ [suremac-key];
-  "trainwreck/mira-SOUL.md.age".publicKeys = trainwreck-keys ++ systems-keys ++ [suremac-key];
-  "trainwreck/mira-TOOLS.md.age".publicKeys = trainwreck-keys ++ systems-keys ++ [suremac-key];
-
-  # Mira Telegram bot tokens
-  "trainwreck/telegram-bot-token-mira.age".publicKeys = trainwreck-keys ++ systems-keys;
-  "trainwreck/telegram-bot-token-mira-staging.age".publicKeys = trainwreck-keys ++ systems-keys;
-
-  # Identity links for session sharing across platforms (contains phone numbers)
-  "trainwreck/identity-links.age".publicKeys = trainwreck-keys ++ systems-keys ++ [suremac-key];
-
-  # Signal provider config (contains phone numbers - bot account and allowlist)
-  "trainwreck/signal-config.age".publicKeys = trainwreck-keys ++ systems-keys ++ [suremac-key];
 }

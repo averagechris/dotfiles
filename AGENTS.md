@@ -64,5 +64,5 @@ Nix builds/develop shells, and `nix flake check` for flake checks.
   permissions, skills, tools, and PR review workflow.
 - `docs/jj-pr-workflow.md`, `docs/jj-workspaces.md`, and `docs/jj-tag-workflow.md`
   - jj helper workflows.
-- `docs/trainwreck.md` - trainwreck/Openclaw host notes.
+- `docs/trainwreck.md` - trainwreck VPS role and deployment notes.
 - `docs/troubleshooting/` - troubleshooting guides.
