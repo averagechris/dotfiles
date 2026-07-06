@@ -6,6 +6,12 @@
 }: {
   config.home.packages = [pkgs.gnupg];
   config.programs.git = {
+    # The default Darwin `git` output currently drags in Python plus the Darwin
+    # compiler/SDK toolchain. The minimal build is enough for everyday CLI use
+    # and keeps user profiles much smaller; hosts can override if they need a
+    # non-minimal Git feature.
+    package = lib.mkDefault pkgs.gitMinimal;
+
     # Note: The gpg module (flakes/hm-modules/modules/gpg.nix) manages git config
     # including signing.key when dotfiles.gpg.enable = true. It imports the GPG key
     # from agenix and configures signing during activation.
@@ -21,7 +27,7 @@
         name = "git_alias_chbranch";
       in "!${writeShellApplication {
         inherit name;
-        runtimeInputs = [git gnugrep findutils fzf];
+        runtimeInputs = [config.programs.git.package gnugrep findutils fzf];
         text = ''
           git branch --list \
             | grep --invert-match --regexp '^* ' \
@@ -34,7 +40,7 @@
         name = "git_alias_delete_branches";
       in "!${writeShellApplication {
         inherit name;
-        runtimeInputs = [git findutils fzf];
+        runtimeInputs = [config.programs.git.package findutils fzf];
         text = ''
           BRANCHES="$$(
             git branch --list \

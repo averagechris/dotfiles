@@ -162,7 +162,7 @@ By default, all OpenCode-enabled hosts install:
 
 - `jj` - Jujutsu VCS
 - `nodejs` - JavaScript runtime
-- `python3` - Python 3.14 runtime
+- `python3` - Python runtime
 - `rg` - fast code search
 
 These come from the module's built-in default tool list:
@@ -171,10 +171,15 @@ These come from the module's built-in default tool list:
 [
   { package = jujutsu; name = "jj"; description = "Jujutsu VCS"; }
   { package = nodejs; name = "nodejs"; description = "JavaScript runtime"; }
-  { package = python314; name = "python3"; description = "Python 3.14 runtime"; }
+  { package = python3Minimal; name = "python3"; description = "Python runtime"; }
   { package = ripgrep; name = "rg"; description = "fast code search"; }
 ]
 ```
+
+The Python entry intentionally uses the minimal interpreter package. It is enough
+for ad hoc agent scripts and avoids retaining the full Darwin compiler/SDK
+closure through the standard Python build on macOS. Use a project dev shell for
+workflows that need extra Python packages or a specific interpreter version.
 
 Each entry defines:
 
@@ -188,22 +193,16 @@ module combines those with the built-in default tool list.
 ### Host-specific additions
 
 Use `dotfiles.opencode.agentTools` for tools that should only be available to
-agents on particular hosts. For example, `suremac` adds the AWS CLI, CircleCI
-CLI, CodeRabbit CLI, Databricks CLI, Ctx, Kubernetes CLI, Datadog Pup CLI,
-Sentry CLI, GitHub CLI, Rodney, Showboat, Granola, and the Linear CLI. On
-Darwin, this host-specific list avoids relying on unrelated system packages for
-agent workflows:
+agents on particular hosts. For example, `suremac` adds the AWS CLI, Ctx,
+Kubernetes CLI, Datadog Pup CLI, Sentry CLI, GitHub CLI, Rodney, Showboat,
+Granola, and the Linear CLI. On Darwin, this host-specific list avoids relying
+on unrelated system packages for agent workflows:
 
 ```nix
-dotfiles.opencode.agentSupportPackages = with pkgs; [
-  python313Packages.databricks-sql-connector
-];
+dotfiles.opencode.agentSupportPackages = [];
 
 dotfiles.opencode.agentTools = with pkgs; [
   { package = awscli2; name = "aws"; description = "AWS CLI"; }
-  { package = circleci-cli; name = "circleci"; description = "CircleCI CLI"; }
-  { package = coderabbit-cli; name = "cr"; description = "CodeRabbit AI review CLI"; }
-  { package = databricks-cli; name = "databricks-cli"; }
   {
     package = inputs.ctx.packages.${pkgs.stdenv.hostPlatform.system}.ctx;
     name = "ctx";
@@ -234,9 +233,8 @@ example:
 
 > Your runtime is a macOS environment. By default, your environment includes
 > these additional tools: jj (Jujutsu VCS), nodejs (JavaScript runtime),
-> python3 (Python 3.14 runtime), rg (fast code search),
-> aws (AWS CLI), circleci (CircleCI CLI), cr (CodeRabbit AI review CLI),
-> databricks-cli, ctx (agent history search CLI), kubectl (Kubernetes CLI), pup
+> python3 (Python runtime), rg (fast code search), aws (AWS CLI), ctx (agent
+> history search CLI), kubectl (Kubernetes CLI), pup
 > (Datadog CLI), sentry (Sentry CLI), ntn (Notion CLI), gh (GitHub CLI), rodney
 > (Chrome automation CLI), showboat (work documentation CLI), linear (Linear
 > CLI), granola (Granola meeting notes CLI). The project local dev shell may

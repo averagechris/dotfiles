@@ -28,9 +28,9 @@
       description = "JavaScript runtime";
     }
     {
-      package = python314;
+      package = python3Minimal;
       name = "python3";
-      description = "Python 3.14 runtime";
+      description = "Python runtime";
     }
     {
       package = ripgrep;

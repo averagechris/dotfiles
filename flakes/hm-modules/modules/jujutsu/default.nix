@@ -34,7 +34,7 @@
     ];
 
     nativeCheckInputs = with pkgs; [
-      git
+      gitMinimal
       jujutsu
       nodejs
     ];
@@ -52,7 +52,7 @@
         --prefix PATH : ${lib.makeBinPath ([
           pkgs.fzf
           pkgs.jujutsu
-          pkgs.git
+          config.programs.git.package
           pkgs.direnv
           pkgs.docker
         ]

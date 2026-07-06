@@ -120,7 +120,7 @@ in
               KEY_ID=$(cat ${secrets.gpg-key-id.path} 2>/dev/null | tr -d '\n')
               if [[ -n "$KEY_ID" ]]; then
                 # Configure git signing key
-                ${pkgs.git}/bin/git config --global user.signingkey "$KEY_ID" 2>/dev/null || true
+                ${config.programs.git.package}/bin/git config --global user.signingkey "$KEY_ID" 2>/dev/null || true
 
                 # Configure jj signing key
                 ${pkgs.jujutsu}/bin/jj config set --user user.signing-key "$KEY_ID" 2>/dev/null || true

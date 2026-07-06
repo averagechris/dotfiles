@@ -36,10 +36,11 @@ may not be reproduced correctly by external device software.
 
 ## Terminal Hotkey
 
-`suremac` runs `skhd` as a Home Manager launchd agent for global macOS hotkeys.
-It explicitly enables the Home Manager WezTerm module with
-`dotfiles.wezterm.enable = true` and sets `dotfiles.gui.terminal` to WezTerm,
-so the WezTerm app/config and the global terminal hotkey stay in sync.
+`suremac` explicitly enables the Home Manager WezTerm module with
+`dotfiles.wezterm.enable = true` and sets `dotfiles.gui.terminal` to WezTerm.
+The host disables the old `skhd` macOS hotkey agent and disables the Kitty
+terminal module, keeping the Home Manager closure focused on the one terminal in
+active use.
 
 | Shortcut | Action |
 | --- | --- |
@@ -62,10 +63,8 @@ The browser hotkey prefers focusing an already-running browser from a known list
 (Safari, Chrome, Firefox, Helium, Arc, Brave, Edge). If none are running, it
 falls back to `open about:blank`, which launches the system default browser.
 
-`skhd` requires macOS Accessibility permission. If the shortcut does nothing
-after applying the config, enable `skhd` in **System Settings → Privacy &
-Security → Accessibility** and restart the `skhd` launchd agent or log out and
-back in.
+These hotkeys are historical notes only while `dotfiles.macosHotkeys.enable` is
+disabled on suremac.
 
 ## Raycast Configuration
 
@@ -80,10 +79,9 @@ Pi is installed through the minimal `programs.pi.enable = true` module; see
 [`docs/pi.md`](/docs/pi.md) for the package pinning and manual update policy.
 
 OpenCode agents on `suremac` also get host-specific CLI tools, including
-`awscli2` as `aws`, `ctx` for local agent-history search, and the Nix-packaged
-CodeRabbit CLI as `coderabbit` / `cr`. See
-[`docs/coderabbit-cli.md`](/docs/coderabbit-cli.md) for the local review
-workflow and the Nix update policy.
+`awscli2` as `aws` and `ctx` for local agent-history search. CircleCI and
+CodeRabbit tooling are not configured because work has migrated away from those
+services.
 
 The Datadog Pup CLI is installed in Home Manager as `pup` and exposed to
 OpenCode agents as a host-specific Datadog tool. `suremac` also installs the
@@ -111,6 +109,51 @@ Both follow the host flake's `nixpkgs` and `flake-utils`. Bump them with
 `nix flake update slack ctx` in `flakes/hosts/suremac` (and `ctx` in
 `flakes/hosts/tater`), plus the matching nested nodes in the root `flake.lock`.
 
+## Profile Size Notes
+
+The suremac profile intentionally avoids several large or duplicate GUI/TUI
+tools that are not in active use:
+
+- Firefox/Firefox Developer Edition are not managed here; Helium is the active
+  browser preference and browser apps can be installed outside Nix when needed.
+- Ranger is disabled because Yazi is the maintained terminal file manager in the
+  shell module, and Ranger's preview stack pulls a large ImageMagick closure.
+- Kitty is disabled because WezTerm is the configured terminal and hotkey target.
+- Raycast, Postman, K9s, skhd, CircleCI CLI/token, and Databricks CLI are not
+  managed by this host profile; use the upstream Raycast install, ad hoc API
+  tools, agentic `kubectl` workflows, and project-local Databricks tooling
+  instead.
+
+The Darwin system and Home Manager Git configuration use `gitMinimal` for normal
+CLI Git, signing, and jj interoperability. The full nixpkgs Git output currently
+retains Python and the Darwin compiler/SDK toolchain on macOS; keep using
+`gitMinimal` unless a specific full-Git feature is required.
+
+Helix uses the shared curated grammar runtime documented in
+[`docs/helix.md`](/docs/helix.md), covering daily Rust/Python/Nix/shell,
+web-development, and cloud/config formats while dropping the upstream long tail
+of rarely used grammars such as C/C++ and niche languages.
+
+WezTerm remains the active terminal and Home Manager-managed app. On Darwin, the
+cached nixpkgs WezTerm output embeds the absolute `clang-wrapper` path in OpenSSL
+compiler metadata inside the app binaries, which otherwise keeps the large
+clang/LLVM/Apple SDK closure alive even though it is not needed at runtime.
+`suremac` therefore installs a copied WezTerm output with only that build-time
+compiler reference scrubbed; the app bundle, CLI tools, shell integration,
+terminfo propagation, and Home Manager WezTerm configuration are unchanged.
+
+`suremac` keeps app-launcher behavior with a small shell-based trampoline helper
+that runs during the nix-darwin and Home Manager activation phases. The helper
+rebuilds Spotlight/Launchpad-friendly trampoline apps for symlinked Nix app
+directories and refreshes matching Nix-pinned Dock entries when app store paths
+change. This avoids pulling a Common Lisp runtime into the host closure.
+
+The helper still uses `dockutil` for Dock relinking. The nixpkgs `dockutil`
+binary only needs the system Swift runtime at execution time, but its build
+leaves an extra Nix Swift runtime `LC_RPATH` in the binary. `suremac` installs a
+copied `dockutil` with that rpath removed; `dockutil --version` still resolves
+against system Swift libraries, while the large Swift/clang/Apple SDK closure is
+no longer retained.
 ## Rust and Dev Cache Management
 
 `suremac` enables `dotfiles.devCache` for Rust-heavy development work. See

@@ -3,21 +3,94 @@
 
   inputs = {
     # Host flakes
-    suremac.url = "path:./flakes/hosts/suremac";
-    trap.url = "path:./flakes/hosts/trap";
-    thorny.url = "path:./flakes/hosts/thorny";
-    tom.url = "path:./flakes/hosts/tom";
-    cruber.url = "path:./flakes/hosts/cruber";
-    tater.url = "path:./flakes/hosts/tater";
-    trainwreck.url = "path:./flakes/hosts/trainwreck";
-    taz.url = "path:./flakes/hosts/taz";
-    tootsie.url = "path:./flakes/hosts/tootsie";
+    suremac = {
+      url = "path:./flakes/hosts/suremac";
+      inputs.base-lib.follows = "base-lib";
+      inputs.hm-modules.follows = "hm-modules";
+      inputs.darwin-modules.follows = "darwin-modules";
+      inputs.starship-jj.follows = "hm-modules/starship-jj";
+      inputs.linear-cli.follows = "hm-modules/linear-cli";
+      inputs.gander.follows = "hm-modules/gander";
+    };
+    trap = {
+      url = "path:./flakes/hosts/trap";
+      inputs.base-lib.follows = "base-lib";
+      inputs.nixos-modules.follows = "nixos-modules";
+      inputs.hm-modules.follows = "hm-modules";
+    };
+    thorny = {
+      url = "path:./flakes/hosts/thorny";
+      inputs.base-lib.follows = "base-lib";
+      inputs.nixos-modules.follows = "nixos-modules";
+      inputs.hm-modules.follows = "hm-modules";
+      inputs.helix.follows = "hm-modules/helix";
+      inputs.starship-jj.follows = "hm-modules/starship-jj";
+      inputs.gander.follows = "hm-modules/gander";
+    };
+    tom = {
+      url = "path:./flakes/hosts/tom";
+      inputs.base-lib.follows = "base-lib";
+      inputs.nixos-modules.follows = "nixos-modules";
+      inputs.hm-modules.follows = "hm-modules";
+    };
+    cruber = {
+      url = "path:./flakes/hosts/cruber";
+      inputs.base-lib.follows = "base-lib";
+      inputs.nixos-modules.follows = "nixos-modules";
+      inputs.hm-modules.follows = "hm-modules";
+    };
+    tater = {
+      url = "path:./flakes/hosts/tater";
+      inputs.base-lib.follows = "base-lib";
+      inputs.nixos-modules.follows = "nixos-modules";
+      inputs.hm-modules.follows = "hm-modules";
+      inputs.helix.follows = "hm-modules/helix";
+      inputs.starship-jj.follows = "hm-modules/starship-jj";
+      inputs.gander.follows = "hm-modules/gander";
+    };
+    trainwreck = {
+      url = "path:./flakes/hosts/trainwreck";
+      inputs.base-lib.follows = "base-lib";
+      inputs.nixos-modules.follows = "nixos-modules";
+      inputs.hm-modules.follows = "hm-modules";
+    };
+    taz = {
+      url = "path:./flakes/hosts/taz";
+      inputs.base-lib.follows = "base-lib";
+      inputs.nixos-modules.follows = "nixos-modules";
+      inputs.hm-modules.follows = "hm-modules";
+    };
+    tootsie = {
+      url = "path:./flakes/hosts/tootsie";
+      inputs.base-lib.follows = "base-lib";
+      inputs.nixos-modules.follows = "nixos-modules";
+      inputs.hm-modules.follows = "hm-modules";
+    };
 
     # Development dependencies
     base-lib.url = "path:./flakes/base-lib";
-    nixos-modules.url = "path:./flakes/nixos-modules";
-    hm-modules.url = "path:./flakes/hm-modules";
-    darwin-modules.url = "path:./flakes/darwin-modules";
+    nixos-modules = {
+      url = "path:./flakes/nixos-modules";
+      inputs.base-lib.follows = "base-lib";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+    };
+    hm-modules = {
+      url = "path:./flakes/hm-modules";
+      inputs.base-lib.follows = "base-lib";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+      inputs.home-manager.follows = "base-lib/home-manager";
+      inputs.opencode.follows = "base-lib/opencode";
+    };
+    darwin-modules = {
+      url = "path:./flakes/darwin-modules";
+      inputs.base-lib.follows = "base-lib";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+      inputs.home-manager.follows = "base-lib/home-manager";
+      inputs.darwin.follows = "base-lib/darwin";
+    };
 
     # Shared dependencies
     nixpkgs.follows = "base-lib/nixpkgs";

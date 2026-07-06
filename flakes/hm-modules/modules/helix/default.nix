@@ -7,6 +7,48 @@
   ...
 }: let
   cfg = config.programs.helix;
+  baseHelixPackage = inputs.helix.packages.${system}.default;
+  baseHelixRuntime = baseHelixPackage.HELIX_DEFAULT_RUNTIME;
+  helixGrammarExtension = pkgs.stdenv.hostPlatform.extensions.sharedLibrary;
+  trimmedHelixRuntime = pkgs.runCommand "helix-runtime-curated-grammars" {} ''
+    mkdir -p "$out/grammars"
+
+    for dir in queries themes; do
+      if [[ -d "${baseHelixRuntime}/$dir" ]]; then
+        cp -R --no-preserve=ownership "${baseHelixRuntime}/$dir" "$out/$dir"
+      fi
+    done
+
+    if [[ -e "${baseHelixRuntime}/tutor" ]]; then
+      cp -R --no-preserve=ownership "${baseHelixRuntime}/tutor" "$out/tutor"
+    fi
+
+    for grammar in ${lib.escapeShellArgs cfg.grammarPackageNames}; do
+      src="${baseHelixRuntime}/grammars/$grammar${helixGrammarExtension}"
+      if [[ -e "$src" ]]; then
+        cp --no-preserve=ownership "$src" "$out/grammars/"
+      else
+        echo "missing Helix grammar: $grammar" >&2
+        exit 1
+      fi
+    done
+  '';
+  helixPackage =
+    pkgs.runCommand "${baseHelixPackage.name}-curated-grammars" {
+      inherit (baseHelixPackage) meta;
+      nativeBuildInputs = [pkgs.makeWrapper pkgs.removeReferencesTo];
+    } ''
+      mkdir -p "$out"
+      cp -R --no-preserve=ownership ${baseHelixPackage}/. "$out"
+      chmod -R u+w "$out"
+      rm -f "$out/nix-support/propagated-build-inputs"
+
+      if [[ -x "$out/bin/hx" ]]; then
+        remove-references-to -t ${baseHelixRuntime} "$out/bin/hx"
+        wrapProgram "$out/bin/hx" \
+          --set HELIX_RUNTIME ${trimmedHelixRuntime}
+      fi
+    '';
   gutters = ["diagnostics" "spacer" "diff"];
   statusline.center = [];
 
@@ -16,16 +58,85 @@
     then "wezterm"
     else "kitty";
 in {
-  options.programs.helix.terminal = {
-    flavor = lib.mkOption {
-      type = lib.types.enum ["kitty" "wezterm"];
-      default = "wezterm";
-      description = "Terminal flavor to use for terminal integration features";
+  options.programs.helix = {
+    terminal = {
+      flavor = lib.mkOption {
+        type = lib.types.enum ["kitty" "wezterm"];
+        default = "wezterm";
+        description = "Terminal flavor to use for terminal integration features";
+      };
+    };
+
+    grammarPackageNames = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [
+        # Core daily languages.
+        "bash"
+        "gleam"
+        "nix"
+        "python"
+        "rust"
+        "rust-format-args"
+        "shellcheckrc"
+
+        # Web/frontend ecosystems.
+        "astro"
+        "css"
+        "graphql"
+        "html"
+        "javascript"
+        "jsdoc"
+        "json"
+        "json5"
+        "markdown"
+        "markdown_inline"
+        "prisma"
+        "scss"
+        "svelte"
+        "tsx"
+        "typescript"
+        "vue"
+
+        # Cloud/config/devops formats.
+        "bicep"
+        "caddyfile"
+        "cue"
+        "dockerfile"
+        "git-config"
+        "gitattributes"
+        "gitcommit"
+        "gitignore"
+        "go"
+        "gomod"
+        "gotmpl"
+        "gowork"
+        "hcl"
+        "hosts"
+        "ini"
+        "jq"
+        "just"
+        "make"
+        "nginx"
+        "pem"
+        "properties"
+        "rego"
+        "sql"
+        "ssh_client_config"
+        "toml"
+        "xml"
+        "yaml"
+      ];
+      description = ''
+        Helix tree-sitter grammars to keep in the managed runtime. The default is
+        a broad daily-driver set for Rust, Python, Nix, shell scripts, web
+        development, and cloud/config files without the full upstream long tail
+        of obscure languages.
+      '';
     };
   };
 
   config.programs.helix = lib.mkIf cfg.enable {
-    package = lib.mkDefault inputs.helix.packages.${system}.default;
+    package = lib.mkDefault helixPackage;
     settings = {
       theme = "rose_pine_moon";
       editor = {

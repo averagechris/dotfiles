@@ -50,7 +50,7 @@ in {
 
   nixpkgs.config.allowUnfree = true;
   environment.systemPackages = with pkgs; [
-    git
+    gitMinimal
     nh
     neovim
     nix-output-monitor
@@ -256,9 +256,6 @@ in {
   home-manager.users.chris = {pkgs, ...}: {
     home.stateVersion = "26.05";
     home.packages = with pkgs; [
-      kubectl
-      pup
-      sentry
       inputs.slack.packages.${pkgs.stdenv.hostPlatform.system}.slack
     ];
     imports = [

@@ -556,7 +556,7 @@ in {
     };
 
     home.activation.linear-cli-context = lib.hm.dag.entryAfter ["writeBoundary" "installPackages"] ''
-      ${lib.getExe pkgs.python3} ${lib.escapeShellArg mergeContextScript} ${lib.escapeShellArg contextJson} ${lib.escapeShellArg contextConfigPath}
+      ${lib.getExe pkgs.python3Minimal} ${lib.escapeShellArg mergeContextScript} ${lib.escapeShellArg contextJson} ${lib.escapeShellArg contextConfigPath}
     '';
   };
 }

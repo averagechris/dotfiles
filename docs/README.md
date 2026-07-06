@@ -11,6 +11,7 @@
 - [gander](/docs/gander.md) - Gander jj review TUI Home Manager module, package input, and Colemak keybindings
 - [granola](/docs/granola.md) - Granola CLI Home Manager module, shell completions, agenix token seeding, suremac note sync, and OpenCode skill
 - [helium](/docs/helium.md) - Helium browser packaging and configuration on NixOS
+- [helix](/docs/helix.md) - Helix editor configuration and curated tree-sitter grammar runtime
 - [hyprland](/docs/hyprland.md) - Hyprland window manager configuration, keybindings, and features
 - [hyprland ergonomics requirements](/docs/hyprland-ergonomics-requirements.md) - Planned tater/shared Hyprland ergonomics CLI, daemon, workspace, tray, and Eww improvements
 - [jj aliases](/docs/jj-aliases.md) - Compact `jj log-*` aliases for agent-friendly status, stack, and history inspection
@@ -26,6 +27,7 @@
 - [pi](/docs/pi.md) - Pi coding agent package, Home Manager settings, OpenRouter credentials, resources, and wrappers
 - [pup](/docs/pup.md) - Datadog Pup CLI package, suremac Home Manager installation, OpenCode tool exposure, and update notes
 - [gpg-signing](/docs/gpg-signing.md) - GPG signing setup for git and jj commits with agenix
+- [flake hygiene](/docs/flake-hygiene.md) - Top-level flake input following, lock de-duplication, and Darwin closure-size checks
 - [shell](/docs/shell.md) - Shell module configuration and PATH precedence
 - [sentry-cli](/docs/sentry-cli.md) - New `sentry` CLI package, suremac OpenCode integration, module decision, and update notes
 - [sure-stack-context](/docs/sure-stack-context.md) - suremac private OpenCode stack-context skill for Datadog, Sentry, and Kubernetes investigations
