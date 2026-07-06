@@ -783,8 +783,9 @@ in {
     };
 
     programs.meganz.enable = true;
-    programs.helium.enable = true;
-    programs.helium.extension-simple-pip-helper.enable = true;
+    programs.signal.enable = false;
+    programs.helium.enable = false;
+    programs.helium.extension-simple-pip-helper.enable = false;
 
     dotfiles.shell.yazi.enable = true;
     programs.opencode.enable = true;

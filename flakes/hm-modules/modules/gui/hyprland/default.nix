@@ -437,13 +437,14 @@ in {
           "XCURSOR_SIZE,24"
           "HYPRCURSOR_SIZE,24"
         ];
-        exec-once = [
-          "${pkgs.signal-desktop}/bin/signal-desktop --start-in-tray"
-          "anyrun daemon"
-          "hyprpaper"
-          "hyprsunset -t 4500"
-          # Zen browser and Telegram are installed via nix profile
-        ];
+        exec-once =
+          lib.optional config.programs.signal.enable "signal-desktop --start-in-tray"
+          ++ [
+            "anyrun daemon"
+            "hyprpaper"
+            "hyprsunset -t 4500"
+            # Zen browser and Telegram are installed via nix profile
+          ];
         monitor = [
           "eDP-1,preferred,auto,1"
           ",preferred,auto,1"

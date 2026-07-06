@@ -13,6 +13,12 @@ used locally.
   GameMode, and controller-support stack was removed because `thorny` is no
   longer used as a gaming box and those packages significantly inflate the
   workstation closure.
+- Signal and Helium are disabled on `thorny`. Chat/browser workflows live on
+  `tater`/`suremac`; keeping those Electron/browser apps out of thorny's Home
+  Manager profile leaves the local Hyprland session available without bloating
+  the builder closure. The patched closure measured on `thorny` dropped from
+  about 11.8 GiB to 10.9 GiB after disabling those apps and making the generated
+  Hyprland config avoid retaining Signal when `programs.signal.enable = false`.
 - Hourly scheduler for the homepage metadata refresh build on builds.sr.ht.
 - Build-cache maintainer for active NixOS host system closures from dotfiles
   `main`, so client host switches can reuse work already realized by `thorny`.

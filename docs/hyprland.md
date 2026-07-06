@@ -425,6 +425,10 @@ If a particular monitor needs exact refresh/scale/position, add a more specific 
 - Opens on workspace 9 silently
 - Main window floats at 1000x700 centered
 - Key: `Super+A, s` to focus/launch
+- Signal is only auto-started when `programs.signal.enable = true`. Hosts that
+  keep Hyprland available for occasional local use but are primarily builders can
+  disable Signal without the generated Hyprland config retaining the Electron app
+  closure.
 
 ### Telegram
 
