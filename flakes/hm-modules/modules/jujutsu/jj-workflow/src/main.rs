@@ -1,6 +1,7 @@
 use anyhow::{anyhow, bail, Context, Result};
 use clap::{Args, Parser, Subcommand};
 use serde_json::json;
+use std::collections::HashMap;
 use std::env;
 use std::ffi::{OsStr, OsString};
 use std::fs;
@@ -10,7 +11,7 @@ use std::os::unix::fs as unix_fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::thread;
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 fn main() {
     if let Err(err) = run() {
@@ -1076,6 +1077,80 @@ struct ReviewStatePage {
     end_cursor: Option<String>,
 }
 
+#[derive(Debug, Clone)]
+struct PrHygieneArgs {
+    search: Option<String>,
+    limit: usize,
+    json: bool,
+    no_workspaces: bool,
+    help: bool,
+}
+
+impl Default for PrHygieneArgs {
+    fn default() -> Self {
+        Self {
+            search: None,
+            limit: 50,
+            json: false,
+            no_workspaces: false,
+            help: false,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+struct PrHygieneReport {
+    query: String,
+    limit: usize,
+    total_count: u64,
+    warnings: Vec<String>,
+    prs: Vec<PrHygieneItem>,
+}
+
+#[derive(Debug, Clone)]
+struct PrHygieneItem {
+    repo_slug: String,
+    repo_name: String,
+    number: u64,
+    url: String,
+    title: String,
+    state: String,
+    is_draft: bool,
+    review_decision: String,
+    created_at: String,
+    updated_at: String,
+    head_ref_name: String,
+    base_ref_name: String,
+    additions: u64,
+    deletions: u64,
+    changed_files: u64,
+    commits: u64,
+    checks: Vec<PrCheck>,
+    comments: Vec<UnresolvedComment>,
+    checks_truncated: bool,
+    review_threads_truncated: bool,
+    workspaces: Vec<PrWorkspaceMatch>,
+    status: String,
+    priority: String,
+    effort: String,
+    follow_up: String,
+}
+
+#[derive(Debug, Clone)]
+struct PrWorkspaceMatch {
+    name: String,
+    path: PathBuf,
+    kind: String,
+    relation: String,
+}
+
+#[derive(Debug, Clone)]
+struct PrWorkspaceCandidate {
+    name: String,
+    path: PathBuf,
+    kind: String,
+}
+
 fn run_pr(args: Vec<OsString>) -> Result<()> {
     let mut iter = args.into_iter();
     let command = match iter.next() {
@@ -1092,6 +1167,7 @@ fn run_pr(args: Vec<OsString>) -> Result<()> {
         "update" => pr_update(parse_pr_args(iter.collect(), false)?),
         "close" => pr_close(parse_pr_args(iter.collect(), false)?),
         "watch" => pr_watch(parse_pr_args(iter.collect(), false)?),
+        "hygiene" | "report" | "dashboard" => pr_hygiene(parse_pr_hygiene_args(iter.collect())?),
         "-h" | "--help" | "help" => {
             print_pr_usage();
             Ok(())
@@ -1198,6 +1274,58 @@ fn parse_pr_args(args: Vec<OsString>, push_default: bool) -> Result<PrArgs> {
     }
 
     Ok(parsed)
+}
+
+fn parse_pr_hygiene_args(args: Vec<OsString>) -> Result<PrHygieneArgs> {
+    let mut parsed = PrHygieneArgs::default();
+    let mut iter = args.into_iter();
+
+    while let Some(arg) = iter.next() {
+        let arg_str = arg
+            .to_str()
+            .ok_or_else(|| anyhow!("argument contains invalid UTF-8"))?;
+
+        match arg_str {
+            "--search" | "--query" => {
+                let value = iter
+                    .next()
+                    .ok_or_else(|| anyhow!("missing value for {arg_str}"))?;
+                parsed.search = Some(os_to_string(value)?);
+            }
+            "--limit" => {
+                let value = iter
+                    .next()
+                    .ok_or_else(|| anyhow!("missing value for {arg_str}"))?;
+                parsed.limit = parse_pr_hygiene_limit(&os_to_string(value)?)?;
+            }
+            "--json" => parsed.json = true,
+            "--no-workspaces" => parsed.no_workspaces = true,
+            "-h" | "--help" => parsed.help = true,
+            _ => {
+                if let Some(value) = arg_str.strip_prefix("--search=") {
+                    parsed.search = Some(value.to_string());
+                } else if let Some(value) = arg_str.strip_prefix("--query=") {
+                    parsed.search = Some(value.to_string());
+                } else if let Some(value) = arg_str.strip_prefix("--limit=") {
+                    parsed.limit = parse_pr_hygiene_limit(value)?;
+                } else {
+                    bail!("unknown pr hygiene argument: {arg_str}");
+                }
+            }
+        }
+    }
+
+    Ok(parsed)
+}
+
+fn parse_pr_hygiene_limit(value: &str) -> Result<usize> {
+    let limit: usize = value
+        .parse()
+        .with_context(|| format!("invalid --limit value: {value}"))?;
+    if !(1..=100).contains(&limit) {
+        bail!("jj pr hygiene --limit must be between 1 and 100");
+    }
+    Ok(limit)
 }
 
 fn pr_doctor(args: PrArgs) -> Result<()> {
@@ -1488,6 +1616,56 @@ fn pr_watch(args: PrArgs) -> Result<()> {
             }
         }
     }
+}
+
+fn pr_hygiene(args: PrHygieneArgs) -> Result<()> {
+    if args.help {
+        print_pr_hygiene_usage();
+        return Ok(());
+    }
+    if which::which("gh").is_err() {
+        bail!("gh CLI is not available on PATH");
+    }
+
+    let query = args
+        .search
+        .clone()
+        .unwrap_or_else(|| "author:@me is:pr is:open archived:false".to_string());
+    let mut report = gh_pr_hygiene_report(&query, args.limit)?;
+
+    if !args.no_workspaces {
+        match ws_config() {
+            Ok(config) => {
+                let mut workspace_cache: HashMap<String, Vec<PrWorkspaceCandidate>> =
+                    HashMap::new();
+                for pr in &mut report.prs {
+                    let candidates =
+                        workspace_cache
+                            .entry(pr.repo_slug.clone())
+                            .or_insert_with(|| {
+                                discover_pr_workspace_candidates(pr, &config, &mut report.warnings)
+                            });
+                    pr.workspaces = match_pr_workspaces(pr, candidates, &mut report.warnings);
+                }
+            }
+            Err(err) => report
+                .warnings
+                .push(format!("could not load jj workspace config: {err:#}")),
+        }
+    }
+
+    for pr in &mut report.prs {
+        apply_pr_hygiene_heuristics(pr);
+    }
+    report.prs.sort_by_key(pr_hygiene_sort_key);
+
+    if args.json {
+        print_pr_hygiene_json(&report);
+    } else {
+        print_pr_hygiene_human(&report);
+    }
+
+    Ok(())
 }
 
 fn pr_watch_snapshot(
@@ -2246,6 +2424,332 @@ query($owner: String!, $repo: String!, $number: Int!) {
     Ok((decision, comments))
 }
 
+fn gh_pr_hygiene_report(query: &str, limit: usize) -> Result<PrHygieneReport> {
+    let graphql = r#"
+query($searchQuery: String!, $first: Int!) {
+  search(type: ISSUE, query: $searchQuery, first: $first) {
+    issueCount
+    nodes {
+      ... on PullRequest {
+        number
+        title
+        url
+        state
+        isDraft
+        reviewDecision
+        createdAt
+        updatedAt
+        headRefName
+        baseRefName
+        additions
+        deletions
+        changedFiles
+        repository { nameWithOwner name owner { login } }
+        commits { totalCount }
+        statusCheckRollup {
+          contexts(first: 100) {
+            pageInfo { hasNextPage }
+            nodes {
+              __typename
+              ... on CheckRun { name status conclusion detailsUrl }
+              ... on StatusContext { context state targetUrl }
+            }
+          }
+        }
+        reviewThreads(first: 50) {
+          pageInfo { hasNextPage }
+          nodes {
+            isResolved
+            isOutdated
+            comments(last: 1) {
+              nodes {
+                author { login }
+                bodyText
+                path
+                line
+                url
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+"#;
+    let args = vec![
+        "api".to_string(),
+        "graphql".to_string(),
+        "-f".to_string(),
+        format!("query={graphql}"),
+        "-f".to_string(),
+        format!("searchQuery={query}"),
+        "-F".to_string(),
+        format!("first={limit}"),
+    ];
+    let stdout = gh_capture(&args, "gh api graphql PR hygiene search")?;
+    parse_pr_hygiene_graphql(&stdout, query, limit)
+}
+
+fn parse_pr_hygiene_graphql(stdout: &str, query: &str, limit: usize) -> Result<PrHygieneReport> {
+    let value: serde_json::Value =
+        serde_json::from_str(stdout).context("failed to parse gh PR hygiene GraphQL JSON")?;
+    if let Some(errors) = value.get("errors").and_then(serde_json::Value::as_array) {
+        if !errors.is_empty() {
+            bail!(
+                "GitHub GraphQL returned errors: {}",
+                summarize_graphql_errors(errors)
+            );
+        }
+    }
+    let search = value
+        .pointer("/data/search")
+        .ok_or_else(|| anyhow!("expected search data in GitHub GraphQL response"))?;
+    let total_count = search
+        .get("issueCount")
+        .and_then(serde_json::Value::as_u64)
+        .unwrap_or(0);
+    let nodes = search
+        .get("nodes")
+        .and_then(serde_json::Value::as_array)
+        .ok_or_else(|| anyhow!("expected search nodes in GitHub GraphQL response"))?;
+    let mut warnings = Vec::new();
+    let prs = nodes
+        .iter()
+        .filter_map(|node| match parse_pr_hygiene_item(node) {
+            Ok(pr) => Some(pr),
+            Err(err) => {
+                warnings.push(format!("skipped a PR search result: {err:#}"));
+                None
+            }
+        })
+        .collect();
+    Ok(PrHygieneReport {
+        query: query.to_string(),
+        limit,
+        total_count,
+        warnings,
+        prs,
+    })
+}
+
+fn summarize_graphql_errors(errors: &[serde_json::Value]) -> String {
+    errors
+        .iter()
+        .take(3)
+        .map(|error| {
+            error
+                .get("message")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or("unknown GraphQL error")
+                .chars()
+                .take(180)
+                .collect::<String>()
+        })
+        .collect::<Vec<_>>()
+        .join("; ")
+}
+
+fn parse_pr_hygiene_item(value: &serde_json::Value) -> Result<PrHygieneItem> {
+    let repository = value
+        .get("repository")
+        .ok_or_else(|| anyhow!("PR JSON missing repository"))?;
+    let repo_slug = repository
+        .get("nameWithOwner")
+        .and_then(serde_json::Value::as_str)
+        .map(str::to_string)
+        .or_else(|| {
+            let owner = repository
+                .pointer("/owner/login")
+                .and_then(serde_json::Value::as_str)?;
+            let name = repository.get("name").and_then(serde_json::Value::as_str)?;
+            Some(format!("{owner}/{name}"))
+        })
+        .ok_or_else(|| anyhow!("PR JSON missing repository nameWithOwner"))?;
+    let repo_name = repository
+        .get("name")
+        .and_then(serde_json::Value::as_str)
+        .or_else(|| repo_slug.split('/').nth(1))
+        .unwrap_or_default()
+        .to_string();
+    let review_decision = value
+        .get("reviewDecision")
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or("REVIEW_REQUIRED")
+        .to_string();
+    Ok(PrHygieneItem {
+        repo_slug,
+        repo_name,
+        number: required_u64(value, "number")?,
+        url: string_field(value, "url"),
+        title: string_field(value, "title"),
+        state: string_field(value, "state"),
+        is_draft: value
+            .get("isDraft")
+            .and_then(serde_json::Value::as_bool)
+            .unwrap_or(false),
+        review_decision,
+        created_at: string_field(value, "createdAt"),
+        updated_at: string_field(value, "updatedAt"),
+        head_ref_name: string_field(value, "headRefName"),
+        base_ref_name: string_field(value, "baseRefName"),
+        additions: u64_field(value, "additions"),
+        deletions: u64_field(value, "deletions"),
+        changed_files: u64_field(value, "changedFiles"),
+        commits: value
+            .pointer("/commits/totalCount")
+            .and_then(serde_json::Value::as_u64)
+            .unwrap_or(0),
+        checks: parse_rollup_checks(value),
+        comments: parse_unresolved_comments_from_threads(
+            value
+                .pointer("/reviewThreads/nodes")
+                .and_then(serde_json::Value::as_array),
+        ),
+        checks_truncated: value
+            .pointer("/statusCheckRollup/contexts/pageInfo/hasNextPage")
+            .and_then(serde_json::Value::as_bool)
+            .unwrap_or(false),
+        review_threads_truncated: value
+            .pointer("/reviewThreads/pageInfo/hasNextPage")
+            .and_then(serde_json::Value::as_bool)
+            .unwrap_or(false),
+        workspaces: Vec::new(),
+        status: String::new(),
+        priority: String::new(),
+        effort: String::new(),
+        follow_up: String::new(),
+    })
+}
+
+fn required_u64(value: &serde_json::Value, key: &str) -> Result<u64> {
+    value
+        .get(key)
+        .and_then(serde_json::Value::as_u64)
+        .ok_or_else(|| anyhow!("PR JSON missing {key}"))
+}
+
+fn u64_field(value: &serde_json::Value, key: &str) -> u64 {
+    value
+        .get(key)
+        .and_then(serde_json::Value::as_u64)
+        .unwrap_or(0)
+}
+
+fn string_field(value: &serde_json::Value, key: &str) -> String {
+    value
+        .get(key)
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or_default()
+        .to_string()
+}
+
+fn parse_rollup_checks(pr: &serde_json::Value) -> Vec<PrCheck> {
+    let Some(nodes) = pr
+        .pointer("/statusCheckRollup/contexts/nodes")
+        .and_then(serde_json::Value::as_array)
+    else {
+        return Vec::new();
+    };
+    nodes
+        .iter()
+        .map(|node| {
+            let typename = node
+                .get("__typename")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or_default();
+            let name = if typename == "StatusContext" {
+                string_field(node, "context")
+            } else {
+                string_field(node, "name")
+            };
+            let state = if typename == "StatusContext" {
+                string_field(node, "state")
+            } else {
+                node.get("conclusion")
+                    .and_then(serde_json::Value::as_str)
+                    .or_else(|| node.get("status").and_then(serde_json::Value::as_str))
+                    .unwrap_or_default()
+                    .to_string()
+            };
+            let link = if typename == "StatusContext" {
+                string_field(node, "targetUrl")
+            } else {
+                string_field(node, "detailsUrl")
+            };
+            PrCheck {
+                name,
+                bucket: bucket_for_rollup_check(&state),
+                state,
+                link,
+            }
+        })
+        .collect()
+}
+
+fn bucket_for_rollup_check(state: &str) -> String {
+    match state {
+        "SUCCESS" => "pass",
+        "NEUTRAL" | "SKIPPED" => "skipping",
+        "FAILURE" | "ERROR" | "TIMED_OUT" | "ACTION_REQUIRED" | "STARTUP_FAILURE" | "STALE" => {
+            "fail"
+        }
+        "CANCELLED" => "cancel",
+        "COMPLETED" => "pass",
+        "" => "pending",
+        _ => "pending",
+    }
+    .to_string()
+}
+
+fn parse_unresolved_comments_from_threads(
+    threads: Option<&Vec<serde_json::Value>>,
+) -> Vec<UnresolvedComment> {
+    let Some(threads) = threads else {
+        return Vec::new();
+    };
+    let mut comments = Vec::new();
+    for thread in threads {
+        if thread
+            .get("isResolved")
+            .and_then(serde_json::Value::as_bool)
+            .unwrap_or(false)
+            || thread
+                .get("isOutdated")
+                .and_then(serde_json::Value::as_bool)
+                .unwrap_or(false)
+        {
+            continue;
+        }
+        let Some(nodes) = thread
+            .pointer("/comments/nodes")
+            .and_then(serde_json::Value::as_array)
+        else {
+            continue;
+        };
+        let Some(comment) = nodes.last() else {
+            continue;
+        };
+        comments.push(UnresolvedComment {
+            author: comment
+                .pointer("/author/login")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or("unknown")
+                .to_string(),
+            path: string_field(comment, "path"),
+            line: comment.get("line").and_then(serde_json::Value::as_u64),
+            first_line: first_nonempty_line(
+                comment
+                    .get("bodyText")
+                    .and_then(serde_json::Value::as_str)
+                    .unwrap_or_default(),
+            ),
+            url: string_field(comment, "url"),
+        });
+    }
+    comments
+}
+
 fn gh_capture(args: &[String], label: &str) -> Result<String> {
     gh_capture_allow_exit_codes(args, label, &[])
 }
@@ -2687,8 +3191,430 @@ fn format_link(link: &str) -> String {
     }
 }
 
+fn discover_pr_workspace_candidates(
+    pr: &PrHygieneItem,
+    config: &WsConfig,
+    warnings: &mut Vec<String>,
+) -> Vec<PrWorkspaceCandidate> {
+    let mut candidates = Vec::new();
+    let mut seen = Vec::<PathBuf>::new();
+    for (path, kind) in candidate_workspace_paths(config, &pr.repo_name) {
+        let canonical = fs::canonicalize(&path).unwrap_or(path.clone());
+        if seen.contains(&canonical) {
+            continue;
+        }
+        seen.push(canonical.clone());
+        match pr_workspace_candidate(&canonical, &kind, pr) {
+            Ok(Some(workspace)) => candidates.push(workspace),
+            Ok(None) => {}
+            Err(err) => warnings.push(format!(
+                "could not inspect workspace candidate {} for {}: {err:#}",
+                canonical.display(),
+                pr.repo_slug
+            )),
+        }
+    }
+    candidates.sort_by(|left, right| left.path.cmp(&right.path));
+    candidates
+}
+
+fn match_pr_workspaces(
+    pr: &PrHygieneItem,
+    candidates: &[PrWorkspaceCandidate],
+    warnings: &mut Vec<String>,
+) -> Vec<PrWorkspaceMatch> {
+    let mut matches = Vec::new();
+    for candidate in candidates {
+        match workspace_relation_to_pr_head(&candidate.path, &pr.head_ref_name) {
+            Ok(Some(relation)) => matches.push(PrWorkspaceMatch {
+                name: candidate.name.clone(),
+                path: candidate.path.clone(),
+                kind: candidate.kind.clone(),
+                relation,
+            }),
+            Ok(None) => {}
+            Err(err) => warnings.push(format!(
+                "could not compare workspace {} to {}#{}: {err:#}",
+                candidate.path.display(),
+                pr.repo_slug,
+                pr.number
+            )),
+        }
+    }
+    matches.sort_by(|left, right| left.path.cmp(&right.path));
+    matches
+}
+
+fn candidate_workspace_paths(config: &WsConfig, repo_name: &str) -> Vec<(PathBuf, String)> {
+    let mut paths = Vec::new();
+    for group in &config.project_groups {
+        let group_path = fs::canonicalize(&group.path).unwrap_or(group.path.clone());
+        let main = group_path.join(repo_name);
+        if main.is_dir() {
+            paths.push((main, "main".to_string()));
+        }
+        let workspace_root = group_path.join(&group.workspace_dir).join(repo_name);
+        if let Ok(entries) = fs::read_dir(&workspace_root) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_dir() {
+                    paths.push((path, "workspace".to_string()));
+                }
+            }
+        }
+    }
+    paths
+}
+
+fn pr_workspace_candidate(
+    path: &Path,
+    kind: &str,
+    pr: &PrHygieneItem,
+) -> Result<Option<PrWorkspaceCandidate>> {
+    let root_output = run_jj_capture_in_allow_failure(path, ["root", "--color=never"])?;
+    if !root_output.status.success() {
+        return Ok(None);
+    }
+    let root = fs::canonicalize(root_output.stdout.trim()).unwrap_or_else(|_| path.to_path_buf());
+    let remotes = github_remotes_in(&root)?;
+    if !remotes.iter().any(|remote| remote.slug() == pr.repo_slug) {
+        return Ok(None);
+    }
+    let name = jj_config_string_in(&root, "workspace.name")?
+        .or_else(|| {
+            root.file_name()
+                .map(|name| name.to_string_lossy().to_string())
+        })
+        .unwrap_or_else(|| "unknown".to_string());
+    Ok(Some(PrWorkspaceCandidate {
+        name,
+        path: root,
+        kind: kind.to_string(),
+    }))
+}
+
+fn github_remotes_in(repo: &Path) -> Result<Vec<GithubRemote>> {
+    let output = run_jj_capture_in_allow_failure(repo, ["git", "remote", "list", "--color=never"])?;
+    if !output.status.success() {
+        return Ok(Vec::new());
+    }
+    Ok(output
+        .stdout
+        .lines()
+        .filter_map(parse_github_remote_line)
+        .collect())
+}
+
+fn workspace_relation_to_pr_head(repo: &Path, head: &str) -> Result<Option<String>> {
+    if head.trim().is_empty() {
+        return Ok(None);
+    }
+    let revset = format!("(@ | @-) & (::bookmarks({head:?}) | bookmarks({head:?})::)");
+    let output = run_jj_capture_in_allow_failure(
+        repo,
+        [
+            "log",
+            "--no-graph",
+            "-r",
+            &revset,
+            "-T",
+            "change_id.short() ++ \" \" ++ coalesce(description.first_line(), \"(no description set)\") ++ \"\\n\"",
+            "--color=never",
+            "--limit",
+            "1",
+        ],
+    )?;
+    if output.status.success() && !output.stdout.trim().is_empty() {
+        Ok(Some(format!("current stack contains head `{head}`")))
+    } else {
+        Ok(None)
+    }
+}
+
+fn jj_config_string_in(repo: &Path, key: &str) -> Result<Option<String>> {
+    let output = run_jj_capture_in_allow_failure(repo, ["config", "get", key])?;
+    if !output.status.success() {
+        return Ok(None);
+    }
+    let value = output.stdout.trim().trim_matches('"').to_string();
+    Ok((!value.is_empty()).then_some(value))
+}
+
+fn apply_pr_hygiene_heuristics(pr: &mut PrHygieneItem) {
+    pr.effort = review_effort(pr.additions, pr.deletions, pr.changed_files, pr.commits);
+    let fail = count_checks(&pr.checks, "fail") + count_checks(&pr.checks, "cancel");
+    let pending = count_checks(&pr.checks, "pending");
+    let checks_empty = pr.checks.is_empty();
+    let updated_days = days_since_github_timestamp(&pr.updated_at);
+
+    let needs_review = matches!(
+        pr.review_decision.as_str(),
+        "" | "REVIEW_REQUIRED" | "REVIEW_REQUIRED_BY_USER" | "REVIEW_REQUIRED_BY_OWNER"
+    );
+    let changes_requested = pr.review_decision == "CHANGES_REQUESTED";
+    let approved = pr.review_decision == "APPROVED";
+
+    if pr.is_draft {
+        pr.status = "draft".to_string();
+        pr.priority = "low".to_string();
+        pr.follow_up = "finish the branch or mark it ready before asking reviewers".to_string();
+    } else if fail > 0 {
+        pr.status = "needs-fix".to_string();
+        pr.priority = "high".to_string();
+        pr.follow_up = "fix failing/cancelled checks before asking for more review".to_string();
+    } else if changes_requested || !pr.comments.is_empty() {
+        pr.status = "needs-fix".to_string();
+        pr.priority = "high".to_string();
+        pr.follow_up = "address review feedback, push, then re-request review".to_string();
+    } else if pr.checks_truncated || pr.review_threads_truncated {
+        pr.status = "unknown".to_string();
+        pr.priority = "medium".to_string();
+        pr.follow_up =
+            "inspect the PR directly; GitHub returned truncated check/review data".to_string();
+    } else if pending > 0 || checks_empty {
+        pr.status = "waiting-ci".to_string();
+        pr.priority = if updated_days.unwrap_or(0) >= 2 {
+            "medium"
+        } else {
+            "low"
+        }
+        .to_string();
+        pr.follow_up = "wait for checks; only nudge humans once CI is green".to_string();
+    } else if approved {
+        pr.status = "ready".to_string();
+        pr.priority = "high".to_string();
+        pr.follow_up = "merge or hand off the merge decision before it goes stale".to_string();
+    } else if needs_review {
+        pr.status = "needs-review".to_string();
+        pr.priority = if updated_days.unwrap_or(0) >= 2 {
+            "high"
+        } else {
+            "medium"
+        }
+        .to_string();
+        pr.follow_up =
+            "ask reviewers for eyes; include the PR size/effort in the nudge".to_string();
+    } else {
+        pr.status = "unknown".to_string();
+        pr.priority = "medium".to_string();
+        pr.follow_up = "inspect the PR; GitHub returned an uncommon review state".to_string();
+    }
+}
+
+fn review_effort(additions: u64, deletions: u64, changed_files: u64, commits: u64) -> String {
+    let changed_lines = additions.saturating_add(deletions);
+    if changed_lines <= 80 && changed_files <= 4 && commits <= 3 {
+        "XS (<10m)".to_string()
+    } else if changed_lines <= 250 && changed_files <= 8 && commits <= 6 {
+        "S (10-30m)".to_string()
+    } else if changed_lines <= 750 && changed_files <= 20 && commits <= 12 {
+        "M (30-60m)".to_string()
+    } else if changed_lines <= 2000 && changed_files <= 40 {
+        "L (1-2h)".to_string()
+    } else {
+        "XL (multi-hour)".to_string()
+    }
+}
+
+fn pr_hygiene_sort_key(pr: &PrHygieneItem) -> (u8, u8, String, String, u64) {
+    (
+        match pr.priority.as_str() {
+            "high" => 0,
+            "medium" => 1,
+            "low" => 2,
+            _ => 3,
+        },
+        match pr.status.as_str() {
+            "needs-fix" => 0,
+            "ready" => 1,
+            "needs-review" => 2,
+            "waiting-ci" => 3,
+            "draft" => 4,
+            _ => 5,
+        },
+        pr.updated_at.clone(),
+        pr.repo_slug.clone(),
+        pr.number,
+    )
+}
+
+fn days_since_github_timestamp(timestamp: &str) -> Option<u64> {
+    let (year, month, day) = parse_github_ymd(timestamp)?;
+    let then = days_from_civil(year, month, day);
+    let now = SystemTime::now().duration_since(UNIX_EPOCH).ok()?.as_secs() as i64 / 86_400;
+    (now >= then).then_some((now - then) as u64)
+}
+
+fn parse_github_ymd(timestamp: &str) -> Option<(i32, u32, u32)> {
+    if timestamp.len() < 10 {
+        return None;
+    }
+    Some((
+        timestamp.get(0..4)?.parse().ok()?,
+        timestamp.get(5..7)?.parse().ok()?,
+        timestamp.get(8..10)?.parse().ok()?,
+    ))
+}
+
+fn days_from_civil(mut year: i32, month: u32, day: u32) -> i64 {
+    year -= (month <= 2) as i32;
+    let era = if year >= 0 { year } else { year - 399 } / 400;
+    let yoe = year - era * 400;
+    let month = month as i32;
+    let day = day as i32;
+    let doy = (153 * (month + if month > 2 { -3 } else { 9 }) + 2) / 5 + day - 1;
+    let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    (era * 146_097 + doe - 719_468) as i64
+}
+
+fn print_pr_hygiene_json(report: &PrHygieneReport) {
+    println!(
+        "{}",
+        json!({
+            "version": 1,
+            "query": report.query,
+            "limit": report.limit,
+            "totalCount": report.total_count,
+            "warnings": report.warnings,
+            "prs": report.prs.iter().map(|pr| json!({
+                "repo": pr.repo_slug,
+                "number": pr.number,
+                "url": pr.url,
+                "title": pr.title,
+                "state": pr.state,
+                "isDraft": pr.is_draft,
+                "reviewDecision": pr.review_decision,
+                "createdAt": pr.created_at,
+                "updatedAt": pr.updated_at,
+                "headRefName": pr.head_ref_name,
+                "baseRefName": pr.base_ref_name,
+                "additions": pr.additions,
+                "deletions": pr.deletions,
+                "changedFiles": pr.changed_files,
+                "commits": pr.commits,
+                "dataTruncated": {
+                    "checks": pr.checks_truncated,
+                    "reviewThreads": pr.review_threads_truncated,
+                },
+                "status": pr.status,
+                "priority": pr.priority,
+                "reviewEffort": pr.effort,
+                "followUp": pr.follow_up,
+                "checks": pr.checks.iter().map(|check| json!({
+                    "name": check.name,
+                    "bucket": check.bucket,
+                    "state": check.state,
+                    "link": check.link,
+                })).collect::<Vec<_>>(),
+                "unresolvedComments": pr.comments.iter().map(|comment| json!({
+                    "author": comment.author,
+                    "path": comment.path,
+                    "line": comment.line,
+                    "firstLine": comment.first_line,
+                    "url": comment.url,
+                })).collect::<Vec<_>>(),
+                "workspaces": pr.workspaces.iter().map(|workspace| json!({
+                    "name": workspace.name,
+                    "path": workspace.path.display().to_string(),
+                    "kind": workspace.kind,
+                    "relation": workspace.relation,
+                })).collect::<Vec<_>>(),
+            })).collect::<Vec<_>>(),
+        })
+    );
+}
+
+fn print_pr_hygiene_human(report: &PrHygieneReport) {
+    println!(
+        "Open PR hygiene: {} shown ({} total), query: {}",
+        report.prs.len(),
+        report.total_count,
+        report.query
+    );
+    println!("Priority/effort are heuristic; use this to decide what to fix, merge, or nudge.\n");
+
+    if report.prs.is_empty() {
+        println!("No open PRs found.");
+    }
+
+    for (index, pr) in report.prs.iter().enumerate() {
+        let pass = count_checks(&pr.checks, "pass");
+        let fail = count_checks(&pr.checks, "fail") + count_checks(&pr.checks, "cancel");
+        let pending = count_checks(&pr.checks, "pending");
+        let updated_age = days_since_github_timestamp(&pr.updated_at)
+            .map(|days| format!("{days}d ago"))
+            .unwrap_or_else(|| pr.updated_at.clone());
+        println!(
+            "{}. {} · {} · {} · {}#{}",
+            index + 1,
+            pr.priority.to_uppercase(),
+            pr.status,
+            pr.effort,
+            pr.repo_slug,
+            pr.number
+        );
+        println!("   {}", pr.title);
+        println!("   {}", pr.url);
+        println!(
+            "   branch: {} -> {} | updated: {} | size: +{} -{}, {} files, {} commits",
+            pr.head_ref_name,
+            pr.base_ref_name,
+            updated_age,
+            pr.additions,
+            pr.deletions,
+            pr.changed_files,
+            pr.commits
+        );
+        println!(
+            "   checks: {pass} pass, {pending} pending, {fail} fail/cancel | review: {} | unresolved comments: {}",
+            pr.review_decision,
+            pr.comments.len()
+        );
+        if pr.checks_truncated || pr.review_threads_truncated {
+            println!(
+                "   warning: GitHub response truncated{}{}; inspect the PR directly before nudging/merging",
+                if pr.checks_truncated { " checks" } else { "" },
+                if pr.review_threads_truncated { " review threads" } else { "" }
+            );
+        }
+        if pr.workspaces.is_empty() {
+            println!("   workspace: not found in configured jj workspace roots");
+        } else {
+            for workspace in &pr.workspaces {
+                println!(
+                    "   workspace: {} [{}; {}]",
+                    workspace.path.display(),
+                    workspace.kind,
+                    workspace.relation
+                );
+            }
+        }
+        println!("   follow-up: {}", pr.follow_up);
+        if pr.status == "needs-review" {
+            println!(
+                "   nudge: Please review {}#{} ({}, +{} -{}, {} files): {}",
+                pr.repo_slug,
+                pr.number,
+                pr.effort,
+                pr.additions,
+                pr.deletions,
+                pr.changed_files,
+                pr.url
+            );
+        }
+        println!();
+    }
+
+    if !report.warnings.is_empty() {
+        println!("Warnings:");
+        for warning in &report.warnings {
+            println!(" - {warning}");
+        }
+    }
+}
+
 fn print_pr_usage() {
-    eprintln!("Usage:\n  jj pr doctor [--json] [--repo <owner/repo>] [--remote <remote>] [--base <branch>] [--head <bookmark>]\n  jj pr create --title <title> (--body <text>|--body-file <file>) [--base <branch>] [--repo <owner/repo>] [--remote <remote>] [--head <bookmark>] [--ticket <id>] [--sync] [--run-lints] [--run-cr] [--draft] [--no-push] [--dry-run]\n  jj pr update [--title <title>] [--body <text>|--body-file <file>] [--base <branch>] [--repo <owner/repo>] [--remote <remote>] [--head <bookmark>|--pr <number>]\n  jj pr close [--repo <owner/repo>] [--remote <remote>] [--head <bookmark>|--pr <number>]\n  jj pr watch [--repo <owner/repo>] [--remote <remote>] [--head <bookmark>|--pr <number>] [--interval 60s] [--timeout 30m] [--once] [--json] [--ignore-comments] [--required]");
+    eprintln!("Usage:\n  jj pr doctor [--json] [--repo <owner/repo>] [--remote <remote>] [--base <branch>] [--head <bookmark>]\n  jj pr create --title <title> (--body <text>|--body-file <file>) [--base <branch>] [--repo <owner/repo>] [--remote <remote>] [--head <bookmark>] [--ticket <id>] [--sync] [--run-lints] [--run-cr] [--draft] [--no-push] [--dry-run]\n  jj pr update [--title <title>] [--body <text>|--body-file <file>] [--base <branch>] [--repo <owner/repo>] [--remote <remote>] [--head <bookmark>|--pr <number>]\n  jj pr close [--repo <owner/repo>] [--remote <remote>] [--head <bookmark>|--pr <number>]\n  jj pr watch [--repo <owner/repo>] [--remote <remote>] [--head <bookmark>|--pr <number>] [--interval 60s] [--timeout 30m] [--once] [--json] [--ignore-comments] [--required]\n  jj pr hygiene [--limit 50] [--search <github-search>] [--json] [--no-workspaces]");
 }
 
 fn print_pr_doctor_usage() {
@@ -2709,6 +3635,10 @@ fn print_pr_close_usage() {
 
 fn print_pr_watch_usage() {
     eprintln!("Usage:\n  jj pr watch [--repo <owner/repo>] [--remote <remote>] [--head <bookmark>|--pr <number>] [--interval 60s] [--timeout 30m] [--once] [--json] [--ignore-comments] [--required]\n\nPolls GitHub checks, review decision, and unresolved review threads. Exits 0 when checks pass and no unresolved comments/blocking review decision remains; exits nonzero with a compact summary on failed checks, pending --once, comments, or timeout.");
+}
+
+fn print_pr_hygiene_usage() {
+    eprintln!("Usage:\n  jj pr hygiene [--limit 50] [--search <github-search>] [--json] [--no-workspaces]\n\nFinds open PRs authored by you with GitHub search, enriches them with checks/review/size data, tries to locate related jj workspaces under configured project groups, and prints a follow-up report. Default search: author:@me is:pr is:open archived:false");
 }
 
 #[derive(Debug, Clone)]
@@ -6123,17 +7053,17 @@ mod tests {
         is_validation_name, lint_config_toml, lint_display_name, lint_onboard_json,
         lint_onboard_report, makefile_targets, parse_checks_json, parse_common_args,
         parse_config_string_array, parse_duration_arg, parse_github_remote_url,
-        parse_lint_selection, parse_lints_toml, parse_review_state_json, parse_tag_push_args,
-        parse_toml_string_array, parse_ws_add_args, parse_ws_forget_args, parse_ws_path_args,
-        parse_ws_prune_args, python_runner, render_bookmark_template, resolve_pr_base, run_lint,
-        run_lint_onboard, run_ship, run_sync, run_ws, selected_lints, ship_plan,
-        short_description_from_title, source_venv_python_usable, stale_workspace_dirs,
-        sync_base_candidates, tag_push, validate_body_source, validate_pr_watch_args,
-        validate_release_tag, validate_ticket, validate_ws_name, workspace_context_for_repo,
-        workspace_has_unpublished_work, write_tracked_lint_config, Cli, CliCommand, FetchChoice,
-        LintCommand, LintOnboardReport, LintSuggestion, ParsedArgs, PrArgs, ProjectGroup, ShipPlan,
-        TagCommand, TagPushArgs, TagSigning, WsAddArgs, WsConfig, WsForgetArgs, WsPathArgs,
-        WsPruneArgs,
+        parse_lint_selection, parse_lints_toml, parse_pr_hygiene_args, parse_pr_hygiene_graphql,
+        parse_review_state_json, parse_tag_push_args, parse_toml_string_array, parse_ws_add_args,
+        parse_ws_forget_args, parse_ws_path_args, parse_ws_prune_args, python_runner,
+        render_bookmark_template, resolve_pr_base, review_effort, run_lint, run_lint_onboard,
+        run_ship, run_sync, run_ws, selected_lints, ship_plan, short_description_from_title,
+        source_venv_python_usable, stale_workspace_dirs, sync_base_candidates, tag_push,
+        validate_body_source, validate_pr_watch_args, validate_release_tag, validate_ticket,
+        validate_ws_name, workspace_context_for_repo, workspace_has_unpublished_work,
+        write_tracked_lint_config, Cli, CliCommand, FetchChoice, LintCommand, LintOnboardReport,
+        LintSuggestion, ParsedArgs, PrArgs, ProjectGroup, ShipPlan, TagCommand, TagPushArgs,
+        TagSigning, WsAddArgs, WsConfig, WsForgetArgs, WsPathArgs, WsPruneArgs,
     };
     use clap::Parser;
     use std::env;
@@ -6364,6 +7294,92 @@ mod tests {
         assert_eq!(comments.len(), 1);
         assert_eq!(comments[0].author, "coderabbitai");
         assert_eq!(comments[0].first_line, "First line");
+    }
+
+    #[test]
+    fn pr_hygiene_args_parse_search_limit_and_json_flags() {
+        let args = parse_pr_hygiene_args(vec![
+            OsString::from("--search"),
+            OsString::from("author:@me is:pr is:open org:sureapp"),
+            OsString::from("--limit=25"),
+            OsString::from("--json"),
+            OsString::from("--no-workspaces"),
+        ])
+        .unwrap();
+        assert_eq!(args.search.unwrap(), "author:@me is:pr is:open org:sureapp");
+        assert_eq!(args.limit, 25);
+        assert!(args.json);
+        assert!(args.no_workspaces);
+        assert!(parse_pr_hygiene_args(vec![OsString::from("--limit=101")]).is_err());
+    }
+
+    #[test]
+    fn pr_hygiene_parses_graphql_search_results() {
+        let report = parse_pr_hygiene_graphql(
+            r#"{
+              "data": {"search": {"issueCount": 1, "nodes": [{
+                "number": 42,
+                "title": "fix(policy): stop retry storm [EPD-1234]",
+                "url": "https://github.com/sureapp/api/pull/42",
+                "state": "OPEN",
+                "isDraft": false,
+                "reviewDecision": "REVIEW_REQUIRED",
+                "createdAt": "2026-07-01T12:00:00Z",
+                "updatedAt": "2026-07-05T12:00:00Z",
+                "headRefName": "chris/EPD-1234/retry-storm",
+                "baseRefName": "main",
+                "additions": 120,
+                "deletions": 30,
+                "changedFiles": 5,
+                "repository": {"nameWithOwner": "sureapp/api", "name": "api", "owner": {"login": "sureapp"}},
+                "commits": {"totalCount": 2},
+                "statusCheckRollup": {"contexts": {"pageInfo": {"hasNextPage": true}, "nodes": [
+                  {"__typename": "CheckRun", "name": "lint", "status": "COMPLETED", "conclusion": "SUCCESS", "detailsUrl": "https://ci.example/lint"},
+                  {"__typename": "StatusContext", "context": "circleci", "state": "PENDING", "targetUrl": "https://ci.example/circle"}
+                ]}},
+                "reviewThreads": {"pageInfo": {"hasNextPage": true}, "nodes": [
+                  {"isResolved": false, "isOutdated": false, "comments": {"nodes": [
+                    {"author": {"login": "reviewer"}, "bodyText": "Can we simplify this?\nMore", "path": "src/lib.rs", "line": 10, "url": "https://github.com/comment"}
+                  ]}}
+                ]}
+              }]}}
+            }"#,
+            "author:@me is:pr is:open",
+            50,
+        )
+        .unwrap();
+        assert_eq!(report.total_count, 1);
+        assert_eq!(report.prs.len(), 1);
+        let pr = &report.prs[0];
+        assert_eq!(pr.repo_slug, "sureapp/api");
+        assert_eq!(pr.head_ref_name, "chris/EPD-1234/retry-storm");
+        assert_eq!(pr.checks.len(), 2);
+        assert_eq!(pr.checks[0].bucket, "pass");
+        assert_eq!(pr.checks[1].bucket, "pending");
+        assert_eq!(pr.comments.len(), 1);
+        assert_eq!(pr.comments[0].first_line, "Can we simplify this?");
+        assert!(pr.checks_truncated);
+        assert!(pr.review_threads_truncated);
+    }
+
+    #[test]
+    fn pr_hygiene_surfaces_graphql_errors() {
+        let err = parse_pr_hygiene_graphql(
+            r#"{"errors":[{"message":"Search syntax failed"}],"data":null}"#,
+            "bad query",
+            50,
+        )
+        .unwrap_err()
+        .to_string();
+        assert!(err.contains("Search syntax failed"));
+    }
+
+    #[test]
+    fn pr_hygiene_review_effort_uses_size_buckets() {
+        assert_eq!(review_effort(20, 10, 2, 1), "XS (<10m)");
+        assert_eq!(review_effort(200, 40, 6, 4), "S (10-30m)");
+        assert_eq!(review_effort(600, 120, 12, 8), "M (30-60m)");
+        assert_eq!(review_effort(3000, 100, 50, 20), "XL (multi-hour)");
     }
 
     #[test]

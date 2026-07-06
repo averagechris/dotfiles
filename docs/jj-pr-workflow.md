@@ -156,6 +156,77 @@ jj pr close
 jj pr close --pr 1234
 ```
 
+### Hygiene
+
+Sweep open GitHub PRs authored by the current GitHub user and produce a
+follow-up report suitable for running next to Linear hygiene:
+
+```bash
+jj pr hygiene
+jj pr hygiene --limit 25
+jj pr hygiene --search 'author:@me is:pr is:open archived:false org:example'
+jj pr hygiene --json
+```
+
+The default search is:
+
+```text
+author:@me is:pr is:open archived:false
+```
+
+For each PR, the helper queries GitHub through `gh api graphql` for review
+decision, checks, unresolved review threads, size (`+/-` lines, files, commits),
+base/head branches, and links. It then scans the configured jj project groups
+(`dotfiles.workspaces.project-groups`, such as `~/projects:ws` and
+`~/sureapp:ws` on `suremac`) for related local workspaces. A workspace is
+reported only when it belongs to the PR's GitHub repo and the workspace's current
+stack (`@`/`@-`) contains the PR head bookmark, which avoids listing every
+workspace that merely shares the same jj repo store.
+
+GitHub check and review-thread connections are bounded for compact output. If
+GitHub reports more checks or review threads than the helper fetched, the PR is
+marked `unknown` unless already known to need fixes, and the report asks you to
+inspect GitHub directly before nudging or merging.
+
+The human report sorts PRs by a heuristic priority and includes:
+
+- status: `needs-fix`, `ready`, `needs-review`, `waiting-ci`, `draft`, or
+  `unknown`
+- review effort estimate from changed lines, file count, and commit count
+- suggested follow-up action and, for review-ready PRs, a copyable review nudge
+- related workspace path when one is found
+
+Use `--search <github-search>` to change the GitHub search query, `--limit <n>`
+to cap the sweep, `--no-workspaces` to skip local workspace discovery, or
+`--json` for a versioned machine-readable report. Priority and review effort are
+intentionally heuristic; use them to decide whether to fix CI/review feedback,
+merge an approved PR, wait for checks, or ask reviewers for attention.
+
+On `suremac`, Linear hygiene automation also installs cached wrappers:
+
+```bash
+github-pr-hygiene-report          # use cache when fresh, refresh after TTL
+github-pr-hygiene-report --force  # refresh immediately
+github-pr-hygiene-refresh         # refresh cache, honoring TTL unless --force
+```
+
+Use `github-pr-hygiene-report` for normal on-demand follow-up. Use direct
+`jj pr hygiene` when you intentionally want a fresh, uncached GitHub query from
+inside a jj repo. The wrapper remains separate so launchd and shell workflows can
+find a configured jj workdir before refreshing the shared cache.
+
+The scheduled `github-pr-hygiene-refresh --force` launchd job runs every 30
+minutes on weekdays during work hours and writes
+`~/.local/state/linear-hygiene/github-pr-hygiene-last-run.json`. Cached on-demand
+reports reuse the artifact only while it is fresh and its search, limit, TTL,
+workdir list, and `--no-workspaces` inputs match the current invocation. The
+configured workdir strings are compared exactly as passed to the cache wrapper
+(`~/` defaults are expanded by the Nix module before both prompt and wrapper use
+them). The cache contains private PR metadata and local workspace paths, so it is
+written under a `0700` state directory with a `0600` artifact. The starship
+prompt integration reads the cache with `jq`, so prompts never start Python or
+hit GitHub/jj.
+
 ## Agent workflow
 
 OpenCode on `suremac` includes the `suremac-jj-pr` skill. Agents should load/use

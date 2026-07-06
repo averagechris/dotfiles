@@ -15,11 +15,11 @@
 - [hyprland](/docs/hyprland.md) - Hyprland window manager configuration, keybindings, and features
 - [hyprland ergonomics requirements](/docs/hyprland-ergonomics-requirements.md) - Planned tater/shared Hyprland ergonomics CLI, daemon, workspace, tray, and Eww improvements
 - [jj aliases](/docs/jj-aliases.md) - Compact `jj log-*` aliases for agent-friendly status, stack, and history inspection
-- [jj PR workflow](/docs/jj-pr-workflow.md) - suremac-only `jj pr` helper for creating GitHub PRs from jj workspaces
+- [jj PR workflow](/docs/jj-pr-workflow.md) - suremac-only `jj pr` helper for creating, watching, and sweeping GitHub PRs from jj workspaces
 - [jj tag workflow](/docs/jj-tag-workflow.md) - Optional `jj ship --tag` and `jj tag-push` flow for annotated human/agent-created release tags
 - [jj workspaces](/docs/jj-workspaces.md) - Design decisions and implementation checklist for ergonomic jj workspace management
 - [LAN SSH](/docs/lan-ssh.md) - DHCP-friendly local-network host discovery, safe SSH wrappers, and host key authorization notes
-- [linear-cli](/docs/linear-cli.md) - Linear CLI Home Manager module, completions, agent-facing context defaults, and hygiene automation (scheduled checks, notifications, prompt nudges, agentic autofix)
+- [linear-cli](/docs/linear-cli.md) - Linear CLI Home Manager module, completions, agent-facing context defaults, and hygiene automation (scheduled checks, notifications, prompt nudges, PR hygiene cache, agentic autofix)
 - [manual package updates](/docs/manual-package-updates.md) - Rust flake/manual package updater, manifest enrollment, cooldowns, and fixed-hash package pins
 - [nixos](/docs/nixos.md) - General NixOS configuration notes
 - [notion-cli](/docs/notion-cli.md) - Notion CLI package, suremac installation, usage, and update notes

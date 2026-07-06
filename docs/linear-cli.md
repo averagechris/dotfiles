@@ -77,29 +77,49 @@ All schedules default to weekdays only.
 | `linear-hygiene-summary` | 16:05 | macOS notification when any unresolved high/medium findings exist |
 | `linear-hygiene-watch` | hourly 9:30-18:30 | Re-checks and notifies about high findings not previously seen (deduped in `~/.local/state/linear-hygiene/notified-high.json`; a finding that resolves and reappears notifies again) |
 | `linear-hygiene-autofix` | 10:20 and 16:20 | Agentically resolves low-stakes findings (see below) |
+| `github-pr-hygiene-refresh` | every 30 minutes 9:00-18:30 | Refreshes a cached `jj pr hygiene --json` report for open GitHub PR follow-up |
 
 Logs land in `~/Library/Logs/linear-hygiene-*.log`. All the job entry points
 are installed as commands, so any of them can be run manually
 (`linear-hygiene-refresh`, `linear-hygiene-notify summary`,
-`linear-hygiene-autofix`, ...).
+`linear-hygiene-autofix`, `github-pr-hygiene-refresh`,
+`github-pr-hygiene-report`, ...). GitHub PR hygiene logs use
+`~/Library/Logs/github-pr-hygiene-refresh.log`, while the cache lives at
+`~/.local/state/linear-hygiene/github-pr-hygiene-last-run.json`.
 
 ### Shell integration
 
 - **Starship prompt hint** (`shell.promptHint.enable`): shows a compact
-  `⚑<high> ~<medium>` segment while unresolved high/medium findings exist in
-  the local artifact. Pure local JSON read via `jq`; hidden when clean, when
-  the artifact is missing, or via severity counts of zero.
+  `⚑<high> ~<medium> PR<count>` segment while unresolved Linear high/medium
+  findings or actionable GitHub PRs exist in the local artifacts. Prompt reads
+  are local-only and use `jq` rather than Python; they do not hit Linear,
+  GitHub, or jj. The PR count includes PRs classified as `needs-fix`, `ready`,
+  or `needs-review` by `jj pr hygiene` and is hidden when PR hygiene automation
+  is disabled, the PR cache is expired, or it was generated with different
+  configured search/limit/TTL/workdir/`no-workspaces` inputs.
 - **New-shell greeting** (`shell.greeting.enable`): interactive zsh shells
   print a small fun report (counts, worst high findings, per-rule medium
-  rollup, and a nudge) when findings exist. Rate-limited to once per
-  `shell.greeting.minIntervalMinutes` (default 1, which only suppresses
-  same-minute bursts like a batch of tmux panes; 0 prints on every shell);
-  disable per-shell with `LINEAR_HYGIENE_GREETING=0`. Skips stale artifacts
-  older than 7 days.
+  rollup, actionable PRs, and a nudge) when findings or actionable PRs exist.
+  Rate-limited to once per `shell.greeting.minIntervalMinutes` (default 1, which
+  only suppresses same-minute bursts like a batch of tmux panes; 0 prints on
+  every shell); disable per-shell with `LINEAR_HYGIENE_GREETING=0`. Skips Linear
+  artifacts older than 7 days and skips PR output entirely when PR hygiene is
+  disabled; otherwise it skips expired or input-mismatched PR caches.
 
 Note the artifact reflects whatever the *last* check wrote: a manual org-wide
 `linear hy check -t EPD` temporarily swaps the prompt/greeting data source
 until the next scheduled `--mine` refresh.
+
+For the adjacent GitHub PR follow-up sweep, `github-pr-hygiene-report` is the
+cached on-demand entry point. It refreshes the cache only when the TTL has
+expired or the requested search/limit/TTL/workdir/`--no-workspaces` flags differ
+from the cached inputs; pass `--force` to bypass the TTL, or `--json` for the cached JSON. The
+underlying direct GitHub query is still `jj pr hygiene`, which reports open PRs
+authored by the current GitHub user with status, review effort, priority, links,
+and related jj workspaces; see [jj PR workflow](/docs/jj-pr-workflow.md#hygiene).
+The PR cache is sensitive local metadata (repo names, PR titles/URLs, review
+comment excerpts, and workspace paths), so the refresh script writes the state
+directory as `0700` and the artifact as `0600`.
 
 ### Agentic autofix
 
@@ -142,6 +162,15 @@ dotfiles.linearCli.hygieneAutomation = {
   summaryNotification.time = {hour = 16; minute = 5;};
   watch = {startHour = 9; endHour = 18; minute = 30;};
   autofix.rules = ["missing-estimate-in-cycle"];  # narrow the autofix surface
+    prHygiene = {
+      enable = true;
+      ttlMinutes = 45;
+      limit = 50;
+      refresh = {startHour = 9; endHour = 18; minutes = [0 30];};
+      search = "author:@me is:pr is:open archived:false";
+      workdirs = ["/Users/chris/projects/dotfiles" "/Users/chris/projects" "${config.home.homeDirectory}/sureapp"];
+      noWorkspaces = false;
+    };
 };
 ```
 

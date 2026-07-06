@@ -1,11 +1,13 @@
 ---
 name: suremac-jj-pr
-description: Use when creating, updating, closing, or watching GitHub PRs from jj workspaces on suremac work repos. Prefer `jj pr` over bare `gh pr create`; handles jj remotes, bookmarks, sync, lints, CodeRabbit, push, CI, and review polling.
+description: Use when creating, updating, closing, watching, or sweeping GitHub PR hygiene from jj workspaces on suremac work repos. Prefer `jj pr` over bare `gh pr create`; handles jj remotes, bookmarks, sync, lints, CodeRabbit, push, CI, review polling, and open-PR follow-up reports.
 ---
 
 # Suremac jj PR Workflow
 
-Use this skill on `suremac` when the user asks to create, update, close, watch, or prepare a GitHub pull request from a jj workspace, especially for work repositories under `~/sureapp`.
+Use this skill on `suremac` when the user asks to create, update, close, watch,
+prepare, or sweep hygiene/follow-up for GitHub pull requests from jj workspaces,
+especially for work repositories under `~/sureapp`.
 
 ## Core rule
 
@@ -16,6 +18,7 @@ jj pr doctor
 jj pr create ...
 jj pr update ...
 jj pr close ...
+jj pr hygiene
 ```
 
 The helper infers the GitHub repository from `jj git remote list` and always calls GitHub CLI commands with explicit `--repo owner/repo`, which works in non-colocated jj workspaces where `gh pr create` cannot discover `.git`.
@@ -120,6 +123,52 @@ and exits nonzero; do not treat stale check output from closed PRs as active wor
 Use the printed links or `gh` directly only when detailed logs/full comments are
 needed. Prefer `--ignore-comments` only when the user explicitly wants to gate on
 CI checks alone.
+
+## PR hygiene sweep
+
+When the user asks to catch up on open PRs, run PR follow-up hygiene next to the
+Linear hygiene loop:
+
+```bash
+github-pr-hygiene-report
+github-pr-hygiene-report --force
+github-pr-hygiene-report --json
+```
+
+Prefer `github-pr-hygiene-report` for normal on-demand follow-up: it reads the
+scheduled cache when it is fresh and refreshes only after the TTL expires or the
+requested search, limit, TTL, workdir list, or `--no-workspaces` flag differs from the cached inputs. Use
+`github-pr-hygiene-report --force` when the user explicitly wants a fresh GitHub
+query now, and `github-pr-hygiene-report --json` for stable cached fields. The
+shell prompt reads the same cache locally with `jq`, so prompt rendering does
+not start Python or hit GitHub/jj.
+
+The lower-level `jj pr hygiene` command searches open GitHub PRs authored by the current GitHub user
+(default search: `author:@me is:pr is:open archived:false`), enriches them with
+checks, review decision, unresolved comments, size, and base/head branch data,
+then scans configured jj workspace roots for related local workspaces. The human
+report includes links, status, review effort estimate, heuristic priority, a
+suggested follow-up, and a copyable reviewer nudge for PRs that are green and
+waiting for review.
+
+Use direct `jj pr hygiene` only when you intentionally want an uncached GitHub
+query from inside a jj repo. The cached wrapper exists because scheduled launchd
+and shell workflows may start outside any particular jj checkout; it finds a
+configured jj workdir, keeps the shared cache fresh, and avoids hitting GitHub
+from prompts.
+
+Use it before telling the user what to complain about. Prefer these outcomes:
+
+- `needs-fix`: fix CI/review comments before asking people for more review.
+- `ready`: merge or hand off the merge decision.
+- `needs-review`: nudge reviewers, including the effort estimate and PR link.
+- `waiting-ci`: wait or inspect CI; do not ask humans before checks are green.
+- `draft`: finish or mark ready before requesting review.
+
+Use `--search <github-search>` to narrow scope, `--limit <n>` for shorter sweeps,
+and `--no-workspaces` if local workspace discovery is slow or irrelevant. The
+cached wrapper also keys freshness on the TTL and configured workdir strings. Use
+`--json` when another script/agent needs stable fields.
 
 ## Follow-up changes after CI/review
 

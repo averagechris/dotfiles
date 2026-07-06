@@ -14,7 +14,14 @@
     else "${config.xdg.configHome}/linear-cli";
   artifactPath = "${cliConfigDir}/state/${acfg.profile}/hygiene-last-run.json";
   stateDir = "${config.home.homeDirectory}/.local/state/linear-hygiene";
+  prArtifactPath = "${stateDir}/github-pr-hygiene-last-run.json";
   logDir = "${config.home.homeDirectory}/Library/Logs";
+  expandHome = path:
+    if lib.hasPrefix "~/" path
+    then "${config.home.homeDirectory}/${lib.removePrefix "~/" path}"
+    else path;
+  defaultPrHygieneWorkdirs = map expandHome (["~/projects/dotfiles"] ++ map (group: group.path) config.dotfiles.jujutsu.workspaces.projectGroups);
+  prHygieneWorkdirs = map expandHome acfg.prHygiene.workdirs;
 
   supportedAutofixRules = [
     "issue-missing-domain"
@@ -52,6 +59,37 @@
     )
     acfg.weekdays;
 
+  weekdayHalfHourly = refreshCfg:
+    lib.concatMap (
+      weekday:
+        lib.concatMap (
+          hour:
+            map (minute: {
+              Weekday = weekday;
+              Hour = hour;
+              Minute = minute;
+            })
+            refreshCfg.minutes
+        )
+        (lib.range refreshCfg.startHour refreshCfg.endHour)
+    )
+    acfg.weekdays;
+
+  prHygieneBaseArgs =
+    [
+      "--artifact"
+      prArtifactPath
+      "--search"
+      acfg.prHygiene.search
+      "--limit"
+      (toString acfg.prHygiene.limit)
+      "--ttl-minutes"
+      (toString acfg.prHygiene.ttlMinutes)
+    ]
+    ++ lib.concatMap (workdir: ["--workdir" workdir]) prHygieneWorkdirs
+    ++ lib.optional acfg.prHygiene.noWorkspaces "--no-workspaces";
+  prHygieneEmptyInputs = builtins.toJSON [];
+
   notifyScript = pkgs.writeShellApplication {
     name = "linear-hygiene-notify";
     runtimeInputs = [pkgs.python3];
@@ -81,21 +119,51 @@
     runtimeInputs = [pkgs.jq];
     text = ''
       artifact=${lib.escapeShellArg artifactPath}
-      [ -f "$artifact" ] || exit 1
-      counts="$(jq -r '
-        [.findings[]? | select(.resolved | not) | .severity]
-        | "\(map(select(. == "high")) | length) \(map(select(. == "medium")) | length)"
-      ' "$artifact" 2>/dev/null)" || exit 1
-      high="''${counts%% *}"
-      medium="''${counts##* }"
+      pr_artifact=${lib.escapeShellArg prArtifactPath}
+      high=0
+      medium=0
+      if [ -f "$artifact" ]; then
+        counts="$(jq -r '
+          [.findings[]? | select(.resolved | not) | .severity]
+          | "\(map(select(. == "high")) | length) \(map(select(. == "medium")) | length)"
+        ' "$artifact" 2>/dev/null)" || counts="0 0"
+        high="''${counts%% *}"
+        medium="''${counts##* }"
+      fi
+      pr_out=""
+      ${lib.optionalString acfg.prHygiene.enable ''
+        if [ -f "$pr_artifact" ]; then
+          pr_out="$(jq -r \
+            --arg search ${lib.escapeShellArg acfg.prHygiene.search} \
+            --argjson limit ${toString acfg.prHygiene.limit} \
+            --argjson ttlSeconds ${toString (acfg.prHygiene.ttlMinutes * 60)} \
+            --argjson workdirs ${lib.escapeShellArg (builtins.toJSON prHygieneWorkdirs)} \
+            --argjson noWorkspaces ${lib.boolToString acfg.prHygiene.noWorkspaces} '
+              def fresh:
+                (.cache? // {}) as $cache
+                | ($cache.inputs? // {}) as $inputs
+                | ($inputs.search == $search)
+                and ($inputs.limit == $limit)
+                and ($inputs.ttlSeconds == $ttlSeconds)
+                and ($inputs.workdirs == $workdirs)
+                and ($inputs.noWorkspaces == $noWorkspaces)
+                and ((try ($cache.expiresAt | fromdateiso8601) catch 0) > now);
+              if fresh then
+                ([.prs[]? | select(.status == "needs-fix" or .status == "ready" or .status == "needs-review")] | length) as $count
+                | if $count > 0 then "PR\($count)" else empty end
+              else empty end
+            ' "$pr_artifact" 2>/dev/null)" || pr_out=""
+        fi
+      ''}
       case "''${1:-hint}" in
         check)
-          [ "$high" -gt 0 ] || [ "$medium" -gt 0 ]
+          [ "$high" -gt 0 ] || [ "$medium" -gt 0 ] || [ -n "$pr_out" ]
           ;;
         *)
           out=""
           [ "$high" -gt 0 ] && out="⚑$high"
           [ "$medium" -gt 0 ] && out="$out''${out:+ }~$medium"
+          [ -n "$pr_out" ] && out="$out''${out:+ }$pr_out"
           printf '%s' "$out"
           ;;
       esac
@@ -109,7 +177,44 @@
       export LINEAR_HYGIENE_ARTIFACT=${lib.escapeShellArg artifactPath}
       export LINEAR_HYGIENE_STATE_DIR=${lib.escapeShellArg stateDir}
       export LINEAR_HYGIENE_GREETING_INTERVAL=${toString acfg.shell.greeting.minIntervalMinutes}
+      ${
+        if acfg.prHygiene.enable
+        then ''
+          export GITHUB_PR_HYGIENE_ARTIFACT=${lib.escapeShellArg prArtifactPath}
+          export GITHUB_PR_HYGIENE_SEARCH=${lib.escapeShellArg acfg.prHygiene.search}
+          export GITHUB_PR_HYGIENE_LIMIT=${toString acfg.prHygiene.limit}
+          export GITHUB_PR_HYGIENE_TTL_SECONDS=${toString (acfg.prHygiene.ttlMinutes * 60)}
+          export GITHUB_PR_HYGIENE_WORKDIRS=${lib.escapeShellArg (builtins.toJSON prHygieneWorkdirs)}
+          export GITHUB_PR_HYGIENE_NO_WORKSPACES=${lib.boolToString acfg.prHygiene.noWorkspaces}
+        ''
+        else ''
+          export GITHUB_PR_HYGIENE_ARTIFACT=
+          export GITHUB_PR_HYGIENE_SEARCH=
+          export GITHUB_PR_HYGIENE_LIMIT=0
+          export GITHUB_PR_HYGIENE_TTL_SECONDS=0
+          export GITHUB_PR_HYGIENE_WORKDIRS=${lib.escapeShellArg prHygieneEmptyInputs}
+          export GITHUB_PR_HYGIENE_NO_WORKSPACES=true
+        ''
+      }
       exec python3 ${./hygiene_greeting.py}
+    '';
+  };
+
+  prHygieneRefreshScript = pkgs.writeShellApplication {
+    name = "github-pr-hygiene-refresh";
+    runtimeInputs = [pkgs.python3 pkgs.jujutsu pkgs.gh];
+    text = ''
+      export PATH="/etc/profiles/per-user/$USER/bin:$HOME/.nix-profile/bin:$PATH"
+      exec python3 ${./pr_hygiene_cache.py} refresh ${lib.escapeShellArgs prHygieneBaseArgs} "$@"
+    '';
+  };
+
+  prHygieneReportScript = pkgs.writeShellApplication {
+    name = "github-pr-hygiene-report";
+    runtimeInputs = [pkgs.python3 pkgs.jujutsu pkgs.gh];
+    text = ''
+      export PATH="/etc/profiles/per-user/$USER/bin:$HOME/.nix-profile/bin:$PATH"
+      exec python3 ${./pr_hygiene_cache.py} report ${lib.escapeShellArgs prHygieneBaseArgs} "$@"
     '';
   };
 
@@ -309,13 +414,91 @@ in {
       };
     };
 
+    prHygiene = {
+      enable = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = ''
+          Keep a cached GitHub PR hygiene report next to Linear hygiene so the
+          shell prompt/greeting can show stale or actionable PR follow-up work
+          without hitting GitHub on every shell render.
+        '';
+      };
+
+      search = lib.mkOption {
+        type = lib.types.nonEmptyStr;
+        default = "author:@me is:pr is:open archived:false";
+        description = "GitHub search query passed to `jj pr hygiene`.";
+      };
+
+      limit = lib.mkOption {
+        type = lib.types.ints.between 1 100;
+        default = 50;
+        description = "Maximum open PRs fetched for the cached hygiene report.";
+      };
+
+      ttlMinutes = lib.mkOption {
+        type = lib.types.ints.positive;
+        default = 45;
+        description = ''
+          Cache TTL in minutes. The default is slightly longer than the
+          half-hour refresh cadence so prompts stay fresh across launchd jitter.
+        '';
+      };
+
+      workdirs = lib.mkOption {
+        type = lib.types.listOf lib.types.nonEmptyStr;
+        default = defaultPrHygieneWorkdirs;
+        description = ''
+          Candidate jj workdirs or project-group roots used by the refresh
+          script. Project-group roots are searched one level down, plus managed
+          workspace paths under <group>/ws/<repo>/<workspace>, until a jj repo
+          is found. Running inside any configured jj repo is enough because the
+          helper reads global dotfiles workspace config and scans all groups.
+        '';
+      };
+
+      noWorkspaces = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "Pass --no-workspaces to `jj pr hygiene` during cache refreshes.";
+      };
+
+      refresh = {
+        enable = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = "Schedule the GitHub PR hygiene cache refresh launchd job.";
+        };
+
+        startHour = lib.mkOption {
+          type = lib.types.ints.between 0 23;
+          default = 9;
+          description = "First hour of day the PR hygiene refresh runs.";
+        };
+
+        endHour = lib.mkOption {
+          type = lib.types.ints.between 0 23;
+          default = 18;
+          description = "Last hour of day the PR hygiene refresh runs.";
+        };
+
+        minutes = lib.mkOption {
+          type = lib.types.listOf (lib.types.ints.between 0 59);
+          default = [0 30];
+          description = "Minute offsets for scheduled PR hygiene refreshes.";
+        };
+      };
+    };
+
     shell = {
       promptHint.enable = lib.mkOption {
         type = lib.types.bool;
         default = true;
         description = ''
-          Show a compact starship prompt hint (for example "⚑1 ~3") while
-          unresolved high/medium findings exist in the local artifact.
+          Show a compact starship prompt hint (for example "⚑1 ~3 PR2") while
+          unresolved high/medium Linear findings or actionable cached GitHub PRs
+          exist in local artifacts.
         '';
       };
 
@@ -324,9 +507,10 @@ in {
           type = lib.types.bool;
           default = true;
           description = ''
-            Print a small fun hygiene report when opening a new interactive
-            zsh shell and unresolved high/medium findings exist. Disable at
-            runtime with LINEAR_HYGIENE_GREETING=0.
+            Print a small fun hygiene report when opening a new interactive zsh
+            shell and unresolved high/medium Linear findings or actionable
+            cached GitHub PRs exist. Disable at runtime with
+            LINEAR_HYGIENE_GREETING=0.
           '';
         };
 
@@ -351,13 +535,18 @@ in {
       }
     ];
 
-    home.packages = [
-      refreshScript
-      notifyScript
-      autofixScript
-      greetingScript
-      promptScript
-    ];
+    home.packages =
+      [
+        refreshScript
+        notifyScript
+        autofixScript
+        greetingScript
+        promptScript
+      ]
+      ++ lib.optionals acfg.prHygiene.enable [
+        prHygieneRefreshScript
+        prHygieneReportScript
+      ];
 
     launchd.agents = lib.mkMerge [
       {
@@ -392,6 +581,13 @@ in {
           args = [(lib.getExe autofixScript)];
           calendar = weekdayTimes acfg.autofix.times;
           logName = "linear-hygiene-autofix";
+        };
+      })
+      (lib.mkIf (acfg.prHygiene.enable && acfg.prHygiene.refresh.enable) {
+        github-pr-hygiene-refresh = mkAgent {
+          args = [(lib.getExe prHygieneRefreshScript) "--force"];
+          calendar = weekdayHalfHourly acfg.prHygiene.refresh;
+          logName = "github-pr-hygiene-refresh";
         };
       })
     ];
