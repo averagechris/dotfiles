@@ -74,10 +74,17 @@
         [ "$available" -lt ${toString (cfg.cleanup.lowDisk.minFreeGiB * 1024 * 1024)} ]
       }
 
-      pressure_mode=0
+      # pressure_mode is only meaningful when the low-disk pressure phase is
+      # enabled; keep the --pressure flag accepted (as a no-op) otherwise so
+      # the documented CLI stays stable across hosts.
+      ${lib.optionalString cfg.cleanup.lowDisk.enable ''
+        pressure_mode=0
+      ''}
       case "''${1:-}" in
         --pressure)
-          pressure_mode=1
+          ${lib.optionalString cfg.cleanup.lowDisk.enable ''
+        pressure_mode=1
+      ''}
           ;;
         "")
           ;;

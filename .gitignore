@@ -31,3 +31,4 @@ hosts/coniguration.nix.bak
 .ropeproject
 flakes/hm-modules/modules/gui/wallpapers/*.png
 flakes/hm-modules/modules/gui/wallpapers/*.jpg
+.opencode/package-lock.json
