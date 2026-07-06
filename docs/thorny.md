@@ -29,6 +29,12 @@ The host imports `nixosModules.isRemoteBuilder`, which authorizes the system SSH
 keys listed in `sshKeys.usesRemoteBuilders` to log in as `chris` for remote
 build submissions.
 
+`sshKeys.usesRemoteBuilders` also includes the `chris.suremac` user key so
+suremac can run one-off SSH diagnostics and closure-size inspections against
+thorny over the local network, even when the agent session is not on the
+personal tailnet and therefore cannot use the usual `thorny`/`thelio-nixos`
+MagicDNS names.
+
 The Nix daemon is configured for builder use:
 
 - `nix.settings.trusted-users = ["@wheel" "chris"]`

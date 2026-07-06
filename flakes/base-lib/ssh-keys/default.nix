@@ -9,6 +9,7 @@ rec {
   system.trap = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBNAyh1GNkiHi8eButk+acXT8E4LiKaLWq0jmJmQjwsk root@trap";
   system.trainwreck = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICxXGUQ9Ey9/ndUJgr8ClI3PcnWYNnaY4kUMyHRrsYma root@trainwreck";
   usesRemoteBuilders = {
+    inherit (chris) suremac;
     inherit (system) tater thelio trainwreck trap xps;
   };
 }
