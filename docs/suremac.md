@@ -128,6 +128,69 @@ OpenCode agents as a host-specific Datadog tool. `suremac` also installs the
 dumping large Datadog payloads. See [`docs/pup.md`](/docs/pup.md) for packaging,
 credential, agent-usage, and update notes.
 
+## Daily dotfiles Self-Update
+
+`suremac` runs a nix-darwin launchd user agent named
+`dotfiles-suremac-self-update` once per day at 10:00. It is a user agent, not a
+daemon, so it runs in the Aqua login session and can display macOS notifications
+and password dialogs.
+
+The job keeps a dedicated public HTTPS clone of the canonical dotfiles remote at
+`~/.local/state/dotfiles-self-update/repo`. Each run fetches `main`, hard-resets
+the clone to `origin/main`, builds
+`darwinConfigurations.suremac.system` with an out-link at
+`~/.local/state/dotfiles-self-update/result`, and compares the built store path
+to `/run/current-system`. If the paths match, it exits quietly without a
+notification or password prompt.
+
+When a new system was built, the job posts a notification and activates the
+pre-built closure with sudo. The sudo password prompt is a small nix-managed
+askpass helper that calls `/usr/bin/osascript` with a hidden-answer GUI dialog;
+the job sets `SUDO_ASKPASS` and runs sudo with `-A`, so activation can happen
+from launchd without a terminal. Cancelling the dialog or failing activation
+posts a failure notification and leaves details in the log.
+
+Logs are written to `~/Library/Logs/dotfiles-self-update.log`.
+
+When an update changes the self-update agent itself, activation reloads the
+launchd job that is running the update, killing the script after activation
+succeeds but before it can report the outcome. A companion agent,
+`dotfiles-self-update-notify`, closes that gap: the self-update script writes a
+pending-activation marker (`~/.local/state/dotfiles-self-update/pending-activation`)
+just before activating and removes it when it reports inline. The notify
+agent's plist embeds a hash of the self-update agent's configuration, so
+nix-darwin reloads it (firing `RunAtLoad`) in exactly the self-restart
+scenario; it then polls `/run/current-system` until the marker's target system
+is live and posts the success notification the killed run could not. Stale
+markers (unconfirmed for over two hours) produce a failure notification
+instead, and every self-update run also reconciles leftover markers at
+startup. `WatchPaths` on `/run/current-system` cannot be used for this:
+launchd's kqueue watch follows the symlink to its target, so replacing the
+symlink never triggers it.
+
+Trust model: the job builds and activates whatever `origin/main` points at,
+without commit signature verification, gated only by the sudo password dialog.
+Anyone who can push to the SourceHut repo can therefore change this host at the
+next daily window. This matches the posture of the NixOS `selfDeploy` module;
+revisit (for example with `git verify-commit` against a pinned key) if push
+access to the repo ever broadens.
+
+Useful manual commands:
+
+```bash
+# Trigger the launchd job now for the logged-in user.
+launchctl kickstart -k gui/$(id -u)/org.nixos.dotfiles-suremac-self-update
+
+# Run the same script directly, which is useful while watching the log.
+dotfiles-suremac-self-update
+```
+
+To disable the job, remove or comment out `./self-update.nix` from
+`flakes/hosts/suremac/configuration.nix` and rebuild/switch the host. For a
+temporary local pause, unload the user agent with `launchctl bootout` for the
+same `gui/$(id -u)/org.nixos.dotfiles-suremac-self-update` label; the next
+nix-darwin activation may load it again.
+
 ## Notion CLI
 
 `suremac` installs the Nix-packaged Notion CLI as `ntn` in
