@@ -344,6 +344,7 @@ in {
     home.stateVersion = "26.05";
     home.packages = with pkgs; [
       inputs.slack.packages.${pkgs.stdenv.hostPlatform.system}.slack
+      kubernetes-helm
     ];
     imports = [
       inputs.hm-modules.homeManagerModules.default

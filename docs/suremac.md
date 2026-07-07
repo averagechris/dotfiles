@@ -131,9 +131,13 @@ credential, agent-usage, and update notes.
 ## Daily dotfiles Self-Update
 
 `suremac` runs a nix-darwin launchd user agent named
-`dotfiles-suremac-self-update` once per day at 10:00. It is a user agent, not a
-daemon, so it runs in the Aqua login session and can display macOS notifications
-and password dialogs.
+`dotfiles-suremac-self-update`. The agent wakes hourly (`StartInterval = 3600`,
+plus `RunAtLoad`) but the script attempts at most one update per ~23 hours,
+tracked in `~/.local/state/dotfiles-self-update/last-run`. This way a missed
+update window (laptop asleep or powered off) is caught up the next time the
+machine is running, instead of waiting for a fixed wall-clock time. It is a
+user agent, not a daemon, so it runs in the Aqua login session and can display
+macOS notifications and password dialogs.
 
 The job keeps a dedicated public HTTPS clone of the canonical dotfiles remote at
 `~/.local/state/dotfiles-self-update/repo`. Each run fetches `main`, hard-resets
@@ -142,6 +146,11 @@ the clone to `origin/main`, builds
 `~/.local/state/dotfiles-self-update/result`, and compares the built store path
 to `/run/current-system`. If the paths match, it exits quietly without a
 notification or password prompt.
+
+The daily throttle stamp is written after a successful build: transient
+fetch/build failures retry silently on the next hourly wake, while a no-op, a
+successful activation, or a cancelled password prompt all count as the daily
+attempt so at most one password dialog appears per day.
 
 When a new system was built, the job posts a notification and activates the
 pre-built closure with sudo. The sudo password prompt is a small nix-managed
@@ -182,7 +191,8 @@ Useful manual commands:
 launchctl kickstart -k gui/$(id -u)/org.nixos.dotfiles-suremac-self-update
 
 # Run the same script directly, which is useful while watching the log.
-dotfiles-suremac-self-update
+# --force bypasses the ~23h throttle.
+dotfiles-suremac-self-update --force
 ```
 
 To disable the job, remove or comment out `./self-update.nix` from
@@ -210,6 +220,29 @@ tool. See [`docs/notion-cli.md`](/docs/notion-cli.md) for usage and update notes
 Both follow the host flake's `nixpkgs` and `flake-utils`. Bump them with
 `nix flake update slack ctx` in `flakes/hosts/suremac` (and `ctx` in
 `flakes/hosts/tater`), plus the matching nested nodes in the root `flake.lock`.
+
+## Sure Tools via `nix profile`
+
+Private sureapp flakes (`ragrats`, `surecraft-cli`, `suremise`) are installed
+imperatively with `nix profile` because they need GitHub auth at fetch time and
+update on their own cadence. Run `install-sure-tools` (a helper installed by
+`flakes/hosts/suremac/aws.nix`) to install or refresh them, and
+`nix profile upgrade <name>` to bump individual tools. `devenv` also stays a
+profile install (`nix profile install nixpkgs#devenv`) to keep its bundled Nix
+out of the system closure, while `kubernetes-helm` is managed in Home Manager
+`home.packages`.
+
+## Non-Nix GUI Apps
+
+Some GUI apps are intentionally unmanaged. Kandji ("Iru" MDM) pushes or offers
+company software (Falcon, SDM, Zoom, Office, Chrome, etc.) via Iru Self
+Service. The following are installed manually from upstream and self-update:
+
+- Raycast (uses its own settings sync)
+- Helium browser
+- superwhisper
+- OrbStack
+- Logi Options+
 
 ## Profile Size Notes
 
