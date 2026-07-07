@@ -48,12 +48,41 @@ srht skills install --dir ~/.config/opencode/skills --force
 This installs all bundled srht agent skills as OpenCode skills, currently:
 
 - `srht-issues` - todo.sr.ht issue workflows
-- `srht-ci` - builds.sr.ht CI submission, following, and logs
+- `srht-ci` - builds.sr.ht CI submission, following, multi-job waiting, and logs
 - `srht-setup` - auth, config, repository init, and cache refresh setup
 
 Set `dotfiles.srht.opencodeSkills.names` to a list of skill names to install a
 subset, or set `dotfiles.srht.opencodeSkills.enable = false` to skip activation
 installation.
+
+The `srht-ci` skill is intentionally installed from the `srht` package during
+activation rather than copied into this repository. After bumping `inputs.srht`,
+the next Home Manager activation refreshes the local OpenCode skill content with
+the upstream package's bundled skill text.
+
+## Agent-facing CI additions
+
+`srht` v0.4 expands builds.sr.ht support for agents and polling automation:
+
+- `srht builds wait ID... [--stdin]` follows multiple jobs at once, emits NDJSON
+  transition events, periodic `heartbeat` snapshots, failed-task log tails, and a
+  final `result`, and exits `10` when any job fails or times out. `--stdin`
+  accepts newline-separated IDs, JSON arrays, or `srht --json builds list`
+  output, so agents should prefer `builds list ... | srht --json builds wait
+  --stdin` over shell polling loops.
+- `srht builds status ID... [--stdin]` returns a one-shot JSON snapshot for one
+  or more jobs and exits `0` on successful API reads, even when jobs are still
+  running or have failed.
+- `srht builds logs ID [--task NAME] [--tail N | --full] [--follow]
+  [--timeout N]` prints or streams task logs, with NDJSON `log` events under
+  `--json`.
+- `srht builds list` now supports repeatable/comma-separated `--status`,
+  repeatable ANDed `--tag`, and `--since DURATION` filters (`30m`, `2h`, `1d`,
+  `1w`, etc.).
+- `--logs` / `--logs-task NAME` on `srht ci`, `srht builds follow`, and `srht
+  builds wait` interleave live log lines with status events. Multi-manifest
+  `srht ci` runs also emit heartbeat snapshots via the shared polling core and
+  accept `--interval` for heartbeat cadence.
 
 ## Enabled hosts
 

@@ -8857,6 +8857,7 @@ tests = []
             &repo,
             &["git", "push", "--bookmark", "main", "--remote", "origin"],
         );
+        jj(&repo, &["new", "main"]);
         let target_commit = jj_stdout(
             &repo,
             &[
@@ -8916,6 +8917,7 @@ tests = []
             &repo,
             &["git", "push", "--bookmark", "main", "--remote", "origin"],
         );
+        jj(&repo, &["new", "main"]);
         let target_commit = jj_stdout(
             &repo,
             &[
