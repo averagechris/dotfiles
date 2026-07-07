@@ -42,6 +42,37 @@ These are intentionally arrow-key shortcuts rather than letter shortcuts because
 letter-based Mission Control hotkeys can be layout-sensitive under Colemak and
 may not be reproduced correctly by external device software.
 
+## Colemak Mod-DH Keyboard Layout
+
+`suremac` enables `dotfiles.colemakDh`, the first shared nix-darwin module in
+`flakes/darwin-modules/`. The module vendors the ColemakMods Mod-DH keyboard
+layout bundle and installs it during activation (via the `extraActivation`
+fragment; nix-darwin only runs its fixed set of activation fragments) at the
+system-wide path:
+
+```text
+/Library/Keyboard Layouts/Colemak mDH.bundle
+```
+
+Installing the bundle under `/Library/Keyboard Layouts` makes it available at the
+macOS login screen, not only after the primary user logs in. Activation compares
+the vendored bundle with the installed copy before replacing it, then normalizes
+ownership and permissions to root-owned, world-readable bundle contents.
+
+The module configures both login-window and primary-user HIToolbox preferences to
+prefer **Colemak DH ANSI - Extended** (`KeyboardLayout ID = -25869`, input source
+ID `io.github.colemakmods.keyboardlayout.colemakdh.colemakdhansi-extended`) while
+keeping **U.S.** enabled as a fallback. Both levels are seed-once: if the
+respective `com.apple.HIToolbox` domain already lists the Colemak input source,
+rebuilds leave that domain alone, so runtime input-source changes and manually
+added layouts are not reset on every build. Writes go through `defaults` (user
+level additionally via `launchctl asuser`) rather than editing plist files, to
+avoid stale `cfprefsd` cache flushes.
+
+HIToolbox and keyboard-layout cache changes may require logging out and back in,
+or waiting for/restarting `cfprefsd`, before every UI surface notices the new
+layout. The module does not kill `cfprefsd` during activation.
+
 ## Terminal Hotkey
 
 `suremac` explicitly enables the Home Manager WezTerm module with

@@ -84,7 +84,13 @@
     '';
   };
 in {
+  imports = [
+    inputs.darwin-modules.darwinModules.colemak-dh
+  ];
+
   age.identityPaths = ["/Users/chris/.ssh/id_ed25519" "/Users/chris/.ssh/id_rsa"];
+
+  dotfiles.colemakDh.enable = true;
 
   age.secrets = {
     openrouter-api-key = {

@@ -19,8 +19,8 @@
   };
 
   outputs = {...}: {
-    # Darwin-specific modules can be added here as needed
-    # Currently, Darwin configuration is handled directly in flakes/hosts/suremac/
-    darwinModules = {};
+    darwinModules = {
+      colemak-dh = ./modules/colemak-dh;
+    };
   };
 }
