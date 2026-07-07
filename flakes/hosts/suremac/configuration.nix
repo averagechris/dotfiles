@@ -554,7 +554,10 @@ in {
   fonts.packages = [pkgs.nerd-fonts.droid-sans-mono];
   programs.gnupg.agent.enable = true;
 
-  system.activationScripts.locationAwareTime.text = ''
+  # NOTE: nix-darwin only runs its fixed set of activation fragments
+  # (preActivation, extraActivation, postActivation, ...); arbitrary names are
+  # silently ignored, so this must extend one of them.
+  system.activationScripts.extraActivation.text = lib.mkAfter ''
     echo "configuring location-aware time..." >&2
     systemsetup -setusingnetworktime on >/dev/null 2>&1 || true
   '';
