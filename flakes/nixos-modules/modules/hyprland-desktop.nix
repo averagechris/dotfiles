@@ -325,6 +325,12 @@ in {
       xwayland.enable = true;
     };
 
+    # NixOS's graphical-desktop.nix (imported by programs.hyprland.enable)
+    # enables services.speechd by default for accessibility. This pulls in
+    # mbrola-voices (~644 MB), espeak-ng, and flite as speech synthesis
+    # engines. Disable it unless a screen reader is actually needed.
+    services.speechd.enable = false;
+
     # XDG portal for screen sharing, file dialogs
     xdg.portal = {
       enable = true;

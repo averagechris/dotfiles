@@ -69,14 +69,46 @@ in {
     inputs.nixos-hardware.nixosModules.common-pc-laptop-ssd
   ];
 
+  # Override grimblast to use the pinned flake-input Hyprland instead of
+  # nixpkgs' pkgs.hyprland. Without this, grimblast wraps its script with the
+  # nixpkgs Hyprland (a different version), pulling a second full Hyprland
+  # build (~66 MB) into the closure.
+  #
+  # Also override xdg-desktop-portal-hyprland to use the flake-input Hyprland
+  # for the same reason: the nixpkgs portal wraps hyprland-share-picker with
+  # pkgs.hyprland on PATH, which pulls in the nixpkgs Hyprland (0.55.4) as a
+  # separate runtime dependency. Pointing it at the flake-input Hyprland
+  # (0.54.0) eliminates the duplicate.
+  #
+  # Also override mpv to disable YouTube/yt-dlp support. The nixpkgs yt-dlp
+  # package depends on deno (~136 MB) for its JavaScript extractor engine.
+  # Disabling youtubeSupport removes yt-dlp (and thus deno) from the closure.
+  # The mpris script is kept for media key integration. Install yt-dlp
+  # separately if URL playback in mpv is needed.
+  nixpkgs.overlays = [
+    (final: prev: {
+      grimblast = prev.grimblast.override {hyprland = hyprlandPackage;};
+      xdg-desktop-portal-hyprland = prev.xdg-desktop-portal-hyprland.override {hyprland = hyprlandPackage;};
+      mpv = prev.mpv.override {
+        youtubeSupport = false;
+        scripts = [final.mpvScripts.mpris];
+      };
+    })
+  ];
+
   # Enable Hyprland desktop environment
   dotfiles.hyprland-desktop.enable = true;
   # Hyprspace is a Hyprland plugin and must be loaded by the exact Hyprland
   # build it was compiled against. Use the pinned tater Hyprland input for the
   # system session package as well as the Home Manager config below.
   programs.hyprland.package = hyprlandPackage;
+  # Use the nixpkgs xdg-desktop-portal-hyprland rather than the flake-input
+  # version. The flake-input portal (v1.3.11) leaks a runtime reference to the
+  # full gcc-15.2.0 (~265 MB) into the closure. The nixpkgs portal (v1.3.12) is
+  # already in the closure as a dependency of the flake-input Hyprland itself,
+  # so using it here is consistent and avoids the GCC leak.
   xdg.portal.extraPortals = lib.mkForce [
-    inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland
+    pkgs.xdg-desktop-portal-hyprland
     pkgs.xdg-desktop-portal-gtk
   ];
 

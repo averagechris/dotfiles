@@ -24,8 +24,8 @@ in {
         package = pkgs.papirus-icon-theme;
       };
       cursorTheme = {
-        name = "Bibata-Modern-Classic";
-        package = pkgs.bibata-cursors;
+        name = "capitaine-cursors";
+        package = pkgs.capitaine-cursors;
         size = 24;
       };
       font = {
@@ -57,8 +57,8 @@ in {
 
     # Cursor theme for Wayland
     home.pointerCursor = {
-      name = "Bibata-Modern-Classic";
-      package = pkgs.bibata-cursors;
+      name = "capitaine-cursors";
+      package = pkgs.capitaine-cursors;
       size = 24;
       gtk.enable = true;
       x11.enable = true;

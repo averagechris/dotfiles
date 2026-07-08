@@ -100,3 +100,59 @@ using the `self` flake input or `builtins.path { path = ./.; name = "source"; }`
 instead of raw `./.` package sources. For fast-moving third-party flakes such as
 Hyprland ecosystem inputs, prefer upstream PRs and only carry a local patch when
 measurement shows the source copy is a significant evaluation bottleneck.
+
+## Common closure bloat sources
+
+Several NixOS defaults and nixpkgs packaging choices can silently inflate host
+closures by hundreds of MB or more. Check for these when a host closure seems
+unexpectedly large:
+
+- **`services.speechd`** (text-to-speech): NixOS's `graphical-desktop.nix`
+  module, imported by `programs.hyprland.enable`, enables `services.speechd`
+  by default for accessibility. This pulls in `mbrola-voices` (~644 MB),
+  `espeak-ng`, and `flite` as speech synthesis engines. Disable with
+  `services.speechd.enable = false` unless a screen reader is actually needed.
+  The `hyprland-desktop` NixOS module disables this by default.
+
+- **Duplicate Hyprland builds**: When using a pinned flake-input Hyprland for
+  the compositor, nixpkgs packages that depend on `pkgs.hyprland` (such as
+  `grimblast` and `xdg-desktop-portal-hyprland`) pull in a second, separate
+  Hyprland build. Override these packages via a host overlay to point at the
+  same flake-input Hyprland:
+  ```nix
+  nixpkgs.overlays = [
+    (final: prev: {
+      grimblast = prev.grimblast.override { hyprland = hyprlandPackage; };
+      xdg-desktop-portal-hyprland =
+        prev.xdg-desktop-portal-hyprland.override { hyprland = hyprlandPackage; };
+    })
+  ];
+  ```
+
+- **Flake-input portal GCC leak**: The `xdg-desktop-portal-hyprland` from the
+  Hyprland flake input (v1.3.11) leaks a runtime reference to the full
+  `gcc-15.2.0` (~265 MB). Prefer the nixpkgs portal (`pkgs.xdg-desktop-portal-hyprland`,
+  v1.3.12) which does not have this leak, and override its `hyprland` argument
+  to the flake-input Hyprland as shown above.
+
+- **`yt-dlp` / `deno` via `mpv`**: The default `mpv` package (`mpv-with-scripts`)
+  enables `youtubeSupport = true`, which adds `yt-dlp` to the wrapper PATH.
+  The nixpkgs `yt-dlp` package depends on `deno` (~136 MB) for its JavaScript
+  extractor engine. Override with `mpv.override { youtubeSupport = false; }`
+  if direct URL playback in mpv is not needed.
+
+- **Heavy cursor/icon themes**: `bibata-cursors` is ~322 MB. Prefer lighter
+  alternatives such as `capitaine-cursors` (~4 MB). The theming module defaults
+  to `capitaine-cursors`.
+
+- **`nix.registry.nixpkgs.flake`**: Pinning the nixpkgs flake in the registry
+  (for `nix run nixpkgs#...` version matching) includes the full nixpkgs source
+  tree (~199 MB) in the closure. This is a deliberate tradeoff; keep it if the
+  version-pinned `nix run nixpkgs#...` workflow is used regularly.
+
+- **Duplicate Python/systemd builds**: Some nixpkgs packages (e.g. `gstreamer`,
+  `libcanberra`) depend on differently-configured Python or systemd derivations
+  that are not shared with the system's main build. These are nixpkgs-internal
+  issues that are hard to fix from the dotfiles config without patching upstream
+  package definitions.
+

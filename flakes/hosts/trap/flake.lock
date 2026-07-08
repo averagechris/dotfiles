@@ -652,11 +652,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1783457260,
-        "narHash": "sha256-AqqYOaqRhOSQ4MDQLrhEv8RHhiNYlsyH0ywHMypOj/M=",
+        "lastModified": 1783479733,
+        "narHash": "sha256-d/JatqgG+Pmo+IuCTZfnrEAPWU3fdha48GQeXuFO+bE=",
         "owner": "nix-community",
         "repo": "home-manager",
-        "rev": "2ad49968c36044ff10bffc515dc687ea00b4d609",
+        "rev": "cee3f0e7fec85d80c149c7afc29926747f7bd3c2",
         "type": "github"
       },
       "original": {
@@ -962,11 +962,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1783440943,
-        "narHash": "sha256-ub48/7galCUrucVh+VWQS9+9nDMRDkIVV7869ro4dH8=",
+        "lastModified": 1783486648,
+        "narHash": "sha256-V+UgFj42mIFP7YERgpwg2r3XJZ5KKqjp5xrdsusarMU=",
         "owner": "anomalyco",
         "repo": "opencode",
-        "rev": "14a5529793a91001ca81c80e96f39533eab79127",
+        "rev": "77429f59823c8c6df9cfee95d4c663043b017f46",
         "type": "github"
       },
       "original": {
@@ -1105,11 +1105,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1783451109,
-        "narHash": "sha256-26D+wCw84N3+e6zGNJ9bbI1dCafYcvYmFJ7VbQlkMIo=",
+        "lastModified": 1783482611,
+        "narHash": "sha256-byj6hxyldf/gJon73CGlyTxZM/wI3Tt6ckm7fCwQOZE=",
         "owner": "~averagechris",
         "repo": "srht",
-        "rev": "3537ab845a405a84c6486bcda6d7b7d65e725779",
+        "rev": "9f57e6b1641fc251c94444d8ce2ba0bc936313dd",
         "type": "sourcehut"
       },
       "original": {
@@ -1163,6 +1163,7 @@
           "hm-modules",
           "flake-utils"
         ],
+        "fleet": "fleet_7",
         "nixpkgs": [
           "hm-modules",
           "nixpkgs"
@@ -1174,11 +1175,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1783215898,
-        "narHash": "sha256-hkWgkgJBuHIhUIILvRuIqgzLneOPP9k1xpb0qfkOWx4=",
+        "lastModified": 1783484073,
+        "narHash": "sha256-yXMiw522rrck2iG6u08pCK2H+x9q3myY++1HjiOeO/I=",
         "owner": "~averagechris",
         "repo": "starship-jj",
-        "rev": "17546b89de2641182f6b78b50bf97144a91d4621",
+        "rev": "efd2396b05f7352d7c609c9687b1bbd1b7f0c1f7",
         "type": "sourcehut"
       },
       "original": {
