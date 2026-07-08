@@ -223,7 +223,7 @@ Both follow the host flake's `nixpkgs` and `flake-utils`. Bump them with
 
 ## Sure Tools via `nix profile`
 
-Private sureapp flakes (`ragrats`, `surecraft-cli`, `suremise`) are installed
+Private sureapp flakes (`surecraft-cli`, `suremise`) are installed
 imperatively with `nix profile` because they need GitHub auth at fetch time and
 update on their own cadence. Run `install-sure-tools` (a helper installed by
 `flakes/hosts/suremac/aws.nix`) to install or refresh them, and

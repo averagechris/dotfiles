@@ -35,7 +35,7 @@
     # die with SIGPIPE under pipefail once the output outgrows the pipe buffer.
     profile_list=$(nix profile list)
     failed=0
-    for tool in ragrats surecraft-cli suremise; do
+    for tool in surecraft-cli suremise; do
       if grep -qF "github:sureapp/$tool" <<<"$profile_list"; then
         echo "Upgrading $tool in the nix profile..."
         nix profile upgrade "$tool" || {
