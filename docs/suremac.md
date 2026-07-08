@@ -232,6 +232,20 @@ profile install (`nix profile install nixpkgs#devenv`) to keep its bundled Nix
 out of the system closure, while `kubernetes-helm` is managed in Home Manager
 `home.packages`.
 
+## Custom sshd (MDM-Proof SSH)
+
+`dotfiles.customSshd` (a shared module in `flakes/darwin-modules/`) runs an
+independent sshd as a launchd daemon on port 2222 (configurable). Kandji (the
+"Iru" MDM) repeatedly disables macOS Remote Login, which only controls Apple's
+`com.openssh.sshd` launchd job; this daemon is unaffected by that toggle. It
+uses the Apple-signed `/usr/sbin/sshd` (which passes the application
+firewall's built-in-software rule), reuses the system host keys (generating
+them via `ssh-keygen -A` if absent), and allows only the primary user with
+pubkey auth (passwords disabled). Logs at `/var/log/dotfiles-custom-sshd.log`.
+Connect with `ssh -p 2222 chris@<ip>`. Currently enabled TEMPORARILY on
+suremac for migration; disable by removing `dotfiles.customSshd.enable` from
+`configuration.nix` and rebuilding.
+
 ## Non-Nix GUI Apps
 
 Some GUI apps are intentionally unmanaged. Kandji ("Iru" MDM) pushes or offers

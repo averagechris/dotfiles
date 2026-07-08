@@ -21,6 +21,7 @@
   outputs = {...}: {
     darwinModules = {
       colemak-dh = ./modules/colemak-dh;
+      custom-sshd = ./modules/custom-sshd;
     };
   };
 }
