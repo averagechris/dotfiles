@@ -40,7 +40,11 @@ SUBS=(
   "https://helix.cachix.org"
 )
 KEYS=(
-  # cache.nixos.org key is provided by Determinate Nix already
+  # Explicitly include the cache.nixos.org key: newer Determinate Nix versions
+  # treat a trusted-public-keys line in nix.custom.conf as a full replacement
+  # (observed on Determinate Nix 3.21), which silently drops the default key
+  # and causes full from-source rebuilds.
+  "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
   "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
   "averagechris-dotfiles.cachix.org-1:VwJkl5dG1+xGDY5x884mH/kVwwpgwBAdBKIF3BZiia4="
   "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw="
@@ -83,7 +87,8 @@ ROOT
 
 echo
 echo "Effective settings (filtered):"
-nix show-config | rg '^(substituters|trusted-public-keys|trusted-users)'
+# grep, not rg: this runs on freshly bootstrapped machines with no tools yet
+nix config show | grep -E '^(substituters|trusted-public-keys|trusted-users)'
 
 echo
 echo "Done. You should no longer see untrusted substituter warnings."
