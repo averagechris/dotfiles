@@ -93,10 +93,6 @@ in {
   age.identityPaths = ["/Users/chris/.ssh/id_ed25519" "/Users/chris/.ssh/id_rsa"];
 
   dotfiles.colemakDh.enable = true;
-
-  # TEMPORARY: MDM (Kandji) keeps disabling Remote Login; this provides
-  # key-only ssh on port 2222 that the Remote Login toggle cannot touch.
-  # Disable when no longer needed.
   dotfiles.customSshd.enable = true;
 
   age.secrets = {

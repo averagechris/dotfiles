@@ -22,9 +22,7 @@ in {
     enable = lib.mkEnableOption ''
       an independent sshd instance on a non-standard port, using the
       Apple-signed /usr/sbin/sshd binary. Unlike services.openssh (macOS
-      Remote Login), this launchd daemon is not controlled by the Remote
-      Login preference, so MDM policies that toggle Remote Login off do not
-      affect it. Key-only auth, primary user only
+      Remote Login). Key-only auth, primary user only
     '';
 
     port = lib.mkOption {
