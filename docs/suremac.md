@@ -128,6 +128,11 @@ OpenCode agents as a host-specific Datadog tool. `suremac` also installs the
 dumping large Datadog payloads. See [`docs/pup.md`](/docs/pup.md) for packaging,
 credential, agent-usage, and update notes.
 
+Browser automation uses the `dotfiles.rdny` Home Manager module. `suremac` points
+rdny at the manually installed Helium app, configures ffmpeg for video assembly,
+and exposes the `rdny` CLI plus the `rdny-browser` skill to OpenCode agents. See
+[`docs/rdny.md`](/docs/rdny.md) for module options and common commands.
+
 ## Daily dotfiles Self-Update
 
 `suremac` runs a nix-darwin launchd user agent named
@@ -209,17 +214,20 @@ tool. See [`docs/notion-cli.md`](/docs/notion-cli.md) for usage and update notes
 
 ## Personal SourceHut CLIs
 
-`suremac` installs two personal CLIs from SourceHut flake inputs:
+`suremac` installs personal CLIs from SourceHut flake inputs:
 
 - `slack` (`sourcehut:~averagechris/slack`) - Slack CLI, installed in Home
   Manager `home.packages`
 - `ctx` (`sourcehut:~averagechris/ctx`) - agentic context CLI for indexing and
   searching coding-agent session history, exposed to OpenCode agents via
   `dotfiles.opencode.agentTools` (also installed on `tater`)
+- `rdny` (`sourcehut:~averagechris/rdny`) - browser automation CLI, installed via
+  `dotfiles.rdny` and exposed to OpenCode agents (also installed on `tater`)
 
-Both follow the host flake's `nixpkgs` and `flake-utils`. Bump them with
-`nix flake update slack ctx` in `flakes/hosts/suremac` (and `ctx` in
-`flakes/hosts/tater`), plus the matching nested nodes in the root `flake.lock`.
+These follow the host flake's `nixpkgs`; `slack` and `ctx` also follow
+`flake-utils`. Bump them with `nix flake update slack ctx rdny` in
+`flakes/hosts/suremac` (and `ctx rdny` in `flakes/hosts/tater`), plus the
+matching nested nodes in the root `flake.lock`.
 
 ## Sure Tools via `nix profile`
 

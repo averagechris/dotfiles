@@ -33,6 +33,13 @@
       url = "sourcehut:~averagechris/sideshow";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    rdny = {
+      url = "sourcehut:~averagechris/rdny";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.srht.follows = "srht";
+      inputs.fleet.inputs.nixpkgs.follows = "nixpkgs";
+      inputs.fleet.inputs.srht.follows = "srht";
+    };
     opencode.follows = "base-lib/opencode";
   };
 
@@ -53,6 +60,7 @@
         ctx = ./modules/ctx.nix;
         gander = ./modules/gander.nix;
         granola = ./modules/granola.nix;
+        rdny = ./modules/rdny.nix;
         sideshow = ./modules/sideshow.nix;
         linearCli = ./modules/linear-cli;
         srht = ./modules/srht.nix;
@@ -132,7 +140,6 @@
             coderabbit-cli = final.callPackage ../base-lib/packages/coderabbit-cli.nix {};
             helium-bin = final.callPackage ../base-lib/packages/helium-bin.nix {};
             notion-cli = final.callPackage ../base-lib/packages/notion-cli.nix {};
-            rodney = final.callPackage ../base-lib/packages/rodney.nix {};
             showboat = final.callPackage ../base-lib/packages/showboat.nix {};
             opencode = final.callPackage "${opencodeInput}/nix/opencode.nix" {
               inherit node_modules;

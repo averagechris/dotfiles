@@ -83,8 +83,8 @@ Prompt-gated Build-agent command families include:
 - GitHub org/repo/auth/issue administration (`gh auth*`, `gh org*`,
   `gh repo*`, `gh issue*`)
 
-Host-exposed browser automation follows the open default: `rodney` commands are
-allowed for the Build agent on `suremac` unless they hit a later risky pattern.
+Host-exposed browser automation follows the open default: `rdny` commands are
+allowed for Build agents unless they hit a later risky pattern.
 
 Host-specific investigation CLIs follow the same prompt-reduction model. The
 Build agent allows `pup`, `sentry`, and read-oriented `kubectl` investigation by
@@ -197,7 +197,7 @@ module combines those with the built-in default tool list.
 
 Use `dotfiles.opencode.agentTools` for tools that should only be available to
 agents on particular hosts. For example, `suremac` adds the AWS CLI, Ctx,
-Kubernetes CLI, Datadog Pup CLI, Sentry CLI, GitHub CLI, Rodney, Showboat,
+Kubernetes CLI, Datadog Pup CLI, Sentry CLI, GitHub CLI, rdny, Showboat,
 Granola, Sideshow, and the Linear CLI. On Darwin, this host-specific list avoids
 relying on unrelated system packages for agent workflows:
 
@@ -216,7 +216,6 @@ dotfiles.opencode.agentTools = with pkgs; [
   { package = sentry; name = "sentry"; description = "Sentry CLI"; }
   { package = notion-cli; name = "ntn"; description = "Notion CLI"; }
   { package = gh; name = "gh"; description = "GitHub CLI"; }
-  { package = rodney; name = "rodney"; description = "Chrome automation CLI"; }
   { package = showboat; name = "showboat"; description = "work documentation CLI"; }
   {
     package = inputs.linear-cli.packages.${pkgs.stdenv.hostPlatform.system}.linear;
@@ -236,6 +235,9 @@ dotfiles.opencode.agentTools = with pkgs; [
 ];
 ```
 
+Tool-specific modules can append their own entries too. `dotfiles.rdny` appends
+`rdny` and installs the `rdny-browser` skill when enabled.
+
 Primary agent prompts render a concise structured runtime note dynamically, for
 example:
 
@@ -243,9 +245,9 @@ example:
 > these additional tools: jj (Jujutsu VCS), nodejs (JavaScript runtime),
 > python3 (Python runtime), rg (fast code search), aws (AWS CLI), ctx (agent
 > history search CLI), kubectl (Kubernetes CLI), pup
-> (Datadog CLI), sentry (Sentry CLI), ntn (Notion CLI), gh (GitHub CLI), rodney
-> (Chrome automation CLI), showboat (work documentation CLI), linear (Linear
-> CLI), granola (Granola meeting notes CLI), sideshow (HTML slide deck CLI). The
+> (Datadog CLI), sentry (Sentry CLI), ntn (Notion CLI), gh (GitHub CLI), showboat
+> (work documentation CLI), linear (Linear CLI), granola (Granola meeting notes
+> CLI), sideshow (HTML slide deck CLI), rdny (browser automation CLI). The
 > project local dev shell may provide additional tooling.
 
 Use `agentSupportPackages` for dependencies that a visible tool needs under the
@@ -281,6 +283,7 @@ Manager activation. Current examples include:
 - `changes-review-core`
 - `github-pr-review`
 - `linear-cli`
+- `rdny-browser` (installed by `dotfiles.rdny`)
 - `srht-issues` (installed by `dotfiles.srht`)
 - `srht-ci` (installed by `dotfiles.srht`)
 - `srht-setup` (installed by `dotfiles.srht`)

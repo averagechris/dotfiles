@@ -47,6 +47,13 @@
       url = "sourcehut:~averagechris/sideshow";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    rdny = {
+      url = "sourcehut:~averagechris/rdny";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.srht.follows = "srht";
+      inputs.fleet.inputs.nixpkgs.follows = "nixpkgs";
+      inputs.fleet.inputs.srht.follows = "srht";
+    };
     slack = {
       url = "sourcehut:~averagechris/slack";
       inputs.nixpkgs.follows = "nixpkgs";

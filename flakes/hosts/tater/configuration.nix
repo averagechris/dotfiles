@@ -853,6 +853,21 @@ in {
     dotfiles.opencode.openrouterApiKeyFile = "/run/agenix/openrouter-api-key";
     dotfiles.srht.enable = true;
     dotfiles.sideshow.enable = true;
+    dotfiles.rdny = {
+      enable = true;
+      binaries = {
+        chrome = {
+          enable = true;
+          package = config.programs.helium.package;
+          install = false;
+        };
+        ffmpeg.enable = true;
+      };
+      connect = {
+        default = "helium";
+        targets.helium = "127.0.0.1:9333";
+      };
+    };
     dotfiles.opencode.agentTools = [
       {
         package = inputs.srht.packages.${pkgs.stdenv.hostPlatform.system}.srht;

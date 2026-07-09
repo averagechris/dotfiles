@@ -484,6 +484,20 @@ in {
         };
       };
     };
+    dotfiles.rdny = {
+      enable = true;
+      binaries = {
+        chrome = {
+          enable = true;
+          path = "/Applications/Helium.app/Contents/MacOS/Helium";
+        };
+        ffmpeg.enable = true;
+      };
+      connect = {
+        default = "helium";
+        targets.helium = "127.0.0.1:9333";
+      };
+    };
     dotfiles.srht.enable = true;
     dotfiles.opencode.agentSupportPackages = [];
     dotfiles.opencode.agentTools = with pkgs; [
@@ -521,11 +535,6 @@ in {
         package = gh;
         name = "gh";
         description = "GitHub CLI";
-      }
-      {
-        package = pkgs.rodney;
-        name = "rodney";
-        description = "Chrome automation CLI";
       }
       {
         package = pkgs.showboat;

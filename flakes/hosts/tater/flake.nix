@@ -41,6 +41,13 @@
       url = "sourcehut:~averagechris/sideshow";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    rdny = {
+      url = "sourcehut:~averagechris/rdny";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.srht.follows = "srht";
+      inputs.fleet.inputs.nixpkgs.follows = "nixpkgs";
+      inputs.fleet.inputs.srht.follows = "srht";
+    };
     hyprland = {
       # Pinned to the revision Hyprspace currently tests against so the
       # compositor and overview plugin agree on Hyprland's internal plugin ABI.

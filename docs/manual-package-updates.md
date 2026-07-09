@@ -84,9 +84,8 @@ Use `--ignore-cooldown` only after reviewing fresh upstream releases.
 | `notion-cli` | `flakes/base-lib/packages/notion-cli.nix` | Enabled; requires explicit `--manual-version` |
 | `helium-bin` | `flakes/base-lib/packages/helium-bin.nix` | Enabled; latest version from GitHub releases |
 | `pup` | `flakes/base-lib/packages/pup.nix` | Enabled; requires explicit `--manual-version` |
-| `rodney` | `flakes/base-lib/packages/rodney.nix` | Manifest entry is disabled; Go `vendorHash` automation not enabled yet |
 | `showboat` | `flakes/base-lib/packages/showboat.nix` | Manifest entry is disabled; Go `vendorHash` automation not enabled yet |
 
-`rodney` and `showboat` live in separate package files so they can be enrolled
-later without refactoring the overlay, but their Go `vendorHash` update loop is
-not automated yet.
+`showboat` lives in a separate package file so it can be enrolled later without
+refactoring the overlay, but its Go `vendorHash` update loop is not automated
+yet.

@@ -128,17 +128,6 @@
       ]
     },
     {
-      "name": "rodney",
-      "enabled": false,
-      "kind": "go-module",
-      "file": "flakes/base-lib/packages/rodney.nix",
-      "cooldown": true,
-      "latest": {
-        "kind": "manual"
-      },
-      "note": "Go module vendorHash automation is intentionally not enabled yet."
-    },
-    {
       "name": "showboat",
       "enabled": false,
       "kind": "go-module",

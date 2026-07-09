@@ -5,6 +5,7 @@
     ./gpg.nix
     ./granola.nix
     ./linear-cli
+    ./rdny.nix
     ./srht.nix
     ./sideshow.nix
     ./meganz.nix

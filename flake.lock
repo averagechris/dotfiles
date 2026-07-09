@@ -650,6 +650,24 @@
         "type": "github"
       }
     },
+    "flake-utils_16": {
+      "inputs": {
+        "systems": "systems_16"
+      },
+      "locked": {
+        "lastModified": 1731533236,
+        "narHash": "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "11707dc2f618dd54ca8739b309ec4fc024de578b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
     "flake-utils_2": {
       "inputs": {
         "systems": "systems_2"
@@ -817,6 +835,26 @@
     "fleet_10": {
       "inputs": {
         "flake-utils": "flake-utils_11",
+        "nixpkgs": "nixpkgs_14",
+        "srht": "srht_7"
+      },
+      "locked": {
+        "lastModified": 1783445138,
+        "narHash": "sha256-KbmbEqmBkHHAD1FBanOs0es4BYG/CmAxWBgoDrEbGgo=",
+        "ref": "refs/heads/main",
+        "rev": "c5f187626ac108fd362d826c20947c511e0853bb",
+        "revCount": 61,
+        "type": "git",
+        "url": "https://git.sr.ht/~averagechris/averagechris.srht.site"
+      },
+      "original": {
+        "type": "git",
+        "url": "https://git.sr.ht/~averagechris/averagechris.srht.site"
+      }
+    },
+    "fleet_11": {
+      "inputs": {
+        "flake-utils": "flake-utils_12",
         "nixpkgs": "nixpkgs_15"
       },
       "locked": {
@@ -833,9 +871,9 @@
         "url": "https://git.sr.ht/~averagechris/averagechris.srht.site"
       }
     },
-    "fleet_11": {
+    "fleet_12": {
       "inputs": {
-        "flake-utils": "flake-utils_12",
+        "flake-utils": "flake-utils_13",
         "nixpkgs": "nixpkgs_17",
         "srht": "srht_8"
       },
@@ -853,9 +891,9 @@
         "url": "https://git.sr.ht/~averagechris/averagechris.srht.site"
       }
     },
-    "fleet_12": {
+    "fleet_13": {
       "inputs": {
-        "flake-utils": "flake-utils_13",
+        "flake-utils": "flake-utils_14",
         "nixpkgs": "nixpkgs_18"
       },
       "locked": {
@@ -872,9 +910,9 @@
         "url": "https://git.sr.ht/~averagechris/averagechris.srht.site"
       }
     },
-    "fleet_13": {
+    "fleet_14": {
       "inputs": {
-        "flake-utils": "flake-utils_14",
+        "flake-utils": "flake-utils_15",
         "nixpkgs": "nixpkgs_21",
         "srht": "srht_9"
       },
@@ -892,9 +930,9 @@
         "url": "https://git.sr.ht/~averagechris/averagechris.srht.site"
       }
     },
-    "fleet_14": {
+    "fleet_15": {
       "inputs": {
-        "flake-utils": "flake-utils_15",
+        "flake-utils": "flake-utils_16",
         "nixpkgs": "nixpkgs_22"
       },
       "locked": {
@@ -1011,6 +1049,30 @@
     "fleet_7": {
       "inputs": {
         "flake-utils": "flake-utils_8",
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "srht": [
+          "srht"
+        ]
+      },
+      "locked": {
+        "lastModified": 1783446545,
+        "narHash": "sha256-RbU3twPpJTIFu7fR0tm82V2rtxcw5dD5TmC//eaYRz4=",
+        "ref": "refs/heads/main",
+        "rev": "2a3ad007fa1d3dc89ac7ba6a6a1ea8954c4d5381",
+        "revCount": 62,
+        "type": "git",
+        "url": "https://git.sr.ht/~averagechris/averagechris.srht.site"
+      },
+      "original": {
+        "type": "git",
+        "url": "https://git.sr.ht/~averagechris/averagechris.srht.site"
+      }
+    },
+    "fleet_8": {
+      "inputs": {
+        "flake-utils": "flake-utils_9",
         "nixpkgs": "nixpkgs_11",
         "srht": "srht_5"
       },
@@ -1028,9 +1090,9 @@
         "url": "https://git.sr.ht/~averagechris/averagechris.srht.site"
       }
     },
-    "fleet_8": {
+    "fleet_9": {
       "inputs": {
-        "flake-utils": "flake-utils_9",
+        "flake-utils": "flake-utils_10",
         "nixpkgs": "nixpkgs_12"
       },
       "locked": {
@@ -1039,26 +1101,6 @@
         "ref": "refs/heads/main",
         "rev": "9176469ea737a76c9207d90191190cab1821b36c",
         "revCount": 52,
-        "type": "git",
-        "url": "https://git.sr.ht/~averagechris/averagechris.srht.site"
-      },
-      "original": {
-        "type": "git",
-        "url": "https://git.sr.ht/~averagechris/averagechris.srht.site"
-      }
-    },
-    "fleet_9": {
-      "inputs": {
-        "flake-utils": "flake-utils_10",
-        "nixpkgs": "nixpkgs_14",
-        "srht": "srht_7"
-      },
-      "locked": {
-        "lastModified": 1783445138,
-        "narHash": "sha256-KbmbEqmBkHHAD1FBanOs0es4BYG/CmAxWBgoDrEbGgo=",
-        "ref": "refs/heads/main",
-        "rev": "c5f187626ac108fd362d826c20947c511e0853bb",
-        "revCount": 61,
         "type": "git",
         "url": "https://git.sr.ht/~averagechris/averagechris.srht.site"
       },
@@ -1117,7 +1159,7 @@
           "suremac",
           "flake-utils"
         ],
-        "fleet": "fleet_11",
+        "fleet": "fleet_12",
         "nixpkgs": [
           "suremac",
           "nixpkgs"
@@ -2235,6 +2277,30 @@
         "type": "github"
       }
     },
+    "rdny": {
+      "inputs": {
+        "fleet": "fleet_7",
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "srht": [
+          "srht"
+        ]
+      },
+      "locked": {
+        "lastModified": 1783556888,
+        "narHash": "sha256-PyGF2IiBd9IVYvH8sXYWwlUXKspTJA8MTLnWePFcVWc=",
+        "owner": "~averagechris",
+        "repo": "rdny",
+        "rev": "ebbad2e9b505f83b63196d03c885b63a657de2b8",
+        "type": "sourcehut"
+      },
+      "original": {
+        "owner": "~averagechris",
+        "repo": "rdny",
+        "type": "sourcehut"
+      }
+    },
     "root": {
       "inputs": {
         "Hyprspace": "Hyprspace",
@@ -2262,10 +2328,11 @@
           "nixpkgs"
         ],
         "pip-chrome-extension": "pip-chrome-extension",
+        "rdny": "rdny",
         "sideshow": "sideshow",
         "srht": "srht_6",
         "suremac": "suremac",
-        "systems": "systems_16",
+        "systems": "systems_17",
         "tater": "tater",
         "taz": "taz",
         "thorny": "thorny",
@@ -2338,7 +2405,7 @@
     },
     "sideshow": {
       "inputs": {
-        "fleet": "fleet_7",
+        "fleet": "fleet_8",
         "nixpkgs": [
           "nixpkgs"
         ]
@@ -2363,7 +2430,7 @@
           "suremac",
           "flake-utils"
         ],
-        "fleet": "fleet_13",
+        "fleet": "fleet_14",
         "nixpkgs": [
           "suremac",
           "nixpkgs"
@@ -2464,7 +2531,7 @@
     },
     "srht_5": {
       "inputs": {
-        "fleet": "fleet_8",
+        "fleet": "fleet_9",
         "nixpkgs": "nixpkgs_13"
       },
       "locked": {
@@ -2483,7 +2550,7 @@
     },
     "srht_6": {
       "inputs": {
-        "fleet": "fleet_9",
+        "fleet": "fleet_10",
         "nixpkgs": [
           "nixpkgs"
         ]
@@ -2504,7 +2571,7 @@
     },
     "srht_7": {
       "inputs": {
-        "fleet": "fleet_10",
+        "fleet": "fleet_11",
         "nixpkgs": "nixpkgs_16"
       },
       "locked": {
@@ -2523,7 +2590,7 @@
     },
     "srht_8": {
       "inputs": {
-        "fleet": "fleet_12",
+        "fleet": "fleet_13",
         "nixpkgs": "nixpkgs_19"
       },
       "locked": {
@@ -2542,7 +2609,7 @@
     },
     "srht_9": {
       "inputs": {
-        "fleet": "fleet_14",
+        "fleet": "fleet_15",
         "nixpkgs": "nixpkgs_23"
       },
       "locked": {
@@ -2644,6 +2711,9 @@
           "suremac",
           "base-lib",
           "nixpkgs"
+        ],
+        "rdny": [
+          "rdny"
         ],
         "sideshow": [
           "sideshow"
@@ -2778,6 +2848,21 @@
       }
     },
     "systems_16": {
+      "locked": {
+        "lastModified": 1681028828,
+        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
+        "type": "github"
+      }
+    },
+    "systems_17": {
       "locked": {
         "lastModified": 1689347949,
         "narHash": "sha256-12tWmuL2zgBgZkdoB6qXZsgJEH9LR3oUgpaQq2RbI80=",
@@ -2979,6 +3064,9 @@
         ],
         "pip-chrome-extension": [
           "pip-chrome-extension"
+        ],
+        "rdny": [
+          "rdny"
         ],
         "sideshow": [
           "sideshow"

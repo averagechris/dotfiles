@@ -14,6 +14,7 @@
       inputs.sideshow.follows = "sideshow";
       inputs.srht.follows = "srht";
       inputs.ctx.follows = "ctx";
+      inputs.rdny.follows = "rdny";
     };
     trap = {
       url = "path:./flakes/hosts/trap";
@@ -78,6 +79,7 @@
       inputs.pip-chrome-extension.follows = "pip-chrome-extension";
       inputs.disko.follows = "disko";
       inputs.ctx.follows = "ctx";
+      inputs.rdny.follows = "rdny";
       inputs.systems.follows = "systems";
     };
     trainwreck = {
@@ -156,6 +158,13 @@
     sideshow = {
       url = "sourcehut:~averagechris/sideshow";
       inputs.nixpkgs.follows = "nixpkgs";
+    };
+    rdny = {
+      url = "sourcehut:~averagechris/rdny";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.srht.follows = "srht";
+      inputs.fleet.inputs.nixpkgs.follows = "nixpkgs";
+      inputs.fleet.inputs.srht.follows = "srht";
     };
     systems.url = "github:nix-systems/default-linux";
     hyprland = {
