@@ -22,6 +22,62 @@ wrappers keep long Nix output readable and make failure context easier to find
 than plain `nix`/`nixos-rebuild` output where supported. Use lower-level
 commands only when needed for a specific flag or reproduction.
 
+## Validation tiers
+
+Use the smallest validation tier that matches the change, then escalate
+deliberately when host behavior or fleet coverage matters:
+
+- `jj lint` is the normal agent/developer handoff gate. It runs the
+  repository-configured lint bundle for the current change and should remain the
+  first inner-loop command before pushing or handing off work.
+- Target/shared eval-only checks verify flake structure without realizing build
+  outputs. Use `nix flake check --accept-flake-config --no-build
+  ./flakes/<shared-flake>` for shared flakes and `nix flake check
+  --accept-flake-config --no-build ./flakes/hosts/<hostname>` for a specific
+  host. Add `--no-write-lock-file` in automation so validation never mutates a
+  checkout lock. This catches evaluation and check-definition failures cheaply.
+- Target host builds realize one host closure when you need build confidence:
+  `nh os build -q --no-nom . --hostname <hostname>` for NixOS, or
+  `nh darwin build -q --no-nom . --hostname suremac` for Darwin. These are
+  intentionally narrower than a root fleet check.
+- Explicit full-fleet validation is `nix flake check --accept-flake-config` at
+  the root. It retains comprehensive coverage, but it evaluates and builds the
+  aggregate fleet checks and is too expensive for the ordinary CI path.
+
+SourceHut is the repository's only CI system and mirrors those tiers. git.sr.ht
+auto-submits all four `.builds/*.yml` manifests on push, matching SourceHut's
+four-manifest auto-discovery limit:
+
+- `.builds/lint-check.yml` runs `scripts/ci-check-tiers.sh fast`: formatting,
+  Statix, ShellCheck, and shared flake eval-only checks.
+- `.builds/x86-host-builds.yml` runs `x86-host-builds`: active x86_64 NixOS
+  hosts `trap`, `thorny`, `tom`, `cruber`, and `tater` build sequentially in one
+  SourceHut VM. Each host uses its own `nix build --no-link` command to bound the
+  evaluator peak and make the failing host obvious, while reusing the same VM
+  store/cache across the job. Inactive `taz` and `tootsie` are excluded.
+- `.builds/trainwreck-build.yml` runs `trainwreck-build` with `arch: aarch64`,
+  building `nixosConfigurations.trainwreck.config.system.build.toplevel`
+  natively instead of paying QEMU cost in an x86 job.
+- `.builds/coverage-checks.yml` runs `coverage-checks` on x86_64 Linux: it
+  evaluates suremac's Darwin system only and builds selected high-signal desktop
+  check derivations for tater and thorny. suremac remains eval-only because
+  realizing the Darwin closure on Linux is not useful CI coverage for this repo.
+
+Every CI Nix command passes `--no-write-lock-file`; eval-only commands use
+`--raw` and disable the eval cache where that keeps repeated host evaluation
+comparable. The full root check lives at `.srht/full-fleet.yml` outside the
+auto-submit pattern and is manual via `srht ci .srht/full-fleet.yml --secrets` or
+an external schedule with equivalent secret exposure. `--secrets` is needed
+because `scripts/ci-setup.sh` expects the Cachix token at
+`~/.ci_secrets/cachix_token`, and srht CLI noninteractive submissions withhold
+manifest secrets unless explicitly enabled. It may still fail on the hosted
+SourceHut VM because manifests expose image/architecture but no public per-job
+RAM/CPU size selector. The fast path runs ShellCheck over tracked `*.sh` files
+reported by jj when available, with Git as the CI checkout fallback; it does not
+invoke `jj lint` directly because the SourceHut checkout does not declare jj as a
+CI dependency, but it covers the important shell-script linting that `jj lint`
+also runs locally.
+
 For captured/noninteractive logs, use `nh -q --no-nom` commands, such as
 `nh os build -q --no-nom . --hostname tater`, so the `nom` clock/progress
 animation and most store-path chatter do not repeat in captured output.

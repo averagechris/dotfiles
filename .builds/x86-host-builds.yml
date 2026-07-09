@@ -1,10 +1,8 @@
-# Fast ordinary CI: formatting, statix, and shared eval-only flake checks.
+# Active x86_64 NixOS host builds. Hosts run sequentially in one VM so the
+# evaluator peak stays bounded while the Nix store/cache is reused across hosts.
 image: nixos/unstable
 packages:
   - nixos.cachix
-  - nixos.alejandra
-  - nixos.shellcheck
-  - nixos.statix
 sources:
   - https://git.sr.ht/~averagechris/dotfiles
 secrets:
@@ -13,6 +11,6 @@ tasks:
   - setup: |
       source ~/dotfiles/scripts/ci-setup.sh
 
-  - fast-checks: |
+  - x86-host-builds: |
       cd ~/dotfiles
-      scripts/ci-check-tiers.sh fast
+      scripts/ci-check-tiers.sh x86-host-builds

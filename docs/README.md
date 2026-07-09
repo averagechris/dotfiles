@@ -8,6 +8,8 @@
 - [coderabbit-cli](/docs/coderabbit-cli.md) - CodeRabbit CLI package, suremac agent integration, and local review workflow
 - [ctx](/docs/ctx.md) - Ctx local agent-history search CLI package and frequent background indexing job
 - [deploy](/docs/deploy.md) - deploy-rs, quiet deploy wrapper, Darwin switch notes, and activation wrapper architecture
+- [flake performance audit](/docs/flake-performance-audit.md) - 2026-07-09
+  flake performance findings, benchmark caveats, and SourceHut burn-down
 - [gander](/docs/gander.md) - Gander jj review TUI Home Manager module, package input, and Colemak keybindings
 - [granola](/docs/granola.md) - Granola CLI Home Manager module, shell completions, agenix token seeding, suremac note sync, and OpenCode skill
 - [helium](/docs/helium.md) - Helium browser packaging and configuration on NixOS

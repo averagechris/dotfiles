@@ -1,0 +1,22 @@
+# Opt-in comprehensive validation. Submit manually with:
+#   srht ci .srht/full-fleet.yml --secrets
+#
+# This intentionally lives outside .builds/*.yml so git.sr.ht ordinary pushes do
+# not auto-submit it. Root flake check evaluates and realizes fleet-wide outputs
+# and has OOMed SourceHut's hosted VM shape before. The --secrets flag is needed
+# because scripts/ci-setup.sh expects ~/.ci_secrets/cachix_token, and srht CLI
+# noninteractive submissions withhold manifest secrets unless explicitly enabled.
+image: nixos/unstable
+packages:
+  - nixos.cachix
+sources:
+  - https://git.sr.ht/~averagechris/dotfiles
+secrets:
+  - 731f7e55-4497-4228-8fa4-1657da7d3625
+tasks:
+  - setup: |
+      source ~/dotfiles/scripts/ci-setup.sh
+
+  - full-fleet: |
+      cd ~/dotfiles
+      scripts/ci-check-tiers.sh full-fleet

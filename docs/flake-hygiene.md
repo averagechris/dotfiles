@@ -156,3 +156,35 @@ unexpectedly large:
   issues that are hard to fix from the dotfiles config without patching upstream
   package definitions.
 
+## Import-from-derivation policy
+
+Do not add evaluation-time fetch/import workarounds in overlays or modules. In
+particular, avoid `import (fetchFromGitHub ...)`, `import (fetchTarball ...)`, or
+similar patterns that require Nix to realise a derivation while evaluating the
+system graph. Host `drvPath` evaluation for active systems should keep working
+with:
+
+```bash
+nix eval .#nixosConfigurations.<host>.config.system.build.toplevel.drvPath \
+  --raw \
+  --no-write-lock-file \
+  --option allow-import-from-derivation false \
+  --option eval-cache false
+```
+
+When an upstream package regression needs a temporary fix, prefer this order:
+
+1. Remove the workaround when the pinned nixpkgs already contains the upstream
+   fix.
+1. Carry the smallest local non-IFD overlay or patch against the current package
+   set.
+1. Only if a local patch is too invasive, add an explicit pinned flake input and
+   document why the additional lock graph is justified.
+
+SourceHut #116 removed the Cantarell workaround from
+`flakes/base-lib/overlays/default.nix` because the pinned nixpkgs revision
+`d407951447dcd00442e97087bf374aad70c04cea` already includes the fix for
+NixOS/nixpkgs #535887 via `python3Packages.afdko` patch
+`0002-otfautohint-fix-assertion-high-ghost-first-stem.patch`. Cantarell now uses
+the normal pinned package set instead of importing a fetched historical nixpkgs
+during evaluation.

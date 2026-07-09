@@ -323,6 +323,19 @@
         text = builtins.readFile ./scripts/dotfiles-maintenance-gate.sh;
       };
 
+      packages.flake-benchmark = pkgs.writeShellApplication {
+        name = "flake-benchmark";
+        runtimeInputs = [
+          pkgs.coreutils
+          pkgs.gitMinimal
+          pkgs.jq
+          pkgs.jujutsu
+          pkgs.nix
+          pkgs.time
+        ];
+        text = builtins.readFile ./scripts/flake-benchmark.sh;
+      };
+
       apps.update-flakes = {
         type = "app";
         program = "${self.packages.${system}.update-flakes}/bin/update-flakes";
@@ -336,6 +349,14 @@
         program = "${self.packages.${system}.dotfiles-maintenance-gate}/bin/dotfiles-maintenance-gate";
         meta = {
           description = "Run the timed dotfiles maintenance check gate";
+        };
+      };
+
+      apps.flake-benchmark = {
+        type = "app";
+        program = "${self.packages.${system}.flake-benchmark}/bin/flake-benchmark";
+        meta = {
+          description = "Benchmark dotfiles flake evaluation and write JSONL samples";
         };
       };
 

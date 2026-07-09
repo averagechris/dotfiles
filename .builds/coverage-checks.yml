@@ -1,10 +1,8 @@
-# Fast ordinary CI: formatting, statix, and shared eval-only flake checks.
+# Eval-only Darwin coverage plus selected high-signal desktop check derivations.
+# suremac is evaluated only; Darwin closures are not built on Linux.
 image: nixos/unstable
 packages:
   - nixos.cachix
-  - nixos.alejandra
-  - nixos.shellcheck
-  - nixos.statix
 sources:
   - https://git.sr.ht/~averagechris/dotfiles
 secrets:
@@ -13,6 +11,6 @@ tasks:
   - setup: |
       source ~/dotfiles/scripts/ci-setup.sh
 
-  - fast-checks: |
+  - coverage-checks: |
       cd ~/dotfiles
-      scripts/ci-check-tiers.sh fast
+      scripts/ci-check-tiers.sh coverage-checks
