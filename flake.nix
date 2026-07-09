@@ -11,6 +11,7 @@
       inputs.starship-jj.follows = "hm-modules/starship-jj";
       inputs.linear-cli.follows = "hm-modules/linear-cli";
       inputs.gander.follows = "hm-modules/gander";
+      inputs.sideshow.follows = "sideshow";
       inputs.srht.follows = "srht";
       inputs.ctx.follows = "ctx";
     };
@@ -68,6 +69,7 @@
       inputs.helix.follows = "hm-modules/helix";
       inputs.starship-jj.follows = "hm-modules/starship-jj";
       inputs.gander.follows = "hm-modules/gander";
+      inputs.sideshow.follows = "sideshow";
       inputs.srht.follows = "srht";
       inputs.hyprland.follows = "hyprland";
       inputs.Hyprspace.follows = "Hyprspace";
@@ -149,6 +151,10 @@
     };
     srht = {
       url = "sourcehut:~averagechris/srht";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    sideshow = {
+      url = "sourcehut:~averagechris/sideshow";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     systems.url = "github:nix-systems/default-linux";

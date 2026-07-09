@@ -852,6 +852,7 @@ in {
     programs.opencode.enable = true;
     dotfiles.opencode.openrouterApiKeyFile = "/run/agenix/openrouter-api-key";
     dotfiles.srht.enable = true;
+    dotfiles.sideshow.enable = true;
     dotfiles.opencode.agentTools = [
       {
         package = inputs.srht.packages.${pkgs.stdenv.hostPlatform.system}.srht;

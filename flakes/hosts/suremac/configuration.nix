@@ -473,6 +473,17 @@ in {
       tokenFile = config.age.secrets.granola-token.path;
       sync.enable = true;
     };
+    dotfiles.sideshow = {
+      enable = true;
+      srht.tokenCommand = ["/usr/bin/security" "find-generic-password" "-s" "srht" "-a" "sr.ht" "-w"];
+      tools = {
+        ffmpeg.enable = true;
+        aws = {
+          enable = true;
+          package = pkgs.awscli2;
+        };
+      };
+    };
     dotfiles.srht.enable = true;
     dotfiles.opencode.agentSupportPackages = [];
     dotfiles.opencode.agentTools = with pkgs; [

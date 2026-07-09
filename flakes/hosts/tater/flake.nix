@@ -37,6 +37,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };
+    sideshow = {
+      url = "sourcehut:~averagechris/sideshow";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     hyprland = {
       # Pinned to the revision Hyprspace currently tests against so the
       # compositor and overview plugin agree on Hyprland's internal plugin ABI.

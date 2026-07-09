@@ -1,0 +1,88 @@
+# Sideshow
+
+Sideshow is the Rust CLI for agent-authored HTML slide decks. It builds a deck
+source directory into one self-contained HTML file and supports static checks,
+image/video optimization helpers, VHS tape rendering, local serving, and S3 or
+SourceHut Pages publishing.
+
+## Package source
+
+Hosts get the package from the upstream flake input:
+
+```nix
+inputs.sideshow.url = "sourcehut:~averagechris/sideshow";
+```
+
+The Home Manager module defaults `dotfiles.sideshow.package` to
+`inputs.sideshow.packages.${system}.sideshow` when that input is available.
+Hosts without the input can set `dotfiles.sideshow.package` explicitly.
+
+## Home Manager module
+
+Enable the module with:
+
+```nix
+dotfiles.sideshow.enable = true;
+```
+
+The module installs `sideshow`, writes `~/.config/sideshow/config.toml` by
+default, and can expose the CLI to OpenCode agents. The generated config mirrors
+sideshow's user config schema:
+
+```toml
+[tools]
+tailwindcss = "/nix/store/.../bin/tailwindcss"
+ffmpeg = "/nix/store/.../bin/ffmpeg"
+vhs = "/nix/store/.../bin/vhs"
+aws = "/nix/store/.../bin/aws"
+
+[srht]
+token-cmd = ["pass", "show", "srht/pages-token"]
+```
+
+`tailwindcss` is enabled by default because `sideshow build` shells out to the
+Tailwind v4 standalone binary. The module uses nixpkgs' `tailwindcss_4` package;
+override `dotfiles.sideshow.tools.tailwindcss.package` or `.path` if a deck needs
+a newer/different binary before nixpkgs catches up. Optional helpers can be
+enabled per host:
+
+```nix
+dotfiles.sideshow.tools.ffmpeg.enable = true;
+dotfiles.sideshow.tools.vhs.enable = true;
+dotfiles.sideshow.tools.aws.enable = true;
+```
+
+For secrets, do not place plaintext tokens in Nix. Use `SRHT_TOKEN` at runtime or
+set `dotfiles.sideshow.srht.tokenCommand` to a keyring/password-manager command.
+`suremac` sets this to read the same macOS Keychain item that the `srht` CLI uses
+after `srht auth login`: generic password `service = srht`, `account = sr.ht`.
+
+## Host enablement
+
+- `suremac` enables `dotfiles.sideshow`, configures `ffmpeg` for video
+  optimization, configures `aws` for S3 publishing, configures sideshow's
+  SourceHut Pages token command to read the `srht` Keychain item, and exposes
+  `sideshow` to OpenCode agents.
+- `tater` enables `dotfiles.sideshow` with the default Tailwind configuration and
+  exposes `sideshow` to OpenCode agents. Its story evidence gathering is centered
+  on `srht` and the todo.sr.ht tracker rather than Linear.
+
+Both hosts install the repo-managed `sideshow-work-story` OpenCode skill when
+OpenCode is enabled. The skill nudges agents to collect bounded evidence from
+`ctx`, Linear, GitHub PRs, and local VCS before turning the work into an impact
+narrative or deck.
+
+## Useful commands
+
+```bash
+sideshow themes --format json
+sideshow new ./deck --theme signal
+sideshow check ./deck
+sideshow build ./deck
+sideshow serve ./deck --port 8000
+sideshow publish ./deck --target srht --domain averagechris.srht.site
+```
+
+For visual QA, build the deck, open the exact printed HTML path in a browser, and
+run the deck runtime's `sideshow.audit()` API through browser automation when
+available.

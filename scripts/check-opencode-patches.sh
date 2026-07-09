@@ -104,7 +104,12 @@ PY
     exit 2
   fi
   echo "Resolving upstream opencode source: $ref" >&2
-  src="$(nix flake metadata "$ref" --json 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin)["path"])')"
+  # `nix flake metadata --json` describes the flake but does not guarantee a
+  # local source path. `nix flake prefetch --json` fetches just the flake source
+  # and returns its storePath, which is all this dry-run patch check needs. Do
+  # not use `nix flake archive` here: it also realizes flake inputs, which is
+  # slower and unnecessary for checking patches against opencode's own tree.
+  src="$(nix flake prefetch --json "$ref" | python3 -c 'import json,sys; print(json.load(sys.stdin)["storePath"])')"
   if [[ -z "$src" || ! -d "$src" ]]; then
     echo "Could not resolve upstream opencode source path" >&2
     exit 2

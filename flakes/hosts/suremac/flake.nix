@@ -43,6 +43,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };
+    sideshow = {
+      url = "sourcehut:~averagechris/sideshow";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     slack = {
       url = "sourcehut:~averagechris/slack";
       inputs.nixpkgs.follows = "nixpkgs";

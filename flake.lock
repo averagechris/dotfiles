@@ -2262,6 +2262,7 @@
           "nixpkgs"
         ],
         "pip-chrome-extension": "pip-chrome-extension",
+        "sideshow": "sideshow",
         "srht": "srht_6",
         "suremac": "suremac",
         "systems": "systems_16",
@@ -2333,6 +2334,27 @@
         "owner": "oxalica",
         "repo": "rust-overlay",
         "type": "github"
+      }
+    },
+    "sideshow": {
+      "inputs": {
+        "fleet": "fleet_7",
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1783557756,
+        "narHash": "sha256-QAvCCLuJH49sel3UWdTGYjJcXxsEiR+McAGmvNU5CYc=",
+        "owner": "~averagechris",
+        "repo": "sideshow",
+        "rev": "a978a75b03dd23c74779bfac73494b954b6730b8",
+        "type": "sourcehut"
+      },
+      "original": {
+        "owner": "~averagechris",
+        "repo": "sideshow",
+        "type": "sourcehut"
       }
     },
     "slack": {
@@ -2622,6 +2644,9 @@
           "suremac",
           "base-lib",
           "nixpkgs"
+        ],
+        "sideshow": [
+          "sideshow"
         ],
         "slack": "slack",
         "srht": [
@@ -2954,6 +2979,9 @@
         ],
         "pip-chrome-extension": [
           "pip-chrome-extension"
+        ],
+        "sideshow": [
+          "sideshow"
         ],
         "srht": [
           "srht"

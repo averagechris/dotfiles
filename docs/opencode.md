@@ -198,8 +198,8 @@ module combines those with the built-in default tool list.
 Use `dotfiles.opencode.agentTools` for tools that should only be available to
 agents on particular hosts. For example, `suremac` adds the AWS CLI, Ctx,
 Kubernetes CLI, Datadog Pup CLI, Sentry CLI, GitHub CLI, Rodney, Showboat,
-Granola, and the Linear CLI. On Darwin, this host-specific list avoids relying
-on unrelated system packages for agent workflows:
+Granola, Sideshow, and the Linear CLI. On Darwin, this host-specific list avoids
+relying on unrelated system packages for agent workflows:
 
 ```nix
 dotfiles.opencode.agentSupportPackages = [];
@@ -228,6 +228,11 @@ dotfiles.opencode.agentTools = with pkgs; [
     name = "granola";
     description = "Granola meeting notes CLI";
   }
+  {
+    package = inputs.sideshow.packages.${pkgs.stdenv.hostPlatform.system}.sideshow;
+    name = "sideshow";
+    description = "HTML slide deck CLI";
+  }
 ];
 ```
 
@@ -240,8 +245,8 @@ example:
 > history search CLI), kubectl (Kubernetes CLI), pup
 > (Datadog CLI), sentry (Sentry CLI), ntn (Notion CLI), gh (GitHub CLI), rodney
 > (Chrome automation CLI), showboat (work documentation CLI), linear (Linear
-> CLI), granola (Granola meeting notes CLI). The project local dev shell may
-> provide additional tooling.
+> CLI), granola (Granola meeting notes CLI), sideshow (HTML slide deck CLI). The
+> project local dev shell may provide additional tooling.
 
 Use `agentSupportPackages` for dependencies that a visible tool needs under the
 hood but that the agent does not need to call directly.

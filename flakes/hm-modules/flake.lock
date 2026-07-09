@@ -469,14 +469,14 @@
       "inputs": {
         "flake-utils": "flake-utils_6",
         "nixpkgs": "nixpkgs_8",
-        "srht": "srht_4"
+        "srht": "srht_3"
       },
       "locked": {
-        "lastModified": 1783445138,
-        "narHash": "sha256-KbmbEqmBkHHAD1FBanOs0es4BYG/CmAxWBgoDrEbGgo=",
+        "lastModified": 1783380028,
+        "narHash": "sha256-IvsQt2uNo7gTgvE5A/+1Cm71iXBs2fQXN5Ing0DLaeU=",
         "ref": "refs/heads/main",
-        "rev": "c5f187626ac108fd362d826c20947c511e0853bb",
-        "revCount": 61,
+        "rev": "24ea5cd7d2318681153b10c6300d0cbfab7694d2",
+        "revCount": 56,
         "type": "git",
         "url": "https://git.sr.ht/~averagechris/averagechris.srht.site"
       },
@@ -511,11 +511,11 @@
         "srht": "srht_5"
       },
       "locked": {
-        "lastModified": 1783380028,
-        "narHash": "sha256-IvsQt2uNo7gTgvE5A/+1Cm71iXBs2fQXN5Ing0DLaeU=",
+        "lastModified": 1783445138,
+        "narHash": "sha256-KbmbEqmBkHHAD1FBanOs0es4BYG/CmAxWBgoDrEbGgo=",
         "ref": "refs/heads/main",
-        "rev": "24ea5cd7d2318681153b10c6300d0cbfab7694d2",
-        "revCount": 56,
+        "rev": "c5f187626ac108fd362d826c20947c511e0853bb",
+        "revCount": 61,
         "type": "git",
         "url": "https://git.sr.ht/~averagechris/averagechris.srht.site"
       },
@@ -904,7 +904,8 @@
           "base-lib",
           "opencode"
         ],
-        "srht": "srht_3",
+        "sideshow": "sideshow",
+        "srht": "srht_4",
         "starship-jj": "starship-jj"
       }
     },
@@ -944,6 +945,27 @@
         "owner": "oxalica",
         "repo": "rust-overlay",
         "type": "github"
+      }
+    },
+    "sideshow": {
+      "inputs": {
+        "fleet": "fleet_5",
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1783557756,
+        "narHash": "sha256-QAvCCLuJH49sel3UWdTGYjJcXxsEiR+McAGmvNU5CYc=",
+        "owner": "~averagechris",
+        "repo": "sideshow",
+        "rev": "a978a75b03dd23c74779bfac73494b954b6730b8",
+        "type": "sourcehut"
+      },
+      "original": {
+        "owner": "~averagechris",
+        "repo": "sideshow",
+        "type": "sourcehut"
       }
     },
     "srht": {
@@ -986,7 +1008,26 @@
     },
     "srht_3": {
       "inputs": {
-        "fleet": "fleet_5",
+        "fleet": "fleet_6",
+        "nixpkgs": "nixpkgs_10"
+      },
+      "locked": {
+        "lastModified": 1783323781,
+        "narHash": "sha256-0THjlQcDkM7PFSUbb+eCLc8Q0p0dSYSC8QR+NOEB9xA=",
+        "ref": "refs/heads/main",
+        "rev": "a5a05d79196f70d991ce3f56464b604e9e372972",
+        "revCount": 74,
+        "type": "git",
+        "url": "https://git.sr.ht/~averagechris/srht"
+      },
+      "original": {
+        "type": "git",
+        "url": "https://git.sr.ht/~averagechris/srht"
+      }
+    },
+    "srht_4": {
+      "inputs": {
+        "fleet": "fleet_7",
         "nixpkgs": [
           "nixpkgs"
         ]
@@ -1003,25 +1044,6 @@
         "owner": "~averagechris",
         "repo": "srht",
         "type": "sourcehut"
-      }
-    },
-    "srht_4": {
-      "inputs": {
-        "fleet": "fleet_6",
-        "nixpkgs": "nixpkgs_10"
-      },
-      "locked": {
-        "lastModified": 1783323781,
-        "narHash": "sha256-0THjlQcDkM7PFSUbb+eCLc8Q0p0dSYSC8QR+NOEB9xA=",
-        "ref": "refs/heads/main",
-        "rev": "a5a05d79196f70d991ce3f56464b604e9e372972",
-        "revCount": 74,
-        "type": "git",
-        "url": "https://git.sr.ht/~averagechris/srht"
-      },
-      "original": {
-        "type": "git",
-        "url": "https://git.sr.ht/~averagechris/srht"
       }
     },
     "srht_5": {

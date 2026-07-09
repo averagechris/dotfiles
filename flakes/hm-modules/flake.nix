@@ -29,6 +29,10 @@
       url = "sourcehut:~averagechris/gander";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    sideshow = {
+      url = "sourcehut:~averagechris/sideshow";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     opencode.follows = "base-lib/opencode";
   };
 
@@ -49,6 +53,7 @@
         ctx = ./modules/ctx.nix;
         gander = ./modules/gander.nix;
         granola = ./modules/granola.nix;
+        sideshow = ./modules/sideshow.nix;
         linearCli = ./modules/linear-cli;
         srht = ./modules/srht.nix;
         ghostty-fix = ./modules/ghostty-fix.nix;
