@@ -173,6 +173,7 @@
               inherit pkgs;
               extraSpecialArgs = {
                 inherit dotfiles_lib inputs system;
+                sshKeys = inputs.base-lib.sshKeys;
                 # Provide empty secrets for modules that optionally use agenix secrets
                 secrets = {};
               };

@@ -3,6 +3,27 @@
 The `dotfiles.srht` Home Manager module installs `srht`, the SourceHut CLI for
 builds, git, todo, lists, pages, paste, hub, webhooks, and GraphQL workflows.
 
+## Repository issue tracker
+
+Dotfiles work is tracked in the
+[SourceHut projects tracker](https://todo.sr.ht/~averagechris/projects). The
+tracker is shared across repositories, and dotfiles tickets are scoped with the
+`repo:dotfiles` label.
+
+From this checkout, pass the tracker explicitly when auto-detection has not yet
+been configured:
+
+```bash
+srht --json todo list -t '~averagechris/projects'
+srht --json todo show 169 -t '~averagechris/projects'
+srht --json todo start 169 -t '~averagechris/projects'
+```
+
+The CLI automatically narrows umbrella-tracker reads to `repo:dotfiles` when it
+can identify the checkout. Use `--all-repos` only when intentionally searching
+across the whole tracker. Agents should load the `srht-issues` skill before
+reading or changing tickets.
+
 ## Package source
 
 The package comes from the upstream SourceHut flake:

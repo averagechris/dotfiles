@@ -2,7 +2,13 @@
 
 This repository contains NixOS and nix-darwin configurations for all machines in the fleet, organized using a multi-flake architecture for modularity and maintainability.
 
-**Issue tracker:** [SourceHut project issues](https://todo.sr.ht/~averagechris/projects)
+## Issue Tracking
+
+Repository work is tracked in the
+[SourceHut projects tracker](https://todo.sr.ht/~averagechris/projects). This is
+an umbrella tracker shared by several repositories; dotfiles tickets carry the
+`repo:dotfiles` label. See [docs/srht.md](docs/srht.md#repository-issue-tracker)
+for the CLI workflow.
 
 ## Quick Start
 
