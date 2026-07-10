@@ -95,9 +95,9 @@ records `last-successful-rev` atomically only after all six hosts succeed. A
 subsequent timer run for the same revision skips before any Nix evaluation.
 
 The implementation intentionally preserves per-host `nix build` invocations,
-result roots, and logs. That keeps failure isolation and avoids losing useful
-per-host artifacts before there is measured evidence from thorny that aggregating
-the five x86 hosts into one Nix invocation improves the operational bottleneck.
+result roots, and logs. That keeps failure isolation and bounds peak evaluator
+memory; the measured multi-installable speedup below is not worth its much higher
+and variable peak RSS for the recurring unattended service.
 The service logs effective Nix environment details and separates elapsed timing
 for the five x86 hosts from trainwreck's aarch64/QEMU build. Trainwreck also has
 a best-effort dry-run planning diagnostic, but diagnostic failure does not mask
@@ -112,12 +112,34 @@ nix run .#host-build-cache-benchmark -- --rev <40-char-sourcehut-main-rev>
 The harness compares the complete five-host sequential x86 loop with one
 multi-installable dry-run at the same pinned revision, disables the evaluation
 cache, alternates execution order, and prints elapsed time and max RSS. Dry-run
-output can show planning/evaluation/substitution
-differences, but it cannot prove realized build throughput, scheduler behavior,
-or QEMU impact. Do not record benchmark conclusions here until the harness or the
-service timings have actually been run on thorny under comparable conditions.
+output can show planning/evaluation/substitution differences, but it cannot prove
+realized build throughput, scheduler behavior, or QEMU impact.
 The five-system dry-run can itself take tens of minutes, so it remains an
 explicit operational benchmark rather than a routine CI check.
+
+### 2026-07-09 thorny results
+
+The harness ran twice against pinned revision `48581c55246d`, alternating order:
+
+| Run | Shape | Elapsed | Max RSS |
+| --- | --- | ---: | ---: |
+| 1 | sequential five-host loop | 135.91 s | 1,541,188 KiB |
+| 1 | one multi-installable invocation | 58.81 s | 2,496,692 KiB |
+| 2 | one multi-installable invocation | 60.47 s | 3,934,088 KiB |
+| 2 | sequential five-host loop | 136.65 s | 1,540,644 KiB |
+
+The multi-installable dry-run was about 2.3 times faster, but peak RSS ranged
+from 2.4 to 3.8 GiB versus a stable 1.5 GiB for the sequential loop. Keep the
+sequential warmer: predictable memory, per-host logs, and failure isolation are
+more valuable than reducing an already revision-gated background run by roughly
+one minute.
+
+The first deployed revision-aware warmer run completed in 111 seconds wall time:
+107 seconds for the five x86 hosts and 3 seconds including trainwreck planning.
+The cached trainwreck realization itself was 0 seconds, so this run establishes
+the separate ARM/QEMU baseline but does not measure a QEMU cache miss. The
+immediately repeated run skipped before Nix evaluation and returned through SSH
+in 1.45 seconds.
 
 ## Check tiers from #120/#121
 

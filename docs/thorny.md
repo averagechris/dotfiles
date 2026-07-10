@@ -131,9 +131,10 @@ Darwin systems are not built on Linux; inactive hosts such as `taz` and
 The service logs the effective revision/stage, Nix version, current system,
 substituters, and builders at run start. It also emits elapsed timing for each
 host, a combined five-host x86_64-linux total for `trap`, `thorny`, `tom`,
-`cruber`, and `tater`, and a separate trainwreck aarch64/QEMU elapsed time. Use
-those operational timings from thorny before concluding whether host builds
-should be aggregated; result roots and logs remain per-host by default.
+`cruber`, and `tater`, and a separate trainwreck aarch64/QEMU elapsed time. The
+recorded comparison in the [flake performance audit](/docs/flake-performance-audit.md)
+keeps the per-host loop: aggregation was faster but used substantially more and
+less predictable evaluator memory.
 
 For a safe comparison of sequential x86 host planning versus one multi-installable
 invocation at a pinned revision, run the focused harness outside normal service
