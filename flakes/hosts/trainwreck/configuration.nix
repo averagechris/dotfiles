@@ -5,20 +5,6 @@
   ...
 }: let
   nixosConfig = config;
-  # Temporary native aarch64 build used to measure Thorny's binfmt/QEMU miss
-  # path. Remove after the operational measurement is recorded.
-  trainwreckQemuProbe = pkgs.runCommandCC "trainwreck-qemu-probe-2026-07-10" {} ''
-    mkdir -p "$out/bin"
-    cat >probe.c <<'EOF'
-    #include <stdio.h>
-
-    int main(void) {
-      puts("trainwreck aarch64 QEMU probe: 2026-07-10");
-      return 0;
-    }
-    EOF
-    "$CC" -O2 -o "$out/bin/trainwreck-qemu-probe" probe.c
-  '';
 in {
   imports = [
     inputs.nixos-modules.nixosModules.common
@@ -97,7 +83,6 @@ in {
     tmux
     curl
     jq
-    trainwreckQemuProbe
   ];
 
   system.stateVersion = "26.05";

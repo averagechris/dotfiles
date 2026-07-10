@@ -136,10 +136,22 @@ one minute.
 
 The first deployed revision-aware warmer run completed in 111 seconds wall time:
 107 seconds for the five x86 hosts and 3 seconds including trainwreck planning.
-The cached trainwreck realization itself was 0 seconds, so this run establishes
-the separate ARM/QEMU baseline but does not measure a QEMU cache miss. The
-immediately repeated run skipped before Nix evaluation and returned through SSH
-in 1.45 seconds.
+The cached trainwreck realization itself was 0 seconds. The immediately repeated
+run skipped before Nix evaluation and returned through SSH in 1.45 seconds.
+
+To measure a real ARM miss, revision `eb29b3ae6155` temporarily added a tiny C
+program compiled by an `aarch64-linux` derivation in the trainwreck closure. The
+dry-run reported 18 derivations requiring local builds, including
+`trainwreck-qemu-probe-2026-07-10`; Thorny then realized the trainwreck closure
+through binfmt/QEMU in 63 seconds (67 seconds including the diagnostic dry-run).
+The complete service used 1.4 GiB peak RSS and 207 seconds wall time. The probe
+binary ran successfully on Thorny through binfmt, and its derivation metadata
+reported `system = aarch64-linux`. The probe was removed immediately afterward.
+
+This controlled miss does not justify native ARM infrastructure: a roughly
+one-minute occasional QEMU penalty is acceptable for the six-hour background
+warmer, and no emulation failure or memory pressure occurred. Revisit native ARM
+only if larger natural misses become frequent or unreliable.
 
 ## Check tiers from #120/#121
 
