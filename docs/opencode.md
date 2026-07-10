@@ -313,9 +313,7 @@ top-level `databricks sql` subcommand in the current official CLI. Agents
 should use `queries`, `query-history`, `warehouses`, `psql`, or `databricks api`
 depending on the task.
 
-`suremac` additionally configures the repo-managed `coderabbit-cli` skill for
-its OpenCode agents only, alongside the host-specific `cr`/`coderabbit` package.
-It also configures the `granola-meeting-context` skill so agents can pull
+`suremac` additionally configures the `granola-meeting-context` skill so agents can pull
 concise, redacted meeting-note context with the host-specific `granola` CLI when
 relevant. The host-specific `pup-cli` skill gives agents compact Datadog CLI
 patterns centered on `--read-only`, `--no-agent`, `--jq`, bounded queries, and

@@ -137,7 +137,6 @@
             titlecase = base-lib.inputs.titlecase.packages.${system}.default;
             pi-coding-agent = final.callPackage ../base-lib/packages/pi-coding-agent.nix {};
             pi = final.pi-coding-agent;
-            coderabbit-cli = final.callPackage ../base-lib/packages/coderabbit-cli.nix {};
             helium-bin = final.callPackage ../base-lib/packages/helium-bin.nix {};
             notion-cli = final.callPackage ../base-lib/packages/notion-cli.nix {};
             showboat = final.callPackage ../base-lib/packages/showboat.nix {};

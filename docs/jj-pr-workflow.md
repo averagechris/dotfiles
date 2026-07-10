@@ -63,7 +63,6 @@ jj pr create \
   --base develop \
   --sync \
   --run-lints \
-  --run-cr \
   --ticket EPD-1234 \
   --title "fix(policy): concise summary [EPD-1234]" \
   --body-file /tmp/pr-body.md
@@ -83,14 +82,9 @@ Behavior:
    `--sync` is passed. This is usually `origin`, but follows the inferred or
    explicit `--remote` when available.
 6. Runs `jj lint` when `--run-lints` is passed.
-7. Runs `cr review --base <remote>/<branch>` when `--run-cr` is passed and
-   stops on nonzero exit. The base is derived from the same jj sync base used
-   for PR creation, so a jj base like `main@origin` is passed to CodeRabbit as
-   Git's `origin/main` instead of letting CodeRabbit fall back to a stale local
-   `main` bookmark.
-8. Pushes the head bookmark by default.
-9. Fails loudly if an open PR already exists for the head bookmark.
-10. Creates the PR using `gh pr create --repo owner/repo ...`.
+7. Pushes the head bookmark by default.
+8. Fails loudly if an open PR already exists for the head bookmark.
+9. Creates the PR using `gh pr create --repo owner/repo ...`.
 
 `create` only blocks on conflicts that are relevant to the PR stack, so
 unrelated conflicted changes elsewhere in the jj repo are reported by
@@ -119,16 +113,10 @@ If base inference falls back to the jj revset `trunk()`, `jj pr` fails and asks
 for `--base <branch>` because `trunk()` is not a valid GitHub PR base branch.
 
 Auto-created bookmarks are durable: once `jj pr create` creates the local
-bookmark, it leaves that bookmark in place even if a later sync, lint,
-CodeRabbit, push, or GitHub step fails. This makes failed runs easy to resume.
+bookmark, it leaves that bookmark in place even if a later sync, lint, push, or
+GitHub step fails. This makes failed runs easy to resume.
 Ticket values used in the bookmark template must contain only letters, numbers,
 dot, underscore, or hyphen.
-
-`--run-cr` is intentionally tied to the resolved remote base. This prevents
-large false diffs in jj repositories where the local integration bookmark is
-stale but the remote bookmark (for example `main@origin`) is current. If you run
-CodeRabbit manually for the same PR, mirror the helper's scope with a command
-such as `cr review --base origin/main`.
 
 ### Update
 

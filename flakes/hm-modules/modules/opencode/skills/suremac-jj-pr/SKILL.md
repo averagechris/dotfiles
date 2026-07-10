@@ -1,6 +1,6 @@
 ---
 name: suremac-jj-pr
-description: Use when creating, updating, closing, watching, or sweeping GitHub PR hygiene from jj workspaces on suremac work repos. Prefer `jj pr` over bare `gh pr create`; handles jj remotes, bookmarks, sync, lints, CodeRabbit, push, CI, review polling, and open-PR follow-up reports.
+description: Use when creating, updating, closing, watching, or sweeping GitHub PR hygiene from jj workspaces on suremac work repos. Prefer `jj pr` over bare `gh pr create`; handles jj remotes, bookmarks, sync, lints, push, CI, review polling, and open-PR follow-up reports.
 ---
 
 # Suremac jj PR Workflow
@@ -52,8 +52,7 @@ The helper infers the GitHub repository from `jj git remote list` and always cal
    jj pr create \
      --base develop \
      --sync \
-     --run-lints \
-     --run-cr \
+      --run-lints \
      --ticket EPD-1234 \
      --title "fix(policy): concise change summary [EPD-1234]" \
      --body-file /tmp/pr-body.md
@@ -62,17 +61,12 @@ The helper infers the GitHub repository from `jj git remote list` and always cal
    Notes:
    - `--sync` runs `jj sync --onto <base>@<inferred-remote> --fail-on-conflicts` before checks, usually with `origin`.
    - `--run-lints` runs `jj lint`.
-   - `--run-cr` runs `cr review --base <remote>/<branch>` and stops on a
-     nonzero exit. The CodeRabbit base is derived from the same jj base used for
-     sync/PR creation, converting jj remote bookmarks like `main@origin` to Git
-     refs like `origin/main` so stale local `main` bookmarks do not balloon the
-     diff.
    - Push is enabled by default. Use `--no-push` only when explicitly needed.
    - Add `--draft` for draft PRs.
    - `--dry-run` plans auto-bookmarking without creating the bookmark.
    - Use `--remote <remote>` when the push/sync remote cannot be inferred or when `--repo owner/repo` is explicit and multiple/no matching jj remotes exist.
 
-Auto-created bookmarks are durable. If a later sync, lint, CodeRabbit, push, or GitHub step fails, leave the bookmark in place and resume from it. Ticket values for auto-bookmarking must be simple safe identifiers using only letters, numbers, dot, underscore, or hyphen.
+Auto-created bookmarks are durable. If a later sync, lint, push, or GitHub step fails, leave the bookmark in place and resume from it. Ticket values for auto-bookmarking must be simple safe identifiers using only letters, numbers, dot, underscore, or hyphen.
 
 Before creating a PR, the helper checks the PR-relevant stack for conflicts and
 requires the current change to have a jj description. If it reports an empty
@@ -172,7 +166,7 @@ cached wrapper also keys freshness on the TTL and configured workdir strings. Us
 
 ## Follow-up changes after CI/review
 
-When CI or CodeRabbit/GitHub review feedback needs code changes, make a new jj change on top, move the PR bookmark intentionally, and push again:
+When CI or GitHub review feedback needs code changes, make a new jj change on top, move the PR bookmark intentionally, and push again:
 
 ```bash
 jj new @
@@ -189,7 +183,3 @@ Then re-check the PR with GitHub/CircleCI tools as appropriate.
 - If `jj pr create` reports an existing PR, use `jj pr update` or ask the user whether to close/update it.
 - If push fails due to remote bookmark divergence, do not force-push automatically. Read the helper hints and ask if destructive/update semantics are needed.
 - If sync reports conflicts, load `jj-conflict-resolution` and resolve before continuing.
-- If CodeRabbit exits nonzero, inspect and address the review before retrying PR
-  creation. If running CodeRabbit manually for the same PR, pass the same
-  explicit base (for example `cr review --base origin/main`) instead of relying
-  on CodeRabbit's default local base selection.

@@ -32,26 +32,6 @@
       ]
     },
     {
-      "name": "coderabbit-cli",
-      "enabled": true,
-      "kind": "archive",
-      "file": "flakes/base-lib/packages/coderabbit-cli.nix",
-      "cooldown": true,
-      "latest": {
-        "kind": "manual"
-      },
-      "assets": [
-        {
-          "system": "aarch64-darwin",
-          "url": "https://cli.coderabbit.ai/releases/{version}/coderabbit-darwin-arm64.zip"
-        },
-        {
-          "system": "x86_64-darwin",
-          "url": "https://cli.coderabbit.ai/releases/{version}/coderabbit-darwin-x64.zip"
-        }
-      ]
-    },
-    {
       "name": "notion-cli",
       "enabled": true,
       "kind": "archive",

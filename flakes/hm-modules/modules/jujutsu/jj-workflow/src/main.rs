@@ -986,7 +986,6 @@ struct PrArgs {
     pr: Option<String>,
     sync: bool,
     run_lints: bool,
-    run_cr: bool,
     draft: bool,
     push: bool,
     no_push: bool,
@@ -1225,7 +1224,6 @@ fn parse_pr_args(args: Vec<OsString>, push_default: bool) -> Result<PrArgs> {
             }
             "--sync" => parsed.sync = true,
             "--run-lints" => parsed.run_lints = true,
-            "--run-cr" => parsed.run_cr = true,
             "--draft" => parsed.draft = true,
             "--once" => parsed.once = true,
             "--ignore-comments" => parsed.ignore_comments = true,
@@ -1382,9 +1380,6 @@ fn pr_doctor(args: PrArgs) -> Result<()> {
     if which::which("gh").is_err() {
         blockers.push("gh CLI is not available on PATH".to_string());
     }
-    if args.run_cr && which::which("cr").is_err() {
-        warnings.push("cr CLI is not available on PATH".to_string());
-    }
 
     let existing = match (&repo, &head) {
         (Some(repo), Some(head)) if which::which("gh").is_ok() => {
@@ -1482,9 +1477,6 @@ fn pr_create(args: PrArgs) -> Result<()> {
     }
     if args.run_lints {
         run_lint(Vec::new())?;
-    }
-    if args.run_cr {
-        run_cr_review(&base)?;
     }
     if args.push {
         let push_args = vec![
@@ -2031,7 +2023,6 @@ fn validate_pr_create_args(args: &PrArgs) -> Result<()> {
             "short-description",
             "sync",
             "run-lints",
-            "run-cr",
             "draft",
             "push",
             "no-push",
@@ -2119,7 +2110,6 @@ fn first_unsupported_pr_flag(args: &PrArgs, allowed: &[&str]) -> Option<&'static
         ("pr", args.pr.is_some()),
         ("sync", args.sync),
         ("run-lints", args.run_lints),
-        ("run-cr", args.run_cr),
         ("draft", args.draft),
         ("push", args.push),
         ("no-push", args.no_push),
@@ -2247,30 +2237,6 @@ fn ensure_current_change_described(title: Option<&str>) -> Result<()> {
             "\nDescribe the current change with `jj describe -m <message>`.".to_string()
         });
     bail!("current change has no description and cannot be pushed.{hint}")
-}
-
-fn run_cr_review(base: &PrBase) -> Result<()> {
-    let cr_base = cr_base_ref(&base.sync_base);
-    eprintln!(
-        "Running CodeRabbit against {cr_base} (from jj base {})",
-        base.sync_base
-    );
-    let status = Command::new("cr")
-        .args(["review", "--base"])
-        .arg(&cr_base)
-        .status()
-        .context("failed to execute cr review")?;
-    if status.success() {
-        Ok(())
-    } else {
-        bail!("cr review --base {cr_base} failed with status {status}")
-    }
-}
-
-fn cr_base_ref(sync_base: &str) -> String {
-    split_bookmark_remote(sync_base)
-        .map(|(bookmark, remote)| format!("{remote}/{bookmark}"))
-        .unwrap_or_else(|| sync_base.to_string())
 }
 
 fn gh_prs_by_head(repo: &GithubRemote, head: &str) -> Result<Vec<ExistingPr>> {
@@ -3614,7 +3580,7 @@ fn print_pr_hygiene_human(report: &PrHygieneReport) {
 }
 
 fn print_pr_usage() {
-    eprintln!("Usage:\n  jj pr doctor [--json] [--repo <owner/repo>] [--remote <remote>] [--base <branch>] [--head <bookmark>]\n  jj pr create --title <title> (--body <text>|--body-file <file>) [--base <branch>] [--repo <owner/repo>] [--remote <remote>] [--head <bookmark>] [--ticket <id>] [--sync] [--run-lints] [--run-cr] [--draft] [--no-push] [--dry-run]\n  jj pr update [--title <title>] [--body <text>|--body-file <file>] [--base <branch>] [--repo <owner/repo>] [--remote <remote>] [--head <bookmark>|--pr <number>]\n  jj pr close [--repo <owner/repo>] [--remote <remote>] [--head <bookmark>|--pr <number>]\n  jj pr watch [--repo <owner/repo>] [--remote <remote>] [--head <bookmark>|--pr <number>] [--interval 60s] [--timeout 30m] [--once] [--json] [--ignore-comments] [--required]\n  jj pr hygiene [--limit 50] [--search <github-search>] [--json] [--no-workspaces]");
+    eprintln!("Usage:\n  jj pr doctor [--json] [--repo <owner/repo>] [--remote <remote>] [--base <branch>] [--head <bookmark>]\n  jj pr create --title <title> (--body <text>|--body-file <file>) [--base <branch>] [--repo <owner/repo>] [--remote <remote>] [--head <bookmark>] [--ticket <id>] [--sync] [--run-lints] [--draft] [--no-push] [--dry-run]\n  jj pr update [--title <title>] [--body <text>|--body-file <file>] [--base <branch>] [--repo <owner/repo>] [--remote <remote>] [--head <bookmark>|--pr <number>]\n  jj pr close [--repo <owner/repo>] [--remote <remote>] [--head <bookmark>|--pr <number>]\n  jj pr watch [--repo <owner/repo>] [--remote <remote>] [--head <bookmark>|--pr <number>] [--interval 60s] [--timeout 30m] [--once] [--json] [--ignore-comments] [--required]\n  jj pr hygiene [--limit 50] [--search <github-search>] [--json] [--no-workspaces]");
 }
 
 fn print_pr_doctor_usage() {
@@ -3622,7 +3588,7 @@ fn print_pr_doctor_usage() {
 }
 
 fn print_pr_create_usage() {
-    eprintln!("Usage:\n  jj pr create --title <title> (--body <text>|--body-file <file>) [--base <branch>] [--repo <owner/repo>] [--remote <remote>] [--head <bookmark>] [--ticket <id>] [--short-description <slug>] [--sync] [--run-lints] [--run-cr] [--draft] [--no-push] [--dry-run]");
+    eprintln!("Usage:\n  jj pr create --title <title> (--body <text>|--body-file <file>) [--base <branch>] [--repo <owner/repo>] [--remote <remote>] [--head <bookmark>] [--ticket <id>] [--short-description <slug>] [--sync] [--run-lints] [--draft] [--no-push] [--dry-run]");
 }
 
 fn print_pr_update_usage() {
@@ -7047,23 +7013,24 @@ struct JjOutput {
 #[cfg(test)]
 mod tests {
     use super::{
-        choose_ship_bookmark, choose_sync_base, configured_lints, cr_base_ref, fetch_remote_choice,
+        choose_ship_bookmark, choose_sync_base, configured_lints, fetch_remote_choice,
         first_unsupported_pr_flag, infer_lint_name, infer_remote_integration_bookmark_from,
         is_check_only_format_script, is_integration_bookmark, is_safe_package_check_script,
         is_validation_name, lint_config_toml, lint_display_name, lint_onboard_json,
         lint_onboard_report, makefile_targets, parse_checks_json, parse_common_args,
         parse_config_string_array, parse_duration_arg, parse_github_remote_url,
-        parse_lint_selection, parse_lints_toml, parse_pr_hygiene_args, parse_pr_hygiene_graphql,
-        parse_review_state_json, parse_tag_push_args, parse_toml_string_array, parse_ws_add_args,
-        parse_ws_forget_args, parse_ws_path_args, parse_ws_prune_args, python_runner,
-        render_bookmark_template, resolve_pr_base, review_effort, run_lint, run_lint_onboard,
-        run_ship, run_sync, run_ws, selected_lints, ship_plan, short_description_from_title,
-        source_venv_python_usable, stale_workspace_dirs, sync_base_candidates, tag_push,
-        validate_body_source, validate_pr_watch_args, validate_release_tag, validate_ticket,
-        validate_ws_name, workspace_context_for_repo, workspace_has_unpublished_work,
-        write_tracked_lint_config, Cli, CliCommand, FetchChoice, LintCommand, LintOnboardReport,
-        LintSuggestion, ParsedArgs, PrArgs, ProjectGroup, ShipPlan, TagCommand, TagPushArgs,
-        TagSigning, WsAddArgs, WsConfig, WsForgetArgs, WsPathArgs, WsPruneArgs,
+        parse_lint_selection, parse_lints_toml, parse_pr_args, parse_pr_hygiene_args,
+        parse_pr_hygiene_graphql, parse_review_state_json, parse_tag_push_args,
+        parse_toml_string_array, parse_ws_add_args, parse_ws_forget_args, parse_ws_path_args,
+        parse_ws_prune_args, python_runner, render_bookmark_template, resolve_pr_base,
+        review_effort, run_lint, run_lint_onboard, run_ship, run_sync, run_ws, selected_lints,
+        ship_plan, short_description_from_title, source_venv_python_usable, stale_workspace_dirs,
+        sync_base_candidates, tag_push, validate_body_source, validate_pr_watch_args,
+        validate_release_tag, validate_ticket, validate_ws_name, workspace_context_for_repo,
+        workspace_has_unpublished_work, write_tracked_lint_config, Cli, CliCommand, FetchChoice,
+        LintCommand, LintOnboardReport, LintSuggestion, ParsedArgs, PrArgs, ProjectGroup, ShipPlan,
+        TagCommand, TagPushArgs, TagSigning, WsAddArgs, WsConfig, WsForgetArgs, WsPathArgs,
+        WsPruneArgs,
     };
     use clap::Parser;
     use std::env;
@@ -7149,6 +7116,15 @@ mod tests {
     }
 
     #[test]
+    fn pr_create_rejects_removed_run_cr_flag() {
+        let err = parse_pr_args(vec![OsString::from("--run-cr")], true).unwrap_err();
+        assert!(
+            err.to_string().contains("unknown pr argument: --run-cr"),
+            "unexpected error: {err:#}"
+        );
+    }
+
+    #[test]
     fn pr_bookmark_template_renders_safe_bookmark() {
         let bookmark = render_bookmark_template(
             "{whoami}/{ticket-number}/{short-description}",
@@ -7181,17 +7157,6 @@ mod tests {
         assert_eq!(remote_base.sync_base, "main@origin");
 
         assert!(resolve_pr_base(Some("trunk()"), Some("origin")).is_err());
-    }
-
-    #[test]
-    fn pr_cr_base_uses_git_remote_ref_for_jj_remote_bookmark() {
-        assert_eq!(cr_base_ref("main@origin"), "origin/main");
-        assert_eq!(
-            cr_base_ref("release/2026.06@upstream"),
-            "upstream/release/2026.06"
-        );
-        assert_eq!(cr_base_ref("origin/main"), "origin/main");
-        assert_eq!(cr_base_ref("main"), "main");
     }
 
     #[test]

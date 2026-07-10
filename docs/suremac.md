@@ -127,9 +127,8 @@ Pi is installed through the minimal `programs.pi.enable = true` module; see
 [`docs/pi.md`](/docs/pi.md) for the package pinning and manual update policy.
 
 OpenCode agents on `suremac` also get host-specific CLI tools, including
-`awscli2` as `aws` and `ctx` for local agent-history search. CircleCI and
-CodeRabbit tooling are not configured because work has migrated away from those
-services.
+`awscli2` as `aws` and `ctx` for local agent-history search. CircleCI tooling is
+not configured because work has migrated away from that service.
 
 The Datadog Pup CLI is installed in Home Manager as `pup` and exposed to
 OpenCode agents as a host-specific Datadog tool. `suremac` also installs the

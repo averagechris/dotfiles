@@ -133,7 +133,7 @@ Typical create flow:
 
 ```bash
 jj pr doctor
-jj pr create --base develop --sync --run-lints --run-cr --ticket EPD-1234 --title "fix(scope): summary [EPD-1234]" --body-file /tmp/pr-body.md
+jj pr create --base develop --sync --run-lints --ticket EPD-1234 --title "fix(scope): summary [EPD-1234]" --body-file /tmp/pr-body.md
 jj pr watch
 ```
 

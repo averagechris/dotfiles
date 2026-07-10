@@ -41,15 +41,6 @@ update-flakes --manual-package helium-bin   # one manual package only
 update-flakes --skip-manual-package pi-coding-agent
 ```
 
-For upstreams without reliable latest-release metadata, provide the reviewed
-target version explicitly:
-
-```bash
-update-flakes --manual-packages-only \
-  --manual-package coderabbit-cli \
-  --manual-version coderabbit-cli=0.6.4
-```
-
 The updater prefetches the manifest's release asset URLs with
 `nix store prefetch-file --json` and rewrites the package `version` plus fixed
 hashes in the referenced Nix file.
@@ -80,7 +71,6 @@ Use `--ignore-cooldown` only after reviewing fresh upstream releases.
 | Package | File | Status |
 | --- | --- | --- |
 | `pi-coding-agent` / `pi` | `flakes/base-lib/packages/pi-coding-agent.nix` | Enabled; latest version from GitHub releases |
-| `coderabbit-cli` | `flakes/base-lib/packages/coderabbit-cli.nix` | Enabled; requires explicit `--manual-version` |
 | `notion-cli` | `flakes/base-lib/packages/notion-cli.nix` | Enabled; requires explicit `--manual-version` |
 | `helium-bin` | `flakes/base-lib/packages/helium-bin.nix` | Enabled; latest version from GitHub releases |
 | `pup` | `flakes/base-lib/packages/pup.nix` | Enabled; requires explicit `--manual-version` |
