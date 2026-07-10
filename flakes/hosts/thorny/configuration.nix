@@ -305,7 +305,7 @@
 
       echo "dotfiles-host-build-cache: stage=build revision=$rev flake_ref=$flake_ref"
       echo "dotfiles-host-build-cache: nix_version=$(nix --version)"
-      echo "dotfiles-host-build-cache: current_system=$(nix eval --raw --expr builtins.currentSystem --no-write-lock-file 2>/dev/null || printf unknown)"
+      echo "dotfiles-host-build-cache: current_system=$(nix eval --raw --impure --expr builtins.currentSystem --no-write-lock-file 2>/dev/null || printf unknown)"
       for key in substituters trusted-public-keys builders builders-use-substitutes max-jobs cores; do
         value=$(nix config show "$key" 2>/dev/null || nix show-config "$key" 2>/dev/null || printf unknown)
         echo "dotfiles-host-build-cache: $key=$value"
