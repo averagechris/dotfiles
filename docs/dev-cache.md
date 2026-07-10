@@ -11,19 +11,20 @@ cache cleanups. Enabled on `suremac`, `tater`, and `thorny`.
 - installs `sccache` and configures Cargo with `rustc-wrapper = "sccache"`
   (`~/.cargo/config.toml` plus `RUSTC_WRAPPER`/`SCCACHE_DIR`/`SCCACHE_CACHE_SIZE`
   session variables);
-- runs a supervised `sccache-server` (launchd agent on macOS, systemd user
-  service on Linux);
+- starts a clean `sccache-server` daemon at login (launchd agent on macOS,
+  systemd user service on Linux);
 - runs a periodic `dev-cache-cleanup` job (launchd on macOS, systemd user timer
   on Linux; daily by default via `cleanup.intervalSeconds`);
 - runs a lightweight low-disk checker (`dev-cache-low-disk-cleanup`) that wakes
   more frequently and only starts cleanup when `/` falls below the configured
   free-space threshold.
 
-## sccache server supervision
+## sccache server startup
 
-The server runs in the foreground with `KeepAlive`/`Restart=always`,
-`SCCACHE_IDLE_TIMEOUT=0`, and the service manager's clean environment, stopping
-any rogue server on startup.
+The service starts the normal sccache daemon with `SCCACHE_IDLE_TIMEOUT=0` from
+the service manager's clean environment, stopping any rogue server first. The
+daemon then stays alive and serves Cargo clients from normal shells and nix
+shells.
 
 This exists because sccache's default behavior is to lazily start the server
 from whichever compile happens first, inheriting that process's environment
@@ -36,12 +37,40 @@ sccache when `RUSTC_WRAPPER` is set — failing with:
 sccache: caused by: Compiler not supported: "error: tool 'clang' not found"
 ```
 
-If that error ever reappears, `sccache --stop-server` cures it immediately (the
-supervisor restarts the server). Check the agent with
+Do not configure launchd `KeepAlive` or systemd `Restart=always` around
+`sccache --start-server`: that command daemonizes and exits after spawning the
+real server. A restart loop repeatedly runs the startup script, whose
+`sccache --stop-server` handoff kills the healthy daemon; Cargo clients racing
+that loop warn:
+
+```
+sccache: warning: The server looks like it shut down unexpectedly, compiling locally instead
+```
+
+If the Apple SDK poisoning error ever reappears, `sccache --stop-server` cures
+it immediately; the next service start or Cargo client starts a fresh daemon.
+Check the service with
 `launchctl list | grep sccache` (macOS) or
 `systemctl --user status sccache-server` (Linux).
 
 Logs: `~/Library/Logs/sccache-server.log` on macOS; the user journal on Linux.
+
+## Agent and manual Cargo checks
+
+On hosts with `dotfiles.devCache.enable`, Rust checks should use the configured
+wrapper. Do not run routine commands as `RUSTC_WRAPPER= cargo ...` or
+`env RUSTC_WRAPPER= cargo ...`: Cargo gives that empty environment variable
+precedence over `~/.cargo/config.toml`, so it disables sccache even though the
+module configured `rustc-wrapper` and a supervised server.
+
+The clean service-started daemon is the durable fix for the historical macOS
+`DEVELOPER_DIR`/Apple SDK poisoning failure described above. If a Cargo command
+fails in a way that specifically implicates sccache, first capture the error and
+try `sccache --stop-server`. As an explicit one-command escape hatch, use
+`SCCACHE_DISABLE=1 cargo ...` and mention the observed sccache failure in the
+handoff. Prefer that over clearing `RUSTC_WRAPPER`, because it keeps the
+configured wrapper visible and prevents the workaround from becoming the default
+pattern.
 
 ## Cleanup job phases
 

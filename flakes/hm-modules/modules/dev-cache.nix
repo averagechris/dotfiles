@@ -6,12 +6,17 @@
 }: let
   cfg = config.dotfiles.devCache;
 
-  # Run the sccache server supervised in the foreground with a clean service
-  # environment. Without this, the server is auto-started by whichever compile
-  # happens first and inherits that process's environment; on macOS a server
-  # started inside a nix shell (where DEVELOPER_DIR points at the nix Apple
-  # SDK) poisons every later C compile through /usr/bin/cc's xcselect shim with
-  # "error: tool 'clang' not found".
+  # Start the sccache daemon from a clean service environment. Without this, the
+  # daemon is auto-started by whichever compile happens first and inherits that
+  # process's environment; on macOS a daemon started inside a nix shell (where
+  # DEVELOPER_DIR points at the nix Apple SDK) poisons every later C compile
+  # through /usr/bin/cc's xcselect shim with "error: tool 'clang' not found".
+  #
+  # `sccache --start-server` daemonizes and exits after spawning the real
+  # server. Do not combine it with launchd KeepAlive or systemd Restart=always:
+  # the service manager will repeatedly re-run this script, `--stop-server` will
+  # kill the healthy daemon on every loop, and clients racing that loop report
+  # "server looks like it shut down unexpectedly" before compiling locally.
   serverScript = pkgs.writeShellApplication {
     name = "dotfiles-sccache-server";
     runtimeInputs = [
@@ -20,14 +25,13 @@
     text = ''
       export SCCACHE_DIR=${lib.escapeShellArg cfg.sccache.directory}
       export SCCACHE_CACHE_SIZE=${lib.escapeShellArg cfg.sccache.cacheSize}
-      # Never idle out: an exited server would get lazily restarted by an
+      # Never idle out: an exited daemon would get lazily restarted by an
       # arbitrary client with an arbitrary environment.
       export SCCACHE_IDLE_TIMEOUT=0
-      export SCCACHE_NO_DAEMON=1
 
       # Take over from any rogue server started by a client.
       sccache --stop-server >/dev/null 2>&1 || true
-      exec sccache --start-server
+      sccache --start-server
     '';
   };
 
@@ -538,6 +542,7 @@ in {
       RUSTC_WRAPPER = lib.getExe pkgs.sccache;
       SCCACHE_DIR = cfg.sccache.directory;
       SCCACHE_CACHE_SIZE = cfg.sccache.cacheSize;
+      SCCACHE_IDLE_TIMEOUT = "0";
     };
 
     home.file.".cargo/config.toml".text = ''
@@ -547,6 +552,7 @@ in {
       [env]
       SCCACHE_DIR = "${cfg.sccache.directory}"
       SCCACHE_CACHE_SIZE = "${cfg.sccache.cacheSize}"
+      SCCACHE_IDLE_TIMEOUT = "0"
     '';
 
     launchd.agents.sccache-server = lib.mkIf pkgs.stdenv.isDarwin {
@@ -556,7 +562,6 @@ in {
           (lib.getExe serverScript)
         ];
         RunAtLoad = true;
-        KeepAlive = true;
         ProcessType = "Background";
         LowPriorityIO = true;
         StandardOutPath = "${config.home.homeDirectory}/Library/Logs/sccache-server.log";
@@ -597,9 +602,10 @@ in {
         Description = "Supervised sccache server";
       };
       Service = {
+        Type = "forking";
         ExecStart = lib.getExe serverScript;
-        Restart = "always";
-        RestartSec = 5;
+        ExecStop = "${lib.getExe pkgs.sccache} --stop-server";
+        Restart = "on-failure";
         Nice = 10;
         IOSchedulingClass = "idle";
       };
