@@ -15,6 +15,7 @@
       inputs.srht.follows = "srht";
       inputs.ctx.follows = "ctx";
       inputs.rdny.follows = "rdny";
+      inputs.nitter-link.follows = "nitter-link";
     };
     trap = {
       url = "path:./flakes/hosts/trap";
@@ -80,6 +81,7 @@
       inputs.disko.follows = "disko";
       inputs.ctx.follows = "ctx";
       inputs.rdny.follows = "rdny";
+      inputs.nitter-link.follows = "nitter-link";
       inputs.systems.follows = "systems";
     };
     trainwreck = {
@@ -124,6 +126,7 @@
       inputs.flake-utils.follows = "flake-utils";
       inputs.home-manager.follows = "base-lib/home-manager";
       inputs.opencode.follows = "base-lib/opencode";
+      inputs.nitter-link.follows = "nitter-link";
     };
     darwin-modules = {
       url = "path:./flakes/darwin-modules";
@@ -192,6 +195,14 @@
     pip-chrome-extension = {
       url = "git+https://git.sr.ht/~averagechris/pip-chrome-extension";
       inputs.nixpkgs.follows = "nixpkgs";
+    };
+    nitter-link = {
+      url = "git+https://git.sr.ht/~averagechris/nitter-link?ref=refs/tags/v0.1.2";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+      inputs.treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
+      inputs.fleet.inputs.nixpkgs.follows = "nixpkgs";
+      inputs.fleet.inputs.srht.follows = "srht";
     };
   };
 

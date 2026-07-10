@@ -40,6 +40,14 @@
       inputs.fleet.inputs.nixpkgs.follows = "nixpkgs";
       inputs.fleet.inputs.srht.follows = "srht";
     };
+    nitter-link = {
+      url = "git+https://git.sr.ht/~averagechris/nitter-link?ref=refs/tags/v0.1.2";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+      inputs.treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
+      inputs.fleet.inputs.nixpkgs.follows = "nixpkgs";
+      inputs.fleet.inputs.srht.follows = "srht";
+    };
     opencode.follows = "base-lib/opencode";
   };
 
@@ -64,6 +72,7 @@
         sideshow = ./modules/sideshow.nix;
         linearCli = ./modules/linear-cli;
         srht = ./modules/srht.nix;
+        nitterLink = ./modules/nitter-link.nix;
         ghostty-fix = ./modules/ghostty-fix.nix;
 
         meganz = ./modules/meganz.nix;
@@ -138,6 +147,8 @@
             pi-coding-agent = final.callPackage ../base-lib/packages/pi-coding-agent.nix {};
             pi = final.pi-coding-agent;
             helium-bin = final.callPackage ../base-lib/packages/helium-bin.nix {};
+            nitter-link-chrome-extension = inputs.nitter-link.packages.${system}.chrome-extension;
+            nitter-link-firefox-extension = inputs.nitter-link.packages.${system}.firefox-extension;
             notion-cli = final.callPackage ../base-lib/packages/notion-cli.nix {};
             showboat = final.callPackage ../base-lib/packages/showboat.nix {};
             opencode = final.callPackage "${opencodeInput}/nix/opencode.nix" {
@@ -201,6 +212,71 @@
               mkdir -p $out
               touch $out/success
             '';
+
+        nitter-link-stable-path = let
+          fakeExtensionV1 = pkgs.runCommand "fake-nitter-link-package-v1" {} ''
+            mkdir -p $out/share/nitter-link/chrome $out/share/nitter-link/firefox
+            printf '{"manifest_version":3,"name":"nitter-link","version":"0.0.1"}\n' > $out/share/nitter-link/chrome/manifest.json
+            printf '{"manifest_version":2,"name":"nitter-link","version":"0.0.1","browser_specific_settings":{"gecko":{"id":"nitter-link@averagechris"}}}\n' > $out/share/nitter-link/firefox/manifest.json
+          '';
+          fakeExtensionV2 = pkgs.runCommand "fake-nitter-link-package-v2" {} ''
+            mkdir -p $out/share/nitter-link/chrome $out/share/nitter-link/firefox
+            printf '{"manifest_version":3,"name":"nitter-link","version":"0.0.2"}\n' > $out/share/nitter-link/chrome/manifest.json
+            printf '{"manifest_version":2,"name":"nitter-link","version":"0.0.2","browser_specific_settings":{"gecko":{"id":"nitter-link@averagechris"}}}\n' > $out/share/nitter-link/firefox/manifest.json
+          '';
+          mkTestConfig = extensionPackage:
+            home-manager.lib.homeManagerConfiguration {
+              inherit pkgs;
+              extraSpecialArgs = {
+                inherit dotfiles_lib inputs system;
+                sshKeys = inputs.base-lib.sshKeys;
+                secrets = {};
+              };
+              modules = [
+                ./modules/nitter-link.nix
+                {
+                  home.username = "test";
+                  home.homeDirectory = "/tmp/test-home";
+                  home.stateVersion = "26.05";
+                  programs.nitter-link = {
+                    enable = true;
+                    chromiumBrowsers.helium = {
+                      enable = true;
+                      inherit extensionPackage;
+                      stablePath = "/tmp/test-home/.config/net.imput.helium/nitter-link";
+                    };
+                    firefoxBrowsers.zen = {
+                      enable = true;
+                      inherit extensionPackage;
+                      temporaryManual = {
+                        enable = true;
+                        stablePath = "/tmp/test-home/.config/zen/nitter-link-temporary";
+                      };
+                    };
+                  };
+                }
+              ];
+            };
+          configV1 = mkTestConfig fakeExtensionV1;
+          configV2 = mkTestConfig fakeExtensionV2;
+          chromeKey = "net.imput.helium/nitter-link";
+          zenKey = "zen/nitter-link-temporary";
+          chromeSourceV1 = configV1.config.xdg.configFile.${chromeKey}.source;
+          chromeSourceV2 = configV2.config.xdg.configFile.${chromeKey}.source;
+          zenSourceV1 = configV1.config.xdg.configFile.${zenKey}.source;
+          zenSourceV2 = configV2.config.xdg.configFile.${zenKey}.source;
+        in
+          pkgs.runCommand "nitter-link-stable-path-test" {} ''
+            test "${chromeSourceV1}" = "${fakeExtensionV1}/share/nitter-link/chrome"
+            test "${chromeSourceV2}" = "${fakeExtensionV2}/share/nitter-link/chrome"
+            test "${zenSourceV1}" = "${fakeExtensionV1}/share/nitter-link/firefox"
+            test "${zenSourceV2}" = "${fakeExtensionV2}/share/nitter-link/firefox"
+            test -f "${chromeSourceV1}/manifest.json"
+            test -f "${chromeSourceV2}/manifest.json"
+            test -f "${zenSourceV1}/manifest.json"
+            test -f "${zenSourceV2}/manifest.json"
+            touch $out
+          '';
       };
     });
 }

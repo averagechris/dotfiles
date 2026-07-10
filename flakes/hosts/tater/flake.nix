@@ -17,6 +17,7 @@
       inputs.flake-utils.follows = "flake-utils";
       inputs.home-manager.follows = "home-manager";
       inputs.opencode.follows = "base-lib/opencode";
+      inputs.nitter-link.follows = "nitter-link";
     };
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
     home-manager.follows = "base-lib/home-manager";
@@ -73,6 +74,14 @@
     pip-chrome-extension = {
       url = "git+https://git.sr.ht/~averagechris/pip-chrome-extension";
       inputs.nixpkgs.follows = "nixpkgs";
+    };
+    nitter-link = {
+      url = "git+https://git.sr.ht/~averagechris/nitter-link?ref=refs/tags/v0.1.2";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+      inputs.treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
+      inputs.fleet.inputs.nixpkgs.follows = "nixpkgs";
+      inputs.fleet.inputs.srht.follows = "srht";
     };
     disko = {
       url = "github:nix-community/disko";

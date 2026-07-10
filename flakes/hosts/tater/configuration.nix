@@ -883,6 +883,22 @@ in {
     programs.meganz.enable = true;
     programs.helium.enable = true;
     programs.helium.extension-simple-pip-helper.enable = true;
+    programs.nitter-link = {
+      enable = true;
+      chromiumBrowsers.helium = {
+        enable = true;
+        extensionPackage = inputs.nitter-link.packages.${pkgs.stdenv.hostPlatform.system}.chrome-extension;
+        stablePath = "/home/chris/.config/net.imput.helium/nitter-link";
+      };
+      firefoxBrowsers.zen = {
+        enable = true;
+        extensionPackage = inputs.nitter-link.packages.${pkgs.stdenv.hostPlatform.system}.firefox-extension;
+        temporaryManual = {
+          enable = true;
+          stablePath = "/home/chris/.config/zen/nitter-link-temporary";
+        };
+      };
+    };
     home.packages = [
       # Bluetooth and network management
       pkgs.overskride

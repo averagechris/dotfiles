@@ -559,6 +559,14 @@ in {
     ];
 
     programs.firefox.enable = false;
+    programs.nitter-link = {
+      enable = true;
+      chromiumBrowsers.helium = {
+        enable = true;
+        extensionPackage = inputs.nitter-link.packages.${pkgs.stdenv.hostPlatform.system}.chrome-extension;
+        stablePath = "/Users/chris/.config/net.imput.helium/nitter-link";
+      };
+    };
     programs.kitty.enable = false;
     programs.zoom.enable = false;
     programs.darktable.enable = false;
