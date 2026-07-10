@@ -62,6 +62,19 @@ the upstream package's bundled skill text.
 
 ## Agent-facing CI additions
 
+Manual manifests under `.srht/` are intentionally outside the auto-submitted
+`.builds/` directory. `.srht/trainwreck-build.yml` preserves the native aarch64
+trainwreck host build for manual retries with `srht ci .srht/trainwreck-build.yml --secrets`; hosted ARM startup failed twice before tasks, so it is not an
+auto-submitted manifest until SourceHut ARM capacity is reliable.
+
+`.srht/trap-diagnostics.yml` is a non-realizing trap host diagnostic: it uses
+the standard Cachix secret/setup path,
+prints effective Nix caches/builders, records disk and inode state, runs GC
+root/dead-path reporting without deletion, times trap `drvPath` evaluation, and
+compares trap build dry-runs with configured caches versus the official cache.
+Submit it manually with `srht ci .srht/trap-diagnostics.yml --secrets`; it must
+not mutate lock files or realize the trap closure.
+
 `srht` v0.4 expands builds.sr.ht support for agents and polling automation:
 
 - `srht builds wait ID... [--stdin]` follows multiple jobs at once, emits NDJSON

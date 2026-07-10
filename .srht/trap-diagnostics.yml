@@ -1,0 +1,75 @@
+# Opt-in, non-realizing diagnostic for trap disk/cache failures. Submit manually;
+# this lives outside .builds/*.yml so git.sr.ht ordinary pushes do not auto-submit
+# it. The --secrets flag is required because scripts/ci-setup.sh reads the
+# existing Cachix token secret from ~/.ci_secrets/cachix_token.
+image: nixos/unstable
+packages:
+  - nixos.cachix
+  - nixos.time
+sources:
+  - https://git.sr.ht/~averagechris/dotfiles
+secrets:
+  - 731f7e55-4497-4228-8fa4-1657da7d3625
+tasks:
+  - setup: |
+      source ~/dotfiles/scripts/ci-setup.sh
+
+  - trap-diagnostics: |
+      set -euo pipefail
+      cd ~/dotfiles
+
+      report_disk() {
+        local label="$1"
+        printf '\n== disk: %s ==\n' "$label"
+        df -h / /nix /home || true
+        df -i / /nix /home || true
+        du -sh /nix/store || true
+      }
+
+      printf '== nix version ==\n'
+      nix --version
+
+      printf '\n== effective nix config ==\n'
+      nix config show \
+        | grep -E '^(substituters|trusted-substituters|builders|builders-use-substitutes|max-jobs|cores|experimental-features) =' \
+        || true
+
+      report_disk initial
+
+      printf '\n== gc dry-run / roots / reclaimable ==\n'
+      nix-store --gc --print-roots || true
+      dead_paths="$(mktemp)"
+      nix-store --gc --print-dead > "$dead_paths" || true
+      wc -l < "$dead_paths" | sed 's/^/dead_path_count=/' || true
+      if [ -s "$dead_paths" ]; then
+        nix path-info --closure-size --human-readable --stdin < "$dead_paths" || true
+      fi
+
+      TIME_BIN="$(type -P time)"
+      printf '\n== eval trap drvPath ==\n'
+      "$TIME_BIN" -f 'eval_wall_seconds=%e eval_max_rss_kb=%M' \
+        nix eval --raw \
+          .#nixosConfigurations.trap.config.system.build.toplevel.drvPath \
+          --no-write-lock-file \
+          --option eval-cache false
+
+      printf '\n== dry-run trap build with current caches ==\n'
+      nix build \
+        .#nixosConfigurations.trap.config.system.build.toplevel \
+        --dry-run \
+        --no-link \
+        --no-write-lock-file \
+        --option eval-cache false 2>&1 | tee /tmp/trap-dry-run-current-caches.log
+
+      printf '\n== dry-run trap build with official cache only ==\n'
+      nix build \
+        .#nixosConfigurations.trap.config.system.build.toplevel \
+        --dry-run \
+        --no-link \
+        --no-write-lock-file \
+        --option eval-cache false \
+        --option substituters https://cache.nixos.org/ \
+        --option trusted-substituters https://cache.nixos.org/ 2>&1 \
+        | tee /tmp/trap-dry-run-official-cache-only.log
+
+      report_disk final

@@ -45,23 +45,25 @@ deliberately when host behavior or fleet coverage matters:
   aggregate fleet checks and is too expensive for the ordinary CI path.
 
 SourceHut is the repository's only CI system and mirrors those tiers. git.sr.ht
-auto-submits all four `.builds/*.yml` manifests on push, matching SourceHut's
-four-manifest auto-discovery limit:
+auto-submits exactly three bounded `.builds/*.yml` manifests on push:
 
 - `.builds/lint-check.yml` runs `scripts/ci-check-tiers.sh fast`: formatting,
   Statix, ShellCheck, and shared flake eval-only checks.
-- `.builds/x86-host-builds.yml` runs `x86-host-builds`: active x86_64 NixOS
-  hosts `trap`, `thorny`, `tom`, `cruber`, and `tater` build sequentially in one
-  SourceHut VM. Each host uses its own `nix build --no-link` command to bound the
-  evaluator peak and make the failing host obvious, while reusing the same VM
-  store/cache across the job. Inactive `taz` and `tootsie` are excluded.
-- `.builds/trainwreck-build.yml` runs `trainwreck-build` with `arch: aarch64`,
-  building `nixosConfigurations.trainwreck.config.system.build.toplevel`
-  natively instead of paying QEMU cost in an x86 job.
+- `.builds/active-host-evals.yml` runs `scripts/ci-check-tiers.sh
+  active-host-evals`: active NixOS hosts `trap`, `thorny`, `tom`, `cruber`,
+  `tater`, and `trainwreck` evaluate drvPaths sequentially in separate Nix
+  processes with no builds, no lock writes, and eval cache disabled. Hosted
+  SourceHut does not realize full host closures because the #121 trap diagnostic
+  showed the 16G runner cannot safely fit trap's planned 13.2G unpacked closure
+  plus build temp space. Inactive `taz` and `tootsie` are excluded.
 - `.builds/coverage-checks.yml` runs `coverage-checks` on x86_64 Linux: it
   evaluates suremac's Darwin system only and builds selected high-signal desktop
   check derivations for tater and thorny. suremac remains eval-only because
   realizing the Darwin closure on Linux is not useful CI coverage for this repo.
+
+Manual manifests under `.srht/` cover heavyweight or diagnostic paths: full root
+flake check, native aarch64 trainwreck build retry, and trap disk/cache
+diagnostics. Thorny remains the operational full-closure builder/cache warmer.
 
 Every CI Nix command passes `--no-write-lock-file`; eval-only commands use
 `--raw` and disable the eval cache where that keeps repeated host evaluation

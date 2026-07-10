@@ -67,60 +67,79 @@ not committed.
    runs and needs cache/warmer policy work.
 1. trainwreck uses QEMU, likely a build-time bottleneck separate from eval.
 
-## Check tiers from #120
+## Hosted SourceHut policy from #121
 
-SourceHut is the only CI surface for this repository. The repository separates
-fast ordinary CI from explicit fleet validation instead of running root
-`nix flake check` for every push:
+SourceHut is the only repository CI surface, but hosted runners are not the
+operational full-closure builder. The #121 trap diagnostic
+([job 1817195](https://builds.sr.ht/~averagechris/job/1817195)) measured the
+hosted `nixos/unstable` x86_64 runner as a single 16G filesystem with about 13G
+free at job start. A non-realizing dry-run for `trap` planned 853 local builds and
+1696 fetched paths, about 4.8 GiB download and 13.2 GiB unpacked. Comparing the
+official cache only still planned about 4.8 GiB download and 13.3 GiB unpacked,
+so adding caches reduced build count but did not make the unpacked volume safe
+for the runner once build temp space is considered. Trap eval itself completed in
+253.31s with about 1.7 GiB max RSS.
+
+Therefore ordinary hosted SourceHut CI must not realize complete host closures.
+It checks shared code, evaluates all important hosts, and builds only targeted
+high-signal checks. `thorny` remains the operational closure builder and cache
+warmer for fleet realization. Full fleet or host-closure builds are manual paths
+for larger/recovered runners.
+
+## Check tiers from #120/#121
+
+Fast ordinary CI is separated from explicit fleet validation instead of running
+root `nix flake check` for every push:
 
 1. **Fast lint/shared checks**: `.builds/lint-check.yml` runs
-    `scripts/ci-check-tiers.sh fast`: Alejandra format check, Statix,
-    ShellCheck over tracked `*.sh` files, and eval-only checks for shared flakes.
-    Shared fast checks pass `--no-write-lock-file`.
-2. **Active x86_64 host builds**: `.builds/x86-host-builds.yml` runs
-    `scripts/ci-check-tiers.sh x86-host-builds`, building `trap`, `thorny`,
-    `tom`, `cruber`, and `tater` as separate sequential `nix build --no-link`
-    commands in one SourceHut VM. The job reuses one store/cache across hosts,
-    but avoids a multi-attribute invocation so the evaluator does not recreate
-    the monolithic root-check memory spike and logs still identify the failing
-    host. Inactive `taz` and `tootsie` are intentionally excluded.
-3. **Native trainwreck build**: `.builds/trainwreck-build.yml` sets
-    `arch: aarch64` and runs `scripts/ci-check-tiers.sh trainwreck-build`,
-    building `nixosConfigurations.trainwreck.config.system.build.toplevel`
-    natively. This keeps trainwreck covered without using QEMU in x86_64 jobs.
-4. **Coverage checks**: `.builds/coverage-checks.yml` runs
-    `scripts/ci-check-tiers.sh coverage-checks` on x86_64 Linux. It evaluates
-    suremac's Darwin system with an eval-only `nix eval --raw` command and builds
-    the five current explicit desktop checks: tater static desktop, tater
-    greeter/home Hyprland configs, and thorny greeter/home Hyprland configs.
-    suremac remains eval-only because building a Darwin closure on Linux is not
-    practical or high-signal for this CI shape.
-5. **Full fleet**: `.srht/full-fleet.yml` runs the root
-    `nix flake check --accept-flake-config`. It intentionally lives outside
-    `.builds/*.yml` because git.sr.ht auto-submits up to four manifests matching
-   that pattern on push. Submit it manually with
-   `srht ci .srht/full-fleet.yml --secrets` or from an external schedule when
-   comprehensive realization is required; `--secrets` is needed because
-   `scripts/ci-setup.sh` expects `~/.ci_secrets/cachix_token`, and srht CLI
-   noninteractive submissions withhold manifest secrets unless explicitly
-   enabled. It is intentionally not the ordinary CI path because prior ordinary
-   SourceHut hosted VMs hit OOM or timeout on that shape. SourceHut manifests
-   expose the image/architecture but do not provide a public per-job RAM/CPU size
-   selector, so the manual full-fleet job may still fail on the hosted VM until a
-   sufficiently large external runner or different operational schedule is used.
-   Until measured otherwise, prefer thorny's operational scheduled coverage for
-   routine fleet realization and use the manifest as the explicit command/path.
+   `scripts/ci-check-tiers.sh fast`: Alejandra format check, Statix, ShellCheck
+   over tracked `*.sh` files, and eval-only checks for shared flakes. Shared fast
+   checks pass `--no-write-lock-file`.
+2. **Active NixOS host evals**: `.builds/active-host-evals.yml` runs
+   `scripts/ci-check-tiers.sh active-host-evals`, evaluating drvPaths for `trap`,
+   `thorny`, `tom`, `cruber`, `tater`, and `trainwreck` as separate sequential
+   Nix processes with `--no-write-lock-file` and `--option eval-cache false`. It
+   does not build or download full host closures. Inactive `taz` and `tootsie`
+   are intentionally excluded. The filename is retained for continuity with
+   SourceHut job names, but the tier is eval-only.
+3. **Coverage checks**: `.builds/coverage-checks.yml` runs
+   `scripts/ci-check-tiers.sh coverage-checks` on x86_64 Linux. It evaluates
+   suremac's Darwin system with an eval-only `nix eval --raw` command and builds
+   the five current explicit desktop checks: tater static desktop, tater
+   greeter/home Hyprland configs, and thorny greeter/home Hyprland configs.
+   suremac remains eval-only because building a Darwin closure on Linux is not
+   practical or high-signal for this CI shape.
+4. **Manual native trainwreck build**: `.srht/trainwreck-build.yml` sets
+   `arch: aarch64` and runs `scripts/ci-check-tiers.sh trainwreck-build`. It is
+   outside `.builds/*.yml` because two hosted ARM jobs failed before any task logs
+   were produced, so auto-submitting it guaranteed red CI without testing code.
+   Retry manually with `srht ci .srht/trainwreck-build.yml --secrets` after
+   SourceHut ARM capacity recovers or when explicitly diagnosing the runner.
+5. **Manual full fleet**: `.srht/full-fleet.yml` runs the root
+   `nix flake check --accept-flake-config`. It intentionally lives outside
+   `.builds/*.yml` because git.sr.ht auto-submit should remain bounded. Submit it
+   manually with `srht ci .srht/full-fleet.yml --secrets` or from an external
+   schedule when comprehensive realization is required; `--secrets` is needed
+   because `scripts/ci-setup.sh` expects `~/.ci_secrets/cachix_token`, and srht
+   CLI noninteractive submissions withhold manifest secrets unless explicitly
+   enabled. It may still fail on hosted VMs until a sufficiently large external
+   runner or different operational schedule is used.
+6. **Manual trap diagnostic**: `.srht/trap-diagnostics.yml` is a one-off
+   non-realizing disk/cache diagnostic path for reproducing the #121 measurement
+   shape without mutating lock files or realizing trap.
 
-git.sr.ht ordinary pushes auto-submit exactly the intended bounded `.builds/*.yml`
-jobs: `lint-check.yml`, `x86-host-builds.yml`, `trainwreck-build.yml`, and
-`coverage-checks.yml`. Submit the manual diagnostic separately when needed:
+git.sr.ht ordinary pushes auto-submit exactly three bounded `.builds/*.yml` jobs:
+`lint-check.yml`, `active-host-evals.yml`, and `coverage-checks.yml`. Submit manual
+manifests separately when needed:
 
 ```bash
-srht ci .srht/full-fleet.yml --secrets # manual; includes Cachix token secret
+srht ci .srht/full-fleet.yml --secrets
+srht ci .srht/trainwreck-build.yml --secrets
+srht ci .srht/trap-diagnostics.yml --secrets
 ```
 
-If SourceHut scheduling is configured outside the repository, schedule
-`.srht/full-fleet.yml` there with equivalent secret exposure for the Cachix token
+If SourceHut scheduling is configured outside the repository, schedule manual
+`.srht/` manifests there with equivalent secret exposure for the Cachix token
 rather than adding unsupported trigger syntax to the manifest.
 
 After this lands, measure duration and max RSS with the same benchmark discipline

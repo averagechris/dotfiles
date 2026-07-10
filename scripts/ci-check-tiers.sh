@@ -5,7 +5,7 @@ set -euo pipefail
 
 tier="${1:-}"
 
-x86_hosts=(trap thorny tom cruber tater)
+active_nixos_hosts=(trap thorny tom cruber tater trainwreck)
 shared_flakes=(base-lib nixos-modules hm-modules darwin-modules)
 explicit_checks=(
   ".#checks.x86_64-linux.tater-desktop-static"
@@ -21,8 +21,8 @@ usage: scripts/ci-check-tiers.sh TIER
 
 TIER:
   fast              format, statix, shellcheck, and shared flake eval-only checks
-  x86-host-builds   build active x86_64 NixOS hosts sequentially, no result links
-  trainwreck-build  build trainwreck natively on aarch64, no result link
+  active-host-evals evaluate active NixOS host drvPaths sequentially, no builds
+  trainwreck-build  manual: build trainwreck natively on aarch64, no result link
   coverage-checks   suremac eval-only plus selected desktop check builds
   full-fleet        manual full root nix flake check with builds enabled
 EOF
@@ -84,14 +84,14 @@ build_nixos_host() {
   local attr=".#nixosConfigurations.$host.config.system.build.toplevel"
 
   echo "==> Building NixOS host: $host"
-  nix build --accept-flake-config --no-write-lock-file --no-link "$attr"
+  nix build --accept-flake-config --no-write-lock-file --option eval-cache false --no-link "$attr"
 }
 
 build_check() {
   local check="$1"
 
   echo "==> Building check: $check"
-  nix build --accept-flake-config --no-write-lock-file --no-link "$check"
+  nix build --accept-flake-config --no-write-lock-file --option eval-cache false --no-link "$check"
 }
 
 case "$tier" in
@@ -107,10 +107,12 @@ case "$tier" in
       flake_check_no_build "./flakes/$flake"
     done
     ;;
-  x86-host-builds)
+  active-host-evals)
     require_system x86_64-linux
-    for host in "${x86_hosts[@]}"; do
-      build_nixos_host "$host"
+    for host in "${active_nixos_hosts[@]}"; do
+      echo "==> Evaluating active NixOS host: $host"
+      host_eval "$host"
+      printf '\n'
     done
     ;;
   trainwreck-build)
@@ -127,7 +129,7 @@ case "$tier" in
     done
     ;;
   full-fleet)
-    nix flake check --accept-flake-config --no-write-lock-file
+    nix flake check --accept-flake-config --no-write-lock-file --option eval-cache false
     ;;
   -h|--help|help)
     usage

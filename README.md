@@ -76,7 +76,7 @@ the 2026-07-09 flake performance audit and follow-up plan.
 | **tom** | x86_64-linux | Home server (home-assistant) | Requires `openssl-1.1.1w` |
 | **cruber** | x86_64-linux | COSMIC desktop, Dell XPS | SSH deployable |
 | **tater** | x86_64-linux | Hyprland desktop, ThinkPad T14s | SSH deployable |
-| **trainwreck** | aarch64-linux | SourceHut/Forgejo VPS | Native ARM build in CI |
+| **trainwreck** | aarch64-linux | SourceHut/Forgejo VPS | Eval in ordinary CI; native ARM build is manual |
 | **taz** | x86_64-linux | Linode VM, Searx | Inactive |
 | **tootsie** | x86_64-linux | Linode VM, Tailscale exit node | Inactive |
 
@@ -127,24 +127,27 @@ this.
 
 ### SourceHut CI
 
-SourceHut is the only CI system. git.sr.ht auto-submits exactly four manifests
-under `.builds/` on every push:
+SourceHut is the only CI system. git.sr.ht auto-submits exactly three bounded
+manifests under `.builds/` on every push:
 
 - `lint-check.yml`: fast formatting, Statix, ShellCheck, and shared flake
   eval-only checks.
-- `x86-host-builds.yml`: builds active x86_64 NixOS hosts `trap`, `thorny`,
-  `tom`, `cruber`, and `tater` sequentially in one VM. The separate Nix commands
-  preserve per-host failure attribution and avoid recreating the monolithic
-  evaluator peak, while the VM's store/cache is reused across hosts. Inactive
-  `taz` and `tootsie` are excluded.
-- `trainwreck-build.yml`: builds `trainwreck` on a native `aarch64` SourceHut VM
-  so CI does not spend the x86 jobs on QEMU emulation.
+- `active-host-evals.yml`: evaluates active NixOS host drvPaths for `trap`,
+  `thorny`, `tom`, `cruber`, `tater`, and `trainwreck` sequentially in separate
+  Nix processes with no builds, no lock writes, and eval cache disabled. The
+  historical filename remains, but the hosted job is eval-only because complete
+  host closures exceed hosted SourceHut runner disk headroom. Inactive `taz` and
+  `tootsie` are excluded.
 - `coverage-checks.yml`: evaluates suremac's Darwin system only and builds the
   selected high-signal tater/thorny desktop check derivations on x86_64 Linux.
   It does not try to realize a Darwin closure on Linux.
 
-`.srht/full-fleet.yml` remains a manual diagnostic outside auto-discovery for a
-full root `nix flake check` when comprehensive fleet realization is required.
+Manual manifests live under `.srht/` and require explicit submission with
+`--secrets` when they use the shared Cachix setup: `.srht/full-fleet.yml` for
+root `nix flake check`, `.srht/trainwreck-build.yml` for retrying native aarch64
+trainwreck builds after hosted ARM capacity recovers, and
+`.srht/trap-diagnostics.yml` for the non-realizing trap disk/cache diagnostic.
+Thorny remains the operational full-closure builder/cache warmer.
 
 ### Adding a New Host
 

@@ -1,0 +1,17 @@
+# Active NixOS host evaluation coverage. Hosts run sequentially in separate Nix
+# processes with eval cache disabled, no lock writes, and no closure builds.
+# Hosted SourceHut's 16G runner cannot safely realize large host closures.
+image: nixos/unstable
+packages:
+  - nixos.cachix
+sources:
+  - https://git.sr.ht/~averagechris/dotfiles
+secrets:
+  - 731f7e55-4497-4228-8fa4-1657da7d3625
+tasks:
+  - setup: |
+      source ~/dotfiles/scripts/ci-setup.sh
+
+  - active-host-evals: |
+      cd ~/dotfiles
+      scripts/ci-check-tiers.sh active-host-evals

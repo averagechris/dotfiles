@@ -1,0 +1,22 @@
+# Manual native aarch64 build for trainwreck. Submit manually with:
+#   srht ci .srht/trainwreck-build.yml --secrets
+#
+# This manifest is intentionally outside .builds/*.yml so git.sr.ht ordinary
+# pushes do not auto-submit it. Hosted SourceHut ARM startup failed twice before
+# any task logs were produced; retry only after SourceHut ARM capacity recovers
+# or when explicitly diagnosing that runner.
+image: nixos/unstable
+arch: aarch64
+packages:
+  - nixos.cachix
+sources:
+  - https://git.sr.ht/~averagechris/dotfiles
+secrets:
+  - 731f7e55-4497-4228-8fa4-1657da7d3625
+tasks:
+  - setup: |
+      source ~/dotfiles/scripts/ci-setup.sh
+
+  - trainwreck-build: |
+      cd ~/dotfiles
+      scripts/ci-check-tiers.sh trainwreck-build
