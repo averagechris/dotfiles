@@ -12,6 +12,11 @@ Trainwreck also disables the heavier `jj-workflow` alias set (`jj ship`,
 `jj sync`, `jj ws`, etc.) because those helpers retain extra workflow runtimes
 that are useful on workstations but unnecessary for self-deploying this VPS.
 
+A temporary `trainwreck-qemu-probe` package is present for the #121 cache-miss
+measurement. It compiles a tiny native aarch64 C binary so Thorny's binfmt/QEMU
+builder must realize at least one uncached architecture-specific derivation. It
+should be removed immediately after the measurement is recorded.
+
 The previous Telegram bot stack was removed from this host because it was not in
 active use and its gateway dependency graph made trainwreck builds
 disproportionately slow. Do not reintroduce the old gateway services, extension
