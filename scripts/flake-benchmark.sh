@@ -51,9 +51,17 @@ json_emit() {
 nix_config_value_json() {
   key=$1
   if config=$(nix config show --json 2>/dev/null); then
-    printf '%s' "$config" | jq -c --arg key "$key" '.[$key].value? // .[$key] // null'
+    printf '%s' "$config" | jq -c --arg key "$key" '
+      if has($key) then
+        if .[$key] | type == "object" and has("value") then .[$key].value else .[$key] end
+      else null end
+    '
   elif config=$(nix show-config --json 2>/dev/null); then
-    printf '%s' "$config" | jq -c --arg key "$key" '.[$key].value? // .[$key] // null'
+    printf '%s' "$config" | jq -c --arg key "$key" '
+      if has($key) then
+        if .[$key] | type == "object" and has("value") then .[$key].value else .[$key] end
+      else null end
+    '
   elif config=$(nix show-config 2>/dev/null); then
     printf '%s\n' "$config" | jq -R -s -c --arg key "$key" '
       split("\n")
@@ -194,9 +202,12 @@ if [ -n "$output" ]; then
 fi
 
 current_system=$(nix eval --raw --impure --expr builtins.currentSystem)
-nix_version=$(nix --version | cut -d ' ' -f 3)
+nix_version_raw=$(nix --version)
+nix_version=${nix_version_raw##* }
 substituters_json=$(nix_config_value_json substituters)
 builders_json=$(nix_config_value_json builders)
+trusted_public_keys_json=$(nix_config_value_json trusted-public-keys)
+builders_use_substitutes_json=$(nix_config_value_json builders-use-substitutes)
 if [ -f "$repo/flake.lock" ]; then
   flake_lock_sha256=$(nix hash file --type sha256 --base16 "$repo/flake.lock")
 else
@@ -204,7 +215,7 @@ else
 fi
 ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 target_json=$(printf '%s' "$expanded" | tr ' ' '\n' | jq -R 'select(length > 0)' | jq -s .)
-json_emit "$(jq -cn --arg schema "$schema" --arg timestamp "$ts" --arg revision "$revision" --argjson dirty "$dirty" --arg system "$current_system" --arg nix_version "$nix_version" --argjson targets "$target_json" --argjson substituters "$substituters_json" --argjson builders "$builders_json" --arg flake_lock_sha256 "$flake_lock_sha256" --argjson runs "$runs" --argjson warmup_count "$warmup" --argjson offline_default "$offline" --argjson prepare_requested "$prepare" '{schema:$schema,timestamp:$timestamp,record:"metadata",revision:$revision,dirty:$dirty,current_system:$system,nix_version:$nix_version,substituters:$substituters,builders:$builders,flake_lock_sha256:(if $flake_lock_sha256 == "" then null else $flake_lock_sha256 end),benchmark_config:{runs:$runs,warmup:$warmup_count,offline:$offline_default,prepare:$prepare_requested},targets:$targets,eval_cache:false,warmups_recorded:true}')"
+json_emit "$(jq -cn --arg schema "$schema" --arg timestamp "$ts" --arg revision "$revision" --argjson dirty "$dirty" --arg system "$current_system" --arg nix_version "$nix_version" --arg nix_version_raw "$nix_version_raw" --argjson targets "$target_json" --argjson substituters "$substituters_json" --argjson trusted_public_keys "$trusted_public_keys_json" --argjson builders "$builders_json" --argjson builders_use_substitutes "$builders_use_substitutes_json" --arg flake_lock_sha256 "$flake_lock_sha256" --argjson runs "$runs" --argjson warmup_count "$warmup" --argjson offline_default "$offline" --argjson prepare_requested "$prepare" '{schema:$schema,timestamp:$timestamp,record:"metadata",revision:$revision,dirty:$dirty,current_system:$system,nix_version:$nix_version,nix_version_raw:$nix_version_raw,substituters:$substituters,trusted_public_keys:$trusted_public_keys,builders:$builders,builders_use_substitutes:$builders_use_substitutes,flake_lock_sha256:(if $flake_lock_sha256 == "" then null else $flake_lock_sha256 end),benchmark_config:{runs:$runs,warmup:$warmup_count,offline:$offline_default,prepare:$prepare_requested},targets:$targets,eval_cache:false,warmups_recorded:true}')"
 
 if [ "$prepare" = true ]; then
   prepare_failed=0

@@ -266,17 +266,50 @@
 
       state_dir="/var/lib/dotfiles-host-build-cache"
       result_dir="$state_dir/results"
+      revision_dir="$state_dir/revisions"
       log_dir="$state_dir/logs"
       lock_file="$state_dir/build.lock"
-      flake_ref="git+https://git.sr.ht/~averagechris/dotfiles?ref=main"
+      rev_file="$state_dir/last-successful-rev"
+      repo_url="https://git.sr.ht/~averagechris/dotfiles"
 
-      mkdir -p "$result_dir" "$log_dir"
+      mkdir -p "$result_dir" "$revision_dir" "$log_dir"
 
       exec 9>"$lock_file"
       if ! flock -n 9; then
         echo "Another dotfiles host build-cache run is already active; exiting."
         exit 0
       fi
+
+      rev=$(git ls-remote "$repo_url" refs/heads/main | cut -f1)
+      if ! [[ "$rev" =~ ^[0-9a-f]{40}$ ]]; then
+        echo "Failed to resolve a valid 40-character SourceHut main revision for $repo_url: $rev" >&2
+        exit 1
+      fi
+      flake_ref="git+$repo_url?rev=$rev"
+
+      if [ -f "$rev_file" ] && [ "$(cat "$rev_file")" = "$rev" ]; then
+        roots_complete=true
+        for host in trap thorny tom cruber tater trainwreck; do
+          if [ "$(readlink "$result_dir/$host" 2>/dev/null || true)" != "$revision_dir/$rev/$host" ] \
+            || [ ! -e "$result_dir/$host" ]; then
+            roots_complete=false
+            break
+          fi
+        done
+        if [ "$roots_complete" = true ]; then
+          echo "dotfiles-host-build-cache: revision $rev was already fully successful; skipping before Nix evaluation"
+          exit 0
+        fi
+        echo "dotfiles-host-build-cache: revision marker matched $rev but result roots were incomplete; rebuilding"
+      fi
+
+      echo "dotfiles-host-build-cache: stage=build revision=$rev flake_ref=$flake_ref"
+      echo "dotfiles-host-build-cache: nix_version=$(nix --version)"
+      echo "dotfiles-host-build-cache: current_system=$(nix eval --raw --expr builtins.currentSystem --no-write-lock-file 2>/dev/null || printf unknown)"
+      for key in substituters trusted-public-keys builders builders-use-substitutes max-jobs cores; do
+        value=$(nix config show "$key" 2>/dev/null || nix show-config "$key" 2>/dev/null || printf unknown)
+        echo "dotfiles-host-build-cache: $key=$value"
+      done
 
       hosts=(
         trap
@@ -288,22 +321,65 @@
       )
 
       failed=0
+      build_result_dir="$revision_dir/$rev"
+      mkdir -p "$build_result_dir"
+      x86_start=$(date +%s)
       for host in "''${hosts[@]}"; do
         log="$log_dir/$host.log"
-        echo "== Building $host from $flake_ref =="
+        host_start=$(date +%s)
+        echo "== Building $host at $rev from $flake_ref =="
+        if [ "$host" = trainwreck ]; then
+          plan_log="$log_dir/$host-dry-run.log"
+          if nix build \
+            --accept-flake-config \
+            --dry-run \
+            "$flake_ref#nixosConfigurations.$host.config.system.build.toplevel" \
+            > >(tee "$plan_log") \
+            2> >(tee -a "$plan_log" >&2); then
+            echo "Captured $host dry-run planning in $plan_log"
+          else
+            echo "Diagnostic dry-run planning failed for $host; continuing to actual build" >&2
+          fi
+          trainwreck_start=$(date +%s)
+        fi
         if nix build \
           --accept-flake-config \
           --print-build-logs \
-          --out-link "$result_dir/$host" \
+          --out-link "$build_result_dir/$host" \
           "$flake_ref#nixosConfigurations.$host.config.system.build.toplevel" \
           > >(tee "$log") \
           2> >(tee -a "$log" >&2); then
-          echo "Built $host: $(readlink "$result_dir/$host")"
+          echo "Built $host: $(readlink "$build_result_dir/$host")"
         else
           echo "Failed to build $host; see $log" >&2
           failed=1
         fi
+        host_end=$(date +%s)
+        echo "Elapsed $host: $((host_end - host_start))s"
+        if [ "$host" = tater ]; then
+          x86_end=$host_end
+          echo "Elapsed x86-hosts trap/thorny/tom/cruber/tater: $((x86_end - x86_start))s"
+        elif [ "$host" = trainwreck ]; then
+          echo "Elapsed trainwreck aarch64/QEMU build: $((host_end - trainwreck_start))s"
+        fi
       done
+
+      if [ "$failed" -eq 0 ]; then
+        for host in "''${hosts[@]}"; do
+          new_link="$result_dir/.$host.$rev"
+          ln -sfn "$build_result_dir/$host" "$new_link"
+          mv -Tf "$new_link" "$result_dir/$host"
+        done
+        tmp_rev=$(mktemp "$state_dir/.last-successful-rev.XXXXXX")
+        printf '%s\n' "$rev" >"$tmp_rev"
+        mv -f "$tmp_rev" "$rev_file"
+        echo "dotfiles-host-build-cache: revision $rev fully successful; state updated atomically"
+        for old_dir in "$revision_dir"/*; do
+          [ -d "$old_dir" ] || continue
+          [ "$old_dir" = "$build_result_dir" ] && continue
+          rm -rf -- "$old_dir" || echo "Warning: failed to remove stale result roots at $old_dir" >&2
+        done
+      fi
 
       exit "$failed"
     '';

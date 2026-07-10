@@ -108,12 +108,49 @@ current `main` branch of `~averagechris/dotfiles` for the active NixOS hosts:
 - `tater`
 - `trainwreck`
 
+At the start of each run, before any Nix evaluation, the script resolves
+SourceHut `main` exactly once with `git ls-remote`, validates that it is a
+40-character Git revision, and uses that revision-pinned flake URL for every
+host build. If `/var/lib/dotfiles-host-build-cache/last-successful-rev` already
+matches that revision, the service exits immediately without evaluating Nix.
+
 Each build uses a result link under `/var/lib/dotfiles-host-build-cache/results`,
 which keeps the realized system closures available on `thorny` for later remote
 builder clients and local switches. Per-host logs are written to
-`/var/lib/dotfiles-host-build-cache/logs/<host>.log`. `suremac` is intentionally
-excluded because Darwin systems are not built on Linux; inactive hosts such as
-`taz` and `tootsie` are not part of the warm cache.
+`/var/lib/dotfiles-host-build-cache/logs/<host>.log`; trainwreck also gets a
+best-effort diagnostic dry-run planning log at
+`/var/lib/dotfiles-host-build-cache/logs/trainwreck-dry-run.log`. Dry-run
+diagnostic failures are reported but do not mask the actual trainwreck build
+result. Revision-specific roots are built first; the canonical per-host links and
+state marker switch only after all six hosts succeed. One host failure therefore
+preserves the old successful revision, while per-host roots/logs still isolate
+follow-up debugging. `suremac` is intentionally excluded because
+Darwin systems are not built on Linux; inactive hosts such as `taz` and
+`tootsie` are not part of the warm cache.
+
+The service logs the effective revision/stage, Nix version, current system,
+substituters, and builders at run start. It also emits elapsed timing for each
+host, a combined five-host x86_64-linux total for `trap`, `thorny`, `tom`,
+`cruber`, and `tater`, and a separate trainwreck aarch64/QEMU elapsed time. Use
+those operational timings from thorny before concluding whether host builds
+should be aggregated; result roots and logs remain per-host by default.
+
+For a safe comparison of sequential x86 host planning versus one multi-installable
+invocation at a pinned revision, run the focused harness outside normal service
+execution:
+
+```bash
+nix run .#host-build-cache-benchmark -- --rev <40-char-sourcehut-main-rev>
+```
+
+The harness uses `nix build --dry-run` with the evaluation cache disabled for the
+five x86 hosts. It alternates execution order across repeated trials and prints
+elapsed seconds plus max RSS for the complete sequential loop and combined
+multi-installable invocation. This compares planning/evaluation/substitution
+shape, not realized build throughput. Keep trainwreck separate because its
+aarch64/QEMU behavior answers a different performance question. Even dry-run
+evaluation of all five systems can take tens of minutes; run it on thorny in an
+intentional measurement window rather than in routine CI.
 
 Useful checks on `thorny`:
 

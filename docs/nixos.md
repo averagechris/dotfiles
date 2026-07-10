@@ -64,6 +64,8 @@ auto-submits exactly three bounded `.builds/*.yml` manifests on push:
 Manual manifests under `.srht/` cover heavyweight or diagnostic paths: full root
 flake check, native aarch64 trainwreck build retry, and trap disk/cache
 diagnostics. Thorny remains the operational full-closure builder/cache warmer.
+See [cache policy](/docs/cache-policy.md) for the per-environment cache/key/
+builder matrix, SourceHut pull-only publication policy, and diagnostic fields.
 
 Every CI Nix command passes `--no-write-lock-file`; eval-only commands use
 `--raw` and disable the eval cache where that keeps repeated host evaluation

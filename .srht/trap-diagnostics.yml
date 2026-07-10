@@ -29,10 +29,29 @@ tasks:
       printf '== nix version ==\n'
       nix --version
 
+      printf '\n== runner identity ==\n'
+      printf 'revision = '
+      git rev-parse --short HEAD || true
+      printf 'system = '
+      nix eval --raw --impure --expr builtins.currentSystem || true
+      printf '\n'
+
       printf '\n== effective nix config ==\n'
-      nix config show \
-        | grep -E '^(substituters|trusted-substituters|builders|builders-use-substitutes|max-jobs|cores|experimental-features) =' \
-        || true
+      for key in \
+        substituters \
+        trusted-public-keys \
+        trusted-substituters \
+        builders \
+        builders-use-substitutes \
+        max-jobs \
+        cores \
+        experimental-features; do
+        if value="$(nix config show "$key" 2>/dev/null || nix show-config "$key" 2>/dev/null)"; then
+          printf '%s = %s\n' "$key" "$value"
+        else
+          printf '%s = <unavailable>\n' "$key"
+        fi
+      done
 
       report_disk initial
 

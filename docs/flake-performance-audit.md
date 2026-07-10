@@ -86,6 +86,39 @@ high-signal checks. `thorny` remains the operational closure builder and cache
 warmer for fleet realization. Full fleet or host-closure builds are manual paths
 for larger/recovered runners.
 
+## Thorny warmer update from #121
+
+The `dotfiles-host-build-cache` service on thorny is now revision-aware. It
+resolves SourceHut `main` once per service run, validates the 40-character Git
+revision, builds all active NixOS hosts from that revision-pinned flake URL, and
+records `last-successful-rev` atomically only after all six hosts succeed. A
+subsequent timer run for the same revision skips before any Nix evaluation.
+
+The implementation intentionally preserves per-host `nix build` invocations,
+result roots, and logs. That keeps failure isolation and avoids losing useful
+per-host artifacts before there is measured evidence from thorny that aggregating
+the five x86 hosts into one Nix invocation improves the operational bottleneck.
+The service logs effective Nix environment details and separates elapsed timing
+for the five x86 hosts from trainwreck's aarch64/QEMU build. Trainwreck also has
+a best-effort dry-run planning diagnostic, but diagnostic failure does not mask
+the actual build result.
+
+For reproducible local exploration without triggering huge builds, use:
+
+```bash
+nix run .#host-build-cache-benchmark -- --rev <40-char-sourcehut-main-rev>
+```
+
+The harness compares the complete five-host sequential x86 loop with one
+multi-installable dry-run at the same pinned revision, disables the evaluation
+cache, alternates execution order, and prints elapsed time and max RSS. Dry-run
+output can show planning/evaluation/substitution
+differences, but it cannot prove realized build throughput, scheduler behavior,
+or QEMU impact. Do not record benchmark conclusions here until the harness or the
+service timings have actually been run on thorny under comparable conditions.
+The five-system dry-run can itself take tens of minutes, so it remains an
+explicit operational benchmark rather than a routine CI check.
+
 ## Check tiers from #120/#121
 
 Fast ordinary CI is separated from explicit fleet validation instead of running
@@ -222,8 +255,11 @@ Metadata fields:
 - `dirty`: whether the checkout had local changes.
 - `current_system`: `builtins.currentSystem` for the runner.
 - `nix_version`: local Nix version.
+- `nix_version_raw`: complete vendor-specific `nix --version` output.
 - `substituters`: effective Nix `substituters` setting as reported by Nix.
+- `trusted_public_keys`: effective signature keys as reported by Nix.
 - `builders`: effective Nix `builders` setting as reported by Nix.
+- `builders_use_substitutes`: effective remote-builder substitution policy.
 - `flake_lock_sha256`: SHA-256 of `flake.lock`, or `null` when absent.
 - `benchmark_config`: requested `runs`, `warmup`, default `offline`, and
   `prepare` values.

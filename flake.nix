@@ -336,6 +336,12 @@
         text = builtins.readFile ./scripts/flake-benchmark.sh;
       };
 
+      packages.host-build-cache-benchmark = pkgs.writeShellApplication {
+        name = "host-build-cache-benchmark";
+        runtimeInputs = [pkgs.bash pkgs.coreutils pkgs.nix pkgs.time];
+        text = builtins.readFile ./scripts/host-build-cache-benchmark.sh;
+      };
+
       apps.update-flakes = {
         type = "app";
         program = "${self.packages.${system}.update-flakes}/bin/update-flakes";
@@ -358,6 +364,12 @@
         meta = {
           description = "Benchmark dotfiles flake evaluation and write JSONL samples";
         };
+      };
+
+      apps.host-build-cache-benchmark = {
+        type = "app";
+        program = "${self.packages.${system}.host-build-cache-benchmark}/bin/host-build-cache-benchmark";
+        meta.description = "Compare sequential and multi-installable fleet warm-up planning";
       };
 
       # Quiet deploy wrapper: nix run .#deploy-quiet -- hostname

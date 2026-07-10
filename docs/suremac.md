@@ -2,6 +2,15 @@
 
 `suremac` is the Darwin/macOS host configured in `flakes/hosts/suremac/`.
 
+## Nix cache caveat
+
+`suremac` currently uses Determinate Nix, so the daemon's effective cache and
+builder settings are imperative/runtime state rather than nix-darwin-managed
+`nix.settings`. Verify with `nix config show substituters trusted-public-keys
+builders builders-use-substitutes` after installer or daemon changes. The shared
+cache publication policy and platform differences are documented in
+[cache policy](/docs/cache-policy.md).
+
 ## LAN SSH
 
 `suremac` enables macOS Remote Login through nix-darwin so local NixOS machines
