@@ -144,13 +144,20 @@ and exposes the `rdny` CLI plus the `rdny-browser` skill to OpenCode agents. See
 ## Daily dotfiles Self-Update
 
 `suremac` runs a nix-darwin launchd user agent named
-`dotfiles-suremac-self-update`. The agent wakes hourly (`StartInterval = 3600`,
-plus `RunAtLoad`) but the script attempts at most one update per ~23 hours,
-tracked in `~/.local/state/dotfiles-self-update/last-run`. This way a missed
-update window (laptop asleep or powered off) is caught up the next time the
-machine is running, instead of waiting for a fixed wall-clock time. It is a
-user agent, not a daemon, so it runs in the Aqua login session and can display
-macOS notifications and password dialogs.
+`dotfiles-suremac-self-update`. The agent performs a cheap check every five
+minutes (`StartInterval = 300`, plus `RunAtLoad`) but attempts at most one update
+per ~23 hours, tracked in `~/.local/state/dotfiles-self-update/last-run`.
+launchd does not wake a sleeping laptop for the job; on the next eligible
+interval while the Mac is awake, a due run checks that the one-minute load
+average is below 60% of logical CPU capacity and that no Nix, nix-darwin, or Home
+Manager client is active. Keyboard or pointer activity is not a blocker, so an
+update can use available headroom during a meeting or other light interactive
+work. Busy checks do not invoke Nix, do not touch its SQLite database, and do not
+advance the daily stamp, so another cheap interval can catch the next suitable
+window instead of waiting until the following day. The always-resident
+`nix-daemon` is excluded from activity detection. The job is a user agent, not a
+daemon, so it runs in the Aqua login session and can display macOS notifications
+and password dialogs.
 
 The job keeps a dedicated public HTTPS clone of the canonical dotfiles remote at
 `~/.local/state/dotfiles-self-update/repo`. Each run fetches `main`, hard-resets
@@ -160,10 +167,20 @@ the clone to `origin/main`, builds
 to `/run/current-system`. If the paths match, it exits quietly without a
 notification or password prompt.
 
-The daily throttle stamp is written after a successful build: transient
-fetch/build failures retry silently on the next hourly wake, while a no-op, a
-successful activation, or a cancelled password prompt all count as the daily
-attempt so at most one password dialog appears per day.
+The readiness gate is checked before fetching, immediately before building, and
+again before an interactive activation. If the machine becomes loaded during a
+build, its completed out-link remains rooted and activation waits for the next
+headroom window.
+Transient fetch/build failures and busy deferrals retry on a later five-minute
+interval. A no-op or any activation attempt—including a cancelled password
+prompt or activation failure—counts as the daily attempt, so at most one
+password dialog appears per day.
+
+Self-update and dev-cache GC share a PID-aware `shlock` lock at
+`~/.local/state/dotfiles-nix-maintenance/lock`; they cannot build and collect the
+store concurrently even if both see the same ready instant. A direct
+`dotfiles-suremac-self-update --force` bypasses the daily throttle and readiness
+checks, but never bypasses that exclusion lock.
 
 When a new system was built, the job posts a notification and activates the
 pre-built closure with sudo. The sudo password prompt is a small nix-managed
@@ -201,7 +218,7 @@ Useful manual commands:
 
 ```bash
 # Trigger the launchd job now for the logged-in user.
-launchctl kickstart -k gui/$(id -u)/org.nixos.dotfiles-suremac-self-update
+launchctl kickstart gui/$(id -u)/org.nixos.dotfiles-suremac-self-update
 
 # Run the same script directly, which is useful while watching the log.
 # --force bypasses the ~23h throttle.
@@ -328,7 +345,8 @@ reminder, cargo-sweep, and Docker pruning).
 Host specifics:
 
 - `SCCACHE_CACHE_SIZE=50G`;
-- normal cleanup runs every 6 hours instead of daily;
+- normal cleanup is due every 6 hours instead of daily, with a cheap load and
+  conflicting-client check every 5 minutes so sleep or heavy work only defers it;
 - a low-disk checker runs every 15 minutes and starts cleanup when `/` has less
   than 10 GiB free;
 - the pressure cleanup phase runs `nix-collect-garbage -d` plus `nix store gc`,

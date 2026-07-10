@@ -374,9 +374,10 @@ in {
       sccache.cacheSize = "50G";
       cleanup = {
         # This laptop churns through Nix/Cargo/Docker artifacts quickly while
-        # agents work in parallel. Run the normal cleanup more than daily, and
-        # check for disk pressure often enough to recover before builds wedge.
+        # agents work in parallel. Cleanup is due every six hours, but a cheap
+        # five-minute gate waits for CPU headroom and no conflicting dev tools.
         intervalSeconds = 21600;
+        retryIntervalSeconds = 300;
         lowDisk = {
           enable = true;
           checkIntervalSeconds = 900;

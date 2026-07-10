@@ -14,7 +14,9 @@ cache cleanups. Enabled on `suremac`, `tater`, and `thorny`.
 - starts a clean `sccache-server` daemon at login (launchd agent on macOS,
   systemd user service on Linux);
 - runs a periodic `dev-cache-cleanup` job (launchd on macOS, systemd user timer
-  on Linux; daily by default via `cleanup.intervalSeconds`);
+  on Linux; daily by default via `cleanup.intervalSeconds`). On macOS a cheap
+  wrapper wakes more often and runs the full cleanup only when it is due and the
+  machine has CPU headroom and no conflicting clients;
 - runs a lightweight low-disk checker (`dev-cache-low-disk-cleanup`) that wakes
   more frequently and only starts cleanup when `/` falls below the configured
   free-space threshold.
@@ -146,11 +148,49 @@ dotfiles-dev-cache-cleanup --pressure # force the pressure phase after normal cl
 dotfiles-dev-cache-low-disk-cleanup   # cheap threshold check, then cleanup only if low
 ```
 
+## macOS load-aware scheduling
+
+macOS cleanup launchd agents do not wake a sleeping laptop. Instead of relying
+on a fixed overnight wall-clock time, the normal cleanup agent runs at
+`cleanup.retryIntervalSeconds` (15 minutes by default), checks a timestamp, and
+exits immediately unless the full `cleanup.intervalSeconds` cadence is due. If
+the laptop was asleep or the due check lands in a busy window, the timestamp is
+not advanced and the next eligible interval while awake can use available
+headroom.
+
+The shared readiness check does not invoke Nix or query its SQLite database. It
+takes one `ps` snapshot and reads macOS's one-minute load average and logical CPU
+count with `sysctl`. Maintenance is allowed while the user is active—including
+during meetings—when load is below 60% of logical CPU capacity. Active Nix,
+nix-darwin, or Home Manager clients always defer maintenance to avoid store and
+SQLite contention. The always-resident `nix-daemon` is ignored; a
+`nix-daemon --stdio` remote-store connection is treated as active. If process or
+load inspection fails, the check fails closed and launchd retries later.
+
+All scheduled cleanup checks additionally defer for active Cargo, Rust, and
+Docker clients because cleanup can delete those tools' cache artifacts. The
+low-disk checker runs the normal phases first and only escalates to pressure
+cleanup if disk space is still low. It keeps its independent, usually more
+frequent retry interval. A failed `df` inspection is treated as unknown rather
+than as zero free space.
+
+GC and the suremac self-update also share the PID-aware `shlock` lock at
+`~/.local/state/dotfiles-nix-maintenance/lock`. This prevents both maintenance
+jobs from starting after they observe the same ready instant; stale PID locks are
+reclaimed by `shlock`. The check is advisory for ordinary
+commands—a new interactive Nix command can still begin after it passes—but it
+eliminates maintenance-versus-maintenance overlap.
+
+Direct `dotfiles-dev-cache-cleanup` invocations are explicit manual requests, so
+they bypass the readiness check while still respecting the shared lock. Scheduled
+deferrals are logged to `~/Library/Logs/dev-cache-cleanup.log` and do not consume
+the full-cleanup interval.
+
 ## Host configuration
 
 | Host | Notes |
 |------|-------|
-| suremac | `sccache.cacheSize = "50G"`; full cleanup every 6h; low-disk check every 15m with a 10 GiB threshold; Nix user generation and Cargo sweep retention reduced to 3d; sweep roots `~/projects` and `~/sureapp`; Docker pruning against OrbStack with `pruneVolumes = true` |
+| suremac | `sccache.cacheSize = "50G"`; full cleanup due every 6h with a cheap 5m load/headroom retry; low-disk check every 15m with a 10 GiB threshold; Nix user generation and Cargo sweep retention reduced to 3d; sweep roots `~/projects` and `~/sureapp`; Docker pruning against OrbStack with `pruneVolumes = true` |
 | tater | Defaults; docker phase enabled, prunes via podman's docker-compatible socket when available |
 | thorny | Defaults with `docker.enable = false` (podman host, little container churn) |
 

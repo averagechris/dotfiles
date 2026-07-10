@@ -12,12 +12,15 @@
   logPath = "/Users/${user}/Library/Logs/dotfiles-self-update.log";
   flakeUrl = "https://git.sr.ht/~averagechris/dotfiles";
   branch = "main";
-  # Attempt at most one update per day, but wake hourly so a missed window
-  # (laptop asleep or powered off) is caught up the next time it is running.
+  # Attempt at most one update per day, but wake cheaply every five minutes so
+  # a missed or busy window can use the next period with CPU headroom.
   minSecondsBetweenRuns = 23 * 60 * 60;
   # How long a pending-activation marker may go unconfirmed before the
   # reconciler declares the activation failed.
   markerStaleSeconds = 2 * 60 * 60;
+  macosNixMaintenance = import ../../base-lib/macos-nix-maintenance.nix {
+    inherit pkgs user;
+  };
 
   notifyFn = ''
     notify() {
@@ -66,7 +69,9 @@
 
       [ -f "$marker" ] || exit 0
       read -r target rev stamp <"$marker" || exit 0
-      if ! [[ "$stamp" =~ ^[0-9]+$ ]]; then
+      if [[ "$stamp" =~ ^(0|[1-9][0-9]{0,10})$ ]]; then
+        stamp=$((10#$stamp))
+      else
         stamp=0
       fi
 
@@ -115,61 +120,81 @@
       marker=${lib.escapeShellArg markerPath}
       flake_url=${lib.escapeShellArg flakeUrl}
       branch=${lib.escapeShellArg branch}
-      lock_dir="$state_dir/lock"
       last_run_file="$state_dir/last-run"
       min_seconds_between_runs=${toString minSecondsBetweenRuns}
+      force=0
+
+      case "''${1:-}" in
+        --force)
+          force=1
+          ;;
+        "")
+          ;;
+        *)
+          echo "usage: dotfiles-suremac-self-update [--force]" >&2
+          exit 2
+          ;;
+      esac
 
       ${notifyFn}
 
       mkdir -p "$state_dir"
-
-      # mkdir-based lock with PID staleness reclaim: bash EXIT traps do not
-      # run on SIGKILL or power loss, and launchd SIGTERMs the agent at
-      # logout, so a leaked lock must not wedge the job forever.
-      acquire_lock() {
-        if mkdir "$lock_dir" 2>/dev/null; then
-          echo $$ >"$lock_dir/pid"
-          return 0
-        fi
-        local lock_pid
-        lock_pid=$(cat "$lock_dir/pid" 2>/dev/null || true)
-        if [ -n "$lock_pid" ] && kill -0 "$lock_pid" 2>/dev/null; then
-          return 1
-        fi
-        echo "Reclaiming stale self-update lock (pid ''${lock_pid:-unknown} is gone)."
-        rm -rf "$lock_dir"
-        mkdir "$lock_dir" 2>/dev/null || return 1
-        echo $$ >"$lock_dir/pid"
-      }
-
-      if ! acquire_lock; then
-        echo "Another dotfiles self-update run is already active; exiting."
-        exit 0
-      fi
-      trap 'rm -rf "$lock_dir"' EXIT
-      trap 'exit 130' INT
-      trap 'exit 143' TERM
 
       # Settle any marker left behind by a previous run that was restarted
       # mid-activation (see the reconcile script and notify agent).
       ${lib.getExe reconcile}
 
       # Unless forced, skip when the last attempt was recent. The agent wakes
-      # hourly; this keeps effective cadence at roughly once per day while
-      # still catching up if the 10:00-ish slot was missed because the laptop
-      # was asleep or powered off.
-      if [ "''${1:-}" != "--force" ] && [ -f "$last_run_file" ]; then
+      # frequently, but this keeps the expensive cadence at roughly once per
+      # day and lets a missed or busy window use the next headroom opportunity.
+      if [ "$force" -eq 0 ] && [ -f "$last_run_file" ]; then
         last_run=$(cat "$last_run_file" 2>/dev/null || true)
         # A corrupted stamp must not wedge the job with a bash arithmetic error.
-        if ! [[ "$last_run" =~ ^[0-9]+$ ]]; then
+        if [[ "$last_run" =~ ^(0|[1-9][0-9]{0,10})$ ]]; then
+          last_run=$((10#$last_run))
+        else
           last_run=0
         fi
         now=$(date +%s)
         elapsed=$((now - last_run))
+        if [ "$elapsed" -lt 0 ]; then
+          elapsed=$min_seconds_between_runs
+        fi
         if [ "$elapsed" -lt "$min_seconds_between_runs" ]; then
-          echo "Last self-update attempt was $elapsed seconds ago; skipping until $min_seconds_between_runs seconds have passed. Use --force to override."
           exit 0
         fi
+      fi
+
+      # StartInterval also fires after sleep. Do not turn that catch-up wake
+      # into an immediate build while the user or development tools are busy;
+      # a deferred attempt is not stamped, so launchd retries shortly.
+      if [ "$force" -eq 0 ] && ! ${lib.getExe macosNixMaintenance.readyCheck}; then
+        exit 0
+      fi
+
+      # GC and self-update share one PID-aware lock. Checking readiness before
+      # and after acquiring it keeps the common deferral path cheap while also
+      # closing the race where both jobs observe available headroom together.
+      maintenance_state_dir=${lib.escapeShellArg macosNixMaintenance.stateDir}
+      lock_file=${lib.escapeShellArg macosNixMaintenance.lockFile}
+      mkdir -p "$maintenance_state_dir"
+
+      if ! /usr/bin/shlock -f "$lock_file" -p $$; then
+        echo "Another Nix maintenance job is active; deferring self-update."
+        exit 0
+      fi
+      release_lock() {
+        lock_pid=$(cat "$lock_file" 2>/dev/null || true)
+        if [ "$lock_pid" = "$$" ]; then
+          rm -f "$lock_file"
+        fi
+      }
+      trap release_lock EXIT
+      trap 'exit 130' INT
+      trap 'exit 143' TERM
+
+      if [ "$force" -eq 0 ] && ! ${lib.getExe macosNixMaintenance.readyCheck}; then
+        exit 0
       fi
 
       if [ ! -d "$repo_dir/.git" ]; then
@@ -183,14 +208,14 @@
 
       latest_rev=$(git -C "$repo_dir" rev-parse HEAD)
       echo "Building suremac from $flake_url at $latest_rev"
+
+      # A fetch can take long enough for the user or another agent to begin
+      # work. Re-check immediately before the first Nix command.
+      if [ "$force" -eq 0 ] && ! ${lib.getExe macosNixMaintenance.readyCheck}; then
+        exit 0
+      fi
       nix build --accept-flake-config --print-build-logs --out-link "$out_link" \
         "$repo_dir#darwinConfigurations.suremac.system"
-
-      # Stamp only after a successful build: transient fetch/build failures
-      # retry silently on the next hourly wake, while anything past this point
-      # (no-op, activation, or a cancelled password prompt) counts as the
-      # daily attempt so the user is prompted at most once per day.
-      date +%s >"$last_run_file"
 
       new_system=$(readlink "$out_link")
       current_system=$(readlink /run/current-system)
@@ -198,9 +223,21 @@
       echo "Built system: $new_system"
 
       if [ "$new_system" = "$current_system" ]; then
+        date +%s >"$last_run_file"
         echo "suremac is already running the built system; no activation needed."
         exit 0
       fi
+
+      # Building may consume the available headroom. Keep the completed closure
+      # rooted by the out-link, but defer interactive activation until the load
+      # settles. A forced run intentionally bypasses this check.
+      if [ "$force" -eq 0 ] && ! ${lib.getExe macosNixMaintenance.readyCheck}; then
+        exit 0
+      fi
+
+      # A no-op or any activation attempt consumes the daily cadence. Busy
+      # deferrals and transient fetch/build failures do not.
+      date +%s >"$last_run_file"
 
       notify "dotfiles self-update" "A new suremac system was built and activation is starting."
 
@@ -242,7 +279,7 @@ in {
 
   launchd.user.agents.dotfiles-suremac-self-update.serviceConfig = {
     ProgramArguments = [(lib.getExe selfUpdate)];
-    StartInterval = 3600;
+    StartInterval = 300;
     RunAtLoad = true;
     ProcessType = "Background";
     LowPriorityIO = true;

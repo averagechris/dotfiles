@@ -5,6 +5,11 @@
   ...
 }: let
   cfg = config.dotfiles.devCache;
+  macosNixMaintenance = import ../../base-lib/macos-nix-maintenance.nix {
+    inherit pkgs;
+    blockCacheClients = true;
+    user = config.home.username;
+  };
 
   # Start the sccache daemon from a clean service environment. Without this, the
   # daemon is auto-started by whichever compile happens first and inherits that
@@ -59,22 +64,25 @@
 
       root_available_kib() {
         local available
-        available=$(available_kib / 2>/dev/null || printf '0')
-        if [ -z "$available" ]; then
-          available=0
+        available=$(available_kib / 2>/dev/null) || return 1
+        if ! [[ "$available" =~ ^[0-9]+$ ]]; then
+          return 1
         fi
         printf '%s\n' "$available"
       }
 
       root_available_gib() {
         local available
-        available=$(root_available_kib)
+        available=$(root_available_kib) || {
+          printf 'unknown\n'
+          return 1
+        }
         printf '%s\n' "$((available / 1024 / 1024))"
       }
 
       root_is_low_disk() {
         local available
-        available=$(root_available_kib)
+        available=$(root_available_kib) || return 1
         [ "$available" -lt ${toString (cfg.cleanup.lowDisk.minFreeGiB * 1024 * 1024)} ]
       }
 
@@ -82,17 +90,18 @@
       # enabled; keep the --pressure flag accepted (as a no-op) otherwise so
       # the documented CLI stays stable across hosts.
       pressure_mode=0
-      case "''${1:-}" in
-        --pressure)
-          pressure_mode=1
-          ;;
-        "")
-          ;;
-        *)
-          log "unknown argument: $1"
-          exit 2
-          ;;
-      esac
+      while [ "$#" -gt 0 ]; do
+        case "$1" in
+          --pressure)
+            pressure_mode=1
+            ;;
+          *)
+            log "unknown argument: $1"
+            exit 2
+            ;;
+        esac
+        shift
+      done
 
       ${lib.optionalString (!cfg.cleanup.lowDisk.enable) ''
         if [ "$pressure_mode" -eq 1 ]; then
@@ -100,16 +109,43 @@
         fi
       ''}
 
-      lock_dir="''${XDG_RUNTIME_DIR:-''${TMPDIR:-/tmp}}/dotfiles-dev-cache-cleanup.lock"
-      if mkdir "$lock_dir" 2>/dev/null; then
-        cleanup_lock() {
-          rmdir "$lock_dir" 2>/dev/null || true
-        }
-        trap cleanup_lock EXIT
-      else
-        log "another dev-cache-cleanup instance is running; exiting"
-        exit 0
-      fi
+      ${
+        if pkgs.stdenv.isDarwin
+        then ''
+          # GC and the Darwin self-update share this lock. The readiness check
+          # happens in the cheap launchd wrappers; this closes the remaining
+          # race where both jobs observe available headroom at the same time.
+          maintenance_state_dir=${lib.escapeShellArg macosNixMaintenance.stateDir}
+          lock_file=${lib.escapeShellArg macosNixMaintenance.lockFile}
+          mkdir -p "$maintenance_state_dir"
+
+          if ! /usr/bin/shlock -f "$lock_file" -p $$; then
+            log "another Nix maintenance job is active; deferring cleanup"
+            exit 75
+          fi
+          release_lock() {
+            lock_pid=$(cat "$lock_file" 2>/dev/null || true)
+            if [ "$lock_pid" = "$$" ]; then
+              rm -f "$lock_file"
+            fi
+          }
+          trap release_lock EXIT
+          trap 'exit 130' INT
+          trap 'exit 143' TERM
+        ''
+        else ''
+          lock_dir="''${XDG_RUNTIME_DIR:-''${TMPDIR:-/tmp}}/dotfiles-dev-cache-cleanup.lock"
+          if mkdir "$lock_dir" 2>/dev/null; then
+            cleanup_lock() {
+              rmdir "$lock_dir" 2>/dev/null || true
+            }
+            trap cleanup_lock EXIT
+          else
+            log "another dev-cache-cleanup instance is running; exiting"
+            exit 0
+          fi
+        ''
+      }
 
       export SCCACHE_DIR=${lib.escapeShellArg cfg.sccache.directory}
       export SCCACHE_CACHE_SIZE=${lib.escapeShellArg cfg.sccache.cacheSize}
@@ -260,6 +296,46 @@
     '';
   };
 
+  scheduledCleanupScript = pkgs.writeShellApplication {
+    name = "dotfiles-dev-cache-scheduled-cleanup";
+    runtimeInputs = [pkgs.coreutils];
+    text = ''
+      set -uo pipefail
+
+      state_dir=${lib.escapeShellArg macosNixMaintenance.stateDir}
+      last_run_file="$state_dir/last-cleanup"
+      due_after=${toString cfg.cleanup.intervalSeconds}
+      now=$(date +%s)
+
+      if [ -f "$last_run_file" ]; then
+        last_run=$(cat "$last_run_file" 2>/dev/null || true)
+        if [[ "$last_run" =~ ^(0|[1-9][0-9]{0,10})$ ]]; then
+          last_run=$((10#$last_run))
+          if [ "$last_run" -le "$now" ] && [ $((now - last_run)) -lt "$due_after" ]; then
+            exit 0
+          fi
+        fi
+      fi
+
+      # This is intentionally only a process snapshot plus cheap load-average
+      # reads. A busy Mac exits successfully and launchd tries this wrapper
+      # again; no Nix command is used to inspect the daemon.
+      if ! ${lib.getExe macosNixMaintenance.readyCheck}; then
+        exit 0
+      fi
+
+      mkdir -p "$state_dir"
+      if ${lib.getExe cleanupScript}; then
+        date +%s >"$last_run_file"
+      else
+        status=$?
+        if [ "$status" -ne 75 ]; then
+          exit "$status"
+        fi
+      fi
+    '';
+  };
+
   lowDiskCleanupScript = pkgs.writeShellApplication {
     name = "dotfiles-dev-cache-low-disk-cleanup";
     runtimeInputs = [
@@ -272,9 +348,15 @@
         df -Pk / | tail -n 1 | tr -s ' ' | cut -d ' ' -f 4
       }
 
-      available=$(available_kib 2>/dev/null || printf '0')
-      if [ -z "$available" ]; then
-        available=0
+      available=$(available_kib 2>/dev/null) || {
+        printf '[%s] low-disk check deferred: filesystem availability could not be read\n' \
+          "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" >&2
+        exit 0
+      }
+      if ! [[ "$available" =~ ^[0-9]+$ ]]; then
+        printf '[%s] low-disk check deferred: invalid filesystem availability: %s\n' \
+          "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "$available" >&2
+        exit 0
       fi
 
       threshold=${toString (cfg.cleanup.lowDisk.minFreeGiB * 1024 * 1024)}
@@ -282,7 +364,25 @@
         printf '[%s] low disk detected: %s GiB free on /; threshold is ${toString cfg.cleanup.lowDisk.minFreeGiB} GiB\n' \
           "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
           "$((available / 1024 / 1024))"
-        exec ${lib.getExe cleanupScript}
+        ${lib.optionalString pkgs.stdenv.isDarwin ''
+        if ! ${lib.getExe macosNixMaintenance.readyCheck}; then
+          exit 0
+        fi
+      ''}
+        if ${lib.getExe cleanupScript}; then
+          ${lib.optionalString pkgs.stdenv.isDarwin ''
+        state_dir=${lib.escapeShellArg macosNixMaintenance.stateDir}
+        mkdir -p "$state_dir"
+        date +%s >"$state_dir/last-cleanup"
+      ''}
+          exit 0
+        else
+          status=$?
+        fi
+        if [ "$status" -eq 75 ]; then
+          exit 0
+        fi
+        exit "$status"
       fi
     '';
   };
@@ -325,6 +425,17 @@ in {
         description = ''
           Number of seconds between cleanup runs. On macOS, launchd does not wake
           a sleeping laptop to run the job.
+        '';
+      };
+
+      retryIntervalSeconds = lib.mkOption {
+        type = lib.types.ints.positive;
+        default = 900;
+        description = ''
+          On macOS, number of seconds between cheap due/activity checks. A full
+          cleanup still runs no more often than <literal>intervalSeconds</literal>.
+          Frequent checks let a cleanup deferred by active work or sleep use the
+          next headroom window instead of waiting for another full interval.
         '';
       };
 
@@ -535,6 +646,7 @@ in {
         cleanupScript
         pkgs.sccache
       ]
+      ++ lib.optional (cfg.cleanup.enable && pkgs.stdenv.isDarwin) scheduledCleanupScript
       ++ lib.optional cfg.cleanup.lowDisk.enable lowDiskCleanupScript
       ++ lib.optional cfg.docker.enable pkgs.docker-client;
 
@@ -573,9 +685,10 @@ in {
       enable = true;
       config = {
         ProgramArguments = [
-          (lib.getExe cleanupScript)
+          (lib.getExe scheduledCleanupScript)
         ];
-        StartInterval = cfg.cleanup.intervalSeconds;
+        StartInterval = cfg.cleanup.retryIntervalSeconds;
+        RunAtLoad = true;
         ProcessType = "Background";
         LowPriorityIO = true;
         StandardOutPath = "${config.home.homeDirectory}/Library/Logs/dev-cache-cleanup.log";
