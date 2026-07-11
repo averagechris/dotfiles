@@ -44,7 +44,24 @@ dotfiles.gander.settings = {
 
 Gander also layers project config after the XDG user config, so `gander.toml` or
 `.gander/config.toml` in a repository can override these user defaults for that
-project.
+project. Prefer `gander.toml`: `.gander/config.toml` is now deprecated upstream
+and retained for a one-release migration window.
+
+## Current review workflow
+
+The current release makes comments the primary feedback unit: `draft` is private
+reviewer state, `todo` is ready/actionable, and `resolved` is retained history.
+`gander comments ready` promotes drafts, comments can carry append-only replies,
+and replies capture portable before/result provenance from the loaded diff.
+Optional durable `action-items` replace the old public `tasks` vocabulary for
+grouping several comments or external tickets. Existing serialized tasks are
+normalized when state is saved.
+
+Delegation is now first-class through `gander handoff --mode delegate`, including
+selectors, objective, constraints, acceptance criteria, and verification text.
+`gander skills` can inspect or install the bundled `gander-review` and
+`gander-address-review` skills. The old public `chunks` and `briefs` commands are
+removed in favor of durable `walkthrough` commands and zen/tour presentation.
 
 ## OpenCode agent command
 

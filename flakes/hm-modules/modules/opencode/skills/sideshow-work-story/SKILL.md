@@ -33,11 +33,17 @@ story of the impact.”
 
    If browser automation is available, open the exact built HTML path and run
    `sideshow.audit()` plus screenshots before presenting it.
+6. For a human feedback pass, use `sideshow serve <deck-dir> --review --open`.
+   Review annotations stay in XDG state, not the deck; export them with
+   `sideshow review export <deck-dir> --format markdown` for an agent handoff.
 
 ## Notes
 
 - `sideshow` config lives at `~/.config/sideshow/config.toml`; tool paths may be
   managed there for `tailwindcss`, `ffmpeg`, `vhs`, and `aws`.
+- Deck-local `[[fonts]]` entries can embed deterministic subsets of licensed
+  TrueType `.ttf` faces. Verify redistribution/subsetting rights and preserve any
+  required license sidecar; technical validation is not a license grant.
 - Do not invent metrics. If impact is qualitative or inferred, label it that way
   and suggest what to measure next.
 - Prefer a stronger story with fewer claims over a busy deck full of weak links.

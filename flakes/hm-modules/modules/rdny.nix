@@ -55,10 +55,17 @@
     else if binary.package != null
     then lib.getExe binary.package
     else null;
+  chromePaths = binary: let
+    primary = binaryPath binary;
+  in
+    lib.optional (primary != null) primary ++ binary.fallbackPaths;
   enabledBinaryPackage = binary:
     lib.optional (binary.enable && binary.install && binary.package != null) binary.package;
   generatedBinaries = lib.filterAttrs (_: value: value != null) {
-    chrome = binaryPath cfg.binaries.chrome;
+    chrome =
+      if cfg.binaries.chrome.enable
+      then chromePaths cfg.binaries.chrome
+      else null;
     ffmpeg = binaryPath cfg.binaries.ffmpeg;
   };
   generatedConnect =
@@ -106,9 +113,22 @@ in {
     };
 
     binaries = {
-      chrome = mkBinaryOptions {
-        description = "Chrome/Chromium/Helium browser binary";
-      };
+      chrome =
+        mkBinaryOptions {
+          description = "Chrome/Chromium/Helium browser binary";
+        }
+        // {
+          fallbackPaths = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
+            default = [];
+            example = ["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"];
+            description = ''
+              Additional Chrome-family executable paths tried in order after the
+              primary `path` or package. rdny's built-in platform discovery runs
+              after every configured path fails.
+            '';
+          };
+        };
 
       ffmpeg = mkBinaryOptions {
         description = "ffmpeg binary used by `rdny stop-video`";
@@ -180,11 +200,15 @@ in {
           message = "dotfiles.rdny.enable requires dotfiles.rdny.package or an inputs.rdny flake input.";
         }
         {
-          assertion = lib.all (binary: !binary.enable || binary.path != null || binary.package != null) [
-            cfg.binaries.chrome
-            cfg.binaries.ffmpeg
-          ];
-          message = "enabled dotfiles.rdny.binaries entries require either package or path.";
+          assertion =
+            (!cfg.binaries.chrome.enable
+              || cfg.binaries.chrome.path != null
+              || cfg.binaries.chrome.package != null
+              || cfg.binaries.chrome.fallbackPaths != [])
+            && (!cfg.binaries.ffmpeg.enable
+              || cfg.binaries.ffmpeg.path != null
+              || cfg.binaries.ffmpeg.package != null);
+          message = "enabled dotfiles.rdny.binaries entries require a package, path, or Chrome fallbackPaths entry.";
         }
       ];
 

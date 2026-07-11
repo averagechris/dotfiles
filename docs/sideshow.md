@@ -5,6 +5,12 @@ source directory into one self-contained HTML file and supports static checks,
 image/video optimization helpers, VHS tape rendering, local serving, and S3 or
 SourceHut Pages publishing.
 
+The current release also supports deterministic subsetting and embedding of
+deck-declared TrueType font faces, opt-in browser launch for local serving, and a
+local review mode with durable point/region annotations and agent handoff
+exports. Review state stays under XDG state rather than entering deck source or
+built HTML.
+
 ## Package source
 
 Hosts get the package from the upstream flake input:
@@ -79,9 +85,16 @@ sideshow themes --format json
 sideshow new ./deck --theme signal
 sideshow check ./deck
 sideshow build ./deck
-sideshow serve ./deck --port 8000
+sideshow serve ./deck --open --port 0
+sideshow serve ./deck --review --open --port 8000
+sideshow review export ./deck --format markdown
 sideshow publish ./deck --target srht --domain averagechris.srht.site
 ```
+
+Custom fonts are deck-local rather than Home Manager configuration. Declare
+individual `.ttf` faces with `[[fonts]]` entries in `deck.toml`; Sideshow rejects
+unsupported outlines or embedding restrictions, preserves licensing metadata,
+and charges generated subsets against the existing asset budgets.
 
 For visual QA, build the deck, open the exact printed HTML path in a browser, and
 run the deck runtime's `sideshow.audit()` API through browser automation when

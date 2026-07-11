@@ -13,6 +13,8 @@ Use `rdny` for small, scriptable browser checks from the terminal.
 - Attach to a browser already launched with CDP: `rdny connect <host:port>` or `rdny connect <name>`.
 - Check and clean up state: `rdny status`, `rdny list`, `rdny cleanup`, `rdny stop`.
 - Use `rdny --state-dir <dir> ...` when you need a separate browser session.
+- Managed starts use rdny's authenticated local broker and
+  `--remote-debugging-pipe`; do not add remote-debugging flags yourself.
 
 ## Common commands
 
@@ -36,6 +38,8 @@ multi-line scripts.
 
 - Config file: `~/.config/rdny/config.toml` unless `RDNY_CONFIG` points elsewhere.
 - Browser path: `RDNY_CHROME` > `[binaries].chrome` > built-in discovery.
+- `[binaries].chrome` may be an ordered array; rdny tries later candidates when
+  an earlier executable cannot launch.
 - Video encoder: `RDNY_FFMPEG` > `[binaries].ffmpeg` > `ffmpeg` on `PATH`.
 - Extra browser flags for managed starts: `RDNY_CHROME_ARGS`.
 
@@ -49,3 +53,6 @@ rdny connect helium
 
 Detached personal-browser sessions do not get killed by `rdny stop`; rdny only
 clears its own session state.
+
+For automation, prefer global `--format json` or `--format jsonl`; warnings and
+progress stay on stderr and supported payloads carry `schemaVersion: 1`.

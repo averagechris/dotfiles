@@ -30,7 +30,10 @@ OpenCode skill. The generated config mirrors rdny's user config schema:
 
 ```toml
 [binaries]
-chrome = "/Applications/Helium.app/Contents/MacOS/Helium"
+chrome = [
+  "/Applications/Helium.app/Contents/MacOS/Helium",
+  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+]
 ffmpeg = "/nix/store/.../bin/ffmpeg"
 
 [connect]
@@ -42,7 +45,8 @@ helium = "127.0.0.1:9333"
 
 Module options cover rdny's current configuration and environment surface:
 
-- `dotfiles.rdny.binaries.chrome.path` or `.package` writes `[binaries].chrome`.
+- `dotfiles.rdny.binaries.chrome.path` or `.package` selects the first
+  `[binaries].chrome` candidate; `.fallbackPaths` appends ordered alternatives.
 - `dotfiles.rdny.binaries.ffmpeg.enable` writes `[binaries].ffmpeg`; the default
   package is `pkgs.ffmpeg`.
 - `dotfiles.rdny.connect.default` and `.targets` write named `rdny connect`
@@ -54,6 +58,21 @@ Module options cover rdny's current configuration and environment surface:
 Binary precedence stays rdny-native: environment variables win first, then the
 config file, then built-in fallbacks (`RDNY_CHROME`, `RDNY_FFMPEG`,
 `RDNY_CONFIG`, and `RDNY_STATE_DIR` are all runtime escape hatches).
+
+## Current upstream behavior
+
+The current rdny build substantially hardens managed sessions. `rdny start` now
+launches Chrome behind an authenticated, owner-only local broker using
+`--remote-debugging-pipe`; managed sessions no longer expose a DevTools TCP port.
+External `rdny connect` targets remain the explicit loopback HTTP/WebSocket path.
+Lifecycle state and artifacts use private transactional storage, command
+timeouts share one deadline budget, downloads and recordings are bounded, and
+machine output is available through global `--format human|json|jsonl` modes.
+
+Configured Chrome executables are now ordered candidates. The module emits the
+new array form even for one executable while upstream still accepts the old
+single string for compatibility. Failed configured candidates fall through to
+rdny's platform discovery.
 
 ## Host enablement
 
@@ -84,6 +103,7 @@ rdny start --label agent
 rdny status
 rdny open https://example.com
 rdny title
+rdny --format json status
 rdny html 'main'
 rdny text 'h1'
 rdny js -
