@@ -44,7 +44,7 @@ later Home Manager rebuilds.
 ## nitter-link extension
 
 The reusable `programs.nitter-link` Home Manager module pins
-<https://git.sr.ht/~averagechris/nitter-link> at `v0.1.2` and consumes its
+<https://git.sr.ht/~averagechris/nitter-link> at `v0.1.4` and consumes its
 reproducible flake package outputs (`chrome-extension` and `firefox-extension`).
 Those packages install browser-loadable unpacked trees below
 `$out/share/nitter-link/chrome` and `$out/share/nitter-link/firefox`; the module

@@ -2055,16 +2055,16 @@
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
-        "lastModified": 1783668280,
-        "narHash": "sha256-mwnyyOFa13vlZrsDhChLx0dn48qMCMHkNgcbpgHf8LI=",
-        "ref": "refs/tags/v0.1.2",
-        "rev": "a799cc74d596de4f35827d7825d00e2ca66e5f22",
-        "revCount": 16,
+        "lastModified": 1783741033,
+        "narHash": "sha256-UcfC7PjDrEXSJ6UuR2F++BrX7VF/+BNWjrs16/pssww=",
+        "ref": "refs/tags/v0.1.4",
+        "rev": "e627d315a2433dd4170d901a0ea9dbd9dd518784",
+        "revCount": 19,
         "type": "git",
         "url": "https://git.sr.ht/~averagechris/nitter-link"
       },
       "original": {
-        "ref": "refs/tags/v0.1.2",
+        "ref": "refs/tags/v0.1.4",
         "type": "git",
         "url": "https://git.sr.ht/~averagechris/nitter-link"
       }

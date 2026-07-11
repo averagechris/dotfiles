@@ -197,7 +197,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nitter-link = {
-      url = "git+https://git.sr.ht/~averagechris/nitter-link?ref=refs/tags/v0.1.2";
+      url = "git+https://git.sr.ht/~averagechris/nitter-link?ref=refs/tags/v0.1.4";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
       inputs.treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
