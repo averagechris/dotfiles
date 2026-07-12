@@ -58,6 +58,9 @@ dotfiles.sideshow.tools.vhs.enable = true;
 dotfiles.sideshow.tools.aws.enable = true;
 ```
 
+The ffmpeg tool defaults to `pkgs.ffmpeg-headless`, shared with rdny and the
+Calibre utilities so Home Manager has only one `bin/ffmpeg` provider.
+
 For secrets, do not place plaintext tokens in Nix. Use `SRHT_TOKEN` at runtime or
 set `dotfiles.sideshow.srht.tokenCommand` to a keyring/password-manager command.
 `suremac` sets this to read the same macOS Keychain item that the `srht` CLI uses

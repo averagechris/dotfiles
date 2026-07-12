@@ -491,6 +491,9 @@ in {
         chrome = {
           enable = true;
           path = "/Applications/Helium.app/Contents/MacOS/Helium";
+          # Configured candidates replace rdny's automatic discovery. Keep the
+          # common manually installed Chrome app as an explicit fallback.
+          fallbackPaths = ["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"];
         };
         ffmpeg.enable = true;
       };

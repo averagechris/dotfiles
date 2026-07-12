@@ -180,7 +180,7 @@
 
     def get_duration_bitrate(filename: Path) -> Optional[tuple[int, int]]:  # noqa: E501
         cmd: list[str] = [
-            '${pkgs.ffmpeg}/bin/ffprobe',  # noqa: E501
+            '${pkgs.ffmpeg-headless}/bin/ffprobe',  # noqa: E501
             '-v', 'error',
             '-show_entries', 'stream=bit_rate:format=duration',
             '-of', 'default=noprint_wrappers=1:nokey=1',
@@ -251,7 +251,7 @@
             out_file = in_file.parent / f"{now_ts}_{in_file.name}"
 
         ffmpg_cmd = [
-            "${pkgs.ffmpeg}/bin/ffmpeg",  # noqa: E501
+            "${pkgs.ffmpeg-headless}/bin/ffmpeg",  # noqa: E501
             "-i",
             in_file.absolute().as_posix(),
             "-map",
@@ -379,7 +379,7 @@
         output_file_name = Prompt.ask("Name of the book:", default=output_file_name)  # noqa: E501
         print(f"[green]✓[/green] Merging files to create audio book [cyan]{output_file_name}.m4b[/cyan] @ {target_bitrate}kbps...")  # noqa: E501
         ffmpg_cmd = [
-            "${pkgs.ffmpeg}/bin/ffmpeg",  # noqa: E501
+            "${pkgs.ffmpeg-headless}/bin/ffmpeg",  # noqa: E501
             "-f",
             "concat",
             "-safe",

@@ -8,6 +8,12 @@
   cfg = config.dotfiles.rdny;
   system = pkgs.stdenv.hostPlatform.system;
   tomlFormat = pkgs.formats.toml {};
+  nullableUnsigned = description:
+    lib.mkOption {
+      type = lib.types.nullOr lib.types.ints.unsigned;
+      default = null;
+      inherit description;
+    };
   inputPackage =
     if inputs ? rdny && inputs.rdny ? packages && builtins.hasAttr system inputs.rdny.packages
     then inputs.rdny.packages.${system}.rdny or inputs.rdny.packages.${system}.default
@@ -83,6 +89,14 @@
       connect = generatedConnect;
     };
   mergedSettings = lib.recursiveUpdate generatedSettings cfg.settings;
+  quotaSessionVariables = lib.mapAttrs (_: toString) (lib.filterAttrs (_: value: value != null) {
+    RDNY_MAX_DOWNLOAD_BYTES = cfg.environment.maxDownloadBytes;
+    RDNY_MAX_SCREENCAST_FRAME_BYTES = cfg.environment.maxScreencastFrameBytes;
+    RDNY_MAX_RECORDING_FRAMES = cfg.environment.maxRecordingFrames;
+    RDNY_MAX_RECORDING_SECONDS = cfg.environment.maxRecordingSeconds;
+    RDNY_MAX_RECORDING_BYTES = cfg.environment.maxRecordingBytes;
+    RDNY_MIN_FREE_DISK_BYTES = cfg.environment.minFreeDiskBytes;
+  });
   rdnyCompletions = pkgs.runCommand "rdny-completions" {} ''
     install -dm755 \
       $out/share/bash-completion/completions \
@@ -143,15 +157,17 @@ in {
             example = ["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"];
             description = ''
               Additional Chrome-family executable paths tried in order after the
-              primary `path` or package. rdny's built-in platform discovery runs
-              after every configured path fails.
+              primary `path` or package. Configuring any paths replaces rdny's
+              built-in platform discovery, so list every desired fallback here.
             '';
           };
         };
 
       ffmpeg = mkBinaryOptions {
         description = "ffmpeg binary used by `rdny stop-video`";
-        defaultPackage = pkgs.ffmpeg;
+        # Keep every dotfiles ffmpeg consumer on the same headless output so
+        # Home Manager never combines competing bin/ffmpeg providers.
+        defaultPackage = pkgs.ffmpeg-headless;
       };
     };
 
@@ -194,6 +210,31 @@ in {
           embedded spaces.
         '';
       };
+
+      maxDownloadBytes = nullableUnsigned ''
+        Optional `RDNY_MAX_DOWNLOAD_BYTES` limit for a single download. Leave
+        unset to use rdny's 256 MiB default.
+      '';
+      maxScreencastFrameBytes = nullableUnsigned ''
+        Optional `RDNY_MAX_SCREENCAST_FRAME_BYTES` per-frame recording limit.
+        Leave unset to use rdny's 8 MiB default.
+      '';
+      maxRecordingFrames = nullableUnsigned ''
+        Optional `RDNY_MAX_RECORDING_FRAMES` recording frame limit. Leave unset
+        to use rdny's 18,000-frame default.
+      '';
+      maxRecordingSeconds = nullableUnsigned ''
+        Optional `RDNY_MAX_RECORDING_SECONDS` recording duration limit. Leave
+        unset to use rdny's 1,800-second default.
+      '';
+      maxRecordingBytes = nullableUnsigned ''
+        Optional `RDNY_MAX_RECORDING_BYTES` total recording limit. Leave unset
+        to use rdny's 512 MiB default.
+      '';
+      minFreeDiskBytes = nullableUnsigned ''
+        Optional `RDNY_MIN_FREE_DISK_BYTES` reserve required while recording.
+        Leave unset to use rdny's 256 MiB default.
+      '';
     };
 
     opencode = {
@@ -251,7 +292,8 @@ in {
         }
         // lib.optionalAttrs (cfg.environment.chromeArgs != []) {
           RDNY_CHROME_ARGS = lib.concatStringsSep " " cfg.environment.chromeArgs;
-        };
+        }
+        // quotaSessionVariables;
     }
 
     (lib.mkIf (config.programs.opencode.enable && cfg.opencode.exposeTool && cfg.package != null) {

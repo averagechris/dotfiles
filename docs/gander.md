@@ -1,105 +1,322 @@
 # Gander
 
-[`gander`](https://git.sr.ht/~averagechris/gander) is a terminal UI for reviewing
-`jj` changes, tracking viewed files, adding lightweight comments, and exporting
-review artifacts.
+[`gander`](https://git.sr.ht/~averagechris/gander) is a terminal UI and CLI for
+reviewing `jj` changes, keeping durable comments and action items, building
+walkthroughs, and exporting human or agent review artifacts. The pinned v0.7.2
+package is exposed through the Gander flake input and installed by the Home
+Manager module at `flakes/hm-modules/modules/gander.nix`.
 
-## Home Manager module
+## Enablement and package
 
-The Home Manager module lives at `flakes/hm-modules/modules/gander.nix` and is
-imported by the default dotfiles Home Manager module.
+The module is imported by the default dotfiles Home Manager module and is
+enabled for `suremac`, `tater`, `thorny`, and `trap`:
 
 ```nix
 dotfiles.gander.enable = true;
 ```
 
-When enabled, the module:
+`dotfiles.gander.package` defaults to
+`inputs.gander.packages.${system}.gander` (or the input's `default` package as a
+compatibility fallback). Enabling the module adds that package to
+`home.packages`, so both the TUI and the full `gander` CLI are available. Set the
+option explicitly when evaluating the module without the Gander input.
 
-- installs `inputs.gander.packages.${system}.default` in `home.packages`
-- writes `~/.config/gander/config.toml`
-- seeds a Colemak Mod-DH-friendly keybinding layer
-- configures Gander's in-TUI OpenCode agent command as
-  `opencode run --model openrouter/openai/gpt-5.5 --variant low`
+The generated user configuration is
+`$XDG_CONFIG_HOME/gander/config.toml`. Gander subsequently layers repository
+`gander.toml`, deprecated `.gander/config.toml`, and an explicit `--config` file
+over it. Prefer repository `gander.toml`; the `.gander` location is retained
+upstream only for migration.
 
-The module is currently enabled for `suremac`, `tater`, `thorny`, and `trap`.
+## Merge model and shared defaults
 
-## Options
+Configuration is assembled deterministically, from lowest to highest
+precedence:
 
-| Option | Purpose |
-| --- | --- |
-| `dotfiles.gander.enable` | Install and configure Gander. |
-| `dotfiles.gander.package` | Package to install. Defaults to the `gander` flake input for the host system. |
-| `dotfiles.gander.settings` | Extra TOML settings merged over the dotfiles defaults and written to `~/.config/gander/config.toml`. |
+1. dotfiles shared defaults;
+2. typed `dotfiles.gander.config` options;
+3. raw `dotfiles.gander.settings`.
 
-`settings` follows Gander's upstream TOML schema. Use kebab-case keys for
-Gander config fields:
+The merge is recursive for attribute sets. Scalars and lists are replaced, not
+appended. The raw `settings` option uses Nixpkgs' TOML value type and is the
+forward-compatibility escape hatch for a newer upstream field. Null typed values
+are omitted, allowing Gander's own default to apply. Optional upstream values
+such as `artifact.output_dir`, `agent.command`, and `agent.prompt` therefore use
+`null` to mean “do not emit this typed value.”
 
-```nix
-dotfiles.gander.settings = {
-  artifact.on_tui_quit = "write";
-  generated.presets = ["lockfiles"];
-  keybindings.toggle-generated = ["h"];
-};
-```
-
-Gander also layers project config after the XDG user config, so `gander.toml` or
-`.gander/config.toml` in a repository can override these user defaults for that
-project. Prefer `gander.toml`: `.gander/config.toml` is now deprecated upstream
-and retained for a one-release migration window.
-
-## Current review workflow
-
-The current release makes comments the primary feedback unit: `draft` is private
-reviewer state, `todo` is ready/actionable, and `resolved` is retained history.
-`gander comments ready` promotes drafts, comments can carry append-only replies,
-and replies capture portable before/result provenance from the loaded diff.
-Optional durable `action-items` replace the old public `tasks` vocabulary for
-grouping several comments or external tickets. Existing serialized tasks are
-normalized when state is saved.
-
-Delegation is now first-class through `gander handoff --mode delegate`, including
-selectors, objective, constraints, acceptance criteria, and verification text.
-`gander skills` can inspect or install the bundled `gander-review` and
-`gander-address-review` skills. The old public `chunks` and `briefs` commands are
-removed in favor of durable `walkthrough` commands and zen/tour presentation.
-
-## OpenCode agent command
-
-Gander can summon OpenCode from inside the TUI with `@` or via its autostart
-flow. The dotfiles default uses the lower-cost OpenRouter GPT-5.5 low variant:
+The shared layer enables soft wrapping, classifies standard lockfiles as
+generated, creates new comments as actionable todos, keeps agent startup
+explicit, and installs the complete upstream Colemak Mod-DH override:
 
 ```toml
 [agent]
 command = "opencode run --model openrouter/openai/gpt-5.5 --variant low"
+
+[comments]
+initial-state = "todo"
+
+[diff]
+soft-wrap = true
+
+[generated]
+presets = ["lockfiles"]
 ```
 
-Override `dotfiles.gander.settings.agent.command` for a host or project-specific
-config if a review needs a different model.
+Press `@` to invoke that lower-cost review agent when it is useful. The module
+does not enable `agent.autostart`, avoiding unsolicited model runs on any host.
 
-## Dotfiles keybindings
+For example, typed values can be combined with a final raw override:
 
-The module keeps Gander's defaults except where Colemak Mod-DH navigation or
-left/right ergonomics are useful.
+```nix
+dotfiles.gander = {
+  config = {
+    diff = {
+      view = "side-by-side";
+      contextStep = 20;
+    };
+    artifact.onTuiQuit = "write";
+  };
+
+  # Raw TOML names are exact upstream names and win over typed values.
+  settings.diff.context-step = 40;
+};
+```
+
+## Typed configuration
+
+Every current v0.7.2 upstream configuration field has a typed option under
+`dotfiles.gander.config`. Nix option names use camel case where needed and the
+renderer emits upstream's exact TOML spelling.
+
+### Files, Jujutsu, generated files, and limits
+
+| Typed option | Rendered TOML | Type |
+| --- | --- | --- |
+| `ignore.globs` | `ignore.globs` | list of strings |
+| `jj.binary` | `jj.binary` | string |
+| `generated.presets` | `generated.presets` | list of `lockfiles`, `api-clients`, or `vendored-assets` |
+| `generated.globs` | `generated.globs` | list of strings |
+| `limits.maxDiffLines` | `limits.max-diff-lines` | unsigned integer |
+| `limits.nudgeDiffLines` | `limits.nudge-diff-lines` | unsigned integer; zero disables this nudge |
+| `limits.nudgeFiles` | `limits.nudge-files` | unsigned integer; zero disables this nudge |
+
+Gander combines generated presets and custom generated globs. Generated files
+remain reviewable and are also detected by upstream's first-ten-lines content
+heuristic. Ignore globs instead remove matching files from the visible diff.
+For a deterministic Jujutsu executable, set `config.jj.binary` to an absolute
+`lib.getExe pkgs.jujutsu`-derived path; the package is named `jujutsu`, not `jj`.
+
+### Artifacts
+
+| Typed option | Rendered TOML | Allowed values |
+| --- | --- | --- |
+| `artifact.format` | `artifact.format` | `json`, `markdown`, `html` |
+| `artifact.profile` | `artifact.profile` | `human`, `agent` |
+| `artifact.outputDir` | `artifact.output_dir` | string |
+| `artifact.basename` | `artifact.basename` | string |
+| `artifact.onTuiQuit` | `artifact.on_tui_quit` | `never`, `write`, `stdout` |
+
+The underscores on `output_dir` and `on_tui_quit` are intentional upstream
+schema exceptions. Relative output directories are resolved against the
+reviewed repository. `onTuiQuit = "write"` requires either an output directory
+or the corresponding TUI CLI output option.
+
+### Syntax highlighting
+
+`syntax.enabled` is a boolean, `syntax.languages` is a list of built-in language
+names, and `syntax.mappings` is a list of typed records:
+
+```nix
+dotfiles.gander.config.syntax = {
+  enabled = true;
+  languages = ["nix" "rust" "toml"];
+  mappings = [{
+    name = "nix";
+    extensions = ["nix.in"];
+    filenames = ["flake-template"];
+  }];
+};
+```
+
+Each mapping has required `name` and default-empty `extensions` and `filenames`
+lists. Mappings only add detection for a built-in language that is also enabled
+in `languages`; they do not load external grammars. The typed
+`syntax.theme.<name>` string fields are:
+
+`attribute`, `comment`, `constant`, `function`, `keyword`, `number`, `operator`,
+`property`, `punctuation`, `string`, `type`, and `variable`.
+
+Styles accept Gander's named, indexed, or `#rrggbb` colors, modifiers such as
+`bold` and `underline`, and `on <color>` backgrounds.
+
+### Agent, comments, and diff display
+
+| Typed option | Type or values |
+| --- | --- |
+| `agent.command` | nullable shell command string |
+| `agent.autostart` | boolean |
+| `agent.prompt` | nullable template string supporting `{repo}`, `{base}`, and `{rev}` |
+| `comments.initialState` | `draft` or `todo` |
+| `diff.wordHighlight` | boolean |
+| `diff.lineBackground` | boolean |
+| `diff.gutterBar` | boolean |
+| `diff.view` | `unified` or `side-by-side` |
+| `diff.softWrap` | boolean |
+| `diff.contextStep` | unsigned integer |
+
+The typed diff theme strings are `added-line-bg`, `removed-line-bg`,
+`added-word`, `removed-word`, `gutter-added`, and `gutter-removed`. Theme option
+names already match TOML and therefore remain hyphenated in Nix.
+
+`draft` comments are private reviewer state; `todo` comments are ready and
+actionable. `resolved` is durable history but is intentionally not a valid
+initial state.
+
+### Complete keybinding map
+
+Every `config.keybindings.<action>` option is a nullable list of strings. A
+non-null list replaces the upstream list for that action, and `[]` removes its
+configurable bindings. Gander retains immutable movement/select/close safety
+fallbacks and rejects bindings that collide in an overlapping UI context.
+
+The complete v0.7.2 typed action set is:
+
+- global and target: `quit`, `help`, `summon-agent`, `yank-handoff`,
+  `move-down`, `move-up`, `toggle-focus`, `diff-top`, `diff-bottom`,
+  `compare-trunk`, `compare-parent`, `target-chooser`, `revset-input`,
+  `stack-next`, `stack-previous`, `operation-picker`, and `jj-helpers`;
+- navigation: `next-unviewed`, `previous-unviewed`, `next-comment`,
+  `previous-comment`, `file-search`, `symbol-outline`, `next-symbol`,
+  `previous-symbol`, `next-changed-hunk`, and `previous-changed-hunk`;
+- review and display: `toggle-large-diff`, `toggle-agent-order`, `flag-list`,
+  `open-work`, `activity`, `walkthrough-list`, `zen`, `draft-list`,
+  `scroll-down`, `scroll-up`, `scroll-diff-left`, `scroll-diff-right`,
+  `mark-viewed`, `toggle-viewed`, `mark-all-viewed`, `toggle-generated`,
+  `cycle-viewed-filter`, `toggle-fold`, `collapse-fold`, `expand-fold`,
+  `toggle-context-fold`, `expand-context`, `expand-context-all`,
+  `collapse-context`, `view-options`, `toggle-word-highlight`,
+  `toggle-line-background`, `toggle-gutter-bar`, `toggle-diff-wrap`,
+  `toggle-file-pane`, `toggle-diff-view`, `range-comment`, `mark-walkthrough`,
+  and `cancel-range-comment`;
+- comments and editor: `comment`, `cycle-comment-state`, `edit-comment`,
+  `delete-comment`, `comment-list`, `comment-list-new-general`,
+  `comment-list-ready`, `comment-list-cycle-action`,
+  `comment-list-cycle-kind`, `submit-comment`, `cancel-comment`,
+  `insert-newline`, and `delete-char`;
+- picker and popup: `target-picker-down`, `target-picker-up`,
+  `popup-move-down`, `popup-move-up`, `popup-select`, `popup-toggle`,
+  `popup-close`, `popup-close-q`, `draft-accept`, `draft-edit`,
+  `draft-discard`, `walkthrough-delete`, `walkthrough-move-down`, and
+  `walkthrough-move-up`;
+- zen: `zen-next`, `zen-previous`, `zen-toggle-view`, `zen-glance`,
+  `zen-artifact`, `zen-toggle-details`, `zen-refocus`, `zen-acknowledge`,
+  `zen-artifact-next`, and `zen-artifact-previous`.
+
+Gander also accepts legacy raw aliases `tour` for `zen` and `task-list` for
+`open-work`; use the canonical typed names above.
+
+## Colemak Mod-DH bindings
+
+The shared preset exactly matches upstream's documented, regression-tested
+collision-free Colemak Mod-DH override:
 
 | Action | Keys |
 | --- | --- |
-| Next file | `n`, Down |
-| Previous file | `e`, Up |
-| Target picker down | Down, Ctrl-N |
-| Target picker up | Up, Ctrl-E |
-| Next unviewed file | `]` |
-| Previous unviewed file | `[` |
-| Next comment | `l` |
-| Previous comment | `L` |
-| Collapse fold | `m`, Left |
-| Expand fold | `i`, Right |
+| `move-down` | `n`, Down |
+| `move-up` | `e`, Up |
+| `next-unviewed` | Alt-J |
+| `previous-unviewed` | Shift-J |
+| `edit-comment` | Alt-E |
+| `popup-move-down` | `n`, Down |
+| `popup-move-up` | `e`, Up |
+| `comment-list-new-general` | Ctrl-N |
+| `draft-edit` | Alt-E |
+| `zen-artifact` | `i` |
+| `zen-next` | Enter, Right, Space |
 
-Notable upstream defaults left intact include Tab to toggle focus, Space to
-toggle folds, `t`/`p` to compare against trunk/parent, `h` to hide generated
-files, Enter to mark viewed, `c`/`e`/`x` for comments, and `q`/Esc to quit.
+These changes are atomic. In particular, moving only normal navigation to
+`n`/`e` would collide with unmodified popup, comment-center, draft, and zen
+actions. Gander's immutable `j`/`k` and arrow safety aliases still work.
 
-## Updating
+## Bundled Agent Skills
 
-Gander is a flake input. When bumping it, update each relevant lockfile: the
-host lockfiles for enabled hosts, the Home Manager modules lockfile, and the
-root aggregator lockfile nodes used by builds from the repository root.
+Gander v0.7.2 embeds two skills in its package:
+
+- `gander-review` authors a durable Gander review without changing code or
+  posting to a forge;
+- `gander-address-review` implements todo/action-item feedback and records the
+  result in Gander state.
+
+The module uses the pinned package's `gander skills install` command rather than
+copying skill text, so skill content always follows the selected package.
+Installation runs after Home Manager's write/link boundaries only when all of
+the following are true:
+
+- `dotfiles.gander.enable` is true;
+- `programs.opencode.enable` is true;
+- `dotfiles.gander.skills.enable` is true (the default);
+- `dotfiles.gander.package` is non-null.
+
+Skill controls are:
+
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `skills.enable` | `true` | Enable package-driven skill installation. |
+| `skills.names` | `[]` | Names to install; empty delegates to Gander's “all bundled skills” behavior. |
+| `skills.force` | `true` | Replace selected skill files, making repeated activation idempotent. |
+| `skills.targetDirectory` | `$XDG_CONFIG_HOME/opencode/skills` | Agent Skill root passed via `--dir`. |
+
+Non-empty `names` is enum-checked and duplicate names are rejected. For
+example:
+
+```nix
+dotfiles.gander.skills = {
+  names = ["gander-address-review"];
+  force = true;
+  targetDirectory = "${config.xdg.configHome}/opencode/skills";
+};
+```
+
+The activation creates the target as the Home Manager user and asks Gander to
+write only its selected `<name>/SKILL.md` subtrees. It does not claim, clean, or
+delete the shared target directory, so unrelated user and package skills are
+left alone. `force = false` protects an existing selected skill, but a repeat
+activation will then fail if that skill already exists; keep the default for a
+declarative, repeatable installation. Deselecting a skill does not delete a
+previous installation because the module intentionally does not own the shared
+directory.
+
+OpenCode reads configuration and skills at process startup. Restart a running
+OpenCode session after activation to load newly installed or updated skills.
+
+## v0.7.2 workflow notes
+
+Comments are the primary feedback unit. `draft` is private reviewer state,
+`todo` requests implementation, and `resolved` retains history. Optional action
+items coordinate groups of comments or external work; closing an action item
+does not implicitly resolve linked comments. Walkthroughs provide an ordered
+reading path, and `gander handoff --mode delegate` exports selectors,
+objectives, constraints, acceptance criteria, and verification guidance for an
+implementing agent.
+
+Review state belongs under `$XDG_STATE_HOME/gander`, not in the repository.
+`--state-file` changes storage selection but does not select the code workspace.
+The `gander skills list/show/install` commands run without repository or `jj`
+initialization.
+
+## Verification and updates
+
+The Home Manager flake has a focused `gander-module-config-and-skills` check. It
+evaluates the module, renders representative values from every configuration
+section (including exact hyphen/underscore spelling and raw precedence), checks
+the activation command, runs the fake package installer twice, and verifies an
+unrelated skill remains untouched.
+
+```sh
+nix build ./flakes/hm-modules#checks.$(nix eval --raw --impure --expr builtins.currentSystem).gander-module-config-and-skills
+nix flake check ./flakes/hm-modules --no-build
+jj lint
+```
+
+Gander is a flake input. Version bumps should update every relevant root, Home
+Manager, and enabled-host lockfile node together so evaluation paths do not
+remain split across releases.

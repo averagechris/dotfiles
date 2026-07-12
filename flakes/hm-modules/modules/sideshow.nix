@@ -112,7 +112,7 @@ in {
       };
       ffmpeg = mkToolOptions {
         description = "ffmpeg";
-        defaultPackage = pkgs.ffmpeg;
+        defaultPackage = pkgs.ffmpeg-headless;
       };
       vhs = mkToolOptions {
         description = "vhs";

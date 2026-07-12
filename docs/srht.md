@@ -39,10 +39,17 @@ the upstream `programs.srht` Home Manager module and enables it when
 
 ## Configuration and completions
 
-The upstream module writes `~/.config/srht/config.toml` from
-`programs.srht.instances`. By default it configures the public `sr.ht` instance
-and lets `srht` use its normal OS keyring behavior. For headless hosts, set
-`tokenCmd` instead of writing plaintext tokens into Nix:
+The upstream v0.8.1 module supplies typed `programs.srht.instances` and
+`programs.srht.profiles` options. The dotfiles wrapper extends its generated
+document with cache, scoring, fallback, and optional legacy route settings while
+keeping one `xdg.configFile."srht/config.toml"` owner.
+
+The additional typed schema lives under `dotfiles.srht.settings` and covers
+`cache`, `scoring`, `defaults` (including `doneResolution`), `todoFallback`,
+`routePolicies`, `routes`, and the global `todoPolicy`. Nix uses camelCase
+option names and renders srht's kebab-case TOML keys. By default it configures
+the public `sr.ht` instance and lets `srht` use its normal OS keyring behavior.
+For headless hosts, set `tokenCmd` instead of writing plaintext tokens into Nix:
 
 ```nix
 programs.srht.instances = [
@@ -52,6 +59,64 @@ programs.srht.instances = [
   }
 ];
 ```
+
+No token value option exists in either module. The generated document contains
+only `token-keyring` or `token-cmd` when explicitly requested.
+
+### Shared `work` profile
+
+Enabling `dotfiles.srht` defines `programs.srht.profiles.work` and exports
+`SRHT_PROFILE=work`. Profiles are explicitly selected bundles, not repository
+matchers. The shared profile contains:
+
+- the `sr.ht` instance;
+- tracker and project `~averagechris/projects`;
+- default done resolution `fixed`;
+- `repo:{repo}` is added on create, filters reads unless `--all-repos` is used,
+  and is required to exist on the umbrella tracker;
+- exactly one work type is required from `chore`, `fix`, `feature`, `security`,
+  `docs`, `refactor`, and `perf`;
+- an optional estimate may use `points:1`, `points:2`, `points:3`, `points:5`,
+  `points:8`, or `points:13`;
+- exactly one of `severity:critical`, `severity:high`, `severity:med`, or
+  `severity:low` is required only for `fix` and `security` work;
+- `blocked`, `upstream`, `duplicate`, and `wontfix` are recognized workflow
+  labels;
+- create, update, and unknown-label validation warn, while existing-ticket
+  validation is off to keep routine list reads quiet;
+- unmatched repositories fail with `[todo-fallback] mode = "error"` rather
+  than silently guessing a tracker.
+
+The prior `personal-oss-projects` route and `projects` route policy were removed:
+they only selected the same umbrella tracker and repository context label now
+provided by the explicit profile. Routes remain supported under
+`dotfiles.srht.settings` for future cases that genuinely need automatic
+repository-to-tracker matching.
+
+Select another configured profile globally or disable global selection with:
+
+```nix
+dotfiles.srht.activeProfile = "another-profile";
+# or null to require --profile / SRHT_PROFILE from the calling environment
+```
+
+CLI `--profile` overrides `SRHT_PROFILE`. Repository bindings outrank a selected
+profile; profiles outrank routes, defaults, and fallback selection. A profile's
+todo policy also overrides a selected route policy.
+
+After activation, validate and explain the effective configuration without
+exposing credentials:
+
+```bash
+srht --profile work --json config check
+srht --profile work --json todo context --repo '~averagechris/dotfiles' --explain
+srht --profile work --json todo list --repo '~averagechris/dotfiles' --offline
+```
+
+The offline read requires a previously synchronized snapshot. The focused
+`srht-config-rendering` flake check evaluates Home Manager and asserts the
+profile, policy, selected environment variable, fallback, absence of routes,
+and absence of token configuration in the rendered TOML.
 
 The package ships bash, fish, zsh completions, and man pages under `share/`.
 Adding the package to `home.packages` installs those completions into the Home
