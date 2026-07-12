@@ -2653,11 +2653,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1783739672,
-        "narHash": "sha256-WPesJ0kRbWEVBBXwsWZBBj4zI+G1pF6tBNTLSURZHDE=",
+        "lastModified": 1783836324,
+        "narHash": "sha256-64gcSW94MndweDUoAFkC0Kht1nixKKpbOsrnyKE3RlE=",
         "owner": "~averagechris",
         "repo": "rdny",
-        "rev": "7d81cb82d291f122528906674599c028b1b7ca50",
+        "rev": "6f7ac36d2ac56825a6a1ca146baee03bcc5303e3",
         "type": "sourcehut"
       },
       "original": {
@@ -2677,11 +2677,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1783739672,
-        "narHash": "sha256-WPesJ0kRbWEVBBXwsWZBBj4zI+G1pF6tBNTLSURZHDE=",
+        "lastModified": 1783836324,
+        "narHash": "sha256-64gcSW94MndweDUoAFkC0Kht1nixKKpbOsrnyKE3RlE=",
         "owner": "~averagechris",
         "repo": "rdny",
-        "rev": "7d81cb82d291f122528906674599c028b1b7ca50",
+        "rev": "6f7ac36d2ac56825a6a1ca146baee03bcc5303e3",
         "type": "sourcehut"
       },
       "original": {

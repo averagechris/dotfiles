@@ -277,6 +277,77 @@
             test -f "${zenSourceV2}/manifest.json"
             touch $out
           '';
+
+        rdny-module-completions-and-skills = let
+          fakeRdny = pkgs.writeShellApplication {
+            name = "rdny";
+            text = ''
+              case "$1" in
+                completion)
+                  case "$2" in
+                    bash) printf 'complete -F _rdny rdny\n' ;;
+                    fish) printf 'complete -c rdny\n' ;;
+                    zsh) printf '#compdef rdny\n' ;;
+                    *) exit 64 ;;
+                  esac
+                  ;;
+                skills)
+                  test "$2" = install
+                  shift 2
+                  while [ "$#" -gt 0 ]; do
+                    case "$1" in
+                      --dir) shift; skills_dir="$1" ;;
+                      --force) force=1 ;;
+                    esac
+                    shift || true
+                  done
+                  test -n "''${skills_dir:-}"
+                  test "''${force:-}" = 1
+                  ;;
+                *) exit 64 ;;
+              esac
+            '';
+          };
+          testConfig = home-manager.lib.homeManagerConfiguration {
+            inherit pkgs;
+            extraSpecialArgs = {
+              inherit dotfiles_lib inputs system;
+              sshKeys = inputs.base-lib.sshKeys;
+              secrets = {};
+            };
+            modules = [
+              ./modules/rdny.nix
+              ({lib, ...}: {
+                options.dotfiles.opencode.agentTools = lib.mkOption {
+                  type = lib.types.listOf lib.types.attrs;
+                  default = [];
+                };
+              })
+              {
+                home.username = "test";
+                home.homeDirectory = "/tmp/test-home";
+                home.stateVersion = "26.05";
+                programs.opencode.enable = true;
+                dotfiles.rdny = {
+                  enable = true;
+                  package = fakeRdny;
+                };
+              }
+            ];
+          };
+          rdnyCompletionPackages = builtins.filter (pkg: nixpkgs.lib.hasPrefix "rdny-completions" (pkg.name or "")) testConfig.config.home.packages;
+          rdnyCompletions = builtins.head rdnyCompletionPackages;
+        in
+          pkgs.runCommand "rdny-module-completions-and-skills-test" {} ''
+            test ${toString (builtins.length rdnyCompletionPackages)} -eq 1
+            test -f ${rdnyCompletions}/share/bash-completion/completions/rdny
+            test -f ${rdnyCompletions}/share/fish/vendor_completions.d/rdny.fish
+            test -f ${rdnyCompletions}/share/zsh/site-functions/_rdny
+            ${pkgs.gnugrep}/bin/grep -q 'skills install' ${testConfig.activationPackage}/activate
+            ${pkgs.gnugrep}/bin/grep -q -- '--dir "\$skills_dir"' ${testConfig.activationPackage}/activate
+            ${pkgs.gnugrep}/bin/grep -q -- '--force' ${testConfig.activationPackage}/activate
+            touch $out
+          '';
       };
     });
 }

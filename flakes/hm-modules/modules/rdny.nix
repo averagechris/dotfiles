@@ -83,6 +83,16 @@
       connect = generatedConnect;
     };
   mergedSettings = lib.recursiveUpdate generatedSettings cfg.settings;
+  rdnyCompletions = pkgs.runCommand "rdny-completions" {} ''
+    install -dm755 \
+      $out/share/bash-completion/completions \
+      $out/share/fish/vendor_completions.d \
+      $out/share/zsh/site-functions
+
+    ${lib.getExe cfg.package} completion bash > $out/share/bash-completion/completions/rdny
+    ${lib.getExe cfg.package} completion fish > $out/share/fish/vendor_completions.d/rdny.fish
+    ${lib.getExe cfg.package} completion zsh > $out/share/zsh/site-functions/_rdny
+  '';
 in {
   options.dotfiles.rdny = {
     enable = lib.mkEnableOption "rdny browser automation CLI";
@@ -110,6 +120,15 @@ in {
       type = lib.types.bool;
       default = true;
       description = "Write `~/.config/rdny/config.toml` from the module configuration.";
+    };
+
+    completions.enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = ''
+        Install generated rdny bash, fish, and zsh completions in the standard
+        Home Manager profile completion directories for enabled shells.
+      '';
     };
 
     binaries = {
@@ -187,7 +206,11 @@ in {
       skill.enable = lib.mkOption {
         type = lib.types.bool;
         default = true;
-        description = "Install the repo-managed rdny OpenCode skill when OpenCode is enabled.";
+        description = ''
+          Install rdny's bundled OpenCode skills into
+          ~/.config/opencode/skills during Home Manager activation when
+          OpenCode is enabled.
+        '';
       };
     };
   };
@@ -214,6 +237,7 @@ in {
 
       home.packages =
         lib.optional (cfg.package != null) cfg.package
+        ++ lib.optional (cfg.package != null && cfg.completions.enable) rdnyCompletions
         ++ enabledBinaryPackage cfg.binaries.chrome
         ++ enabledBinaryPackage cfg.binaries.ffmpeg;
 
@@ -240,8 +264,14 @@ in {
       ];
     })
 
-    (lib.mkIf (config.programs.opencode.enable && cfg.opencode.skill.enable) {
-      programs.opencode.skills.rdny-browser = builtins.readFile ./opencode/skills/rdny-browser/SKILL.md;
+    (lib.mkIf (config.programs.opencode.enable && cfg.opencode.skill.enable && cfg.package != null) {
+      home.activation.install-rdny-opencode-skills = lib.hm.dag.entryAfter ["writeBoundary" "linkGeneration"] ''
+        skills_dir="$HOME/.config/opencode/skills"
+        ${pkgs.coreutils}/bin/mkdir -p "$skills_dir"
+        ${lib.escapeShellArg (lib.getExe cfg.package)} skills install \
+          --dir "$skills_dir" \
+          --force
+      '';
     })
   ]);
 }
