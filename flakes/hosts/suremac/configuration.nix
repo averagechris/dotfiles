@@ -8,7 +8,49 @@
   ...
 }: let
   ctxPackage = inputs.ctx.packages.${pkgs.stdenv.hostPlatform.system}.ctx;
+  rdnyPackage = inputs.rdny.packages.${pkgs.stdenv.hostPlatform.system}.rdny;
   srhtPackage = inputs.srht.packages.${pkgs.stdenv.hostPlatform.system}.srht;
+  rdnyHeliumPackage = pkgs.writeShellApplication {
+    name = "rdny-helium";
+    runtimeInputs = [pkgs.coreutils pkgs.curl rdnyPackage];
+    text = ''
+      set -euo pipefail
+
+      state_dir="''${XDG_STATE_HOME:-$HOME/.local/state}/rdny/visible-helium"
+      profile_dir="''${XDG_DATA_HOME:-$HOME/.local/share}/rdny/visible-helium-profile"
+      endpoint="http://127.0.0.1:9333/json/version"
+
+      mkdir -p "$state_dir" "$profile_dir"
+
+      if ! rdny --state-dir "$state_dir" status >/dev/null 2>&1; then
+        if ! curl --fail --silent --show-error "$endpoint" >/dev/null 2>&1; then
+          /usr/bin/open -na Helium --args \
+            --remote-debugging-address=127.0.0.1 \
+            --remote-debugging-port=9333 \
+            --user-data-dir="$profile_dir"
+
+          for _ in $(seq 1 100); do
+            if curl --fail --silent "$endpoint" >/dev/null 2>&1; then
+              break
+            fi
+            sleep 0.1
+          done
+        fi
+
+        if ! curl --fail --silent --show-error "$endpoint" >/dev/null; then
+          printf 'Helium did not expose its DevTools endpoint at 127.0.0.1:9333\n' >&2
+          exit 1
+        fi
+
+        rdny --state-dir "$state_dir" connect helium
+      fi
+
+      if [[ $# -eq 0 ]]; then
+        exec rdny --state-dir "$state_dir" status
+      fi
+      exec rdny --state-dir "$state_dir" "$@"
+    '';
+  };
   # The nixpkgs Darwin WezTerm build embeds the absolute clang-wrapper path in
   # OpenSSL compiler metadata inside the app binaries. That single non-runtime
   # string keeps the full clang/LLVM/Apple SDK closure alive in the user profile,
@@ -347,6 +389,7 @@ in {
     home.packages = with pkgs; [
       inputs.slack.packages.${pkgs.stdenv.hostPlatform.system}.slack
       kubernetes-helm
+      rdnyHeliumPackage
     ];
     imports = [
       inputs.hm-modules.homeManagerModules.default
@@ -487,21 +530,40 @@ in {
     };
     dotfiles.rdny = {
       enable = true;
+      package = rdnyPackage;
       binaries = {
         chrome = {
           enable = true;
-          path = "/Applications/Helium.app/Contents/MacOS/Helium";
-          # Configured candidates replace rdny's automatic discovery. Keep the
-          # common manually installed Chrome app as an explicit fallback.
-          fallbackPaths = ["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"];
+          path = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
         };
         ffmpeg.enable = true;
       };
-      connect = {
-        default = "helium";
-        targets.helium = "127.0.0.1:9333";
-      };
+      connect.targets.helium = "127.0.0.1:9333";
     };
+    dotfiles.agentSkills.rdny-browser.extraText = ''
+      ## suremac browser choice
+
+      Use ordinary `rdny` commands for browser automation unless the user
+      explicitly asks to see the browser, control a graphical browser, or use
+      visible Helium. `rdny start` uses a task-owned, isolated Google Chrome
+      profile and is headless unless `--show` is passed; do not pass `--show`
+      for normal automation.
+
+      For an explicit visible-browser request, use `rdny-helium` in place of
+      `rdny` for every command, for example:
+
+      ```bash
+      rdny-helium pages
+      rdny-helium open https://example.com
+      rdny-helium click 'button'
+      ```
+
+      `rdny-helium` reconnects to the dedicated graphical Helium session when
+      it is already available. Otherwise it starts visible Helium with a
+      loopback CDP endpoint and a persistent profile separate from the user's
+      ordinary Helium profile, then connects. Do not terminate or replace an
+      ordinary Helium process to make it controllable.
+    '';
     dotfiles.srht.enable = true;
     dotfiles.opencode.agentSupportPackages = [];
     dotfiles.opencode.agentTools = with pkgs; [

@@ -107,7 +107,13 @@
     ${lib.getExe cfg.package} completion fish > $out/share/fish/vendor_completions.d/rdny.fish
     ${lib.getExe cfg.package} completion zsh > $out/share/zsh/site-functions/_rdny
   '';
+  rdnySkillSource =
+    if cfg.package != null && cfg.package ? src
+    then cfg.package.src + "/skills/rdny-browser/SKILL.md"
+    else null;
 in {
+  imports = [./agent-skills.nix];
+
   options.dotfiles.rdny = {
     enable = lib.mkEnableOption "rdny browser automation CLI";
 
@@ -243,16 +249,6 @@ in {
         default = true;
         description = "Expose `rdny` in OpenCode's generated agent tool note when OpenCode is enabled.";
       };
-
-      skill.enable = lib.mkOption {
-        type = lib.types.bool;
-        default = true;
-        description = ''
-          Install rdny's bundled OpenCode skills into
-          ~/.config/opencode/skills during Home Manager activation when
-          OpenCode is enabled.
-        '';
-      };
     };
   };
 
@@ -294,6 +290,8 @@ in {
           RDNY_CHROME_ARGS = lib.concatStringsSep " " cfg.environment.chromeArgs;
         }
         // quotaSessionVariables;
+
+      dotfiles.agentSkills.rdny-browser.source = lib.mkDefault rdnySkillSource;
     }
 
     (lib.mkIf (config.programs.opencode.enable && cfg.opencode.exposeTool && cfg.package != null) {
@@ -304,16 +302,6 @@ in {
           description = "browser automation CLI";
         }
       ];
-    })
-
-    (lib.mkIf (config.programs.opencode.enable && cfg.opencode.skill.enable && cfg.package != null) {
-      home.activation.install-rdny-opencode-skills = lib.hm.dag.entryAfter ["writeBoundary" "linkGeneration"] ''
-        skills_dir="$HOME/.config/opencode/skills"
-        ${pkgs.coreutils}/bin/mkdir -p "$skills_dir"
-        ${lib.escapeShellArg (lib.getExe cfg.package)} skills install \
-          --dir "$skills_dir" \
-          --force
-      '';
     })
   ]);
 }

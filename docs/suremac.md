@@ -137,9 +137,13 @@ dumping large Datadog payloads. See [`docs/pup.md`](/docs/pup.md) for packaging,
 credential, agent-usage, and update notes.
 
 Browser automation uses the `dotfiles.rdny` Home Manager module. `suremac` points
-rdny at the manually installed Helium app, configures ffmpeg for video assembly,
-and exposes the `rdny` CLI plus the `rdny-browser` skill to OpenCode agents. See
-[`docs/rdny.md`](/docs/rdny.md) for module options and common commands.
+rdny only at the manually installed Google Chrome app for managed headless
+sessions, keeping automation processes separate from the interactive Helium app.
+It also configures ffmpeg for video assembly and exposes the `rdny` CLI plus the
+`rdny-browser` skill to OpenCode agents. See [`docs/rdny.md`](/docs/rdny.md) for
+module options and common commands. Explicit requests for a visible browser use
+the `rdny-helium` wrapper, which starts or reconnects to a dedicated graphical
+Helium profile rather than exposing the ordinary Helium profile to CDP.
 
 ## Daily dotfiles Self-Update
 

@@ -21,6 +21,61 @@ frequent releases while preserving the normal `pkgs.opencode` and home-manager
 - agent-specific runtime packages and prompt metadata exposed via `dotfiles.opencode.agentTools`
 - host-specific private skill appendices materialized during Home Manager activation
 
+## Declarative CLI skills
+
+CLI modules register bundled skills in the shared `dotfiles.agentSkills`
+registry. Every registered skill is enabled by default and Home Manager links
+the rendered result at `~/.config/opencode/skills/<name>/SKILL.md` when OpenCode
+is enabled. Hosts can customize each skill independently:
+
+```nix
+dotfiles.agentSkills.rdny-browser = {
+  enable = true;
+  patches = [./rdny-browser.patch];
+  extraText = ''
+    ## Host workflow
+
+    Use the host browser wrapper for visible sessions.
+  '';
+};
+
+dotfiles.agentSkills.gander-address-review.enable = false;
+```
+
+The renderer copies the upstream `source`, applies `patches` in order with zero
+fuzz, then appends `extraText`. Use a patch when changing or removing upstream
+instructions; its build failure intentionally detects upstream drift. Use
+`extraText` only for additive local guidance. CLI modules own source
+registration, while hosts normally set only `enable`, `patches`, or `extraText`.
+
+New CLI modules should import `agent-skills.nix` and register every bundled skill
+with a default source; they should not add bespoke skill options or activation
+scripts:
+
+```nix
+{
+  config,
+  lib,
+  ...
+}: let
+  cfg = config.dotfiles.exampleCli;
+  skillSource =
+    if cfg.package != null && cfg.package ? src
+    then cfg.package.src + "/skills/example/SKILL.md"
+    else null;
+in {
+  imports = [./agent-skills.nix];
+
+  config = lib.mkIf cfg.enable {
+    dotfiles.agentSkills.example.source = lib.mkDefault skillSource;
+  };
+}
+```
+
+Use one registry entry per skill rather than a names allowlist. This makes every
+new skill available by default while preserving stable host overrides such as
+`dotfiles.agentSkills.example.enable = false`.
+
 On Linux, the module wraps the OpenCode package with `LD_LIBRARY_PATH` pointing
 at `stdenv.cc.cc.lib`. This makes OpenCode's native file-watcher binding able to
 find `libstdc++.so.6` on NixOS. Without the wrapper, OpenCode may log or surface
@@ -236,7 +291,7 @@ dotfiles.opencode.agentTools = with pkgs; [
 ```
 
 Tool-specific modules can append their own entries too. `dotfiles.rdny` appends
-`rdny` and installs the `rdny-browser` skill when enabled.
+`rdny` and registers the `rdny-browser` skill when enabled.
 
 Primary agent prompts render a concise structured runtime note dynamically, for
 example:
@@ -271,9 +326,10 @@ All MCP servers are defined in `flakes/hm-modules/modules/opencode/settings.nix`
 
 ## Installed skills
 
-This repo also ships a small set of local skills for common tool-specific
-workflows, and a few tool modules install their own bundled skills during Home
-Manager activation. Current examples include:
+This repo also ships local skills for common tool-specific workflows. CLI
+modules register bundled or repo-managed skills with `dotfiles.agentSkills`, so
+rendering, patching, extension, and per-skill enablement happen uniformly at
+build time. Current examples include:
 
 - `jj-vcs`
 - `jj-change-management`
@@ -283,10 +339,13 @@ Manager activation. Current examples include:
 - `changes-review-core`
 - `github-pr-review`
 - `linear-cli`
-- `rdny-browser` (installed by `dotfiles.rdny`)
-- `srht-issues` (installed by `dotfiles.srht`)
-- `srht-ci` (installed by `dotfiles.srht`)
-- `srht-setup` (installed by `dotfiles.srht`)
+- `linear-admin`, `linear-data`, `linear-git`, `linear-issues`,
+  `linear-organization`, `linear-planning`, and `linear-tracking` (registered by
+  `dotfiles.linearCli`)
+- `rdny-browser` (registered by `dotfiles.rdny`)
+- `gander-review` and `gander-address-review` (registered by `dotfiles.gander`)
+- `sideshow-work-story` (registered by `dotfiles.sideshow`)
+- `srht-issues`, `srht-ci`, and `srht-setup` (registered by `dotfiles.srht`)
 - `databricks-cli`
 - `pup-cli`
 - `sure-stack-context` (suremac only)

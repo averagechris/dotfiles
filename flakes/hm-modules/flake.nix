@@ -61,6 +61,7 @@
     {
       homeManagerModules = {
         default = ./modules/default.nix;
+        agentSkills = ./modules/agent-skills.nix;
         shell = ./modules/shell.nix;
         helix = ./modules/helix/default.nix;
         opencode = ./modules/opencode/default.nix;
@@ -291,23 +292,24 @@
                     *) exit 64 ;;
                   esac
                   ;;
-                skills)
-                  test "$2" = install
-                  shift 2
-                  while [ "$#" -gt 0 ]; do
-                    case "$1" in
-                      --dir) shift; skills_dir="$1" ;;
-                      --force) force=1 ;;
-                    esac
-                    shift || true
-                  done
-                  test -n "''${skills_dir:-}"
-                  test "''${force:-}" = 1
-                  ;;
                 *) exit 64 ;;
               esac
             '';
           };
+          fakeRdnySkill = pkgs.writeText "fake-rdny-browser-SKILL.md" ''
+            ---
+            name: rdny-browser
+            description: test rdny browser skill
+            ---
+            # rdny browser automation
+          '';
+          fakeRdnySkillPatch = pkgs.writeText "fake-rdny-browser.patch" ''
+            --- a/SKILL.md
+            +++ b/SKILL.md
+            @@ -6 +6 @@
+            -# rdny browser automation
+            +# patched rdny browser automation
+          '';
           testConfig = home-manager.lib.homeManagerConfiguration {
             inherit pkgs;
             extraSpecialArgs = {
@@ -328,6 +330,7 @@
                 home.homeDirectory = "/tmp/test-home";
                 home.stateVersion = "26.05";
                 programs.opencode.enable = true;
+                programs.opencode.package = fakeRdny;
                 dotfiles.rdny = {
                   enable = true;
                   package = fakeRdny;
@@ -336,20 +339,31 @@
                     maxRecordingSeconds = 120;
                   };
                 };
+                dotfiles.agentSkills.rdny-browser = {
+                  source = fakeRdnySkill;
+                  patches = [fakeRdnySkillPatch];
+                  extraText = "## Host workflow\n\nUse the host wrapper.\n";
+                };
               }
             ];
           };
           rdnyCompletionPackages = builtins.filter (pkg: nixpkgs.lib.hasPrefix "rdny-completions" (pkg.name or "")) testConfig.config.home.packages;
           rdnyCompletions = builtins.head rdnyCompletionPackages;
+          rdnySkill = testConfig.config.xdg.configFile."opencode/skills/rdny-browser/SKILL.md".source;
         in
           pkgs.runCommand "rdny-module-completions-and-skills-test" {} ''
             test ${toString (builtins.length rdnyCompletionPackages)} -eq 1
             test -f ${rdnyCompletions}/share/bash-completion/completions/rdny
             test -f ${rdnyCompletions}/share/fish/vendor_completions.d/rdny.fish
             test -f ${rdnyCompletions}/share/zsh/site-functions/_rdny
-            ${pkgs.gnugrep}/bin/grep -q 'skills install' ${testConfig.activationPackage}/activate
-            ${pkgs.gnugrep}/bin/grep -q -- '--dir "\$skills_dir"' ${testConfig.activationPackage}/activate
-            ${pkgs.gnugrep}/bin/grep -q -- '--force' ${testConfig.activationPackage}/activate
+            ${pkgs.gnugrep}/bin/grep -q '^name: rdny-browser$' ${rdnySkill}
+            ${pkgs.gnugrep}/bin/grep -q '^# patched rdny browser automation$' ${rdnySkill}
+            ${pkgs.gnugrep}/bin/grep -q '^## Host workflow$' ${rdnySkill}
+            ${pkgs.gnugrep}/bin/grep -q '^Use the host wrapper.$' ${rdnySkill}
+            if ${pkgs.gnugrep}/bin/grep -q 'install-rdny-opencode-skills' ${testConfig.activationPackage}/activate; then
+              echo "rdny skills must be linked from a build-time derivation" >&2
+              exit 1
+            fi
             test '${testConfig.config.home.sessionVariables.RDNY_MAX_DOWNLOAD_BYTES}' = 1048576
             test '${testConfig.config.home.sessionVariables.RDNY_MAX_RECORDING_SECONDS}' = 120
             touch $out
