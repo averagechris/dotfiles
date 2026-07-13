@@ -6,6 +6,10 @@
   ...
 }: let
   cfg = config.dotfiles.srht;
+  skillSourceDirectory =
+    if cfg.package != null && cfg.package ? src
+    then cfg.package.src + "/assets/skills"
+    else null;
   system = pkgs.stdenv.hostPlatform.system;
   hasSrhtModule = inputs ? srht && inputs.srht ? homeManagerModules;
   toml = pkgs.formats.toml {};
@@ -230,7 +234,7 @@
       };
     });
 in {
-  imports = lib.optional hasSrhtModule inputs.srht.homeManagerModules.default;
+  imports = [./agent-skills.nix] ++ lib.optional hasSrhtModule inputs.srht.homeManagerModules.default;
 
   options.dotfiles.srht = {
     enable = lib.mkEnableOption "srht SourceHut CLI integration";
@@ -339,36 +343,6 @@ in {
         description = "Optional global todo label policy applied outside a named route policy.";
       };
     };
-
-    opencodeSkills = {
-      enable = lib.mkOption {
-        type = lib.types.bool;
-        default = true;
-        description = ''
-          Install srht's bundled agent skills into ~/.config/opencode/skills
-          during Home Manager activation.
-        '';
-      };
-
-      names = lib.mkOption {
-        type = lib.types.listOf lib.types.str;
-        default = [];
-        example = ["srht-issues" "srht-ci" "srht-setup"];
-        description = ''
-          Bundled srht skill names to install. The empty default installs every
-          bundled skill exposed by `srht skills install`.
-        '';
-      };
-
-      force = lib.mkOption {
-        type = lib.types.bool;
-        default = true;
-        description = ''
-          Pass --force to `srht skills install` so updated bundled skill content
-          replaces previous activation output.
-        '';
-      };
-    };
   };
 
   config = lib.mkMerge [
@@ -453,14 +427,23 @@ in {
       # config path.
       xdg.configFile."srht/config.toml".source = lib.mkForce renderedConfig;
 
-      home.activation.install-srht-opencode-skills = lib.mkIf cfg.opencodeSkills.enable (lib.hm.dag.entryAfter ["linkGeneration"] ''
-        skills_dir="$HOME/.config/opencode/skills"
-        ${pkgs.coreutils}/bin/mkdir -p "$skills_dir"
-        ${lib.escapeShellArg (lib.getExe cfg.package)} skills install \
-          --dir "$skills_dir" \
-          ${lib.optionalString cfg.opencodeSkills.force "--force"} \
-          ${lib.concatMapStringsSep " " lib.escapeShellArg cfg.opencodeSkills.names}
-      '');
+      dotfiles.agentSkills = {
+        srht-issues.source = lib.mkDefault (
+          if skillSourceDirectory == null
+          then null
+          else skillSourceDirectory + "/srht-issues.md"
+        );
+        srht-ci.source = lib.mkDefault (
+          if skillSourceDirectory == null
+          then null
+          else skillSourceDirectory + "/srht-ci.md"
+        );
+        srht-setup.source = lib.mkDefault (
+          if skillSourceDirectory == null
+          then null
+          else skillSourceDirectory + "/srht-setup.md"
+        );
+      };
     }))
   ];
 }

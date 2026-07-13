@@ -373,6 +373,12 @@
           fakeSrht = pkgs.writeShellScriptBin "srht" ''
             echo "srht test package"
           '';
+          fakeSrhtSkills = pkgs.runCommand "fake-srht-skills" {} ''
+            mkdir -p "$out"
+            printf 'srht-issues\n' > "$out/srht-issues.md"
+            printf 'srht-ci\n' > "$out/srht-ci.md"
+            printf 'srht-setup\n' > "$out/srht-setup.md"
+          '';
           testConfig = home-manager.lib.homeManagerConfiguration {
             inherit pkgs;
             extraSpecialArgs = {
@@ -384,15 +390,28 @@
                 home.username = "test";
                 home.homeDirectory = "/tmp/test-home";
                 home.stateVersion = "26.05";
+                programs.opencode.enable = true;
+                programs.opencode.package = fakeSrht;
                 dotfiles.srht = {
                   enable = true;
                   package = fakeSrht;
-                  opencodeSkills.enable = false;
+                };
+                dotfiles.agentSkills = {
+                  srht-issues = {
+                    enable = false;
+                    source = fakeSrhtSkills + "/srht-issues.md";
+                  };
+                  srht-ci.source = fakeSrhtSkills + "/srht-ci.md";
+                  srht-setup = {
+                    enable = false;
+                    source = fakeSrhtSkills + "/srht-setup.md";
+                  };
                 };
               }
             ];
           };
           rendered = testConfig.config.xdg.configFile."srht/config.toml".source;
+          srhtCiSkill = testConfig.config.xdg.configFile."opencode/skills/srht-ci/SKILL.md".source;
         in
           pkgs.runCommand "srht-config-rendering-test" {} ''
             ${pkgs.gnugrep}/bin/grep -q '^ttl-minutes = 30$' ${rendered}
@@ -417,6 +436,16 @@
             fi
             if ${pkgs.gnugrep}/bin/grep -q '^token' ${rendered}; then
               echo "rendered srht config unexpectedly contains token configuration" >&2
+              exit 1
+            fi
+            test "$(cat ${srhtCiSkill})" = srht-ci
+            test ${
+              if builtins.hasAttr "opencode/skills/srht-issues/SKILL.md" testConfig.config.xdg.configFile
+              then "1"
+              else "0"
+            } -eq 0
+            if ${pkgs.gnugrep}/bin/grep -q 'install-srht-opencode-skills' ${testConfig.activationPackage}/activate; then
+              echo "srht skills must be linked declaratively" >&2
               exit 1
             fi
             touch $out

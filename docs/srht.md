@@ -124,27 +124,26 @@ Manager profile for the configured shells.
 
 ## OpenCode skills
 
-By default, `dotfiles.srht.opencodeSkills.enable = true` runs this during Home
-Manager activation:
-
-```bash
-srht skills install --dir ~/.config/opencode/skills --force
-```
-
-This installs all bundled srht agent skills as OpenCode skills, currently:
+The srht module registers all bundled skills from the selected package's source
+with the shared `dotfiles.agentSkills` renderer. All three are enabled by default:
 
 - `srht-issues` - todo.sr.ht issue workflows
 - `srht-ci` - builds.sr.ht CI submission, following, multi-job waiting, and logs
 - `srht-setup` - auth, config, repository init, and cache refresh setup
 
-Set `dotfiles.srht.opencodeSkills.names` to a list of skill names to install a
-subset, or set `dotfiles.srht.opencodeSkills.enable = false` to skip activation
-installation.
+Each skill has the same `enable`, `patches`, and `extraText` controls as skills
+registered by other CLI modules. For example:
 
-The `srht-ci` skill is intentionally installed from the `srht` package during
-activation rather than copied into this repository. After bumping `inputs.srht`,
-the next Home Manager activation refreshes the local OpenCode skill content with
-the upstream package's bundled skill text.
+```nix
+dotfiles.agentSkills.srht-setup.enable = false;
+dotfiles.agentSkills.srht-ci.patches = [./srht-ci.patch];
+```
+
+See [`docs/opencode.md`](/docs/opencode.md) for the common renderer contract.
+
+The module does not copy the skill text into this repository or run the mutable
+`srht skills install` command during activation. After bumping `inputs.srht`, the
+next Home Manager build links the upstream package source's updated skill text.
 
 ## Agent-facing CI additions
 
