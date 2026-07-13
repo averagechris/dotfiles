@@ -70,6 +70,8 @@
     };
   mergedSettings = lib.recursiveUpdate generatedSettings cfg.settings;
 in {
+  imports = [./agent-skills.nix];
+
   options.dotfiles.sideshow = {
     enable = lib.mkEnableOption "sideshow HTML slide deck compiler and toolkit";
 
@@ -141,12 +143,6 @@ in {
         default = true;
         description = "Expose `sideshow` in OpenCode's generated agent tool note when OpenCode is enabled.";
       };
-
-      skill.enable = lib.mkOption {
-        type = lib.types.bool;
-        default = true;
-        description = "Install the repo-managed sideshow OpenCode skill when OpenCode is enabled.";
-      };
     };
   };
 
@@ -178,6 +174,8 @@ in {
       xdg.configFile."sideshow/config.toml" = lib.mkIf (cfg.configFile.enable && mergedSettings != {}) {
         source = tomlFormat.generate "sideshow-config.toml" mergedSettings;
       };
+
+      dotfiles.agentSkills.sideshow-work-story.source = lib.mkDefault ./opencode/skills/sideshow-work-story/SKILL.md;
     }
 
     (lib.mkIf (config.programs.opencode.enable && cfg.opencode.exposeTool && cfg.package != null) {
@@ -188,10 +186,6 @@ in {
           description = "HTML slide deck CLI";
         }
       ];
-    })
-
-    (lib.mkIf (config.programs.opencode.enable && cfg.opencode.skill.enable) {
-      programs.opencode.skills.sideshow-work-story = builtins.readFile ./opencode/skills/sideshow-work-story/SKILL.md;
     })
   ]);
 }
