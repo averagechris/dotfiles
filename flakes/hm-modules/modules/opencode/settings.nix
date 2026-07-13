@@ -11,10 +11,18 @@
     '';
   };
 in {
-  # Managed jj workspaces live outside the OpenCode process's project root when
-  # the orchestrator asks coding-minion subagents to create parallel checkouts.
-  # Trust only those canonical workspace namespaces, not the whole project group.
-  permission.external_directory = managedJjWorkspaceExternalDirectories;
+  # Managed jj workspaces and temporary files live outside the OpenCode
+  # process's project root. Trust the canonical workspace namespaces and common
+  # temp paths, including both macOS's visible and canonical path spellings.
+  permission.external_directory =
+    {
+      "*" = "ask";
+      "/tmp/**" = "allow";
+      "/private/tmp/**" = "allow";
+      "/var/folders/**/T/opencode/**" = "allow";
+      "/private/var/folders/**/T/opencode/**" = "allow";
+    }
+    // managedJjWorkspaceExternalDirectories;
 
   # MCP Servers - External tool integrations
   mcp = {

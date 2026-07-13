@@ -128,6 +128,12 @@ on `suremac` also `~/sureapp/ws/**`) is trusted by default. This covers files
 created by `jj ws add` while preserving prompts for unrelated external
 directories.
 
+The same external-directory policy allows general temporary files under `/tmp`
+and `/private/tmp`, plus OpenCode's session-specific directories under
+`/var/folders/**/T/opencode` and `/private/var/folders/**/T/opencode`. Both path
+spellings are present because macOS canonicalizes `/tmp` and `/var` through
+`/private`; unrelated external directories continue to prompt.
+
 For Build, `orchestrator`, and `coding-minion`, the catch-all rule is `"*":
 "allow"`, and narrower later rules prompt or deny known sharp edges. OpenCode
 evaluates the last matching permission rule, so keep the broad allow at the top
