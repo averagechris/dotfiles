@@ -6,6 +6,10 @@
   ...
 }: let
   cfg = config.dotfiles.gander;
+  skillSourceDirectory =
+    if cfg.package != null && cfg.package ? src
+    then cfg.package.src + "/skills"
+    else null;
   tomlFormat = pkgs.formats.toml {};
   system = pkgs.stdenv.hostPlatform.system;
   inputPackage =
@@ -237,6 +241,8 @@
   # the format-typed raw escape hatch.
   mergedSettings = lib.recursiveUpdate (lib.recursiveUpdate defaultSettings typedSettings) cfg.settings;
 in {
+  imports = [./agent-skills.nix];
+
   options.dotfiles.gander = {
     enable = lib.mkEnableOption "Gander jj review TUI";
 
@@ -331,34 +337,6 @@ in {
         defaults and typed `dotfiles.gander.config` values; lists are replaced.
       '';
     };
-
-    skills = {
-      enable = lib.mkOption {
-        type = lib.types.bool;
-        default = true;
-        description = "Install Gander's bundled Agent Skills when OpenCode is enabled.";
-      };
-      names = lib.mkOption {
-        type = lib.types.listOf (lib.types.enum ["gander-review" "gander-address-review"]);
-        default = [];
-        description = "Bundled skills to install. An empty list asks the pinned Gander package to install every bundled skill.";
-      };
-      force = lib.mkOption {
-        type = lib.types.bool;
-        default = true;
-        description = "Replace selected Gander skill files, making repeat activation idempotent.";
-      };
-      targetDirectory = lib.mkOption {
-        type = lib.types.str;
-        default = "${config.xdg.configHome}/opencode/skills";
-        defaultText = lib.literalExpression ''"${config.xdg.configHome}/opencode/skills"'';
-        description = ''
-          Shared Agent Skill root passed to `gander skills install`. The module
-          creates this user-owned directory but owns only selected Gander skill
-          subdirectories; it never deletes unrelated skills.
-        '';
-      };
-    };
   };
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
@@ -368,29 +346,22 @@ in {
           assertion = cfg.package != null;
           message = "dotfiles.gander.enable requires dotfiles.gander.package or an inputs.gander flake input.";
         }
-        {
-          assertion = builtins.length cfg.skills.names == builtins.length (lib.unique cfg.skills.names);
-          message = "dotfiles.gander.skills.names must not contain duplicates.";
-        }
-        {
-          assertion = cfg.skills.targetDirectory != "";
-          message = "dotfiles.gander.skills.targetDirectory must not be empty.";
-        }
       ];
 
       home.packages = lib.optional (cfg.package != null) cfg.package;
       xdg.configFile."gander/config.toml".source = tomlFormat.generate "gander-config.toml" mergedSettings;
+      dotfiles.agentSkills = {
+        gander-review.source = lib.mkDefault (
+          if skillSourceDirectory == null
+          then null
+          else skillSourceDirectory + "/gander-review/SKILL.md"
+        );
+        gander-address-review.source = lib.mkDefault (
+          if skillSourceDirectory == null
+          then null
+          else skillSourceDirectory + "/gander-address-review/SKILL.md"
+        );
+      };
     }
-
-    (lib.mkIf (config.programs.opencode.enable && cfg.skills.enable && cfg.package != null) {
-      home.activation.install-gander-opencode-skills = lib.hm.dag.entryAfter ["writeBoundary" "linkGeneration"] ''
-        skills_dir=${lib.escapeShellArg cfg.skills.targetDirectory}
-        ${pkgs.coreutils}/bin/mkdir -p "$skills_dir"
-        ${lib.escapeShellArg (lib.getExe cfg.package)} skills install \
-          ${lib.concatMapStringsSep " " lib.escapeShellArg cfg.skills.names} \
-          --dir "$skills_dir" \
-          ${lib.optionalString cfg.skills.force "--force"}
-      '';
-    })
   ]);
 }

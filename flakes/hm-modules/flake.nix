@@ -423,38 +423,12 @@
           '';
 
         gander-module-config-and-skills = let
-          fakeGander = pkgs.writeShellApplication {
-            name = "gander";
-            runtimeInputs = [pkgs.coreutils];
-            text = ''
-              test "$1" = skills
-              test "$2" = install
-              shift 2
-              names=()
-              force=
-              while [ "$#" -gt 0 ]; do
-                case "$1" in
-                  --dir) shift; skills_dir="$1" ;;
-                  --force) force=1 ;;
-                  *) names+=("$1") ;;
-                esac
-                shift
-              done
-              test -n "''${skills_dir:-}"
-              if [ "''${#names[@]}" -eq 0 ]; then
-                names=(gander-review gander-address-review)
-              fi
-              mkdir -p "$skills_dir"
-              for name in "''${names[@]}"; do
-                mkdir -p "$skills_dir/$name"
-                target="$skills_dir/$name/SKILL.md"
-                if [ -e "$target" ] && [ -z "$force" ]; then
-                  exit 1
-                fi
-                printf '%s\n' "$name" > "$target"
-              done
-            '';
-          };
+          fakeGander = pkgs.writeShellScriptBin "gander" "exit 0";
+          fakeGanderSkills = pkgs.runCommand "fake-gander-skills" {} ''
+            mkdir -p "$out/gander-review" "$out/gander-address-review"
+            printf 'gander-review\n' > "$out/gander-review/SKILL.md"
+            printf 'gander-address-review\n' > "$out/gander-address-review/SKILL.md"
+          '';
           testConfig = home-manager.lib.homeManagerConfiguration {
             inherit pkgs;
             extraSpecialArgs = {
@@ -527,15 +501,19 @@
                   # Prove the raw escape hatch is last: this replaces the typed
                   # value while leaving the other typed sections intact.
                   settings.diff.soft-wrap = true;
-                  skills = {
-                    names = ["gander-review"];
-                    targetDirectory = "/tmp/test-home/.config/opencode/skills";
+                };
+                dotfiles.agentSkills = {
+                  gander-review.source = fakeGanderSkills + "/gander-review/SKILL.md";
+                  gander-address-review = {
+                    enable = false;
+                    source = fakeGanderSkills + "/gander-address-review/SKILL.md";
                   };
                 };
               }
             ];
           };
           renderedConfig = testConfig.config.xdg.configFile."gander/config.toml".source;
+          ganderReviewSkill = testConfig.config.xdg.configFile."opencode/skills/gander-review/SKILL.md".source;
           disabledSkillsConfig = home-manager.lib.homeManagerConfiguration {
             inherit pkgs;
             extraSpecialArgs = {
@@ -581,28 +559,16 @@
             ${pkgs.gnugrep}/bin/grep -q '^zen-artifact-previous = \["alt-h"\]$' "$config"
 
             activate=${testConfig.activationPackage}/activate
-            ${pkgs.gnugrep}/bin/grep -q 'skills install' "$activate"
-            ${pkgs.gnugrep}/bin/grep -q 'gander-review' "$activate"
-            ${pkgs.gnugrep}/bin/grep -q -- '--dir "\$skills_dir"' "$activate"
-            ${pkgs.gnugrep}/bin/grep -q -- '--force' "$activate"
-            if ${pkgs.gnugrep}/bin/grep -q 'skills install' ${disabledSkillsConfig.activationPackage}/activate; then
-              echo "Gander skill activation must be absent when OpenCode is disabled" >&2
+            test "$(cat ${ganderReviewSkill})" = gander-review
+            test ${
+              if builtins.hasAttr "opencode/skills/gander-address-review/SKILL.md" testConfig.config.xdg.configFile
+              then "1"
+              else "0"
+            } -eq 0
+            if ${pkgs.gnugrep}/bin/grep -q 'install-gander-opencode-skills' "$activate"; then
+              echo "Gander skills must be linked declaratively" >&2
               exit 1
             fi
-
-            # Exercise the packaged installer contract twice: the default
-            # force behavior makes repeated activation safe and only the
-            # selected skill subtree is touched.
-            mkdir -p work/skills/unrelated
-            touch work/skills/unrelated/keep
-            ${fakeGander}/bin/gander skills install gander-review --dir "$PWD/work/skills" --force
-            ${fakeGander}/bin/gander skills install gander-review --dir "$PWD/work/skills" --force
-            test -f work/skills/gander-review/SKILL.md
-            test -f work/skills/unrelated/keep
-            mkdir -p work/all-skills
-            ${fakeGander}/bin/gander skills install --dir "$PWD/work/all-skills" --force
-            test -f work/all-skills/gander-review/SKILL.md
-            test -f work/all-skills/gander-address-review/SKILL.md
             touch $out
           '';
       };

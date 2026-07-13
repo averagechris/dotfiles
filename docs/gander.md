@@ -246,47 +246,31 @@ Gander v0.7.2 embeds two skills in its package:
 - `gander-address-review` implements todo/action-item feedback and records the
   result in Gander state.
 
-The module uses the pinned package's `gander skills install` command rather than
-copying skill text, so skill content always follows the selected package.
-Installation runs after Home Manager's write/link boundaries only when all of
-the following are true:
+The module registers both skill sources from the pinned package with the shared
+`dotfiles.agentSkills` renderer. Skill content therefore follows the selected
+package without running a mutable installer during activation. Both skills are
+enabled by default when all of the following are true:
 
 - `dotfiles.gander.enable` is true;
 - `programs.opencode.enable` is true;
-- `dotfiles.gander.skills.enable` is true (the default);
 - `dotfiles.gander.package` is non-null.
 
-Skill controls are:
-
-| Option | Default | Meaning |
-| --- | --- | --- |
-| `skills.enable` | `true` | Enable package-driven skill installation. |
-| `skills.names` | `[]` | Names to install; empty delegates to Gander's “all bundled skills” behavior. |
-| `skills.force` | `true` | Replace selected skill files, making repeated activation idempotent. |
-| `skills.targetDirectory` | `$XDG_CONFIG_HOME/opencode/skills` | Agent Skill root passed via `--dir`. |
-
-Non-empty `names` is enum-checked and duplicate names are rejected. For
-example:
+Use the standardized per-skill controls to disable or customize either skill:
 
 ```nix
-dotfiles.gander.skills = {
-  names = ["gander-address-review"];
-  force = true;
-  targetDirectory = "${config.xdg.configHome}/opencode/skills";
-};
+dotfiles.agentSkills.gander-review.enable = false;
+dotfiles.agentSkills.gander-address-review.extraText = ''
+  ## Host workflow
+
+  Confirm the local review state before editing.
+'';
 ```
 
-The activation creates the target as the Home Manager user and asks Gander to
-write only its selected `<name>/SKILL.md` subtrees. It does not claim, clean, or
-delete the shared target directory, so unrelated user and package skills are
-left alone. `force = false` protects an existing selected skill, but a repeat
-activation will then fail if that skill already exists; keep the default for a
-declarative, repeatable installation. Deselecting a skill does not delete a
-previous installation because the module intentionally does not own the shared
-directory.
+`patches` is also available when local behavior must replace upstream text. See
+[`docs/opencode.md`](/docs/opencode.md) for the common renderer contract.
 
 OpenCode reads configuration and skills at process startup. Restart a running
-OpenCode session after activation to load newly installed or updated skills.
+OpenCode session after activation to load newly linked or updated skills.
 
 ## v0.7.2 workflow notes
 
@@ -308,8 +292,8 @@ initialization.
 The Home Manager flake has a focused `gander-module-config-and-skills` check. It
 evaluates the module, renders representative values from every configuration
 section (including exact hyphen/underscore spelling and raw precedence), checks
-the activation command, runs the fake package installer twice, and verifies an
-unrelated skill remains untouched.
+the selected skill's declarative source, verifies per-skill disablement, and
+ensures no activation-time installer remains.
 
 ```sh
 nix build ./flakes/hm-modules#checks.$(nix eval --raw --impure --expr builtins.currentSystem).gander-module-config-and-skills
