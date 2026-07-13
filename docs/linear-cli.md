@@ -19,6 +19,10 @@ agents.
   (`dotfiles.linearCli.hygieneAutomation`): scheduled report-cache
   refreshes, macOS notifications, shell/prompt nudges, and an agentic
   autofix job. See "Hygiene automation" below.
+- Registers the CLI's seven bundled `linear-*` Agent Skills with the shared
+  `dotfiles.agentSkills` renderer. Every skill is enabled by default and has
+  standardized per-skill `enable`, `patches`, and `extraText` controls; see
+  [`docs/opencode.md`](/docs/opencode.md).
 
 The CLI resolves its user-level config directory with Rust's
 `dirs::config_dir()`: `~/Library/Application Support/linear-cli` on macOS and

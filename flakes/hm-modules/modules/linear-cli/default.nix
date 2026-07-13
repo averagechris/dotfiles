@@ -12,6 +12,28 @@
     if inputs ? linear-cli && inputs.linear-cli ? packages && builtins.hasAttr pkgs.stdenv.hostPlatform.system inputs.linear-cli.packages
     then inputs.linear-cli.packages.${pkgs.stdenv.hostPlatform.system}.linear
     else null;
+  linearSkillNames = [
+    "linear-admin"
+    "linear-data"
+    "linear-git"
+    "linear-issues"
+    "linear-organization"
+    "linear-planning"
+    "linear-tracking"
+  ];
+  skillSourceDirectory =
+    if cfg.package != null && cfg.package ? src
+    then cfg.package.src + "/skills"
+    else null;
+  linearSkills = builtins.listToAttrs (map (name: {
+      inherit name;
+      value.source = lib.mkDefault (
+        if skillSourceDirectory == null
+        then null
+        else skillSourceDirectory + "/${name}/SKILL.md"
+      );
+    })
+    linearSkillNames);
   contextJson = jsonFormat.generate "linear-cli-context.json" cfg.context;
   linearCompletions = pkgs.runCommand "linear-cli-completions" {} ''
     install -dm755 \
@@ -35,7 +57,7 @@
   contextConfigPath = "${cliConfigDir}/config.toml";
   hygieneToml = tomlFormat.generate "linear-cli-hygiene.toml" {inherit (cfg) hygiene;};
 in {
-  imports = [./hygiene-automation.nix];
+  imports = [../agent-skills.nix ./hygiene-automation.nix];
 
   options.dotfiles.linearCli = {
     enable = lib.mkEnableOption "Linear CLI with user/org context for agents";
@@ -581,6 +603,8 @@ in {
     ];
 
     home.packages = [cfg.package] ++ lib.optional cfg.completions.enable linearCompletions;
+
+    dotfiles.agentSkills = linearSkills;
 
     # hygiene.toml is read-only for the CLI (snoozes and run artifacts live in
     # the state dir), so a store symlink into its config dir is safe.

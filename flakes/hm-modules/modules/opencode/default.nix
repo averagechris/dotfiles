@@ -186,9 +186,7 @@ in {
         # SKILLS - Reusable knowledge for agents
         # ============================================================================
 
-        skills =
-          (import ./skills.nix)
-          // (inputs.linear-cli.lib.opencodeSkills or {});
+        skills = import ./skills.nix;
 
         # ============================================================================
         # SETTINGS - OpenCode configuration (written to config.json)
