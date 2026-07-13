@@ -444,6 +444,11 @@ in {
           else skillSourceDirectory + "/srht-setup.md"
         );
       };
+      dotfiles.agentSkillBundles.srht = {
+        sourceDirectory = lib.mkDefault skillSourceDirectory;
+        layout = "flat-markdown";
+        expectedNames = ["srht-ci" "srht-issues" "srht-setup"];
+      };
     }))
   ];
 }

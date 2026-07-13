@@ -5,6 +5,8 @@
   ...
 }: let
   cfg = config.dotfiles.agentSkills;
+  bundles = config.dotfiles.agentSkillBundles;
+  agentSkillsLib = import ./agent-skills-lib.nix {inherit lib;};
   skillType = lib.types.submodule {
     options = {
       enable = lib.mkOption {
@@ -58,6 +60,33 @@
       source = renderSkill name skill;
     })
   enabledSkills;
+  bundleAssertions = lib.concatMap (bundleName: let
+    bundle = bundles.${bundleName};
+    audit = agentSkillsLib.auditBundle bundle;
+    renderNames = names:
+      if names == []
+      then "none"
+      else lib.concatStringsSep ", " names;
+  in [
+    {
+      assertion = bundle.sourceDirectory != null;
+      message = "dotfiles.agentSkillBundles.${bundleName}.sourceDirectory is required.";
+    }
+    {
+      assertion = builtins.length bundle.expectedNames == builtins.length (lib.unique bundle.expectedNames);
+      message = "dotfiles.agentSkillBundles.${bundleName}.expectedNames must not contain duplicates.";
+    }
+    {
+      assertion = audit.matches;
+      message = ''
+        ${bundleName} bundled skills changed; added: ${renderNames audit.added}; removed: ${renderNames audit.removed}. Review each change, update expectedNames, then keep, patch, or disable every registered skill explicitly.
+      '';
+    }
+    {
+      assertion = lib.all (name: builtins.hasAttr name cfg) audit.expected;
+      message = "dotfiles.agentSkillBundles.${bundleName}.expectedNames contains a skill without a dotfiles.agentSkills registration.";
+    }
+  ]) (builtins.attrNames bundles);
 in {
   options.dotfiles.agentSkills = lib.mkOption {
     type = lib.types.attrsOf skillType;
@@ -68,19 +97,45 @@ in {
     '';
   };
 
-  config = lib.mkIf config.programs.opencode.enable {
-    assertions =
-      lib.mapAttrsToList (name: skill: {
-        assertion = builtins.match "^[a-z0-9]+(-[a-z0-9]+)*$" name != null;
-        message = "dotfiles.agentSkills skill names must be lowercase kebab-case: ${name}";
-      })
-      cfg
-      ++ lib.mapAttrsToList (name: skill: {
-        assertion = !skill.enable || skill.source != null;
-        message = "dotfiles.agentSkills.${name}.source is required while the skill is enabled.";
-      })
-      cfg;
-
-    xdg.configFile = skillFiles;
+  options.dotfiles.agentSkillBundles = lib.mkOption {
+    type = lib.types.attrsOf (lib.types.submodule {
+      options = {
+        sourceDirectory = lib.mkOption {
+          type = lib.types.nullOr lib.types.path;
+          default = null;
+          description = "Directory whose bundled skills are audited against expectedNames.";
+        };
+        layout = lib.mkOption {
+          type = lib.types.enum ["directories" "flat-markdown"];
+          default = "directories";
+          description = "Whether skills are `<name>/SKILL.md` directories or flat `<name>.md` files.";
+        };
+        expectedNames = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
+          description = "Audited bundled skill names expected from this package source.";
+        };
+      };
+    });
+    default = {};
+    description = "Audited CLI skill bundles that fail evaluation when upstream names drift.";
   };
+
+  config = lib.mkMerge [
+    {assertions = bundleAssertions;}
+    (lib.mkIf config.programs.opencode.enable {
+      assertions =
+        lib.mapAttrsToList (name: skill: {
+          assertion = builtins.match "^[a-z0-9]+(-[a-z0-9]+)*$" name != null;
+          message = "dotfiles.agentSkills skill names must be lowercase kebab-case: ${name}";
+        })
+        cfg
+        ++ lib.mapAttrsToList (name: skill: {
+          assertion = !skill.enable || skill.source != null;
+          message = "dotfiles.agentSkills.${name}.source is required while the skill is enabled.";
+        })
+        cfg;
+
+      xdg.configFile = skillFiles;
+    })
+  ];
 }

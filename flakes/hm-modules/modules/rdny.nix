@@ -292,6 +292,14 @@ in {
         // quotaSessionVariables;
 
       dotfiles.agentSkills.rdny-browser.source = lib.mkDefault rdnySkillSource;
+      dotfiles.agentSkillBundles.rdny = {
+        sourceDirectory = lib.mkDefault (
+          if cfg.package != null && cfg.package ? src
+          then cfg.package.src + "/skills"
+          else null
+        );
+        expectedNames = ["rdny-browser"];
+      };
     }
 
     (lib.mkIf (config.programs.opencode.enable && cfg.opencode.exposeTool && cfg.package != null) {

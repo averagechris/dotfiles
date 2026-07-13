@@ -605,6 +605,10 @@ in {
     home.packages = [cfg.package] ++ lib.optional cfg.completions.enable linearCompletions;
 
     dotfiles.agentSkills = linearSkills;
+    dotfiles.agentSkillBundles.linear = {
+      sourceDirectory = lib.mkDefault skillSourceDirectory;
+      expectedNames = linearSkillNames;
+    };
 
     # hygiene.toml is read-only for the CLI (snoozes and run artifacts live in
     # the state dir), so a store symlink into its config dir is safe.

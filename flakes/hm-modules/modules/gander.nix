@@ -362,6 +362,10 @@ in {
           else skillSourceDirectory + "/gander-address-review/SKILL.md"
         );
       };
+      dotfiles.agentSkillBundles.gander = {
+        sourceDirectory = lib.mkDefault skillSourceDirectory;
+        expectedNames = ["gander-address-review" "gander-review"];
+      };
     }
   ]);
 }

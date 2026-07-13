@@ -59,15 +59,23 @@ scripts:
   ...
 }: let
   cfg = config.dotfiles.exampleCli;
-  skillSource =
+  skillSourceDirectory =
     if cfg.package != null && cfg.package ? src
-    then cfg.package.src + "/skills/example/SKILL.md"
+    then cfg.package.src + "/skills"
     else null;
 in {
   imports = [./agent-skills.nix];
 
   config = lib.mkIf cfg.enable {
-    dotfiles.agentSkills.example.source = lib.mkDefault skillSource;
+    dotfiles.agentSkills.example.source = lib.mkDefault (
+      if skillSourceDirectory == null
+      then null
+      else skillSourceDirectory + "/example/SKILL.md"
+    );
+    dotfiles.agentSkillBundles.example-cli = {
+      sourceDirectory = lib.mkDefault skillSourceDirectory;
+      expectedNames = ["example"];
+    };
   };
 }
 ```
@@ -75,6 +83,15 @@ in {
 Use one registry entry per skill rather than a names allowlist. This makes every
 new skill available by default while preserving stable host overrides such as
 `dotfiles.agentSkills.example.enable = false`.
+
+Every package-backed registration must also declare an audited
+`dotfiles.agentSkillBundles` manifest. The default `directories` layout discovers
+`<name>/SKILL.md`; `layout = "flat-markdown"` discovers `<name>.md`. Evaluation
+fails when discovered and expected names differ, reporting additions and
+removals separately. Package upgrades therefore cannot silently expose or omit a
+skill: review the changed upstream skill set, update `expectedNames`, ensure each
+name has a registry entry, then keep its default enablement, patch it, or disable
+it explicitly.
 
 On Linux, the module wraps the OpenCode package with `LD_LIBRARY_PATH` pointing
 at `stdenv.cc.cc.lib`. This makes OpenCode's native file-watcher binding able to

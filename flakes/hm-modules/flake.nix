@@ -279,6 +279,31 @@
             touch $out
           '';
 
+        agent-skill-bundle-audit = let
+          auditLib = import ./modules/agent-skills-lib.nix {inherit (nixpkgs) lib;};
+          audit = expectedNames:
+            auditLib.auditBundle {
+              sourceDirectory = inputs.rdny + "/skills";
+              layout = "directories";
+              inherit expectedNames;
+            };
+          matched = audit ["rdny-browser"];
+          added = audit [];
+          removed = audit ["rdny-browser" "retired-skill"];
+          renderNames = names:
+            if names == []
+            then "none"
+            else nixpkgs.lib.concatStringsSep ", " names;
+        in
+          pkgs.runCommand "agent-skill-bundle-audit-test" {} ''
+            test '${nixpkgs.lib.boolToString matched.matches}' = true
+            test '${renderNames added.added}' = rdny-browser
+            test '${renderNames added.removed}' = none
+            test '${renderNames removed.added}' = none
+            test '${renderNames removed.removed}' = retired-skill
+            touch $out
+          '';
+
         rdny-module-completions-and-skills = let
           fakeRdny = pkgs.writeShellApplication {
             name = "rdny";
@@ -344,6 +369,7 @@
                   patches = [fakeRdnySkillPatch];
                   extraText = "## Host workflow\n\nUse the host wrapper.\n";
                 };
+                dotfiles.agentSkillBundles.rdny.sourceDirectory = inputs.rdny + "/skills";
               }
             ];
           };
@@ -407,6 +433,7 @@
                     source = fakeSrhtSkills + "/srht-setup.md";
                   };
                 };
+                dotfiles.agentSkillBundles.srht.sourceDirectory = inputs.srht + "/assets/skills";
               }
             ];
           };
@@ -538,6 +565,7 @@
                     source = fakeGanderSkills + "/gander-address-review/SKILL.md";
                   };
                 };
+                dotfiles.agentSkillBundles.gander.sourceDirectory = inputs.gander + "/skills";
               }
             ];
           };
@@ -561,6 +589,7 @@
                   enable = true;
                   package = fakeGander;
                 };
+                dotfiles.agentSkillBundles.gander.sourceDirectory = inputs.gander + "/skills";
               }
             ];
           };
