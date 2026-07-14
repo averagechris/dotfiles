@@ -1,4 +1,36 @@
-{runtimeNote}: {
+{runtimeNote}: let
+  deletionBashPermissions = {allowAbsoluteTempCleanup ? false}:
+    builtins.concatStringsSep "\n    " (
+      [
+        "# Normal relative cleanup is allowed; broad or sensitive deletion targets"
+        "# are interrupted. These command globs are guardrails, not a shell sandbox."
+        ''"rm -rf /": "deny"''
+        ''"rm -rf /*": "deny"''
+      ]
+      ++ (
+        if allowAbsoluteTempCleanup
+        then [
+          "# OpenCode already limits these external paths to trusted temp"
+          "# namespaces. Permit the common absolute cleanup form as well."
+          ''"rm -rf /tmp/*": "allow"''
+          ''"rm -rf /private/tmp/*": "allow"''
+          ''"rm -rf /var/folders/*/T/opencode/*": "allow"''
+          ''"rm -rf /private/var/folders/*/T/opencode/*": "allow"''
+        ]
+        else []
+      )
+      ++ [
+        ''"rm -rf .": "ask"''
+        ''"rm -rf .*": "ask"''
+        ''"rm -rf ~*": "ask"''
+        ''"rm -rf $HOME*": "ask"''
+        ''"rm -rf /Users*": "ask"''
+        ''"rm -rf *secrets*": "ask"''
+        ''"rm -r *secrets*": "ask"''
+        ''"rm *secrets*": "ask"''
+      ]
+    );
+in {
   build = ''
     ---
     description: Build agent - full development and code change workflows
@@ -58,18 +90,7 @@
         "darwin-rebuild switch*": "ask"
         "nh os switch*": "ask"
         "nh darwin switch*": "ask"
-        # Normal temp-file cleanup is allowed; only obvious broad or sensitive
-        # deletion targets are interrupted.
-        "rm -rf /": "deny"
-        "rm -rf /*": "deny"
-        "rm -rf .": "ask"
-        "rm -rf .*": "ask"
-        "rm -rf ~*": "ask"
-        "rm -rf $HOME*": "ask"
-        "rm -rf /Users*": "ask"
-        "rm -rf *secrets*": "ask"
-        "rm -r *secrets*": "ask"
-        "rm *secrets*": "ask"
+        ${deletionBashPermissions {allowAbsoluteTempCleanup = true;}}
         "chmod *": "ask"
         "chown *": "ask"
         "chgrp *": "ask"
@@ -197,18 +218,7 @@
         "darwin-rebuild switch*": "ask"
         "nh os switch*": "ask"
         "nh darwin switch*": "ask"
-        # Normal temp-file cleanup is allowed; only obvious broad or sensitive
-        # deletion targets are interrupted.
-        "rm -rf /": "deny"
-        "rm -rf /*": "deny"
-        "rm -rf .": "ask"
-        "rm -rf .*": "ask"
-        "rm -rf ~*": "ask"
-        "rm -rf $HOME*": "ask"
-        "rm -rf /Users*": "ask"
-        "rm -rf *secrets*": "ask"
-        "rm -r *secrets*": "ask"
-        "rm *secrets*": "ask"
+        ${deletionBashPermissions {allowAbsoluteTempCleanup = true;}}
         "chmod *": "ask"
         "chown *": "ask"
         "chgrp *": "ask"
@@ -348,18 +358,7 @@
         "darwin-rebuild switch*": "ask"
         "nh os switch*": "ask"
         "nh darwin switch*": "ask"
-        # Normal temp-file cleanup is allowed; only obvious broad or sensitive
-        # deletion targets are interrupted.
-        "rm -rf /": "deny"
-        "rm -rf /*": "deny"
-        "rm -rf .": "ask"
-        "rm -rf .*": "ask"
-        "rm -rf ~*": "ask"
-        "rm -rf $HOME*": "ask"
-        "rm -rf /Users*": "ask"
-        "rm -rf *secrets*": "ask"
-        "rm -r *secrets*": "ask"
-        "rm *secrets*": "ask"
+        ${deletionBashPermissions {allowAbsoluteTempCleanup = true;}}
         "chmod *": "ask"
         "chown *": "ask"
         "chgrp *": "ask"

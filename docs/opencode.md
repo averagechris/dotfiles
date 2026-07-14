@@ -151,7 +151,10 @@ Prompt-gated Build-agent command families include:
 - privilege escalation (`sudo`, `doas`, `su`) is denied because it is not useful
   non-interactively and would require a human password anyway
 - broad or sensitive deletion targets (`rm -rf /`, home-directory deletes, and
-  secret-path deletes); ordinary temp-file cleanup with `rm` is allowed
+  secret-path deletes); ordinary relative cleanup and absolute cleanup beneath
+  the trusted `/tmp`, `/private/tmp`, and OpenCode session-temp namespaces are
+  allowed. The shared deletion-rule template can enable or omit those absolute
+  temp exceptions independently for each agent.
 - destructive ownership/permission/disk commands (`chmod`, `chown`, `chgrp`,
   `dd`, `diskutil`; `mkfs*` is denied)
 - process/service control (`kill`, `killall`, `pkill`, `systemctl`,
@@ -160,6 +163,12 @@ Prompt-gated Build-agent command families include:
   subcommands, `jj push`, `jj ship`, `jj tag-push`)
 - GitHub org/repo/auth/issue administration (`gh auth*`, `gh org*`,
   `gh repo*`, `gh issue*`)
+
+For recursive temp cleanup, prefer a relative target with the Bash tool's
+`workdir` set to the trusted temp directory. The absolute temp exceptions cover
+common generated commands, while the external-directory allowlist remains a
+second boundary for additional absolute operands. Bash permission wildcards are
+guardrails against routine mistakes, not an argument-aware shell sandbox.
 
 Host-exposed browser automation follows the open default: `rdny` commands are
 allowed for Build agents unless they hit a later risky pattern.

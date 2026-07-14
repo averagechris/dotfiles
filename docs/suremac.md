@@ -145,6 +145,15 @@ module options and common commands. Explicit requests for a visible browser use
 the `rdny-helium` wrapper, which starts or reconnects to a dedicated graphical
 Helium profile rather than exposing the ordinary Helium profile to CDP.
 
+## KeePassXC Qt5 linker workaround
+
+The shared package overlay links KeePassXC and a private `qtmacextras` build with
+LLVM's Darwin linker (`ld64.lld`). The current nixpkgs Darwin Clang 21 toolchain
+otherwise invokes cctools ld64 1010.6, which exits with a `Trace/BPT trap` while
+linking QtMacExtras 5.15.19 and KeePassXC's executables. The override is
+Darwin-only and does not pin or downgrade nixpkgs, KeePassXC, or Qt; remove it
+once the upstream Darwin linker/package combination builds both normally again.
+
 ## Daily dotfiles Self-Update
 
 `suremac` runs a nix-darwin launchd user agent named
