@@ -14,9 +14,12 @@ in {
   # Managed jj workspaces and temporary files live outside the OpenCode
   # process's project root. Trust the canonical workspace namespaces and common
   # temp paths, including both macOS's visible and canonical path spellings.
+  # The Nix store is immutable to normal users and is useful build context, so
+  # allow agents to inspect package sources and outputs there without prompting.
   permission.external_directory =
     {
       "*" = "ask";
+      "/nix/store/**" = "allow";
       "/tmp/**" = "allow";
       "/private/tmp/**" = "allow";
       "/var/folders/**/T/opencode/**" = "allow";
