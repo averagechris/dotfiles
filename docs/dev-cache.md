@@ -28,6 +28,14 @@ the service manager's clean environment, stopping any rogue server first. The
 daemon then stays alive and serves Cargo clients from normal shells and nix
 shells.
 
+On macOS, the launchd job raises the daemon's soft open-file limit from
+launchd's default 256 to 16384. sccache hashes compiler inputs in parallel, and a
+broad build of a large generated crate such as `aws-sdk-s3` can otherwise fail
+inside sccache with `Too many open files (os error 24)`, even though the same
+interactive shell has a much higher limit. Reducing `CARGO_BUILD_JOBS` or
+clearing `RUSTC_WRAPPER` can hide that service-limit problem, but should not be
+needed after the launchd limit is applied.
+
 This exists because sccache's default behavior is to lazily start the server
 from whichever compile happens first, inheriting that process's environment
 permanently. On macOS, a server started inside a nix shell (where
@@ -49,11 +57,25 @@ that loop warn:
 sccache: warning: The server looks like it shut down unexpectedly, compiling locally instead
 ```
 
-If the Apple SDK poisoning error ever reappears, `sccache --stop-server` cures
-it immediately; the next service start or Cargo client starts a fresh daemon.
-Check the service with
-`launchctl list | grep sccache` (macOS) or
-`systemctl --user status sccache-server` (Linux).
+If the Apple SDK poisoning error ever reappears, restart the managed service so
+the replacement daemon comes from the clean service environment rather than the
+next arbitrary Cargo client:
+
+```bash
+# macOS
+sccache --stop-server || true
+launchctl kickstart gui/$(id -u)/org.nix-community.home.sccache-server
+
+# Linux
+systemctl --user restart sccache-server
+```
+
+Check the service with the macOS `launchctl print` command above or with
+`systemctl --user status sccache-server` on Linux.
+
+For macOS descriptor-limit diagnosis, the generated plist should set
+`NumberOfFiles` to 16384 under `SoftResourceLimits`. Apply Home Manager again if
+the live plist predates that setting.
 
 Logs: `~/Library/Logs/sccache-server.log` on macOS; the user journal on Linux.
 
@@ -68,11 +90,11 @@ module configured `rustc-wrapper` and a supervised server.
 The clean service-started daemon is the durable fix for the historical macOS
 `DEVELOPER_DIR`/Apple SDK poisoning failure described above. If a Cargo command
 fails in a way that specifically implicates sccache, first capture the error and
-try `sccache --stop-server`. As an explicit one-command escape hatch, use
-`SCCACHE_DISABLE=1 cargo ...` and mention the observed sccache failure in the
-handoff. Prefer that over clearing `RUSTC_WRAPPER`, because it keeps the
-configured wrapper visible and prevents the workaround from becoming the default
-pattern.
+restart the managed service with the commands above. As an explicit one-command
+escape hatch, use `SCCACHE_DISABLE=1 cargo ...` and mention the observed sccache
+failure in the handoff. Prefer that over clearing `RUSTC_WRAPPER`, because it
+keeps the configured wrapper visible and prevents the workaround from becoming
+the default pattern.
 
 ## Cleanup job phases
 

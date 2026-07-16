@@ -676,6 +676,12 @@ in {
         RunAtLoad = true;
         ProcessType = "Background";
         LowPriorityIO = true;
+        # launchd's per-job soft default is only 256 even when interactive
+        # shells have a much higher limit. sccache hashes compiler inputs in
+        # parallel and can exhaust 256 descriptors on large generated crates
+        # such as aws-sdk-s3, failing otherwise healthy Cargo builds with
+        # "Too many open files".
+        SoftResourceLimits.NumberOfFiles = 16384;
         StandardOutPath = "${config.home.homeDirectory}/Library/Logs/sccache-server.log";
         StandardErrorPath = "${config.home.homeDirectory}/Library/Logs/sccache-server.log";
       };
