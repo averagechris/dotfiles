@@ -55,6 +55,11 @@ duplicate local graphs. Large repeated groups of `base-lib_*`, `hm-modules_*`,
 `nixos-modules_*`, `home-manager_*`, or `opencode_*` nodes usually mean a new path
 input is not following the root graph.
 
+After input updates, remove stale overrides when Nix warns that an upstream input
+no longer exists. Keep any still-valid nested overrides; for example, `rdny`
+currently exposes `fleet` but no longer exposes a direct `srht` input, so only
+`rdny.inputs.fleet.inputs.srht` should follow the shared root.
+
 The root development shells are split so everyday checks do not require IDE and
 Rust toolchain closures:
 
