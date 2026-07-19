@@ -226,7 +226,7 @@ the full-cleanup interval.
 | Host | Notes |
 |------|-------|
 | suremac | `sccache.cacheSize = "100G"`; full cleanup due every 6h with a cheap 5m load/headroom retry; low-disk check every 15m with a 10 GiB threshold; Nix user generation and Cargo sweep retention reduced to 3d; sweep roots `~/projects` and `~/sureapp`; Docker pruning against OrbStack with `pruneVolumes = true` |
-| tater | Defaults; docker phase enabled, prunes via podman's docker-compatible socket when available |
+| tater | Defaults; docker phase enabled, prunes via the real docker daemon |
 | thorny | Defaults with `docker.enable = false` (podman host, little container churn) |
 
 `suremac` note: the OrbStack `workd-dev` NixOS VM used by `workctl` keeps its

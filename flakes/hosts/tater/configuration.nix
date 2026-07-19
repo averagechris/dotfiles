@@ -56,6 +56,7 @@ in {
     inputs.nixos-modules.nixosModules.tailscale
     inputs.nixos-modules.nixosModules.useRemoteBuilds
     inputs.nixos-modules.nixosModules.virtualization
+    inputs.nixos-modules.nixosModules.docker
     inputs.nixos-modules.nixosModules.users.chris
     inputs.nixos-modules.nixosModules.hyprlandDesktop
     ./hardware.nix
@@ -246,14 +247,7 @@ in {
 
   system.stateVersion = "26.05";
 
-  # Podman for rootless containers
-  virtualisation.podman = {
-    enable = true;
-    dockerCompat = true;
-    defaultNetwork.settings.dns_enabled = true;
-  };
-
-  users.users.chris.extraGroups = ["libvirtd" "podman"];
+  users.users.chris.extraGroups = ["libvirtd" "docker"];
 
   home-manager.users.chris = {
     config,
@@ -692,8 +686,7 @@ in {
     dotfiles.hyprland-workstation.terminal = "ghostty";
     dotfiles.gander.enable = true;
     # sccache + daily cleanup (nix user GC, cargo sweep). The docker phase
-    # stays enabled and prunes via podman's docker-compatible socket when
-    # available, skipping gracefully otherwise.
+    # prunes images/volumes via the real docker daemon.
     dotfiles.devCache.enable = true;
 
     programs.hyprlock.settings.auth.fingerprint.enabled = true;
