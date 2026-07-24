@@ -2,9 +2,10 @@
 
 [`gander`](https://git.sr.ht/~averagechris/gander) is a terminal UI and CLI for
 reviewing `jj` changes, keeping durable comments and action items, building
-walkthroughs, and exporting human or agent review artifacts. The pinned v0.7.2
+walkthroughs, and exporting human or agent review artifacts. The pinned v0.8.1
 package is exposed through the Gander flake input and installed by the Home
-Manager module at `flakes/hm-modules/modules/gander.nix`.
+Manager module at `flakes/hm-modules/modules/gander.nix`. The module tracks the
+v0.8 configuration schema.
 
 ## Enablement and package
 
@@ -40,17 +41,14 @@ The merge is recursive for attribute sets. Scalars and lists are replaced, not
 appended. The raw `settings` option uses Nixpkgs' TOML value type and is the
 forward-compatibility escape hatch for a newer upstream field. Null typed values
 are omitted, allowing Gander's own default to apply. Optional upstream values
-such as `artifact.output_dir`, `agent.command`, and `agent.prompt` therefore use
+such as `artifact.output_dir`, `agent.name`, and `identity.email` therefore use
 `null` to mean “do not emit this typed value.”
 
 The shared layer enables soft wrapping, classifies standard lockfiles as
-generated, creates new comments as actionable todos, keeps agent startup
-explicit, and installs the complete upstream Colemak Mod-DH override:
+generated, creates new comments as actionable todos, and installs the complete
+upstream Colemak Mod-DH override:
 
 ```toml
-[agent]
-command = "opencode run --model openrouter/openai/gpt-5.5 --variant low"
-
 [comments]
 initial-state = "todo"
 
@@ -61,8 +59,9 @@ soft-wrap = true
 presets = ["lockfiles"]
 ```
 
-Press `@` to invoke that lower-cost review agent when it is useful. The module
-does not enable `agent.autostart`, avoiding unsolicited model runs on any host.
+Gander v0.8 no longer starts or owns agent processes. Agent harnesses should
+drive it through its CLI, MCP, or ACP interfaces; `[agent]` now only configures
+the identity name stamped on agent-authored annotations.
 
 For example, typed values can be combined with a final raw override:
 
@@ -83,7 +82,7 @@ dotfiles.gander = {
 
 ## Typed configuration
 
-Every current v0.7.2 upstream configuration field has a typed option under
+Every current v0.8 upstream configuration field has a typed option under
 `dotfiles.gander.config`. Nix option names use camel case where needed and the
 renderer emits upstream's exact TOML spelling.
 
@@ -110,7 +109,7 @@ For a deterministic Jujutsu executable, set `config.jj.binary` to an absolute
 | Typed option | Rendered TOML | Allowed values |
 | --- | --- | --- |
 | `artifact.format` | `artifact.format` | `json`, `markdown`, `html` |
-| `artifact.profile` | `artifact.profile` | `human`, `agent` |
+| `artifact.profile` | `artifact.profile` | `human`, `agent`, `team` |
 | `artifact.outputDir` | `artifact.output_dir` | string |
 | `artifact.basename` | `artifact.basename` | string |
 | `artifact.onTuiQuit` | `artifact.on_tui_quit` | `never`, `write`, `stdout` |
@@ -148,14 +147,20 @@ in `languages`; they do not load external grammars. The typed
 Styles accept Gander's named, indexed, or `#rrggbb` colors, modifiers such as
 `bold` and `underline`, and `on <color>` backgrounds.
 
-### Agent, comments, and diff display
+### Identity, comments, theme, UI, and diff display
 
 | Typed option | Type or values |
 | --- | --- |
-| `agent.command` | nullable shell command string |
-| `agent.autostart` | boolean |
-| `agent.prompt` | nullable template string supporting `{repo}`, `{base}`, and `{rev}` |
+| `agent.name` | nullable agent annotation identity |
+| `identity.name` | nullable local human annotation identity |
+| `identity.email` | nullable email used for Jujutsu author matching |
 | `comments.initialState` | `draft` or `todo` |
+| `comments.defaultChannel` | nullable `onboarding`, `delegation`, `collaboration`, or `note` |
+| `theme.mode` | `auto`, `dark`, or `light` |
+| `theme.transparent` | boolean |
+| `ui.filePaneAutoHideWidth` | unsigned integer |
+| `ui.filePaneSplitPercent` | unsigned integer |
+| `ui.menuBar` | boolean |
 | `diff.wordHighlight` | boolean |
 | `diff.lineBackground` | boolean |
 | `diff.gutterBar` | boolean |
@@ -178,41 +183,43 @@ non-null list replaces the upstream list for that action, and `[]` removes its
 configurable bindings. Gander retains immutable movement/select/close safety
 fallbacks and rejects bindings that collide in an overlapping UI context.
 
-The complete v0.7.2 typed action set is:
+Set `config.keybindings.preset` to `gander` or `hunk`. The complete v0.8 typed
+action set also supports per-action overrides:
 
-- global and target: `quit`, `help`, `summon-agent`, `yank-handoff`,
+- global and target: `quit`, `help`, `yank-handoff`,
   `move-down`, `move-up`, `toggle-focus`, `diff-top`, `diff-bottom`,
   `compare-trunk`, `compare-parent`, `target-chooser`, `revset-input`,
   `stack-next`, `stack-previous`, `operation-picker`, and `jj-helpers`;
 - navigation: `next-unviewed`, `previous-unviewed`, `next-comment`,
   `previous-comment`, `file-search`, `symbol-outline`, `next-symbol`,
-  `previous-symbol`, `next-changed-hunk`, and `previous-changed-hunk`;
+  `previous-symbol`, `next-changed-hunk`, `previous-changed-hunk`, `next-file`,
+  `previous-file`, `attention-promote`, `attention-demote`, `attention-focus`,
+  `attention-glance`, `glance-peek`, `glance-acknowledge`,
+  `glance-acknowledge-all`, `spotlight-next`, `spotlight-previous`, and
+  `advance-review`;
 - review and display: `toggle-large-diff`, `toggle-agent-order`, `flag-list`,
-  `open-work`, `activity`, `walkthrough-list`, `zen`, `draft-list`,
+  `open-work`, `activity`, `walkthrough-list`, `draft-list`,
   `scroll-down`, `scroll-up`, `scroll-diff-left`, `scroll-diff-right`,
   `mark-viewed`, `toggle-viewed`, `mark-all-viewed`, `toggle-generated`,
   `cycle-viewed-filter`, `toggle-fold`, `collapse-fold`, `expand-fold`,
   `toggle-context-fold`, `expand-context`, `expand-context-all`,
   `collapse-context`, `view-options`, `toggle-word-highlight`,
   `toggle-line-background`, `toggle-gutter-bar`, `toggle-diff-wrap`,
-  `toggle-file-pane`, `toggle-diff-view`, `range-comment`, `mark-walkthrough`,
+  `toggle-annotation-artifacts`, `toggle-file-pane`, `toggle-diff-view`,
+  `widen-file-pane`, `narrow-file-pane`, `range-comment`, `mark-walkthrough`,
   and `cancel-range-comment`;
 - comments and editor: `comment`, `cycle-comment-state`, `edit-comment`,
   `delete-comment`, `comment-list`, `comment-list-new-general`,
   `comment-list-ready`, `comment-list-cycle-action`,
   `comment-list-cycle-kind`, `submit-comment`, `cancel-comment`,
-  `insert-newline`, and `delete-char`;
+  `insert-newline`, `delete-char`, and `cycle-comment-channel`;
 - picker and popup: `target-picker-down`, `target-picker-up`,
   `popup-move-down`, `popup-move-up`, `popup-select`, `popup-toggle`,
   `popup-close`, `popup-close-q`, `draft-accept`, `draft-edit`,
   `draft-discard`, `walkthrough-delete`, `walkthrough-move-down`, and
   `walkthrough-move-up`;
-- zen: `zen-next`, `zen-previous`, `zen-toggle-view`, `zen-glance`,
-  `zen-artifact`, `zen-toggle-details`, `zen-refocus`, `zen-acknowledge`,
-  `zen-artifact-next`, and `zen-artifact-previous`.
-
-Gander also accepts legacy raw aliases `tour` for `zen` and `task-list` for
-`open-work`; use the canonical typed names above.
+Gander accepts the legacy raw alias `task-list` for `open-work`; use the
+canonical typed name above.
 
 ## Colemak Mod-DH bindings
 
@@ -230,8 +237,6 @@ collision-free Colemak Mod-DH override:
 | `popup-move-up` | `e`, Up |
 | `comment-list-new-general` | Ctrl-N |
 | `draft-edit` | Alt-E |
-| `zen-artifact` | `i` |
-| `zen-next` | Enter, Right, Space |
 
 These changes are atomic. In particular, moving only normal navigation to
 `n`/`e` would collide with unmodified popup, comment-center, draft, and zen
@@ -239,7 +244,7 @@ actions. Gander's immutable `j`/`k` and arrow safety aliases still work.
 
 ## Bundled Agent Skills
 
-Gander v0.7.2 embeds two skills in its package:
+Gander embeds two skills in its package:
 
 - `gander-review` authors a durable Gander review without changing code or
   posting to a forge;
@@ -272,7 +277,7 @@ dotfiles.agentSkills.gander-address-review.extraText = ''
 OpenCode reads configuration and skills at process startup. Restart a running
 OpenCode session after activation to load newly linked or updated skills.
 
-## v0.7.2 workflow notes
+## v0.8 workflow notes
 
 Comments are the primary feedback unit. `draft` is private reviewer state,
 `todo` requests implementation, and `resolved` retains history. Optional action

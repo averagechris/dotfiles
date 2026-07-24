@@ -534,9 +534,11 @@
                       nudgeFiles = 30;
                     };
                     agent = {
-                      command = "opencode run";
-                      autostart = false;
-                      prompt = "Review {repo} at {rev}";
+                      name = "review-agent";
+                    };
+                    identity = {
+                      name = "Test Reviewer";
+                      email = "reviewer@example.com";
                     };
                     diff = {
                       wordHighlight = false;
@@ -547,10 +549,23 @@
                       contextStep = 12;
                       theme.added-line-bg = "#102010";
                     };
-                    comments.initialState = "draft";
+                    comments = {
+                      initialState = "draft";
+                      defaultChannel = "collaboration";
+                    };
+                    theme = {
+                      mode = "dark";
+                      transparent = false;
+                    };
+                    ui = {
+                      filePaneAutoHideWidth = 60;
+                      filePaneSplitPercent = 35;
+                      menuBar = true;
+                    };
                     keybindings = {
+                      preset = "hunk";
                       quit = ["Q"];
-                      zen-artifact-previous = ["alt-h"];
+                      spotlight-previous = ["alt-h"];
                     };
                   };
                   # Prove the raw escape hatch is last: this replaces the typed
@@ -612,8 +627,13 @@
             ${pkgs.gnugrep}/bin/grep -q '^\[diff.theme\]$' "$config"
             ${pkgs.gnugrep}/bin/grep -q '^\[comments\]$' "$config"
             ${pkgs.gnugrep}/bin/grep -q '^initial-state = "draft"$' "$config"
+            ${pkgs.gnugrep}/bin/grep -q '^default-channel = "collaboration"$' "$config"
+            ${pkgs.gnugrep}/bin/grep -q '^\[identity\]$' "$config"
+            ${pkgs.gnugrep}/bin/grep -q '^\[theme\]$' "$config"
+            ${pkgs.gnugrep}/bin/grep -q '^\[ui\]$' "$config"
             ${pkgs.gnugrep}/bin/grep -q '^\[keybindings\]$' "$config"
-            ${pkgs.gnugrep}/bin/grep -q '^zen-artifact-previous = \["alt-h"\]$' "$config"
+            ${pkgs.gnugrep}/bin/grep -q '^preset = "hunk"$' "$config"
+            ${pkgs.gnugrep}/bin/grep -q '^spotlight-previous = \["alt-h"\]$' "$config"
 
             activate=${testConfig.activationPackage}/activate
             test "$(cat ${ganderReviewSkill})" = gander-review

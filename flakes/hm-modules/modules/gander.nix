@@ -33,7 +33,6 @@
   keybindingNames = [
     "quit"
     "help"
-    "summon-agent"
     "yank-handoff"
     "move-down"
     "move-up"
@@ -58,13 +57,24 @@
     "previous-symbol"
     "next-changed-hunk"
     "previous-changed-hunk"
+    "next-file"
+    "previous-file"
+    "attention-promote"
+    "attention-demote"
+    "attention-focus"
+    "attention-glance"
+    "glance-peek"
+    "glance-acknowledge"
+    "glance-acknowledge-all"
+    "spotlight-next"
+    "spotlight-previous"
+    "advance-review"
     "toggle-large-diff"
     "toggle-agent-order"
     "flag-list"
     "open-work"
     "activity"
     "walkthrough-list"
-    "zen"
     "draft-list"
     "scroll-down"
     "scroll-up"
@@ -87,8 +97,11 @@
     "toggle-line-background"
     "toggle-gutter-bar"
     "toggle-diff-wrap"
+    "toggle-annotation-artifacts"
     "toggle-file-pane"
     "toggle-diff-view"
+    "widen-file-pane"
+    "narrow-file-pane"
     "range-comment"
     "mark-walkthrough"
     "cancel-range-comment"
@@ -105,6 +118,7 @@
     "cancel-comment"
     "insert-newline"
     "delete-char"
+    "cycle-comment-channel"
     "target-picker-down"
     "target-picker-up"
     "popup-move-down"
@@ -119,16 +133,6 @@
     "walkthrough-delete"
     "walkthrough-move-down"
     "walkthrough-move-up"
-    "zen-next"
-    "zen-previous"
-    "zen-toggle-view"
-    "zen-glance"
-    "zen-artifact"
-    "zen-toggle-details"
-    "zen-refocus"
-    "zen-acknowledge"
-    "zen-artifact-next"
-    "zen-artifact-previous"
   ];
   keybindingOptions = builtins.listToAttrs (map (name: {
       inherit name;
@@ -175,14 +179,9 @@
     popup-move-up = ["e" "up"];
     comment-list-new-general = ["ctrl-n"];
     draft-edit = ["alt-e"];
-    zen-artifact = ["i"];
-    zen-next = ["enter" "right" "space"];
   };
 
   defaultSettings = {
-    # Keep agent invocation explicit: automatic startup is surprising on every
-    # host, while `@` remains a cheap opt-in from inside a review.
-    agent.command = "opencode run --model openrouter/openai/gpt-5.5 --variant low";
     comments.initial-state = "todo";
     diff.soft-wrap = true;
     generated.presets = ["lockfiles"];
@@ -217,7 +216,10 @@
       nudge-files = cfg.config.limits.nudgeFiles;
     };
     agent = withoutNulls {
-      inherit (cfg.config.agent) command autostart prompt;
+      inherit (cfg.config.agent) name;
+    };
+    identity = withoutNulls {
+      inherit (cfg.config.identity) name email;
     };
     diff =
       withoutNulls {
@@ -233,6 +235,15 @@
       };
     comments = withoutNulls {
       initial-state = cfg.config.comments.initialState;
+      default-channel = cfg.config.comments.defaultChannel;
+    };
+    theme = withoutNulls {
+      inherit (cfg.config.theme) mode transparent;
+    };
+    ui = withoutNulls {
+      file-pane-auto-hide-width = cfg.config.ui.filePaneAutoHideWidth;
+      file-pane-split-percent = cfg.config.ui.filePaneSplitPercent;
+      menu-bar = cfg.config.ui.menuBar;
     };
     keybindings = withoutNulls cfg.config.keybindings;
   };
@@ -259,7 +270,7 @@ in {
 
       artifact = {
         format = nullableEnum ["json" "markdown" "html"] "Default artifact format.";
-        profile = nullableEnum ["human" "agent"] "Default artifact detail profile.";
+        profile = nullableEnum ["human" "agent" "team"] "Default artifact detail profile.";
         outputDir = nullableString "Artifact output directory (rendered as `output_dir`).";
         basename = nullableString "Artifact filename without its format extension.";
         onTuiQuit = nullableEnum ["never" "write" "stdout"] "Artifact behavior when the TUI exits (rendered as `on_tui_quit`).";
@@ -297,9 +308,12 @@ in {
       };
 
       agent = {
-        command = nullableString "Shell command used to summon an agent.";
-        autostart = nullableBool "Start the configured agent when the TUI opens.";
-        prompt = nullableString "Agent prompt template; supports `{repo}`, `{base}`, and `{rev}`.";
+        name = nullableString "Name stamped on agent-authored annotations.";
+      };
+
+      identity = {
+        name = nullableString "Name stamped on local human-authored annotations.";
+        email = nullableString "Email compared with Jujutsu authors during channel inference.";
       };
 
       diff = {
@@ -319,8 +333,24 @@ in {
         ];
       };
 
-      comments.initialState = nullableEnum ["draft" "todo"] "Initial state assigned to new comments.";
-      keybindings = keybindingOptions;
+      comments = {
+        initialState = nullableEnum ["draft" "todo"] "Initial state assigned to new comments.";
+        defaultChannel = nullableEnum ["onboarding" "delegation" "collaboration" "note"] "Optional fixed channel for new comments.";
+      };
+      theme = {
+        mode = nullableEnum ["auto" "dark" "light"] "TUI base palette mode.";
+        transparent = nullableBool "Keep the terminal background visible.";
+      };
+      ui = {
+        filePaneAutoHideWidth = nullableUnsigned "Terminal width below which the file pane is automatically hidden.";
+        filePaneSplitPercent = nullableUnsigned "Percentage of terminal width assigned to the file pane.";
+        menuBar = nullableBool "Show the live-keymap menu bar.";
+      };
+      keybindings =
+        keybindingOptions
+        // {
+          preset = nullableEnum ["gander" "hunk"] "Base keybinding preset applied before per-action overrides.";
+        };
     };
 
     settings = lib.mkOption {
