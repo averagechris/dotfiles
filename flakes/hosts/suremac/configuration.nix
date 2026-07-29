@@ -65,9 +65,9 @@
       chmod -R u+w "$out"
 
       for bin in \
-        "$out/Applications/WezTerm.app/wezterm" \
-        "$out/Applications/WezTerm.app/wezterm-gui" \
-        "$out/Applications/WezTerm.app/wezterm-mux-server"; do
+        "$out/Applications/WezTerm.app/Contents/MacOS/wezterm" \
+        "$out/Applications/WezTerm.app/Contents/MacOS/wezterm-gui" \
+        "$out/Applications/WezTerm.app/Contents/MacOS/wezterm-mux-server"; do
         remove-references-to -t ${pkgs.stdenv.cc} "$bin"
       done
     '';

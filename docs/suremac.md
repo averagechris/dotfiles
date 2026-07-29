@@ -333,8 +333,9 @@ cached nixpkgs WezTerm output embeds the absolute `clang-wrapper` path in OpenSS
 compiler metadata inside the app binaries, which otherwise keeps the large
 clang/LLVM/Apple SDK closure alive even though it is not needed at runtime.
 `suremac` therefore installs a copied WezTerm output with only that build-time
-compiler reference scrubbed; the app bundle, CLI tools, shell integration,
-terminfo propagation, and Home Manager WezTerm configuration are unchanged.
+compiler reference scrubbed from the executables under the app bundle's standard
+`Contents/MacOS` directory; the app bundle, CLI tools, shell integration, terminfo
+propagation, and Home Manager WezTerm configuration are unchanged.
 
 `suremac` keeps app-launcher behavior with a small shell-based trampoline helper
 that runs during the nix-darwin and Home Manager activation phases. The helper

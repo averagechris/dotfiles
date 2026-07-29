@@ -8,19 +8,19 @@
   assets = {
     aarch64-darwin = {
       platform = "darwin-arm64";
-      hash = "sha256-RAbtInxIby48Fs8U95PcOtRrXQG/aRNaJCTP+lipo0s=";
+      hash = "sha256-okg0AZ7ALuWkdf8cWl6fg4l0GRumrcQ0j25kdafHZns=";
     };
     x86_64-darwin = {
       platform = "darwin-x64";
-      hash = "sha256-iSs/OFrmd5KZwHol2SgBg4l/z3Vfcib2s2xw0mjzIb4=";
+      hash = "sha256-7K7Q7w/K7/LkdSlPw0stfeRwBDSrnfI82w//2c+t9bg=";
     };
     aarch64-linux = {
       platform = "linux-arm64";
-      hash = "sha256-3+Q0AGPf4nQG+mSqyZ2QRyb6wHkZfEV5uegVUXXQUnI=";
+      hash = "sha256-wEnhMshUZiJNV9GfeSSQmwwP28m+2OCR3cNhgwcEs5I=";
     };
     x86_64-linux = {
       platform = "linux-x64";
-      hash = "sha256-q2YE9sPz0FB4Pnq7vdH3m3dbIPOWmDPOlyF0BoXQHhM=";
+      hash = "sha256-H24j2ewGaKE86px4bj1Uwfxnm44i5/a/reA0n0gHy/I=";
     };
   };
 
@@ -30,7 +30,7 @@
 in
   stdenv.mkDerivation (finalAttrs: {
     pname = "pi-coding-agent";
-    version = "0.80.10";
+    version = "0.81.1";
 
     src = fetchurl {
       url = "https://github.com/earendil-works/pi/releases/download/v${finalAttrs.version}/pi-${asset.platform}.tar.gz";
