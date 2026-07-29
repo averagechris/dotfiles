@@ -169,7 +169,10 @@ in {
         # flakes/hm-modules/modules/opencode/skills/ and deployed to
         # ~/.config/opencode/skills/.
 
-        agents = import ./primary-agents.nix {inherit runtimeNote;};
+        agents = import ./primary-agents.nix {
+          inherit runtimeNote;
+          agentSelectionTable = builtins.readFile ./agent-selection-table.md;
+        };
 
         # ============================================================================
         # CUSTOM COMMANDS - Run with /command-name

@@ -107,20 +107,32 @@ the agent runtime tools or generated OpenCode config files in their Home Manager
 profile.
 
 The Build primary agent uses an open-by-default bash policy. The `orchestrator`
-primary agent uses the same safety posture but is tuned for ambitious projects:
-it decomposes work, tracks it with `todowrite`, delegates self-contained coding
-tracks to `coding-minion`, and tells minions to use isolated `jj ws` workspaces
-(`jj ws add <name> -q`) for parallel implementation before cleanup with
-`jj ws forget <name>` once work is integrated or abandoned. The `coding-minion`
-subagent intentionally mirrors the Build agent's prompt, tools, steps, and
-permissions, but defaults to `openrouter/openai/gpt-5.5` with `variant = "low"`
-for cheaper, faster routine coding delegation. Its description is written so
-primary orchestrator agents can recognize it as a solid lower-cost coder that is
-a bit less capable than the primary Build agent.
+primary agent uses the same safety posture but is tuned for ambitious projects
+and can delegate work across four coding tiers: `build`, `minion`, `tiny`, and
+`wise`. The lower-cost `minion` and `tiny` agents use
+`openrouter/openai/gpt-5.6-sol` and `openrouter/openai/gpt-5.6-luna`, respectively,
+with `variant = "low"`; the higher-capability `wise` agent uses
+`openrouter/anthropic/claude-fable-5` with `variant = "high"`. All coding agents
+share one generated bash permission policy so safety-rule changes stay
+consistent across tiers. Their concise descriptions summarize the intended
+delegation tradeoff so primary agents can choose effectively from the task tool.
+
+The repo-managed `subagent-selection` skill adds task-selection guidance around
+the same relative intelligence, taste, speed, and cost scorecard embedded in the
+orchestrator prompt. Both render the scorecard from
+`agent-selection-table.md`; update that shared source rather than copying the
+table into either consumer. In the cost column, a higher score means more
+expensive, while higher scores in the other columns mean more of that quality.
+
+The built-in `explore` subagent keeps its upstream prompt and tools but is
+configured through `settings.agent.explore` to use
+`openrouter/openai/gpt-5.6-luna` with the `medium` variant. This favors cheap,
+parallel codebase research while retaining more reasoning than the `tiny`
+implementation tier.
 
 OpenCode normally prompts before any tool touches a path outside the project it
-was started in. To keep delegated `coding-minion` work smooth without opening up
-entire project trees, the Home Manager module derives
+was started in. To keep delegated coding work smooth without opening up entire
+project trees, the Home Manager module derives
 `permission.external_directory` allow rules from
 `dotfiles.jujutsu.workspaces.projectGroups`: each canonical managed workspace
 namespace (`<project-group>/<workspace-dir>/**`, such as `~/projects/ws/**` and
@@ -138,8 +150,8 @@ them a practical write path. Both temporary-path spellings are present because
 macOS canonicalizes `/tmp` and `/var` through `/private`; unrelated external
 directories continue to prompt.
 
-For Build, `orchestrator`, and `coding-minion`, the catch-all rule is `"*":
-"allow"`, and narrower later rules prompt or deny known sharp edges. OpenCode
+For Build, `orchestrator`, `minion`, `tiny`, and `wise`, the catch-all rule is
+`"*": "allow"`, and narrower later rules prompt or deny known sharp edges. OpenCode
 evaluates the last matching permission rule, so keep the broad allow at the top
 and add riskier overrides below it. This reduces approval fatigue for normal
 build/test/exploration work while keeping rare high-impact decisions visible.

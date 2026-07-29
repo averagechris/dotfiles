@@ -11,6 +11,13 @@
     '';
   };
 in {
+  # Keep the built-in exploration prompt and tools, but use a fast model with
+  # enough reasoning for cross-file codebase research.
+  agent.explore = {
+    model = "openrouter/openai/gpt-5.6-luna";
+    variant = "medium";
+  };
+
   # Managed jj workspaces and temporary files live outside the OpenCode
   # process's project root. Trust the canonical workspace namespaces and common
   # temp paths, including both macOS's visible and canonical path spellings.
