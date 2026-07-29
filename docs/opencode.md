@@ -12,9 +12,7 @@ frequent releases while preserving the normal `pkgs.opencode` and home-manager
 ## What it configures
 
 - custom primary and sub-agents
-- repo-managed slash commands
 - repo-managed skills deployed into `~/.config/opencode/skills/`
-- repo-managed custom tools deployed into `~/.config/opencode/tools/`
 - MCP server definitions written into the generated OpenCode config
 - optional `OPENROUTER_API_KEY` shell export via `dotfiles.opencode.openrouterApiKeyFile`
 - optional `CIRCLECI_TOKEN` shell export via `dotfiles.opencode.circleciTokenFile`
@@ -384,8 +382,6 @@ build time. Current examples include:
 - `jj-conflict-resolution`
 - `jj-repo-workflow`
 - `jj-workspaces`
-- `changes-review-core`
-- `github-pr-review`
 - `linear-cli`
 - `linear-admin`, `linear-data`, `linear-git`, `linear-issues`,
   `linear-organization`, `linear-planning`, and `linear-tracking` (registered by
@@ -398,22 +394,8 @@ build time. Current examples include:
 - `pup-cli`
 - `sure-stack-context` (suremac only)
 
-The PR review workflow is split into a reusable core review skill plus a
-GitHub-specific wrapper. Supporting custom tools live under `.opencode/tools/`.
-They are materialized as writable files in `~/.config/opencode/tools/`, and
-`programs.opencode.tools` points OpenCode at that config-directory copy rather
-than at the Nix store source path. This keeps TypeScript imports resolving from
-the user config directory instead of `/nix/store`. The module also writes a
-minimal `~/.config/opencode/package.json` declaring `@opencode-ai/plugin`; this
-lets OpenCode populate `~/.config/opencode/node_modules` before importing custom
-tools. The tools currently include:
-
-- `review-artifact-generate` - draft artifact bootstrapper from GitHub metadata and diff text
-- `review-artifact-write` - strict artifact validation and temp-file persistence
-- `review-artifact-render` - compact terminal digest renderer for persisted artifacts
-- `review-github-post` - explicit-confirmation batched GitHub review submission
-
-See [opencode-pr-review](/docs/opencode-pr-review.md) for the full workflow and design notes.
+Home Manager activation removes files left by the retired OpenCode PR-review
+tools from `~/.config/opencode/tools/`.
 
 The `databricks-cli` skill explains an important CLI detail: there is no
 top-level `databricks sql` subcommand in the current official CLI. Agents

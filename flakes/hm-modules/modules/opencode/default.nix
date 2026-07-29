@@ -39,14 +39,6 @@
     }
   ];
   cfg = config.dotfiles.opencode;
-  reviewToolsPath = ../../../../.opencode/tools;
-  installedReviewToolsPath = "${config.home.homeDirectory}/.config/opencode/tools";
-  opencodeNpmVersion = builtins.head (lib.splitString "+" (lib.getVersion pkgs.opencode));
-  opencodePackageJson = builtins.toJSON {
-    dependencies = {
-      "@opencode-ai/plugin" = opencodeNpmVersion;
-    };
-  };
   # Patches applied on top of the upstream opencode source (built from the
   # `github:anomalyco/opencode` flake input). Each patch targets a specific
   # upstream gap; when upstream incorporates the fix, the patch becomes a
@@ -175,17 +167,6 @@ in {
         };
 
         # ============================================================================
-        # CUSTOM COMMANDS - Run with /command-name
-        # ============================================================================
-
-        commands = import ./commands.nix;
-
-        # Repo-managed PR review helpers. Point OpenCode at the mutable config
-        # copy, not the Nix store source path, so TypeScript import resolution
-        # starts under ~/.config/opencode and can find node_modules there.
-        tools = installedReviewToolsPath;
-
-        # ============================================================================
         # SKILLS - Reusable knowledge for agents
         # ============================================================================
 
@@ -200,23 +181,19 @@ in {
 
       home.packages = (map (tool: tool.package) installedAgentTools) ++ cfg.agentSupportPackages;
 
-      # Custom tools import @opencode-ai/plugin. OpenCode waits for dependencies
-      # before importing tools, but the current Nix-packaged build only reifies
-      # dependencies already declared in the config directory. Declare the plugin
-      # here so ~/.config/opencode/node_modules is populated on Linux and Darwin.
-      xdg.configFile."opencode/package.json".text = opencodePackageJson;
-
-      # Project-local OpenCode tools are only visible when opencode is launched
-      # from this dotfiles checkout. `programs.opencode.tools` registers the
-      # tools with OpenCode, then this activation materializes them as real files
-      # (not symlinks into /nix/store) so TypeScript tool imports resolve against
-      # ~/.config/opencode/node_modules.
-      home.activation.install-opencode-review-tools = lib.hm.dag.entryAfter ["writeBoundary"] ''
-        target="${installedReviewToolsPath}"
-        ${pkgs.coreutils}/bin/rm -rf "$target"
-        ${pkgs.coreutils}/bin/mkdir -p "$(${pkgs.coreutils}/bin/dirname "$target")"
-        ${pkgs.coreutils}/bin/cp -R "${reviewToolsPath}" "$target"
-        ${pkgs.coreutils}/bin/chmod -R u+w "$target"
+      # These helpers were copied as writable files rather than managed symlinks,
+      # so remove leftovers from profiles that previously enabled them.
+      home.activation.remove-retired-opencode-review-tools = lib.hm.dag.entryAfter ["writeBoundary"] ''
+        tools_dir="${config.home.homeDirectory}/.config/opencode/tools"
+        if [[ -d "$tools_dir" ]]; then
+          ${pkgs.coreutils}/bin/rm -f \
+            "$tools_dir/review-artifact-generate.ts" \
+            "$tools_dir/review-artifact-render-demo.ts" \
+            "$tools_dir/review-artifact-render.ts" \
+            "$tools_dir/review-artifact-write.ts" \
+            "$tools_dir/review-github-post.ts"
+          ${pkgs.coreutils}/bin/rmdir --ignore-fail-on-non-empty "$tools_dir"
+        fi
       '';
     })
 

@@ -62,8 +62,7 @@ Nix builds/develop shells, and `nix flake check` for flake checks.
 - `docs/nixos.md` - general NixOS notes.
 - `docs/manual-package-updates.md` - `update-flakes`, cooldowns, and fixed-hash
   package updates.
-- `docs/opencode.md` and `docs/opencode-pr-review.md` - OpenCode module,
-  permissions, skills, tools, and PR review workflow.
+- `docs/opencode.md` - OpenCode module, permissions, skills, and tools.
 - `docs/jj-pr-workflow.md`, `docs/jj-workspaces.md`, and `docs/jj-tag-workflow.md`
   - jj helper workflows.
 - `docs/trainwreck.md` - trainwreck VPS role and deployment notes.

@@ -9,8 +9,6 @@ in {
   jj-workspaces = skill "jj-workspaces";
   conventional-commits = skill "conventional-commits";
   code-review = skill "code-review";
-  changes-review-core = skill "changes-review-core";
-  github-pr-review = skill "github-pr-review";
   databricks-cli = skill "databricks-cli";
   linear-cli = skill "linear-cli";
   subagent-selection = ''
