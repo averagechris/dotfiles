@@ -414,7 +414,7 @@ in {
     dotfiles.gander.enable = true;
     dotfiles.devCache = {
       enable = true;
-      sccache.cacheSize = "50G";
+      sccache.cacheSize = "100G";
       cleanup = {
         # This laptop churns through Nix/Cargo/Docker artifacts quickly while
         # agents work in parallel. Cleanup is due every six hours, but a cheap

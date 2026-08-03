@@ -18,6 +18,9 @@ frequent releases while preserving the normal `pkgs.opencode` and home-manager
 - optional `CIRCLECI_TOKEN` shell export via `dotfiles.opencode.circleciTokenFile`
 - agent-specific runtime packages and prompt metadata exposed via `dotfiles.opencode.agentTools`
 - host-specific private skill appendices materialized during Home Manager activation
+- on hosts with `dotfiles.devCache`, an automatically loaded `shell.env` plugin
+  sets `CARGO_INCREMENTAL=0` only inside OpenCode so parallel isolated Rust
+  workspaces favor the shared sccache without changing interactive shells
 
 ## Declarative CLI skills
 

@@ -11,6 +11,9 @@ cache cleanups. Enabled on `suremac`, `tater`, and `thorny`.
 - installs `sccache` and configures Cargo with `rustc-wrapper = "sccache"`
   (`~/.cargo/config.toml` plus `RUSTC_WRAPPER`/`SCCACHE_DIR`/`SCCACHE_CACHE_SIZE`
   session variables);
+- when OpenCode is enabled, injects `CARGO_INCREMENTAL=0` into OpenCode shell
+  executions so isolated agent workspaces share complete crate outputs through
+  sccache while ordinary interactive shells keep incremental compilation;
 - starts a clean `sccache-server` daemon at login (launchd agent on macOS,
   systemd user service on Linux);
 - runs a periodic `dev-cache-cleanup` job (launchd on macOS, systemd user timer
@@ -95,6 +98,16 @@ escape hatch, use `SCCACHE_DISABLE=1 cargo ...` and mention the observed sccache
 failure in the handoff. Prefer that over clearing `RUSTC_WRAPPER`, because it
 keeps the configured wrapper visible and prevents the workaround from becoming
 the default pattern.
+
+By default, `sccache.disableOpencodeIncremental = true` installs the global
+OpenCode plugin `dotfiles-rust-cache.js`. Its `shell.env` hook sets
+`CARGO_INCREMENTAL=0` for AI tool commands and OpenCode user terminals. Cargo
+still performs normal target freshness checks, but changed crates are compiled
+as complete cacheable outputs rather than workspace-local incremental outputs.
+This favors clean and short-lived parallel agent workspaces. Cargo commands in
+ordinary terminals retain the default incremental edit/build loop. An explicit
+inline `CARGO_INCREMENTAL=1 cargo ...` can opt an individual OpenCode command
+back into workspace-local incremental compilation.
 
 ## Cleanup job phases
 
@@ -212,7 +225,7 @@ the full-cleanup interval.
 
 | Host | Notes |
 |------|-------|
-| suremac | `sccache.cacheSize = "50G"`; full cleanup due every 6h with a cheap 5m load/headroom retry; low-disk check every 15m with a 10 GiB threshold; Nix user generation and Cargo sweep retention reduced to 3d; sweep roots `~/projects` and `~/sureapp`; Docker pruning against OrbStack with `pruneVolumes = true` |
+| suremac | `sccache.cacheSize = "100G"`; full cleanup due every 6h with a cheap 5m load/headroom retry; low-disk check every 15m with a 10 GiB threshold; Nix user generation and Cargo sweep retention reduced to 3d; sweep roots `~/projects` and `~/sureapp`; Docker pruning against OrbStack with `pruneVolumes = true` |
 | tater | Defaults; docker phase enabled, prunes via podman's docker-compatible socket when available |
 | thorny | Defaults with `docker.enable = false` (podman host, little container churn) |
 

@@ -407,6 +407,17 @@ in {
         defaultText = lib.literalExpression ''"\${config.home.homeDirectory}/.cache/sccache"'';
         description = "Directory used for the local sccache disk cache.";
       };
+
+      disableOpencodeIncremental = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = ''
+          Disable Cargo incremental compilation for commands run inside
+          OpenCode so isolated agent workspaces can share complete crate
+          outputs through sccache. Interactive shells retain Cargo's normal
+          incremental-build behavior.
+        '';
+      };
     };
 
     cleanup = {
@@ -666,6 +677,20 @@ in {
       SCCACHE_CACHE_SIZE = "${cfg.sccache.cacheSize}"
       SCCACHE_IDLE_TIMEOUT = "0"
     '';
+
+    # Incremental rustc outputs are tied to one target directory and cannot be
+    # cached by sccache. OpenCode agents commonly build in short-lived isolated
+    # jj workspaces, so favor machine-wide sccache reuse only for their shell
+    # commands while preserving incremental builds in interactive shells.
+    xdg.configFile."opencode/plugins/dotfiles-rust-cache.js" = lib.mkIf (config.programs.opencode.enable && cfg.sccache.disableOpencodeIncremental) {
+      text = ''
+        export const DotfilesRustCache = async () => ({
+          "shell.env": async (_input, output) => {
+            output.env.CARGO_INCREMENTAL = "0"
+          },
+        })
+      '';
+    };
 
     launchd.agents.sccache-server = lib.mkIf pkgs.stdenv.isDarwin {
       enable = true;

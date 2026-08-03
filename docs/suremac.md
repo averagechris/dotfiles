@@ -358,7 +358,10 @@ reminder, cargo-sweep, and Docker pruning).
 
 Host specifics:
 
-- `SCCACHE_CACHE_SIZE=50G`;
+- `SCCACHE_CACHE_SIZE=100G`;
+- OpenCode shell commands use `CARGO_INCREMENTAL=0`, making complete Rust crate
+  outputs reusable through sccache across isolated agent workspaces while
+  ordinary terminal builds retain Cargo's default incremental behavior;
 - normal cleanup is due every 6 hours instead of daily, with a cheap load and
   conflicting-client check every 5 minutes so sleep or heavy work only defers it;
 - a low-disk checker runs every 15 minutes and starts cleanup when `/` has less
