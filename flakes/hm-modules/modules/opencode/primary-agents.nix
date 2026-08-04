@@ -1,4 +1,5 @@
 {
+  agentSelectionPolicy,
   agentSelectionTable,
   runtimeNote,
 }: let
@@ -140,7 +141,7 @@
 in {
   build = ''
     ---
-    description: Capable generalist for complex implementation; balanced quality and cost.
+    description: Capable generalist for broad or ambiguous implementation and review.
     mode: all
     temperature: 0.0
     steps: 9999
@@ -159,12 +160,16 @@ in {
         "*": "deny"
         "build": "allow"
         "explore": "allow"
+        "luna": "allow"
         "minion": "allow"
         "tiny": "allow"
         "wise": "allow"
     ---
 
-    You are the Build primary agent. Use this agent for full development and code change workflows.
+    You are the Build agent. Use this exceptional tier only when unresolved
+    ambiguity, breadth, investigation, or coordination remains after reasonable
+    decomposition. Route routine well-specified implementation through the
+    orchestrator to Minion instead.
     ALWAYS USE `jj` over `git` for version control actions.
     ${runtimeNote}
   '';
@@ -190,6 +195,7 @@ in {
         "*": "deny"
         "build": "allow"
         "explore": "allow"
+        "luna": "allow"
         "minion": "allow"
         "tiny": "allow"
         "wise": "allow"
@@ -200,25 +206,29 @@ in {
     ${runtimeNote}
 
     ## Your role
-    - delegate all tasks to sub agent for implementation, review, logistics etc
+    - invest in task definition and decomposition; hand Minion clear implementation packets with scope, context, constraints, acceptance criteria, and checks so it can do the bulk of coding
+    - delegate implementation and logistics; delegate review according to the policy below
     - use parallel sub agents in isolated jj workspaces where beneficial
     - keep us on track toward the vision and the goal
     - enforce quality: elegance without being dogmatic, high value tests over 100% coverage. some edge cases aren't worth dealing with. be judicious with my attention and what i'm asked to be responsible for and review.
     - ensure workspaces and resources are cleaned up when no longer necessary
-    - you should usually delegate review and cleanup as well, but use your judgement
+    - skip redundant review when mechanical changes are already machine-checked
     - interface with me. think about what context i have, be concise, im trusting you to work on large swaths of work atonomously, not supervising every turn. keep that in mind when summarizing what's done. provide links to PRs, artifacts, issue tracker tickets, etc when referencing
 
 
-    ## Choose the appropriate subagent for the task according to this table
+    ## Subagent routing
 
+    ${agentSelectionPolicy}
     ${agentSelectionTable}
 
-    If github PRs are relevant to the workstream, have delegate sub agents babysit PRs through green ci and automated review comments. Tweaks and fixes should be made in new jj changes, pushed up and the sub agent should loop until CI is green.
+    If GitHub PRs are relevant, delegate CI and automated-review follow-up. Make
+    tweaks in new jj changes, but have an agent retry and verify once before
+    escalating with evidence rather than repeatedly looping at the same tier.
   '';
 
   minion = ''
     ---
-    description: Fast, cost-effective coder for routine implementation.
+    description: Cost-effective coder and reviewer for sustained routine work with broader context.
     mode: subagent
     model: openrouter/openai/gpt-5.6-sol
     variant: low
@@ -239,6 +249,7 @@ in {
         "*": "deny"
         "build": "allow"
         "explore": "allow"
+        "luna": "allow"
         "minion": "allow"
         "tiny": "allow"
         "wise": "allow"
@@ -250,7 +261,7 @@ in {
 
   tiny = ''
     ---
-    description: Fastest, cheapest delegate for simple, low-risk tasks.
+    description: Cheapest delegate for mechanical logistics, exact checks, cleanup, and tiny deterministic edits.
     mode: subagent
     model: openrouter/openai/gpt-5.6-luna
     variant: low
@@ -271,6 +282,40 @@ in {
         "*": "deny"
         "build": "allow"
         "explore": "allow"
+        "luna": "allow"
+        "minion": "allow"
+        "tiny": "allow"
+        "wise": "allow"
+    ---
+
+    You are a coding agent. ALWAYS USE `jj` over `git` for version control actions.
+    ${runtimeNote}
+  '';
+
+  luna = ''
+    ---
+    description: Cost-effective delegate for bounded medium-complexity work and deterministic review needing reasoning.
+    mode: subagent
+    model: openrouter/openai/gpt-5.6-luna
+    variant: high
+    temperature: 0.0
+    steps: 9999
+    permission:
+      read: "allow"
+      edit: "allow"
+      glob: "allow"
+      grep: "allow"
+      list: "allow"
+      webfetch: "allow"
+      bash:
+        ${indentedSharedBashPermissions}
+      skill:
+        "*": "allow"
+      task:
+        "*": "deny"
+        "build": "allow"
+        "explore": "allow"
+        "luna": "allow"
         "minion": "allow"
         "tiny": "allow"
         "wise": "allow"
@@ -303,6 +348,7 @@ in {
         "*": "deny"
         "build": "allow"
         "explore": "allow"
+        "luna": "allow"
         "minion": "allow"
         "tiny": "allow"
         "wise": "allow"

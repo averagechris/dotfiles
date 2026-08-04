@@ -163,6 +163,7 @@ in {
 
         agents = import ./primary-agents.nix {
           inherit runtimeNote;
+          agentSelectionPolicy = builtins.readFile ./agent-selection-policy.md;
           agentSelectionTable = builtins.readFile ./agent-selection-table.md;
         };
 

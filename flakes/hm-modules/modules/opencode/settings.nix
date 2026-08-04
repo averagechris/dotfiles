@@ -11,6 +11,10 @@
     '';
   };
 in {
+  # Make cost-aware decomposition and Minion-first routing the normal entry
+  # point instead of falling back to OpenCode's built-in Build agent.
+  default_agent = "orchestrator";
+
   # Keep the built-in exploration prompt and tools, but use a fast model with
   # enough reasoning for cross-file codebase research.
   agent.explore = {

@@ -213,6 +213,27 @@
               touch $out/success
             '';
 
+        opencode-agent-routing = let
+          inherit (pkgs) lib;
+          settings = import ./modules/opencode/settings.nix {
+            inherit lib pkgs;
+            managedJjWorkspaceExternalDirectories = {};
+          };
+          agents = import ./modules/opencode/primary-agents.nix {
+            agentSelectionPolicy = builtins.readFile ./modules/opencode/agent-selection-policy.md;
+            agentSelectionTable = builtins.readFile ./modules/opencode/agent-selection-table.md;
+            runtimeNote = "test runtime";
+          };
+          buildPrompt = agents.build;
+        in
+          assert settings.default_agent == "orchestrator";
+          assert lib.hasInfix "Use this exceptional tier only" buildPrompt;
+          assert lib.hasInfix "orchestrator to Minion instead" buildPrompt;
+            pkgs.runCommand "opencode-agent-routing-test" {} ''
+              mkdir -p $out
+              touch $out/success
+            '';
+
         nitter-link-stable-path = let
           fakeExtensionV1 = pkgs.runCommand "fake-nitter-link-package-v1" {} ''
             mkdir -p $out/share/nitter-link/chrome $out/share/nitter-link/firefox

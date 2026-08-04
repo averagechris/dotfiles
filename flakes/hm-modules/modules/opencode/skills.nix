@@ -1,5 +1,6 @@
 let
   skill = name: builtins.readFile ./skills/${name}/SKILL.md;
+  agentSelectionPolicy = builtins.readFile ./agent-selection-policy.md;
   agentSelectionTable = builtins.readFile ./agent-selection-table.md;
 in {
   jj-vcs = skill "jj-vcs";
@@ -13,6 +14,7 @@ in {
   linear-cli = skill "linear-cli";
   subagent-selection = ''
     ${skill "subagent-selection"}
+    ${agentSelectionPolicy}
     ${agentSelectionTable}
   '';
 }

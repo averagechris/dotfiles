@@ -107,29 +107,39 @@ generates the system-prompt tool note from the configured list when
 the agent runtime tools or generated OpenCode config files in their Home Manager
 profile.
 
-The Build primary agent uses an open-by-default bash policy. The `orchestrator`
-primary agent uses the same safety posture but is tuned for ambitious projects
-and can delegate work across four coding tiers: `build`, `minion`, `tiny`, and
-`wise`. The lower-cost `minion` and `tiny` agents use
-`openrouter/openai/gpt-5.6-sol` and `openrouter/openai/gpt-5.6-luna`, respectively,
-with `variant = "low"`; the higher-capability `wise` agent uses
-`openrouter/anthropic/claude-fable-5` with `variant = "high"`. All coding agents
-share one generated bash permission policy so safety-rule changes stay
-consistent across tiers. Their concise descriptions summarize the intended
-delegation tradeoff so primary agents can choose effectively from the task tool.
+The `orchestrator` is the generated OpenCode default agent, making decomposition
+and Minion-first routing the normal entry point. It uses the same open-by-default
+bash safety posture as Build and is tuned for ambitious projects
+and can delegate work across five coding tiers: `tiny`, `luna`, `minion`,
+`build`, and `wise`. Tiny uses GPT-5.6 Luna at `low` for mechanical work, while
+the distinct Luna tier uses the same model at `high` for bounded work requiring
+more reasoning. Minion uses GPT-5.6 Sol at `low` and is the default implementation
+tier: the orchestrator decomposes work and supplies clear implementation packets
+so Minion performs the bulk of coding. Build is reserved for ambiguity, breadth,
+investigation, or coordination that planning cannot reasonably remove. The
+higher-capability `wise` agent uses `openrouter/anthropic/claude-fable-5` with
+`variant = "high"`. All coding agents share one generated bash permission
+policy so safety-rule changes stay consistent across tiers. Their concise
+descriptions summarize the intended delegation tradeoff so primary agents can
+choose effectively from the task tool.
 
-The repo-managed `subagent-selection` skill adds task-selection guidance around
-the same relative intelligence, taste, speed, and cost scorecard embedded in the
-orchestrator prompt. Both render the scorecard from
-`agent-selection-table.md`; update that shared source rather than copying the
-table into either consumer. In the cost column, a higher score means more
-expensive, while higher scores in the other columns mean more of that quality.
+The repo-managed `subagent-selection` skill and orchestrator both render the
+canonical routing policy from `agent-selection-policy.md` and the relative
+intelligence, taste, speed, and cost scorecard from
+`agent-selection-table.md`. The policy defines tier boundaries, residual
+uncertainty handoffs, escalation, review limits, and finding severity gates;
+update those shared sources rather than restating the rules in consumers or
+documentation. The scorecard describes relative qualities rather than a utility
+ranking: routing favors the least expensive tier likely to succeed once it meets
+the task's capability threshold. Its canonical rubric defines capability bands,
+intrinsic response speed at comparable work, and nonlinear intrinsic model-cost
+bands independently of the tasks each tier is assigned.
 
 The built-in `explore` subagent keeps its upstream prompt and tools but is
 configured through `settings.agent.explore` to use
 `openrouter/openai/gpt-5.6-luna` with the `medium` variant. This favors cheap,
-parallel codebase research while retaining more reasoning than the `tiny`
-implementation tier.
+parallel codebase research with a research-specific prompt and tool set; Tiny
+remains narrower and mechanical, while Luna handles bounded reasoned work.
 
 OpenCode normally prompts before any tool touches a path outside the project it
 was started in. To keep delegated coding work smooth without opening up entire
@@ -151,7 +161,7 @@ them a practical write path. Both temporary-path spellings are present because
 macOS canonicalizes `/tmp` and `/var` through `/private`; unrelated external
 directories continue to prompt.
 
-For Build, `orchestrator`, `minion`, `tiny`, and `wise`, the catch-all rule is
+For Build, `orchestrator`, `minion`, `luna`, `tiny`, and `wise`, the catch-all rule is
 `"*": "allow"`, and narrower later rules prompt or deny known sharp edges. OpenCode
 evaluates the last matching permission rule, so keep the broad allow at the top
 and add riskier overrides below it. This reduces approval fatigue for normal
