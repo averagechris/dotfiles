@@ -4,6 +4,7 @@
   pkgs,
   ...
 }: let
+  regreetPackage = config.services.displayManager.regreet.package;
   # Eww configuration for the greeter session (simplified bar)
   ewwGreetYuck = pkgs.writeText "greet-eww.yuck" ''
     ; Greeter eww bar - Rose Pine Moon themed
@@ -245,7 +246,7 @@
     # Run eww bar and ReGreet
     exec-once = ${lib.getExe greetdFixDockedLidDisplays}
     exec-once = eww -c ${ewwGreetConfigDir} open bar
-    exec-once = ${lib.getExe pkgs.regreet}; hyprctl dispatch exit
+    exec-once = ${lib.getExe regreetPackage}; hyprctl dispatch exit
 
     # Window rule to make ReGreet fullscreen and centered.
     # Hyprland 0.55+ uses block-style windowrule v3.

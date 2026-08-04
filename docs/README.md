@@ -30,6 +30,7 @@
 - [pup](/docs/pup.md) - Datadog Pup CLI package, suremac Home Manager installation, OpenCode tool exposure, and update notes
 - [rdny](/docs/rdny.md) - rdny browser automation CLI package input, Home Manager module, host config, and OpenCode skill
 - [gpg-signing](/docs/gpg-signing.md) - GPG signing setup for git and jj commits with agenix
+- [graphical NixOS VM test](/docs/graphical-vm-test.md) - Apple Silicon graphical Hyprland/ReGreet VM smoke test and interactive driver workflow
 - [flake hygiene](/docs/flake-hygiene.md) - Top-level flake input following, lock de-duplication, and Darwin closure-size checks
 - [shell](/docs/shell.md) - Shell module configuration and PATH precedence
 - [sentry-cli](/docs/sentry-cli.md) - New `sentry` CLI package, suremac OpenCode integration, module decision, and update notes

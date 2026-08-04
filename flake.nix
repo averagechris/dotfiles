@@ -255,6 +255,16 @@
     }
     // flake-utils.lib.eachDefaultSystem (system: let
       pkgs = inputs.nixpkgs.legacyPackages.${system};
+      hyprlandGreetdVmTest =
+        if system == "aarch64-darwin" || system == "aarch64-linux"
+        then pkgs.testers.runNixOSTest (import ./tests/nixos/hyprland-greetd-vm.nix {inherit inputs;})
+        else null;
+      # Nix omits attributes whose names evaluate to null; keep these VM
+      # packages ARM-only without introducing dummy packages on other systems.
+      armVmPackageName = name:
+        if hyprlandGreetdVmTest != null
+        then name
+        else null;
       commonDevPackages = with pkgs; [
         alejandra
         cachix
@@ -299,6 +309,10 @@
         taz.checks.${system} or {}
         tootsie.checks.${system} or {}
       ];
+
+      packages.${armVmPackageName "hyprland-greetd-vm-test"} = hyprlandGreetdVmTest;
+      packages.${armVmPackageName "hyprland-greetd-vm-driver"} = hyprlandGreetdVmTest.driver;
+      packages.${armVmPackageName "hyprland-greetd-vm-driver-interactive"} = hyprlandGreetdVmTest.driverInteractive;
 
       # deploy usage: nix run .#deploy -- .#hostname
       apps.deploy =
