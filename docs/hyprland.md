@@ -6,6 +6,16 @@ This document describes the Hyprland window manager configuration, keybindings, 
 
 Hyprland is a modern Wayland compositor with GPU acceleration, smooth animations, and a flexible configuration system. This configuration uses Colemak Mod-DH navigation keys (M=Left, N=Down, E=Up, I=Right).
 
+## GTK theme package
+
+Hyprland workstations use `pkgs.rose-pine-gtk-modern`, a repository-managed
+package pinned to the upstream Rosé Pine GTK v2.2.0 release. It replaces the
+removed nixpkgs Rosé Pine GTK package without retaining that package's GTK 2 and
+Murrine dependency. The package installs only GTK 3 and GTK 4 assets for
+`rose-pine`, `rose-pine-dawn`, and `rose-pine-moon`; Home Manager explicitly
+disables GTK 2 and selects `rose-pine-moon` independently for GTK 3 and GTK 4.
+Qt and Kvantum configuration remains separate and unchanged.
+
 ## Keybindings
 
 The source of truth lives in `flakes/hm-modules/modules/gui/hyprland/default.nix`.

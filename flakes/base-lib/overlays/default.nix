@@ -70,6 +70,7 @@
     pup = final.callPackage ../packages/pup.nix {};
     sentry = final.callPackage ../packages/sentry.nix {};
     showboat = final.callPackage ../packages/showboat.nix {};
+    rose-pine-gtk-modern = final.callPackage ../packages/rose-pine-gtk-modern.nix {};
 
     keepassxc =
       if prev.stdenv.hostPlatform.isDarwin

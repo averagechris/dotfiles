@@ -150,6 +150,7 @@
             nitter-link-chrome-extension = inputs.nitter-link.packages.${system}.chrome-extension;
             nitter-link-firefox-extension = inputs.nitter-link.packages.${system}.firefox-extension;
             notion-cli = final.callPackage ../base-lib/packages/notion-cli.nix {};
+            rose-pine-gtk-modern = final.callPackage ../base-lib/packages/rose-pine-gtk-modern.nix {};
             showboat = final.callPackage ../base-lib/packages/showboat.nix {};
             opencode = final.callPackage "${opencodeInput}/nix/opencode.nix" {
               inherit node_modules;
@@ -172,6 +173,64 @@
       };
     in {
       checks = {
+        rose-pine-gtk-modern-layout = let
+          theme = pkgs.rose-pine-gtk-modern;
+          closure = pkgs.closureInfo {rootPaths = [theme];};
+        in
+          pkgs.runCommand "rose-pine-gtk-modern-layout" {} ''
+            for variant in rose-pine rose-pine-dawn rose-pine-moon; do
+              test -f "${theme}/share/themes/$variant/gtk-3.0/gtk.css"
+              test -f "${theme}/share/themes/$variant/gtk-3.0/gtk-dark.css"
+              test -f "${theme}/share/themes/$variant/gtk-3.0/gtk.gresource"
+              test -f "${theme}/share/themes/$variant/gtk-4.0/gtk.css"
+              test -f "${theme}/share/themes/$variant/gtk-4.0/gtk-dark.css"
+
+              if test -e "${theme}/share/themes/$variant/gtk-2.0"; then
+                echo "GTK 2 theme path found for $variant" >&2
+                exit 1
+              fi
+            done
+
+            # Check the complete runtime closure, not just the package's direct
+            # references. Theme-only output must not retain GTK 2 or Murrine.
+            if grep -Eiq -- '-(gtk2|gtk\+?-?2|[^/]*murrine)' "${closure}/store-paths"; then
+              echo "GTK 2 or Murrine found in Rosé Pine runtime closure:" >&2
+              grep -Ei -- '-(gtk2|gtk\+?-?2|[^/]*murrine)' "${closure}/store-paths" >&2
+              exit 1
+            fi
+            touch "$out"
+          '';
+
+        rose-pine-gtk-modern-home-manager =
+          if isLinux
+          then let
+            theme = pkgs.rose-pine-gtk-modern;
+            themedConfig = home-manager.lib.homeManagerConfiguration {
+              inherit pkgs;
+              modules = [
+                ./modules/gui/theming/default.nix
+                {
+                  home.username = "test";
+                  home.homeDirectory = "/tmp/test-home";
+                  home.stateVersion = "26.05";
+                  dotfiles.theming.enable = true;
+                }
+              ];
+            };
+          in
+            assert themedConfig.config.gtk.gtk2.enable == false;
+            assert themedConfig.config.gtk.gtk3.theme.name == "rose-pine-moon";
+            assert themedConfig.config.gtk.gtk4.theme.name == "rose-pine-moon";
+            assert themedConfig.config.gtk.gtk3.theme.package.outPath == theme.outPath;
+            assert themedConfig.config.gtk.gtk4.theme.package.outPath == theme.outPath;
+              pkgs.runCommand "rose-pine-gtk-modern-home-manager" {} ''
+                touch "$out"
+              ''
+          else
+            pkgs.runCommand "rose-pine-gtk-modern-home-manager-skipped" {} ''
+              touch "$out"
+            '';
+
         # Test that modules can be imported and evaluated with home-manager
         # This forces evaluation of the home-manager configuration, catching any
         # module syntax errors, missing imports, or type mismatches.

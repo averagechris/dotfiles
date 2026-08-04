@@ -12,12 +12,18 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
-    # GTK Theme
+    # GTK Theme. GTK 2 is deliberately unsupported by the local modern-only
+    # package, so configure each supported toolkit generation explicitly.
     gtk = {
       enable = true;
-      theme = {
+      gtk2.enable = false;
+      gtk3.theme = {
         name = "rose-pine-moon";
-        package = pkgs.rose-pine-gtk-theme;
+        package = pkgs.rose-pine-gtk-modern;
+      };
+      gtk4.theme = {
+        name = "rose-pine-moon";
+        package = pkgs.rose-pine-gtk-modern;
       };
       iconTheme = {
         name = "Papirus-Dark";
