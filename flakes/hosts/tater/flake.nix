@@ -173,7 +173,7 @@
         # hard-coding source layout. If these fail, the machine may boot without a
         # usable graphical login or without the expected auth fallback paths.
         assert_eq "greetd enabled" ${bool cfg.services.greetd.enable} true
-        assert_eq "regreet enabled" ${bool cfg.programs.regreet.enable} true
+        assert_eq "regreet enabled" ${bool cfg.services.displayManager.regreet.enable} true
         assert_eq "greetd runs as greeter" ${builtins.toJSON greetdUser} greeter
         assert_contains "greetd starts inside dbus-run-session" ${builtins.toJSON greetdCommand} dbus-run-session
         assert_contains "greetd starts start-hyprland" ${builtins.toJSON greetdCommand} start-hyprland

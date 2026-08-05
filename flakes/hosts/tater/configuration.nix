@@ -171,8 +171,10 @@ in {
     fprintAuth = false;
     unixAuth = true;
   };
-  security.pam.services.greetd = mkLidAwareFingerprintPam "greetd";
-  security.pam.services.regreet = mkLidAwareFingerprintPam "regreet";
+  # greetd uses the `login` PAM service as a substack, so the lid-aware
+  # fingerprint skip rule must be installed in `login` rather than `greetd` or
+  # a non-existent `regreet` service.
+  security.pam.services.login = mkLidAwareFingerprintPam "login";
   # In clamshell mode the fingerprint reader is physically unavailable, and
   # sudo's PAM stack waits for fingerprint auth before accepting a password.
   # Keep fingerprints for login/unlock paths but make terminal elevation prompt

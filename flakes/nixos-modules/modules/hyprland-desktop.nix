@@ -375,7 +375,7 @@ in {
     services.upower.enable = true; # Battery info for Eww
 
     # ReGreet - Modern, customizable greeter with fun theme
-    programs.regreet = {
+    services.displayManager.regreet = {
       enable = true;
       settings = {
         GTK = {
