@@ -283,11 +283,46 @@
             agentSelectionTable = builtins.readFile ./modules/opencode/agent-selection-table.md;
             runtimeNote = "test runtime";
           };
+          agentSelectionPolicy = builtins.readFile ./modules/opencode/agent-selection-policy.md;
           buildPrompt = agents.build;
+          orchestratorPrompt = agents.orchestrator;
+          minionPrompt = agents.minion;
+          delegatedPrompts = with agents; [build minion tiny luna wise];
+          codingPrompts = delegatedPrompts ++ [orchestratorPrompt];
+          blockAfter = marker: terminator: prompt:
+            builtins.head (lib.splitString terminator (builtins.elemAt (lib.splitString marker prompt) 1));
+          taskPermissions = blockAfter "  task:\n" "\n---";
+          bashPermissions = blockAfter "  bash:\n" "\n  skill:";
+          nestedDelegationPolicy = blockAfter "## Nested delegation\n\n" "\n## Review routing" agentSelectionPolicy;
+          expectedMinionTaskPermissions = lib.concatStringsSep "\n" [
+            "    \"*\": \"deny\""
+            "    \"explore\": \"allow\""
+            "    \"tiny\": \"allow\""
+          ];
         in
           assert settings.default_agent == "orchestrator";
+          assert settings.subagent_depth == 2;
           assert lib.hasInfix "Use this exceptional tier only" buildPrompt;
           assert lib.hasInfix "orchestrator to Minion instead" buildPrompt;
+          # Build re-delegation is constrained by orchestrator handoff guidance,
+          # not banned by permissions: keep its task allowances intact.
+          assert lib.hasInfix ''"minion": "allow"'' (taskPermissions buildPrompt);
+          assert lib.hasInfix ''"wise": "allow"'' (taskPermissions buildPrompt);
+          # Minion may only hand off research (explore) and mechanics (tiny);
+          # the exact block keeps every other agent, including upstream
+          # built-ins, behind the deny-all default.
+          assert taskPermissions minionPrompt == expectedMinionTaskPermissions;
+          # Situational delegation instructions belong to the orchestrator's
+          # handoff policy, not any delegated-agent prompt. Compare the shared
+          # policy section instead of pinning the test to individual sentences.
+          assert lib.hasInfix nestedDelegationPolicy orchestratorPrompt;
+          assert lib.all (prompt: !(lib.hasInfix nestedDelegationPolicy prompt)) delegatedPrompts;
+          # All coding agents share the same open-by-default bash policy.
+          # With no opencode-specific override, `opencode run` remains allowed;
+          # discouraging it is solely handoff guidance in the policy above.
+          assert lib.all (prompt: bashPermissions prompt == bashPermissions buildPrompt) codingPrompts;
+          assert lib.hasInfix ''"*": "allow"'' (bashPermissions buildPrompt);
+          assert !(lib.hasInfix ''"opencode run'' (bashPermissions buildPrompt));
             pkgs.runCommand "opencode-agent-routing-test" {} ''
               mkdir -p $out
               touch $out/success

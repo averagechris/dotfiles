@@ -36,6 +36,25 @@ implementation to Minion, bounded work to Luna, and mechanics to Tiny. A lower
 tier may retry or verify once after a miss, then escalate with the failed check
 and remaining uncertainty instead of looping.
 
+## Nested delegation
+
+Include explicit sub-delegation guidance in every handoff prompt; do not rely on
+shared delegate prompt text to supply it. Normally tell the delegate to complete
+the assigned packet directly. When a small, separable handoff could materially
+improve research, mechanics, or verification, permit it explicitly while asking
+the delegate to keep it sparse and avoid chains. Build may be given this option
+when unresolved complexity justifies it.
+
+For Minion, say that it owns the implementation and may use Explore for focused
+research or Tiny for mechanical support where useful, but must not pass
+implementation or build work to another coding agent. Its task permissions
+enforce that boundary.
+
+Tell delegates to use the task tool for justified handoffs so work remains
+visible in the parent session. Also tell them not to use `opencode run` as a
+routine delegation escape hatch because it hides work from the session tree and
+bypasses the intended routing context. This is guidance, not a permission ban.
+
 ## Review routing
 
 - Skip delegated review for fully mechanical, machine-checked changes.

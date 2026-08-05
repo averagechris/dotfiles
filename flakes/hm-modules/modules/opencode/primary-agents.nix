@@ -247,12 +247,8 @@ in {
         "*": "allow"
       task:
         "*": "deny"
-        "build": "allow"
         "explore": "allow"
-        "luna": "allow"
-        "minion": "allow"
         "tiny": "allow"
-        "wise": "allow"
     ---
 
     You are a coding agent. ALWAYS USE `jj` over `git` for version control actions.

@@ -123,6 +123,19 @@ policy so safety-rule changes stay consistent across tiers. Their concise
 descriptions summarize the intended delegation tradeoff so primary agents can
 choose effectively from the task tool.
 
+OpenCode's `subagent_depth` is set to `2`. Upstream counts a direct subagent at
+depth one, so this permits one nested handoff while still preventing longer
+delegation chains. The orchestrator policy requires every handoff prompt to say
+whether sub-delegation is appropriate rather than adding situational guidance to
+all delegated-agent prompts. Handoffs normally tell agents to complete their
+packets directly; they may explicitly allow a sparse, separable handoff when it
+is useful. Build may re-delegate sparingly when unresolved complexity warrants
+it. Minion is more tightly scoped: its task permissions allow only Explore for
+focused research and Tiny for mechanical support, not coding agents for
+implementation or build work. Handoff prompts steer justified nested work
+through the task tool and say not to use `opencode run` as a routine delegation
+escape hatch. That command remains permission-allowed rather than banned.
+
 The repo-managed `subagent-selection` skill and orchestrator both render the
 canonical routing policy from `agent-selection-policy.md` and the relative
 intelligence, taste, speed, and cost scorecard from
