@@ -37,7 +37,7 @@
 - [sideshow](/docs/sideshow.md) - Sideshow slide-deck CLI package, Home Manager module, config file, host enablement, and OpenCode skill
 - [srht](/docs/srht.md) - Repository issue tracker, SourceHut CLI Home Manager module, completions, OpenCode skills, and host enablement
 - [sure-stack-context](/docs/sure-stack-context.md) - suremac private OpenCode stack-context skill for Datadog, Sentry, and Kubernetes investigations
-- [suremac](/docs/suremac.md) - macOS host settings, automatic time zone behavior, Spaces desktop shortcuts, Rust `sccache`, and dev cache cleanup
+- [suremac](/docs/suremac.md) - macOS host settings, Determinate Nix daemon settings and parallel-agent tuning, automatic time zone behavior, Spaces desktop shortcuts, Rust `sccache`, and dev cache cleanup
 - [dev-cache](/docs/dev-cache.md) - `dotfiles.devCache` module: sccache, periodic nix GC, cargo-sweep, Docker pruning, and the darwin root GC reminder
 - [tater desktop testing](/docs/tater-desktop-testing.md) - Static and runtime checks for tater's Hyprland, greetd, Eww, display, and Wi-Fi setup
 - [tater power and thermal tuning](/docs/tater-power-thermal.md) - ThinkPad T14s power, thermal, and fan-management tuning notes

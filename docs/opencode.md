@@ -377,6 +377,12 @@ example:
 > CLI), sideshow (HTML slide deck CLI), rdny (browser automation CLI). The
 > project local dev shell may provide additional tooling.
 
+The runtime note also appends a concise Nix usage rule telling agents to prefer
+`nix build .#x` + `./result/bin/x` over repeated `nix run .#x` and to treat
+`SQLite database is busy` as a harmless retry warning. This keeps parallel
+agents from serializing on the nix store database; see
+[suremac](/docs/suremac.md) for the daemon-side tuning.
+
 Use `agentSupportPackages` for dependencies that a visible tool needs under the
 hood but that the agent does not need to call directly.
 

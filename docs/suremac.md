@@ -11,6 +11,49 @@ builders builders-use-substitutes` after installer or daemon changes. The shared
 cache publication policy and platform differences are documented in
 [cache policy](/docs/cache-policy.md).
 
+## Determinate Nix daemon settings
+
+Custom daemon settings live in `/etc/nix/nix.custom.conf` (the only supported
+customization channel for Determinate Nix; never edit `/etc/nix/nix.conf`).
+They are managed by `scripts/setup-darwin-determinate-nix.sh`, runnable as:
+
+```bash
+nix run .#setup-darwin-determinate-substituters
+```
+
+The script is idempotent, needs sudo once, and manages `substituters`,
+`trusted-public-keys`, `trusted-users`, and `fsync-metadata`, then restarts the
+daemon (`launchctl kickstart -k system/systems.determinate.nix-daemon`) so
+daemon-side settings apply immediately.
+
+### `fsync-metadata = false` and parallel agents
+
+Nix's store database (`/nix/var/nix/db/db.sqlite`) allows one writer at a
+time; every build output or substitution registration is a write transaction
+through the daemon. With `fsync-metadata = true` (upstream default), each
+transaction flushes with `F_FULLFSYNC`, which is very slow on APFS, so many
+parallel agents/builds pile up with `warning: SQLite database
+'/nix/var/nix/db/db.sqlite' is busy`. The warning itself is harmless (Nix
+retries; see NixOS/nix#6656), but it signals the DB serializing everyone.
+
+Setting `fsync-metadata = false` dramatically shortens lock hold times.
+Trade-off: a system crash (kernel panic/power loss) can lose the most recent
+DB registrations; recover with `nix store verify --repair` or by
+re-substituting. Process crashes are unaffected.
+
+If the WAL file (`/nix/var/nix/db/db.sqlite-wal`) grows large again under
+sustained parallel load, a daemon restart checkpoints and truncates it.
+
+### Agent workflow tips
+
+- Pre-warm a jj workspace before handing it to an agent (`nix develop
+  --command true`, build common packages) so agent-time nix operations are
+  cache-hit reads.
+- Prefer `nix build .#x` once, then run `./result/bin/x`, over repeated
+  `nix run .#x`: each `nix run` re-evaluates and touches the store DB. The
+  OpenCode module bakes this rule into every agent prompt
+  (`flakes/hm-modules/modules/opencode/default.nix`).
+
 ## LAN SSH
 
 `suremac` enables macOS Remote Login through nix-darwin so local NixOS machines

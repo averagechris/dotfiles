@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Configure Nix daemon on macOS (Determinate Nix) with the desired substituters
-# and public keys for this machine. This script writes to /etc/nix/nix.custom.conf
-# (as recommended by Determinate Nix) and restarts the nix-daemon.
-# It is idempotent and safe to re-run.
+# Configure Nix daemon on macOS (Determinate Nix) with the desired substituters,
+# public keys, and performance settings for this machine. This script writes to
+# /etc/nix/nix.custom.conf (the only supported customization channel for
+# Determinate Nix) and is idempotent and safe to re-run.
 #
 # Desired caches for suremac:
 # - https://cache.nixos.org (official)
@@ -11,13 +11,22 @@
 # - https://devenv.cachix.org
 # - https://helix.cachix.org
 #
+# Performance settings for suremac:
+# - fsync-metadata = false: on macOS, Nix's metadata flush uses F_FULLFSYNC,
+#   which is very slow on APFS and makes every /nix/var/nix/db/db.sqlite write
+#   transaction hold the lock long enough that parallel agents/builds pile up
+#   with "SQLite database is busy" warnings. Disabling it dramatically shortens
+#   lock hold times. Trade-off: a *system* crash (kernel panic/power loss) can
+#   lose the most recent DB registrations; recover with
+#   `nix store verify --repair` or by re-substituting. See docs/suremac.md.
+#
 # Usage:
 #   nix run .#setup-darwin-determinate-substituters
 # or directly:
-#   ./nixpkgs/scripts/setup-darwin-determinate-nix.sh
+#   ./scripts/setup-darwin-determinate-nix.sh
 #
 # Verify after running:
-#   nix show-config | rg '^(substituters|trusted-public-keys|trusted-users)'
+#   nix config show | rg '^(substituters|trusted-public-keys|trusted-users|fsync-metadata)'
 
 set -euo pipefail
 
@@ -69,7 +78,7 @@ trap 'rm -f "$TMP_CONF"' EXIT
 mkdir -p "$NIX_DIR"
 if [[ -f "$NIX_CUSTOM" ]]; then
   # Remove existing lines for the settings we manage to avoid duplicates
-  awk 'BEGIN{IGNORECASE=1} !($0 ~ /^(substituters|trusted-public-keys|trusted-users)[[:space:]]*=/) {print}' "$NIX_CUSTOM" > "$TMP_CONF"
+  awk 'BEGIN{IGNORECASE=1} !($0 ~ /^(substituters|trusted-public-keys|trusted-users|fsync-metadata)[[:space:]]*=/) {print}' "$NIX_CUSTOM" > "$TMP_CONF"
 else
   : > "$TMP_CONF"
 fi
@@ -80,15 +89,21 @@ fi
   echo "substituters = ${SUBS_STR}"
   echo "trusted-public-keys = ${KEYS_STR}"
   echo "trusted-users = ${USERS_STR}"
+  echo "# Avoid F_FULLFSYNC per nix-db write on APFS; reduces SQLite lock"
+  echo "# contention under parallel agents. See docs/suremac.md."
+  echo "fsync-metadata = false"
 } > "$NIX_CUSTOM"
-# Note: no need to restart the daemon explicitly; it will pick up changes
-# from nix.custom.conf on next use or after any future daemon restart.
+# Restart the daemon so daemon-side settings (fsync-metadata, trusted-users)
+# take effect now. This also checkpoints and truncates the SQLite WAL file
+# (/nix/var/nix/db/db.sqlite-wal), which can grow large under sustained
+# parallel load. Substituter settings alone would not need this.
+launchctl kickstart -k system/systems.determinate.nix-daemon
 ROOT
 
 echo
 echo "Effective settings (filtered):"
 # grep, not rg: this runs on freshly bootstrapped machines with no tools yet
-nix config show | grep -E '^(substituters|trusted-public-keys|trusted-users)'
+nix config show | grep -E '^(substituters|trusted-public-keys|trusted-users|fsync-metadata)'
 
 echo
-echo "Done. You should no longer see untrusted substituter warnings."
+echo "Done. Substituters are trusted and nix-db writes skip F_FULLFSYNC."

@@ -74,7 +74,10 @@
     else "${tool.name} (${tool.description})";
   installedAgentTools = defaultAgentTools ++ cfg.agentTools;
   agentToolNote = lib.concatStringsSep ", " (map renderToolNote installedAgentTools);
-  runtimeNote = "Your runtime is a ${systemName} environment. By default, your environment includes these additional tools: ${agentToolNote}. The project local dev shell may provide additional tooling.";
+  # Concise Nix usage rule for agent prompts. Repeated `nix run` re-evaluates
+  # and contends on the nix-db; see docs/suremac.md for background.
+  nixUsageNote = "Nix: to run a flake app more than once, `nix build .#x` then `./result/bin/x`; do not repeat `nix run .#x` (each call re-evaluates). Treat `SQLite database is busy` as a harmless retry warning.";
+  runtimeNote = "Your runtime is a ${systemName} environment. By default, your environment includes these additional tools: ${agentToolNote}. The project local dev shell may provide additional tooling. ${nixUsageNote}";
   managedJjWorkspaceExternalDirectories = lib.listToAttrs (map (group: {
       name = "${group.path}/${group.workspaceDir}/**";
       value = "allow";
