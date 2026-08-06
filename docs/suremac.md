@@ -345,6 +345,9 @@ self-update:
 - superwhisper
 - OrbStack
 - Logi Options+
+- Xcode Command Line Tools (`xcode-select --install`) — recommended on every
+  new suremac laptop so Rust links use Apple's fast ld-prime linker; see
+  [dev-cache.md](/docs/dev-cache.md#installing-the-fast-apple-linker-recommended-on-new-macs)
 
 ## Profile Size Notes
 
@@ -402,6 +405,9 @@ reminder, cargo-sweep, and Docker pruning).
 Host specifics:
 
 - `SCCACHE_CACHE_SIZE=100G`;
+- Rust links on Apple targets go through the dev-cache fast-linker dispatcher;
+  install the Xcode CLT on new laptops so it can prefer Apple's ld-prime over
+  the nixpkgs lld fallback (see the [dev-cache linker docs](/docs/dev-cache.md#rust-linker-on-macos));
 - OpenCode shell commands use `CARGO_INCREMENTAL=0`, making complete Rust crate
   outputs reusable through sccache across isolated agent workspaces while
   ordinary terminal builds retain Cargo's default incremental behavior;

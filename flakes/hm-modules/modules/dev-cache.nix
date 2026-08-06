@@ -386,6 +386,42 @@
       fi
     '';
   };
+
+  # Rust link-step dispatcher for macOS. nixpkgs can only ship the open-source
+  # classic ld64, which is by far the slowest Mach-O linker still in use, so
+  # dev shells never see Apple's fast closed-source rewrite ("ld-prime",
+  # Xcode 15+). Prefer a manually installed Apple linker when its version says
+  # it is the new one; otherwise fall back to nixpkgs lld. Classic Apple
+  # installs are never preferred because lld beats them. The version probe
+  # costs one short-lived process per link, which is noise next to the link
+  # itself.
+  #
+  # Version strings distinguish the implementations:
+  #   classic:  @(#)PROGRAM:ld PROJECT:ld64-956.6   (frozen in the 900s)
+  #   ld-prime: @(#)PROGRAM:ld PROJECT:ld-1267      (1015.7 and up)
+  rustLinkerDispatch = pkgs.writeShellScript "dotfiles-rust-ld-dispatch" ''
+    for candidate in \
+      /Library/Developer/CommandLineTools/usr/bin/ld \
+      /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld
+    do
+      [ -x "$candidate" ] || continue
+      version=$("$candidate" -v 2>&1 \
+        | ${pkgs.gnused}/bin/sed -n 's/.*PROJECT:ld\(64\)\{0,1\}-\([0-9][0-9]*\).*/\2/p' \
+        | ${pkgs.coreutils}/bin/head -n 1)
+      if [ -n "$version" ] && [ "$version" -ge 1000 ]; then
+        exec "$candidate" "$@"
+      fi
+    done
+    exec ${lib.getExe' pkgs.lld "ld64.lld"} "$@"
+  '';
+  rustLinkerCargoConfig = ''
+
+    [target.aarch64-apple-darwin]
+    rustflags = ["-C", "link-arg=--ld-path=${rustLinkerDispatch}"]
+
+    [target.x86_64-apple-darwin]
+    rustflags = ["-C", "link-arg=--ld-path=${rustLinkerDispatch}"]
+  '';
 in {
   options.dotfiles.devCache = {
     enable = lib.mkEnableOption "dev cache management: shared Rust compilation cache and periodic nix/cargo/docker cleanup jobs";
@@ -416,6 +452,23 @@ in {
           OpenCode so isolated agent workspaces can share complete crate
           outputs through sccache. Interactive shells retain Cargo's normal
           incremental-build behavior.
+        '';
+      };
+    };
+
+    rustLinker = {
+      enable = lib.mkOption {
+        type = lib.types.bool;
+        default = pkgs.stdenv.isDarwin;
+        defaultText = lib.literalExpression "pkgs.stdenv.isDarwin";
+        description = ''
+          Configure Cargo to link Apple targets through a dispatcher that
+          prefers a manually installed Apple "ld-prime" linker (Xcode 15+
+          Command Line Tools or Xcode.app) and falls back to nixpkgs lld.
+          Both are far faster than the classic ld64 that nixpkgs dev shells
+          provide. sccache never caches the link step, so the linker
+          dominates warm iterative builds. Only affects macOS; projects can
+          still override via their own target rustflags or RUSTFLAGS.
         '';
       };
     };
@@ -668,15 +721,17 @@ in {
       SCCACHE_IDLE_TIMEOUT = "0";
     };
 
-    home.file.".cargo/config.toml".text = ''
-      [build]
-      rustc-wrapper = "${lib.getExe pkgs.sccache}"
+    home.file.".cargo/config.toml".text =
+      ''
+        [build]
+        rustc-wrapper = "${lib.getExe pkgs.sccache}"
 
-      [env]
-      SCCACHE_DIR = "${cfg.sccache.directory}"
-      SCCACHE_CACHE_SIZE = "${cfg.sccache.cacheSize}"
-      SCCACHE_IDLE_TIMEOUT = "0"
-    '';
+        [env]
+        SCCACHE_DIR = "${cfg.sccache.directory}"
+        SCCACHE_CACHE_SIZE = "${cfg.sccache.cacheSize}"
+        SCCACHE_IDLE_TIMEOUT = "0"
+      ''
+      + lib.optionalString (cfg.rustLinker.enable && pkgs.stdenv.isDarwin) rustLinkerCargoConfig;
 
     # Incremental rustc outputs are tied to one target directory and cannot be
     # cached by sccache. OpenCode agents commonly build in short-lived isolated

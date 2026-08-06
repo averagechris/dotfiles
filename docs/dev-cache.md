@@ -11,6 +11,9 @@ cache cleanups. Enabled on `suremac`, `tater`, and `thorny`.
 - installs `sccache` and configures Cargo with `rustc-wrapper = "sccache"`
   (`~/.cargo/config.toml` plus `RUSTC_WRAPPER`/`SCCACHE_DIR`/`SCCACHE_CACHE_SIZE`
   session variables);
+- on macOS, points Cargo's Apple-target link step at a fast-linker dispatcher
+  (Apple's new `ld` when manually installed, otherwise nixpkgs `lld`; see
+  [Rust linker on macOS](#rust-linker-on-macos));
 - when OpenCode is enabled, injects `CARGO_INCREMENTAL=0` into OpenCode shell
   executions so isolated agent workspaces share complete crate outputs through
   sccache while ordinary interactive shells keep incremental compilation;
@@ -108,6 +111,72 @@ This favors clean and short-lived parallel agent workspaces. Cargo commands in
 ordinary terminals retain the default incremental edit/build loop. An explicit
 inline `CARGO_INCREMENTAL=1 cargo ...` can opt an individual OpenCode command
 back into workspace-local incremental compilation.
+
+## Rust linker on macOS
+
+`rustLinker.enable` (default: on for Darwin) adds `[target.aarch64-apple-darwin]`
+and `[target.x86_64-apple-darwin]` sections to the generated
+`~/.cargo/config.toml` with
+`rustflags = ["-C", "link-arg=--ld-path=<dispatcher>"]`. Every cargo/rustc
+invocation on the machine — dev shells, rustup toolchains, `cargo install`,
+rust-analyzer, agent builds — links through the dispatcher script.
+
+Rationale: nixpkgs can only ship the open-source *classic* ld64, the slowest
+Mach-O linker still in common use; Apple's fast rewritten linker ("ld-prime",
+Xcode 15+, `PROJECT:ld64-` versions >= 1000) is closed-source and cannot be
+packaged. sccache never caches the link step, so linking dominates warm
+iterative builds. lld and ld-prime are both several times faster than classic
+ld64 and roughly comparable to each other.
+
+The dispatcher (`dotfiles-rust-ld-dispatch`) chooses at link time:
+
+1. `/Library/Developer/CommandLineTools/usr/bin/ld`, then
+   `/Applications/Xcode.app/.../XcodeDefault.xctoolchain/usr/bin/ld`, if
+   present **and** reporting a new-linker version (classic prints
+   `PROJECT:ld64-9xx`; ld-prime prints `PROJECT:ld-1015.7` or higher — the
+   dispatcher accepts either spelling with version >= 1000). A manually
+   installed current Xcode CLT is picked up automatically with no Home
+   Manager switch; classic Apple installs are never preferred.
+2. Otherwise nixpkgs `ld64.lld`.
+
+Notes:
+
+- Enabling this changes target rustflags, which are part of Cargo's
+  fingerprint, so expect a one-time rebuild per project (largely absorbed by
+  sccache).
+- A project's own `[target.*] rustflags` or a `RUSTFLAGS` environment variable
+  *replaces* (not merges with) this configuration; such projects keep their
+  existing linker setup.
+- `--ld-path` requires the linker driver to be clang >= 12, which holds for
+  both nix cc-wrappers and Apple clang.
+
+### Installing the fast Apple linker (recommended on new Macs)
+
+lld works out of the box with no manual steps. To get Apple's ld-prime —
+occasionally faster, and what the dispatcher prefers — install the Xcode
+Command Line Tools once per machine:
+
+```bash
+xcode-select --install
+```
+
+Do **not** run `xcode-select -s` afterwards: the developer-directory pointer
+should stay whatever the nix toolchain expects, and the dispatcher finds the
+CLT by absolute path (`/Library/Developer/CommandLineTools/usr/bin/ld`), so no
+switch is needed. The next link picks it up automatically — no Home Manager
+switch, no rebuild (linker identity is not part of Cargo's fingerprint).
+
+Verify what the dispatcher will use:
+
+```bash
+"$(sed -n 's/.*--ld-path=\([^"]*\).*/\1/p' ~/.cargo/config.toml | head -n 1)" -v 2>&1 | head -n 1
+```
+
+After the CLT install this should print `PROJECT:ld-<version>` (ld-prime's
+spelling; >= 1015); before, it prints an `ld64.lld` usage error. Any
+current CLT qualifies; if macOS ever offers a CLT update notification, taking
+it is fine. This is intentional per-machine imperative state, like the other
+manually installed apps.
 
 ## Cleanup job phases
 
