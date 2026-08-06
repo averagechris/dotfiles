@@ -77,7 +77,11 @@
   # Concise Nix usage rule for agent prompts. Repeated `nix run` re-evaluates
   # and contends on the nix-db; see docs/suremac.md for background.
   nixUsageNote = "Nix: to run a flake app more than once, `nix build .#x` then `./result/bin/x`; do not repeat `nix run .#x` (each call re-evaluates). Treat `SQLite database is busy` as a harmless retry warning.";
-  runtimeNote = "Your runtime is a ${systemName} environment. By default, your environment includes these additional tools: ${agentToolNote}. The project local dev shell may provide additional tooling. ${nixUsageNote}";
+  direnvNote = lib.optionalString cfg.direnv.enable " Shell commands automatically load the direnv-allowed dev shell environment for their workdir (any repo, not just the session root); run project tooling directly instead of wrapping it in `nix develop --command` or `direnv exec`.";
+  runtimeNote = "Your runtime is a ${systemName} environment. By default, your environment includes these additional tools: ${agentToolNote}. The project local dev shell may provide additional tooling.${direnvNote} ${nixUsageNote}";
+  direnvPlugin = pkgs.replaceVars ./plugins/dotfiles-direnv.js {
+    direnv = lib.getExe config.programs.direnv.package;
+  };
   managedJjWorkspaceExternalDirectories = lib.listToAttrs (map (group: {
       name = "${group.path}/${group.workspaceDir}/**";
       value = "allow";
@@ -142,6 +146,19 @@ in {
       '';
     };
 
+    direnv.enable = lib.mkOption {
+      type = lib.types.bool;
+      default = config.programs.direnv.enable;
+      defaultText = lib.literalExpression "config.programs.direnv.enable";
+      description = ''
+        Install an OpenCode plugin that resolves the direnv environment for
+        each bash tool invocation's working directory and merges it into the
+        command environment. This gives agents (including subagents working in
+        other repos) project dev-shell tooling without `nix develop --command`
+        or `direnv exec` wrappers. Only direnv-allowed `.envrc` files load.
+      '';
+    };
+
     agentSupportPackages = lib.mkOption {
       type = lib.types.listOf lib.types.package;
       default = [];
@@ -199,6 +216,11 @@ in {
           ${pkgs.coreutils}/bin/rmdir --ignore-fail-on-non-empty "$tools_dir"
         fi
       '';
+    })
+
+    # Per-workdir direnv environments for agent shell commands
+    (lib.mkIf (config.programs.opencode.enable && cfg.direnv.enable) {
+      xdg.configFile."opencode/plugins/dotfiles-direnv.js".source = direnvPlugin;
     })
 
     # OpenRouter API key configuration (only when openrouterApiKeyFile is set)

@@ -21,6 +21,8 @@ frequent releases while preserving the normal `pkgs.opencode` and home-manager
 - on hosts with `dotfiles.devCache`, an automatically loaded `shell.env` plugin
   sets `CARGO_INCREMENTAL=0` only inside OpenCode so parallel isolated Rust
   workspaces favor the shared sccache without changing interactive shells
+- on hosts with direnv enabled, a `dotfiles-direnv` plugin loads each working
+  directory's direnv-allowed dev shell environment into agent shell commands
 
 ## Declarative CLI skills
 
@@ -385,6 +387,43 @@ agents from serializing on the nix store database; see
 
 Use `agentSupportPackages` for dependencies that a visible tool needs under the
 hood but that the agent does not need to call directly.
+
+## direnv environments for agent commands
+
+`dotfiles.opencode.direnv.enable` (default: `programs.direnv.enable`) installs
+the `dotfiles-direnv` OpenCode plugin at
+`~/.config/opencode/plugins/dotfiles-direnv.js`. OpenCode triggers the
+`shell.env` plugin hook with the working directory of every bash tool
+invocation, and the plugin merges the output of `direnv export json` for that
+directory into the command environment.
+
+This means agents get project dev-shell tooling (via nix-direnv) transparently,
+including subagents dispatched across repos with `workdir` outside the session
+root. They should run project commands directly (`just test`, `cargo build`)
+rather than wrapping them in `nix develop --command` or `direnv exec`; the
+wrappers are slower and also defeat bash permission matching on the underlying
+command. The runtime note tells agents this when the plugin is enabled.
+
+Behavior details:
+
+- The nearest `.envrc` is found by walking up from the command's cwd, stopping
+  at the home directory. Only direnv-allowed files load; blocked or failing
+  `.envrc`s are skipped silently and negative-cached for one minute, so a repo
+  becomes available shortly after an interactive `direnv allow`.
+- Results are cached per `.envrc` root with a five-minute TTL plus an mtime
+  fingerprint over `.envrc`, `flake.nix`, `flake.lock`, and similar files.
+  Warm nix-direnv evaluations take tens of milliseconds; the first load of a
+  cold dev shell pays full flake evaluation (bounded by a ten-minute timeout),
+  so warming big shells interactively first helps.
+- If OpenCode itself was launched inside a direnv environment, commands running
+  in directories without an `.envrc` receive the unload diff so the launch
+  repo's dev shell does not leak into other projects.
+- direnv reports unset variables as nulls; the hook can only merge over
+  OpenCode's process environment, so those become empty strings.
+
+The plugin substitutes the host's `programs.direnv.package` binary path at
+build time and shares the user's direnv allow database and nix-direnv cache
+with interactive shells.
 
 ## MCP integrations
 

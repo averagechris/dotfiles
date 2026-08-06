@@ -112,6 +112,8 @@ ordinary terminals retain the default incremental edit/build loop. An explicit
 inline `CARGO_INCREMENTAL=1 cargo ...` can opt an individual OpenCode command
 back into workspace-local incremental compilation.
 
+## Cleanup job phases
+
 ## Rust linker on macOS
 
 `rustLinker.enable` (default: on for Darwin) adds `[target.aarch64-apple-darwin]`

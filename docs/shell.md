@@ -23,6 +23,10 @@ shells. Direnv runs in silent mode by default (`programs.direnv.silent = true`)
 so entering a flake-backed project does not print the full environment diff such
 as `direnv: export +AR +CC ... ~PATH` on every shell activation.
 
+When OpenCode is enabled, the OpenCode module also ships a `dotfiles-direnv`
+plugin that applies each project's direnv environment to agent shell commands
+per working directory; see [OpenCode](/docs/opencode.md#direnv-environments-for-agent-commands).
+
 ## Zellij
 
 Zellij is installed and configured by the shell module but is **disabled by
