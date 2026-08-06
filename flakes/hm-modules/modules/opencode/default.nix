@@ -200,6 +200,11 @@ in {
         settings = import ./settings.nix {inherit lib pkgs managedJjWorkspaceExternalDirectories;};
       };
 
+      # Registered through the shared skill registry (rather than skills.nix)
+      # so other modules can extend it: dev-cache appends host-specific
+      # sccache guidance via extraText when enabled.
+      dotfiles.agentSkills.rust-cargo.source = lib.mkDefault ./skills/rust-cargo/SKILL.md;
+
       home.packages = (map (tool: tool.package) installedAgentTools) ++ cfg.agentSupportPackages;
 
       # These helpers were copied as writable files rather than managed symlinks,

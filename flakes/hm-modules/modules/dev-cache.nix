@@ -705,6 +705,26 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
+    # Host-specific appendix for the base rust-cargo skill registered by the
+    # OpenCode module; installed only when OpenCode is enabled on the host.
+    dotfiles.agentSkills.rust-cargo.extraText = ''
+      ## This host: managed sccache (dotfiles.devCache)
+
+      - `~/.cargo/config.toml` sets `rustc-wrapper = sccache` and a supervised
+        server runs as a user service; treat the cache as always-on.
+      - Never clear `RUSTC_WRAPPER`. Slow or timed-out builds are not sccache
+        failures; re-run with a larger tool timeout instead.
+      - Only after an error that explicitly implicates sccache: retry once with
+        `SCCACHE_DISABLE=1 cargo ...` and report the failure. If it persists,
+        restart the managed server: `sccache --stop-server || true`, then
+        `launchctl kickstart gui/$(id -u)/org.nix-community.home.sccache-server`
+        (macOS) or `systemctl --user restart sccache-server` (Linux).
+      ${lib.optionalString cfg.sccache.disableOpencodeIncremental ''
+        - Your commands run with `CARGO_INCREMENTAL=0` by design so isolated
+          agent workspaces share complete crate outputs through sccache. Do not
+          re-enable it unless a human asks.
+      ''}'';
+
     home.packages =
       [
         cleanupScript

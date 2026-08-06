@@ -112,6 +112,13 @@ ordinary terminals retain the default incremental edit/build loop. An explicit
 inline `CARGO_INCREMENTAL=1 cargo ...` can opt an individual OpenCode command
 back into workspace-local incremental compilation.
 
+Because agents working in other repositories never read this document, the
+OpenCode `rust-cargo` skill carries the agent-facing rules (concise cargo
+output flags, no `-j` throttling, rerun timed-out builds, never clear
+`RUSTC_WRAPPER`). When `dotfiles.devCache` is enabled, this module appends a
+host-specific appendix to that skill with the managed-server restart commands
+and the `CARGO_INCREMENTAL=0` policy.
+
 ## Cleanup job phases
 
 ## Rust linker on macOS
