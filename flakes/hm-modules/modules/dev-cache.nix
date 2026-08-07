@@ -473,6 +473,22 @@ in {
       };
     };
 
+    rustDevProfileDebug = lib.mkOption {
+      type = lib.types.nullOr lib.types.nonEmptyStr;
+      default = "line-tables-only";
+      example = "full";
+      description = ''
+        Value for `[profile.dev] debug` in the generated
+        `~/.cargo/config.toml`. The default keeps file:line info for
+        backtraces, panics, and profilers while dropping full variable-level
+        debuginfo, shrinking both codegen and link input. Set to `"full"` to
+        restore complete debugger stepping machine-wide, or `null` to omit
+        the profile section entirely. Individual projects override this via
+        their own `Cargo.toml` profiles; a one-off full-debug build can use
+        `CARGO_PROFILE_DEV_DEBUG=2 cargo build`.
+      '';
+    };
+
     cleanup = {
       enable = lib.mkOption {
         type = lib.types.bool;
@@ -750,6 +766,11 @@ in {
         SCCACHE_DIR = "${cfg.sccache.directory}"
         SCCACHE_CACHE_SIZE = "${cfg.sccache.cacheSize}"
         SCCACHE_IDLE_TIMEOUT = "0"
+      ''
+      + lib.optionalString (cfg.rustDevProfileDebug != null) ''
+
+        [profile.dev]
+        debug = "${cfg.rustDevProfileDebug}"
       ''
       + lib.optionalString (cfg.rustLinker.enable && pkgs.stdenv.isDarwin) rustLinkerCargoConfig;
 

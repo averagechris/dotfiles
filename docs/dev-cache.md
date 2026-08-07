@@ -14,6 +14,12 @@ cache cleanups. Enabled on `suremac`, `tater`, and `thorny`.
 - on macOS, points Cargo's Apple-target link step at a fast-linker dispatcher
   (Apple's new `ld` when manually installed, otherwise nixpkgs `lld`; see
   [Rust linker on macOS](#rust-linker-on-macos));
+- sets `[profile.dev] debug = "line-tables-only"` machine-wide
+  (`rustDevProfileDebug`): backtraces, panics, and profilers keep file:line
+  info while codegen and link input shrink. Set it to `"full"` or `null` per
+  host to opt out; projects override via their own `Cargo.toml` profiles, and
+  a one-off `CARGO_PROFILE_DEV_DEBUG=2 cargo build` restores full debugger
+  stepping for a single invocation;
 - when OpenCode is enabled, injects `CARGO_INCREMENTAL=0` into OpenCode shell
   executions so isolated agent workspaces share complete crate outputs through
   sccache while ordinary interactive shells keep incremental compilation;
