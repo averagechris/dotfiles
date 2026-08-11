@@ -150,7 +150,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     ctx = {
-      url = "sourcehut:~averagechris/ctx/dfc57f34a0861dee14507c9791649951750b1e52";
+      url = "sourcehut:~averagechris/ctx/75d4622ef7941a9d23b196d06d29a3d6c7f883cd";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };
