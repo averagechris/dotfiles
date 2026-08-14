@@ -1,7 +1,8 @@
 use anyhow::{anyhow, bail, Context, Result};
 use clap::{Args, Parser, Subcommand};
+use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::env;
 use std::ffi::{OsStr, OsString};
 use std::fs;
@@ -984,6 +985,7 @@ struct PrArgs {
     ticket: Option<String>,
     short_description: Option<String>,
     pr: Option<String>,
+    reviewers: Vec<String>,
     sync: bool,
     run_lints: bool,
     draft: bool,
@@ -997,6 +999,21 @@ struct PrArgs {
     interval: Option<Duration>,
     timeout: Option<Duration>,
     help: bool,
+}
+
+#[derive(Debug, Clone, Default, Deserialize, Serialize, PartialEq, Eq)]
+struct ReviewerConfig {
+    #[serde(default)]
+    people: BTreeMap<String, Reviewer>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+struct Reviewer {
+    github: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    linear: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    aliases: Vec<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -1166,6 +1183,7 @@ fn run_pr(args: Vec<OsString>) -> Result<()> {
         "update" => pr_update(parse_pr_args(iter.collect(), false)?),
         "close" => pr_close(parse_pr_args(iter.collect(), false)?),
         "watch" => pr_watch(parse_pr_args(iter.collect(), false)?),
+        "reviewers" => pr_reviewers(iter.collect()),
         "hygiene" | "report" | "dashboard" => pr_hygiene(parse_pr_hygiene_args(iter.collect())?),
         "-h" | "--help" | "help" => {
             print_pr_usage();
@@ -1176,6 +1194,250 @@ fn run_pr(args: Vec<OsString>) -> Result<()> {
             bail!("unknown pr subcommand: {other}")
         }
     }
+}
+
+fn pr_reviewers(args: Vec<OsString>) -> Result<()> {
+    let mut iter = args.into_iter();
+    let Some(command) = iter.next() else {
+        print_pr_reviewers_usage();
+        bail!("missing reviewers subcommand");
+    };
+    let command = os_to_string(command)?;
+    let rest = iter.collect::<Vec<_>>();
+    match command.as_str() {
+        "list" => {
+            let json_output = match rest.as_slice() {
+                [] => false,
+                [flag] if flag == "--json" => true,
+                [flag] if flag == "-h" || flag == "--help" => {
+                    print_pr_reviewers_usage();
+                    return Ok(());
+                }
+                _ => bail!("usage: jj pr reviewers list [--json]"),
+            };
+            let config = load_reviewer_config()?;
+            if json_output {
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(&json!({
+                        "version": 1,
+                        "people": config.people,
+                    }))?
+                );
+            } else if config.people.is_empty() {
+                println!("No reviewers configured.");
+            } else {
+                for (name, reviewer) in config.people {
+                    let linear = reviewer.linear.as_deref().unwrap_or("-");
+                    let aliases = if reviewer.aliases.is_empty() {
+                        "-".to_string()
+                    } else {
+                        reviewer.aliases.join(", ")
+                    };
+                    println!(
+                        "{name}\tgithub: {}\tlinear: {linear}\taliases: {aliases}",
+                        reviewer.github
+                    );
+                }
+            }
+            Ok(())
+        }
+        "resolve" => {
+            if rest.len() != 1 {
+                bail!("usage: jj pr reviewers resolve <name>");
+            }
+            let name = os_to_string(rest[0].clone())?;
+            let config = load_reviewer_config()?;
+            let (_, reviewer) = config
+                .resolve(&name)
+                .ok_or_else(|| reviewer_not_found(&name))?;
+            validate_github_handle(&reviewer.github).with_context(|| {
+                format!("reviewer {name:?} has an invalid cached GitHub handle")
+            })?;
+            println!("github: {}", reviewer.github);
+            if let Some(linear) = reviewer.linear.as_deref() {
+                println!("linear: {linear}");
+            }
+            Ok(())
+        }
+        "add" => {
+            let mut iter = rest.into_iter();
+            let name = iter
+                .next()
+                .ok_or_else(|| anyhow!("jj pr reviewers add requires <name>"))
+                .and_then(os_to_string)?;
+            if name.trim().is_empty() {
+                bail!("reviewer name cannot be empty");
+            }
+            let mut github = None;
+            let mut linear = None;
+            let mut aliases = Vec::new();
+            while let Some(flag) = iter.next() {
+                let flag = os_to_string(flag)?;
+                let value = iter
+                    .next()
+                    .ok_or_else(|| anyhow!("missing value for {flag}"))
+                    .and_then(os_to_string)?;
+                match flag.as_str() {
+                    "--github" => github = Some(value),
+                    "--linear" => linear = Some(value),
+                    "--alias" => aliases.push(value),
+                    _ => bail!("unknown jj pr reviewers add argument: {flag}"),
+                }
+            }
+            let github =
+                github.ok_or_else(|| anyhow!("jj pr reviewers add requires --github <handle>"))?;
+            validate_github_handle(&github)?;
+            let path = reviewer_config_path()?;
+            let mut config = load_reviewer_config_from(&path)?;
+            config.upsert(name.clone(), github, linear, aliases);
+            write_reviewer_config(&path, &config)?;
+            println!("Saved reviewer {name} in {}", path.display());
+            Ok(())
+        }
+        "-h" | "--help" | "help" => {
+            print_pr_reviewers_usage();
+            Ok(())
+        }
+        _ => bail!("unknown reviewers subcommand: {command}"),
+    }
+}
+
+impl ReviewerConfig {
+    fn resolve(&self, value: &str) -> Option<(&str, &Reviewer)> {
+        self.people.iter().find_map(|(name, reviewer)| {
+            (name.eq_ignore_ascii_case(value)
+                || reviewer
+                    .aliases
+                    .iter()
+                    .any(|alias| alias.eq_ignore_ascii_case(value)))
+            .then_some((name.as_str(), reviewer))
+        })
+    }
+
+    fn upsert(
+        &mut self,
+        name: String,
+        github: String,
+        linear: Option<String>,
+        aliases: Vec<String>,
+    ) {
+        let key = self
+            .people
+            .keys()
+            .find(|key| key.eq_ignore_ascii_case(&name))
+            .cloned()
+            .unwrap_or(name);
+        let existing = self.people.remove(&key);
+        let mut merged_aliases = existing.map(|entry| entry.aliases).unwrap_or_default();
+        for alias in aliases {
+            if !merged_aliases
+                .iter()
+                .any(|current| current.eq_ignore_ascii_case(&alias))
+            {
+                merged_aliases.push(alias);
+            }
+        }
+        self.people.insert(
+            key,
+            Reviewer {
+                github,
+                linear,
+                aliases: merged_aliases,
+            },
+        );
+    }
+}
+
+fn reviewer_config_path() -> Result<PathBuf> {
+    let base = match env::var_os("XDG_CONFIG_HOME") {
+        Some(path) if !path.is_empty() => PathBuf::from(path),
+        _ => PathBuf::from(env::var_os("HOME").ok_or_else(|| anyhow!("HOME is not set"))?)
+            .join(".config"),
+    };
+    Ok(base.join("jj-workflow/reviewers.toml"))
+}
+
+fn load_reviewer_config() -> Result<ReviewerConfig> {
+    load_reviewer_config_from(&reviewer_config_path()?)
+}
+
+fn load_reviewer_config_from(path: &Path) -> Result<ReviewerConfig> {
+    match fs::read_to_string(path) {
+        Ok(contents) => toml::from_str(&contents)
+            .with_context(|| format!("failed to parse reviewer mapping {}", path.display())),
+        Err(err) if err.kind() == io::ErrorKind::NotFound => Ok(ReviewerConfig::default()),
+        Err(err) => Err(err).with_context(|| format!("failed to read {}", path.display())),
+    }
+}
+
+fn write_reviewer_config(path: &Path, config: &ReviewerConfig) -> Result<()> {
+    let parent = path
+        .parent()
+        .ok_or_else(|| anyhow!("reviewer mapping path has no parent: {}", path.display()))?;
+    fs::create_dir_all(parent).with_context(|| format!("failed to create {}", parent.display()))?;
+    let contents =
+        toml::to_string_pretty(config).context("failed to serialize reviewer mapping")?;
+    fs::write(path, contents).with_context(|| format!("failed to write {}", path.display()))
+}
+
+fn reviewer_not_found(value: &str) -> anyhow::Error {
+    anyhow!(
+        "reviewer {value:?} not found; add with `jj pr reviewers add {value:?} --github <handle>`"
+    )
+}
+
+fn valid_github_handle(value: &str) -> bool {
+    (1..=39).contains(&value.len())
+        && !value.starts_with('-')
+        && !value.ends_with('-')
+        && !value.contains("--")
+        && value
+            .chars()
+            .all(|ch| ch.is_ascii_alphanumeric() || ch == '-')
+}
+
+fn validate_github_handle(value: &str) -> Result<()> {
+    if valid_github_handle(value) {
+        Ok(())
+    } else {
+        bail!("invalid GitHub handle {value:?}: expected 1-39 letters, numbers, or single hyphens, with no leading or trailing hyphen")
+    }
+}
+
+fn resolve_reviewer_values(config: &ReviewerConfig, values: &[String]) -> Result<Vec<String>> {
+    values
+        .iter()
+        .map(|value| {
+            if let Some((_, reviewer)) = config.resolve(value) {
+                validate_github_handle(&reviewer.github).with_context(|| {
+                    format!("reviewer {value:?} has an invalid cached GitHub handle")
+                })?;
+                Ok(reviewer.github.clone())
+            } else if valid_github_handle(value) {
+                eprintln!(
+                    "Note: reviewer {value:?} is not in the cached mapping; using it as a GitHub handle"
+                );
+                Ok(value.clone())
+            } else {
+                Err(reviewer_not_found(value))
+            }
+        })
+        .collect()
+}
+
+fn resolve_reviewers(values: &[String]) -> Result<Vec<String>> {
+    if values.is_empty() {
+        return Ok(Vec::new());
+    }
+    resolve_reviewers_from_path(values, &reviewer_config_path()?)
+}
+
+fn resolve_reviewers_from_path(values: &[String], path: &Path) -> Result<Vec<String>> {
+    if values.is_empty() {
+        return Ok(Vec::new());
+    }
+    resolve_reviewer_values(&load_reviewer_config_from(path)?, values)
 }
 
 fn parse_pr_args(args: Vec<OsString>, push_default: bool) -> Result<PrArgs> {
@@ -1210,6 +1472,12 @@ fn parse_pr_args(args: Vec<OsString>, push_default: bool) -> Result<PrArgs> {
             "--ticket" => take_value!(ticket),
             "--short-description" => take_value!(short_description),
             "--pr" => take_value!(pr),
+            "--reviewer" => {
+                let value = iter
+                    .next()
+                    .ok_or_else(|| anyhow!("missing value for {arg_str}"))?;
+                parsed.reviewers.push(os_to_string(value)?);
+            }
             "--interval" => {
                 let value = iter
                     .next()
@@ -1260,6 +1528,8 @@ fn parse_pr_args(args: Vec<OsString>, push_default: bool) -> Result<PrArgs> {
                     parsed.short_description = Some(value.to_string());
                 } else if let Some(value) = arg_str.strip_prefix("--pr=") {
                     parsed.pr = Some(value.to_string());
+                } else if let Some(value) = arg_str.strip_prefix("--reviewer=") {
+                    parsed.reviewers.push(value.to_string());
                 } else if let Some(value) = arg_str.strip_prefix("--interval=") {
                     parsed.interval = Some(parse_duration_arg(value)?);
                 } else if let Some(value) = arg_str.strip_prefix("--timeout=") {
@@ -1426,6 +1696,7 @@ fn pr_create(args: PrArgs) -> Result<()> {
         bail!("jj pr create requires --title");
     }
     validate_pr_create_args(&args)?;
+    let reviewers = resolve_reviewers(&args.reviewers)?;
     let repo = resolve_github_remote(args.repo.as_deref(), args.remote.as_deref())?;
     validate_body_source(&args, true)?;
     let sync_remote = sync_remote_for_repo(&repo, &args)?;
@@ -1449,6 +1720,9 @@ fn pr_create(args: PrArgs) -> Result<()> {
             },
             if args.draft { " --draft" } else { "" }
         );
+        for reviewer in &reviewers {
+            println!("  --reviewer {reviewer}");
+        }
         return Ok(());
     }
 
@@ -1495,7 +1769,7 @@ fn pr_create(args: PrArgs) -> Result<()> {
         }
     }
 
-    let url = gh_pr_create(&repo, &base, &head, &args)?;
+    let url = gh_pr_create(&repo, &base, &head, &args, &reviewers)?;
     println!("{url}");
     Ok(())
 }
@@ -1510,11 +1784,13 @@ fn pr_update(args: PrArgs) -> Result<()> {
         && args.body.is_none()
         && args.body_file.is_none()
         && args.base.is_none()
+        && args.reviewers.is_empty()
     {
-        bail!("jj pr update requires at least one of --title, --body, --body-file, or --base");
+        bail!("jj pr update requires at least one of --title, --body, --body-file, --base, or --reviewer");
     }
 
     validate_pr_update_args(&args)?;
+    let reviewers = resolve_reviewers(&args.reviewers)?;
     let repo = resolve_github_remote(args.repo.as_deref(), args.remote.as_deref())?;
     let pr = resolve_existing_pr(&repo, &args)?;
     let mut gh_args = vec![
@@ -1539,6 +1815,10 @@ fn pr_update(args: PrArgs) -> Result<()> {
     if let Some(base) = args.base.as_deref() {
         gh_args.push("--base".to_string());
         gh_args.push(sync_bookmark_name(base).to_string());
+    }
+    for reviewer in reviewers {
+        gh_args.push("--add-reviewer".to_string());
+        gh_args.push(reviewer);
     }
     gh_status(&gh_args, "gh pr edit")?;
     println!("Updated PR #{}: {}", pr.number, pr.url);
@@ -2027,6 +2307,7 @@ fn validate_pr_create_args(args: &PrArgs) -> Result<()> {
             "push",
             "no-push",
             "dry-run",
+            "reviewer",
         ],
     ) {
         bail!("jj pr create does not support --{flag}");
@@ -2048,6 +2329,7 @@ fn validate_pr_update_args(args: &PrArgs) -> Result<()> {
             "body",
             "body-file",
             "base",
+            "reviewer",
         ],
     ) {
         bail!("jj pr update does not support --{flag}");
@@ -2108,6 +2390,7 @@ fn first_unsupported_pr_flag(args: &PrArgs, allowed: &[&str]) -> Option<&'static
         ("ticket", args.ticket.is_some()),
         ("short-description", args.short_description.is_some()),
         ("pr", args.pr.is_some()),
+        ("reviewer", !args.reviewers.is_empty()),
         ("sync", args.sync),
         ("run-lints", args.run_lints),
         ("draft", args.draft),
@@ -2275,6 +2558,7 @@ fn gh_pr_create(
     base: &PrBase,
     head: &PrHead,
     args: &PrArgs,
+    reviewers: &[String],
 ) -> Result<String> {
     let mut gh_args = vec![
         "pr".to_string(),
@@ -2298,6 +2582,10 @@ fn gh_pr_create(
     }
     if args.draft {
         gh_args.push("--draft".to_string());
+    }
+    for reviewer in reviewers {
+        gh_args.push("--reviewer".to_string());
+        gh_args.push(reviewer.clone());
     }
     Ok(gh_capture(&gh_args, "gh pr create")?.trim().to_string())
 }
@@ -3580,7 +3868,7 @@ fn print_pr_hygiene_human(report: &PrHygieneReport) {
 }
 
 fn print_pr_usage() {
-    eprintln!("Usage:\n  jj pr doctor [--json] [--repo <owner/repo>] [--remote <remote>] [--base <branch>] [--head <bookmark>]\n  jj pr create --title <title> (--body <text>|--body-file <file>) [--base <branch>] [--repo <owner/repo>] [--remote <remote>] [--head <bookmark>] [--ticket <id>] [--sync] [--run-lints] [--draft] [--no-push] [--dry-run]\n  jj pr update [--title <title>] [--body <text>|--body-file <file>] [--base <branch>] [--repo <owner/repo>] [--remote <remote>] [--head <bookmark>|--pr <number>]\n  jj pr close [--repo <owner/repo>] [--remote <remote>] [--head <bookmark>|--pr <number>]\n  jj pr watch [--repo <owner/repo>] [--remote <remote>] [--head <bookmark>|--pr <number>] [--interval 60s] [--timeout 30m] [--once] [--json] [--ignore-comments] [--required]\n  jj pr hygiene [--limit 50] [--search <github-search>] [--json] [--no-workspaces]");
+    eprintln!("Usage:\n  jj pr doctor [--json] [--repo <owner/repo>] [--remote <remote>] [--base <branch>] [--head <bookmark>]\n  jj pr create --title <title> (--body <text>|--body-file <file>) [--base <branch>] [--repo <owner/repo>] [--remote <remote>] [--head <bookmark>] [--ticket <id>] [--reviewer <name-or-handle>]... [--sync] [--run-lints] [--draft] [--no-push] [--dry-run]\n  jj pr update [--title <title>] [--body <text>|--body-file <file>] [--base <branch>] [--reviewer <name-or-handle>]... [--repo <owner/repo>] [--remote <remote>] [--head <bookmark>|--pr <number>]\n  jj pr reviewers <list|resolve|add> ...\n  jj pr close [--repo <owner/repo>] [--remote <remote>] [--head <bookmark>|--pr <number>]\n  jj pr watch [--repo <owner/repo>] [--remote <remote>] [--head <bookmark>|--pr <number>] [--interval 60s] [--timeout 30m] [--once] [--json] [--ignore-comments] [--required]\n  jj pr hygiene [--limit 50] [--search <github-search>] [--json] [--no-workspaces]");
 }
 
 fn print_pr_doctor_usage() {
@@ -3588,11 +3876,15 @@ fn print_pr_doctor_usage() {
 }
 
 fn print_pr_create_usage() {
-    eprintln!("Usage:\n  jj pr create --title <title> (--body <text>|--body-file <file>) [--base <branch>] [--repo <owner/repo>] [--remote <remote>] [--head <bookmark>] [--ticket <id>] [--short-description <slug>] [--sync] [--run-lints] [--draft] [--no-push] [--dry-run]");
+    eprintln!("Usage:\n  jj pr create --title <title> (--body <text>|--body-file <file>) [--base <branch>] [--repo <owner/repo>] [--remote <remote>] [--head <bookmark>] [--ticket <id>] [--short-description <slug>] [--reviewer <name-or-handle>]... [--sync] [--run-lints] [--draft] [--no-push] [--dry-run]");
 }
 
 fn print_pr_update_usage() {
-    eprintln!("Usage:\n  jj pr update [--title <title>] [--body <text>|--body-file <file>] [--base <branch>] [--repo <owner/repo>] [--remote <remote>] [--head <bookmark>|--pr <number>]");
+    eprintln!("Usage:\n  jj pr update [--title <title>] [--body <text>|--body-file <file>] [--base <branch>] [--reviewer <name-or-handle>]... [--repo <owner/repo>] [--remote <remote>] [--head <bookmark>|--pr <number>]");
+}
+
+fn print_pr_reviewers_usage() {
+    eprintln!("Usage:\n  jj pr reviewers list [--json]\n  jj pr reviewers resolve <name>\n  jj pr reviewers add <name> --github <handle> [--linear <id>] [--alias <alt>]...");
 }
 
 fn print_pr_close_usage() {
@@ -7017,20 +7309,21 @@ mod tests {
         first_unsupported_pr_flag, infer_lint_name, infer_remote_integration_bookmark_from,
         is_check_only_format_script, is_integration_bookmark, is_safe_package_check_script,
         is_validation_name, lint_config_toml, lint_display_name, lint_onboard_json,
-        lint_onboard_report, makefile_targets, parse_checks_json, parse_common_args,
-        parse_config_string_array, parse_duration_arg, parse_github_remote_url,
+        lint_onboard_report, load_reviewer_config_from, makefile_targets, parse_checks_json,
+        parse_common_args, parse_config_string_array, parse_duration_arg, parse_github_remote_url,
         parse_lint_selection, parse_lints_toml, parse_pr_args, parse_pr_hygiene_args,
         parse_pr_hygiene_graphql, parse_review_state_json, parse_tag_push_args,
         parse_toml_string_array, parse_ws_add_args, parse_ws_forget_args, parse_ws_path_args,
         parse_ws_prune_args, python_runner, render_bookmark_template, resolve_pr_base,
-        review_effort, run_lint, run_lint_onboard, run_ship, run_sync, run_ws, selected_lints,
-        ship_plan, short_description_from_title, source_venv_python_usable, stale_workspace_dirs,
-        sync_base_candidates, tag_push, validate_body_source, validate_pr_watch_args,
-        validate_release_tag, validate_ticket, validate_ws_name, workspace_context_for_repo,
-        workspace_has_unpublished_work, write_tracked_lint_config, Cli, CliCommand, FetchChoice,
-        LintCommand, LintOnboardReport, LintSuggestion, ParsedArgs, PrArgs, ProjectGroup, ShipPlan,
-        TagCommand, TagPushArgs, TagSigning, WsAddArgs, WsConfig, WsForgetArgs, WsPathArgs,
-        WsPruneArgs,
+        resolve_reviewer_values, resolve_reviewers_from_path, review_effort, run_lint,
+        run_lint_onboard, run_ship, run_sync, run_ws, selected_lints, ship_plan,
+        short_description_from_title, source_venv_python_usable, stale_workspace_dirs,
+        sync_base_candidates, tag_push, valid_github_handle, validate_body_source,
+        validate_pr_watch_args, validate_release_tag, validate_ticket, validate_ws_name,
+        workspace_context_for_repo, workspace_has_unpublished_work, write_tracked_lint_config, Cli,
+        CliCommand, FetchChoice, LintCommand, LintOnboardReport, LintSuggestion, ParsedArgs,
+        PrArgs, ProjectGroup, Reviewer, ReviewerConfig, ShipPlan, TagCommand, TagPushArgs,
+        TagSigning, WsAddArgs, WsConfig, WsForgetArgs, WsPathArgs, WsPruneArgs,
     };
     use clap::Parser;
     use std::env;
@@ -7122,6 +7415,108 @@ mod tests {
             err.to_string().contains("unknown pr argument: --run-cr"),
             "unexpected error: {err:#}"
         );
+    }
+
+    #[test]
+    fn reviewer_mapping_toml_round_trips() {
+        let config: ReviewerConfig = toml::from_str(
+            r#"[people.sam]
+github = "sam-gh"
+linear = "sam@sureapp.com"
+aliases = ["sammy", "Sam Smith"]
+"#,
+        )
+        .unwrap();
+        let encoded = toml::to_string_pretty(&config).unwrap();
+        assert_eq!(toml::from_str::<ReviewerConfig>(&encoded).unwrap(), config);
+    }
+
+    #[test]
+    fn reviewer_mapping_resolves_names_and_aliases_case_insensitively() {
+        let mut config = ReviewerConfig::default();
+        config.people.insert(
+            "Sam".to_string(),
+            Reviewer {
+                github: "sam-gh".to_string(),
+                linear: None,
+                aliases: strings(&["Sam Smith"]),
+            },
+        );
+        assert_eq!(config.resolve("sAM").unwrap().1.github, "sam-gh");
+        assert_eq!(config.resolve("sam smith").unwrap().1.github, "sam-gh");
+        assert!(config.resolve("someone else").is_none());
+    }
+
+    #[test]
+    fn reviewer_mapping_upsert_replaces_ids_and_merges_aliases() {
+        let mut config = ReviewerConfig::default();
+        config.upsert(
+            "Sam".to_string(),
+            "old-gh".to_string(),
+            Some("old-linear".to_string()),
+            strings(&["sammy"]),
+        );
+        config.upsert(
+            "sam".to_string(),
+            "new-gh".to_string(),
+            None,
+            strings(&["SAMMY", "Sam Smith"]),
+        );
+        assert_eq!(config.people.len(), 1);
+        let reviewer = config.people.get("Sam").unwrap();
+        assert_eq!(reviewer.github, "new-gh");
+        assert_eq!(reviewer.linear, None);
+        assert_eq!(reviewer.aliases, strings(&["sammy", "Sam Smith"]));
+    }
+
+    #[test]
+    fn reviewer_handle_passthrough_is_conservative() {
+        for handle in ["octocat", "some-user", "User123"] {
+            assert!(valid_github_handle(handle));
+        }
+        for invalid in [
+            "",
+            "-leading",
+            "trailing-",
+            "double--hyphen",
+            "some user",
+            "@octocat",
+            "user_name",
+            "abcdefghijklmnopqrstuvwxyz12345678901234",
+        ] {
+            assert!(!valid_github_handle(invalid));
+        }
+        let config = ReviewerConfig::default();
+        assert_eq!(
+            resolve_reviewer_values(&config, &strings(&["some-user"])).unwrap(),
+            strings(&["some-user"])
+        );
+        assert!(resolve_reviewer_values(&config, &strings(&["Some User"])).is_err());
+    }
+
+    #[test]
+    fn empty_reviewer_values_do_not_load_the_cache() {
+        let path = named_tempdir("reviewers-empty-skip").join("missing/reviewers.toml");
+        assert_eq!(
+            resolve_reviewers_from_path(&[], &path).unwrap(),
+            Vec::<String>::new()
+        );
+    }
+
+    #[test]
+    fn malformed_reviewer_toml_is_reported_and_preserved() {
+        let dir = named_tempdir("reviewers-malformed");
+        let path = dir.join("reviewers.toml");
+        let malformed = "[people.sam\ngithub = nope";
+        fs::write(&path, malformed).unwrap();
+
+        let err = load_reviewer_config_from(&path).unwrap_err();
+        assert!(
+            err.to_string().contains("failed to parse reviewer mapping"),
+            "unexpected error: {err:#}"
+        );
+        assert_eq!(fs::read_to_string(&path).unwrap(), malformed);
+        fs::remove_dir_all(dir).unwrap();
     }
 
     #[test]

@@ -1,6 +1,6 @@
 ---
 name: suremac-jj-pr
-description: Use when creating, updating, closing, watching, or sweeping GitHub PR hygiene from jj workspaces on suremac work repos. Prefer `jj pr` over bare `gh pr create`; handles jj remotes, bookmarks, sync, lints, push, CI, review polling, and open-PR follow-up reports.
+description: Use when creating, updating, closing, watching, commenting on, requesting review for, or sweeping GitHub PR hygiene from jj workspaces on suremac work repos. Prefer `jj pr` over bare `gh pr create`; covers PR body style, review comments and replies, reviewer tagging, jj remotes, bookmarks, sync, lints, push, CI, review polling, and open-PR follow-up reports.
 ---
 
 # Suremac jj PR Workflow
@@ -72,6 +72,127 @@ Before creating a PR, the helper checks the PR-relevant stack for conflicts and
 requires the current change to have a jj description. If it reports an empty
 description, run `jj describe -m "<conventional commit message>"` before
 retrying.
+
+## Writing the PR body
+
+PR bodies are for human reviewers deciding whether to trust and merge the
+change. Explain the problem and why this solution; never narrate the diff.
+
+Structure, in order (omit sections that genuinely do not apply):
+
+1. **Problem** — why this PR exists. What is broken, slow, risky, or missing,
+   and who/what it affects. If you cannot state a problem, question the PR.
+2. **Fix / Change** — the shape of the solution and why this approach, in a
+   few plain sentences. Layer detail: short summary first, mechanism after.
+   Reviewers read the diff for the "what"; give them the "why" and the
+   non-obvious decisions.
+3. **Result / Impact** — quantify when possible (latency deltas, CI minutes
+   saved, counts). State explicit non-goals and scope guards: "this does not
+   deploy anything", "the image-pull delay is out of scope".
+4. **Safety / Rollout** — only for risky or user-visible changes: fallback
+   behavior, flags, rollout order, cross-repo merge order with PR links.
+5. **Verification** — what was verified, in outcome terms ("full suite: 1046
+   passed; strict mypy clean"), not raw command dumps with env vars. Disclose
+   honestly anything that could not be run and why. Where behavioral evidence
+   would genuinely help the reviewer, add it per the section below.
+
+Rules:
+
+- Lead with the problem in prose, not a bullet list of diff restatements.
+- Link the Linear ticket once as a real link with context, e.g.
+  `Fixes [EPD-1234](https://linear.app/sureapp/issue/EPD-1234/slug)` near the
+  top. Do not scatter `Tracking:`/`Linear:` variants.
+- Do not repeat the PR title as a heading inside the body.
+- No agent-workspace narration ("in this managed workspace", "artifacts were
+  not committed", devenv/sandbox limitations). If a check could not run, state
+  the reviewer-relevant fact plainly ("Vitest not run: no Node in the build
+  environment") without workflow autobiography.
+- Proofread the final body: no tool-call debris, stray flags, or truncated
+  lines. Read it back after `jj pr create`/`update` if there is any doubt.
+- Keep evidence proportional: digests, sha256 values, and long logs belong in
+  a comment or the ticket, not the body.
+
+## Verification evidence
+
+Unit tests prove the code; evidence proves the behavior. Match the evidence to
+the risk and skip it where it adds nothing: dependency bumps, config tweaks,
+refactors, and doc changes usually need no more than their passing checks.
+Spend evidence effort where the reviewer would otherwise have to trust or
+reproduce the change themselves — user-visible behavior, tricky logic,
+performance claims, security-sensitive paths.
+
+Cheap, creative verifications are welcome as long as they are proportional to
+the risk: a one-liner curl against a running service, a focused script whose
+trimmed output shows the before/after, a log line proving the new code path
+ran. Full-stack verification with `suremise` (the local full-stack k8s CLI) is
+the heavyweight option for changes that warrant it; load `suremise-test-change`,
+`suremise-e2e`, or `suremise-evidence` for the mechanics and prefer the
+smallest workflow that proves the behavior.
+
+When evidence is worth including:
+
+- **UI/UX changes**: before/after screenshots or a short video — Playwright
+  artifacts from `suremise verify`, or a browser screenshot of the running
+  local stack. GitHub uploads cannot be done from the CLI, so save artifacts
+  to a stable local path and give chris the paths to drag into the PR, or link
+  CI-collected artifacts when the run happened in CI. Name files
+  descriptively (`admin-portal-before.png`), not `screenshot-1.png`.
+- **Backend changes**: replayable evidence — the exact request and trimmed
+  response (curl + JSON), the relevant log lines, or the state before/after.
+  When it helps, add a short "How to verify" snippet: the two or three
+  commands a reviewer would run to see the same result.
+- One artifact that shows the fix beats a checklist of commands. Trim output
+  to the lines that matter; long transcripts go in a comment or the ticket.
+- If meaningful verification was warranted but not possible, say so plainly in
+  Verification rather than substituting unit-test output for behavioral
+  evidence.
+
+## PR comments and review replies
+
+When commenting on a PR or replying to review threads on chris's behalf, start
+every comment with an attribution line:
+
+```markdown
+`<model name> <model version> commenting on behalf of chris`
+```
+
+Use `responding` instead of `commenting` when replying to a person. Fill in
+your actual model name and version (e.g. `claude fable 5`).
+
+Tone and content rules:
+
+- Simple technical language, simple grammar. Short sentences.
+- Chill but very direct. No fluff, no hedging, no "great point!" filler, no
+  apologies, no emoji.
+- Answer the question first, context after. One comment per concern.
+- Use GitHub suggestion blocks (```suggestion) whenever proposing a concrete
+  small code change on a review thread, so it is one-click applicable.
+- Disagree plainly with a reason and evidence. If accepting, say what will
+  change and where.
+- Reply on the thread (`gh api` review-comment reply endpoints or
+  `gh pr comment` for top-level) with explicit `--repo owner/repo`.
+
+## Requesting reviewers
+
+Resolve colleague names through the cached reviewer mapping instead of
+re-discovering identities each time:
+
+```bash
+jj pr reviewers list
+jj pr reviewers resolve <name>
+jj pr reviewers add <name> --github <handle> [--linear <id>] [--alias <alt>]...
+```
+
+Then tag reviewers at create/update time with `--reviewer <name-or-handle>`
+(repeatable), or `gh pr edit --repo owner/repo --add-reviewer <handle>` for an
+existing PR.
+
+On a resolve miss: discover the person once (e.g. `gh api` user search, recent
+PR authorship in the repo, or the Linear CLI), confirm with the user if
+ambiguous, then `jj pr reviewers add` so the lookup never repeats. The mapping
+lives in `$XDG_CONFIG_HOME/jj-workflow/reviewers.toml`, falling back to
+`~/.config/jj-workflow/reviewers.toml`, and is intentionally not checked into
+dotfiles.
 
 ## Existing PRs
 

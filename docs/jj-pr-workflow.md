@@ -102,7 +102,11 @@ Useful flags:
 --remote remote-name
 --head bookmark
 --short-description slug
+--reviewer name-or-handle  # request review; repeat for multiple reviewers
 ```
+
+Reviewer values are resolved through the cached mapping described below. A
+valid GitHub handle that is not mapped is passed through literally with a note.
 
 When `--repo owner/repo` is explicit, `jj pr create` tries to find a jj Git
 remote whose GitHub URL matches that repo before pushing. If none or multiple
@@ -127,12 +131,45 @@ bookmark:
 jj pr update --title "fix(policy): updated title [EPD-1234]"
 jj pr update --body-file /tmp/pr-body.md
 jj pr update --base main
+jj pr update --reviewer "Sam Smith" --reviewer octocat
 ```
 
 `update` accepts a jj-style base such as `main@origin`, but sends only the
 bookmark name (`main`) to GitHub.
 
 Use `--pr <number>` when inference is ambiguous.
+
+### Reviewers
+
+Manage the local colleague-to-identity cache with:
+
+```bash
+jj pr reviewers list
+jj pr reviewers list --json
+jj pr reviewers resolve <name>
+jj pr reviewers add <name> --github <handle> [--linear <id>] [--alias <alt>]...
+```
+
+Names and aliases resolve case-insensitively. Adding an existing name replaces
+its GitHub and optional Linear identities while merging new aliases. Both
+`jj pr create` and `jj pr update` accept repeatable
+`--reviewer <name-or-handle>` flags. Unmapped values containing only letters,
+numbers, and hyphens are treated as literal GitHub handles; other misses fail
+with guidance to add the reviewer first.
+
+The mapping is stored at
+`$XDG_CONFIG_HOME/jj-workflow/reviewers.toml`, falling back to
+`~/.config/jj-workflow/reviewers.toml`:
+
+```toml
+[people.sam]
+github = "sam-gh"
+linear = "sam@sureapp.com" # optional
+aliases = ["sammy", "Sam Smith"] # optional
+```
+
+This file can contain colleague identity data and is intentionally local and
+untracked; it is not managed or checked into this public dotfiles repository.
 
 ### Close
 
