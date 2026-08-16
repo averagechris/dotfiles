@@ -26,6 +26,7 @@
 - [nixos](/docs/nixos.md) - General NixOS configuration notes
 - [notion-cli](/docs/notion-cli.md) - Notion CLI package, suremac installation, usage, and update notes
 - [opencode](/docs/opencode.md) - OpenCode module configuration, skills, and MCP integrations
+- [opencode patch lifecycle](/docs/opencode-patches.md) - Local upstream patches, validation, rationale, and removal criteria
 - [pi](/docs/pi.md) - Pi coding agent package, Home Manager settings, OpenRouter credentials, resources, and wrappers
 - [pup](/docs/pup.md) - Datadog Pup CLI package, suremac Home Manager installation, OpenCode tool exposure, and update notes
 - [rdny](/docs/rdny.md) - rdny browser automation CLI package input, Home Manager module, host config, and OpenCode skill

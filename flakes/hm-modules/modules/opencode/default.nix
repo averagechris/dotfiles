@@ -52,6 +52,7 @@
         ./patches/opencode-allow-nix-bun-1-3-13.patch
         ./patches/opencode-strip-env-assignments.patch
         ./patches/opencode-fix-old-drizzle-migration-journal.patch
+        ./patches/opencode-route-nested-prompts.patch
       ];
   });
   opencodePackage =

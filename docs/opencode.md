@@ -248,6 +248,13 @@ This module patches `pkgs.opencode`, which is supplied by the upstream OpenCode
 flake overlay, with module-local patches under
 `flakes/hm-modules/modules/opencode/patches/`.
 
+The root TUI is patched to gather pending permission and question requests from
+the complete descendant session tree. Upstream 1.18.18 only gathers the root and
+direct children, which leaves grandchild prompts invisible and stalls nested
+agent chains. See [OpenCode patch lifecycle](opencode-patches.md) for the active
+patch inventory, validation workflow, upstream references, and explicit removal
+criteria (including the separate verified OpenCode v2 migration condition).
+
 `opencode-strip-env-assignments.patch` normalizes bash permission patterns by
 stripping safe leading inline environment assignments before permission
 matching. With the example above, OpenCode authorizes `just test ...`, so the
