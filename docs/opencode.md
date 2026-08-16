@@ -192,11 +192,15 @@ Prompt-gated Build-agent command families include:
   `nixos-rebuild switch`, `darwin-rebuild switch`, `nh * switch`)
 - privilege escalation (`sudo`, `doas`, `su`) is denied because it is not useful
   non-interactively and would require a human password anyway
-- broad or sensitive deletion targets (`rm -rf /`, home-directory deletes, and
-  secret-path deletes); ordinary relative cleanup and absolute cleanup beneath
-  the trusted `/tmp`, `/private/tmp`, and OpenCode session-temp namespaces are
-  allowed. The shared deletion-rule template can enable or omit those absolute
-  temp exceptions independently for each agent.
+- recursive deletion of absolute paths, the Bash tool's current work directory,
+  upward traversal targets, home-directory targets, and secret paths. Ordinary
+  relative cleanup beneath the Bash tool's `workdir` is allowed, including hidden
+  children such as `.venv`. Absolute non-root descendants beneath `/tmp`,
+  `/private/tmp`, and OpenCode session-temp trees under
+  `/var/folders/**/T/opencode` and `/private/var/folders/**/T/opencode` are later
+  allow-rule exceptions; deleting those temp roots themselves still prompts.
+  The shared deletion-rule template can enable or omit those absolute temp
+  exceptions independently for each agent.
 - destructive ownership/permission/disk commands (`chmod`, `chown`, `chgrp`,
   `dd`, `diskutil`; `mkfs*` is denied)
 - process/service control (`kill`, `killall`, `pkill`, `systemctl`,
@@ -206,11 +210,22 @@ Prompt-gated Build-agent command families include:
 - GitHub org/repo/auth/issue administration (`gh auth*`, `gh org*`,
   `gh repo*`, `gh issue*`)
 
-For recursive temp cleanup, prefer a relative target with the Bash tool's
-`workdir` set to the trusted temp directory. The absolute temp exceptions cover
-common generated commands, while the external-directory allowlist remains a
-second boundary for additional absolute operands. Bash permission wildcards are
-guardrails against routine mistakes, not an argument-aware shell sandbox.
+For recursive cleanup, prefer a relative target with the Bash tool's `workdir`
+set to the intended parent directory. This policy is a relative-to-tool-workdir
+guardrail, not CWD sandboxing: OpenCode's simple command globs do not parse every
+operand or prove that every relative path remains beneath the session's original
+CWD, and the Bash tool's explicit `workdir` may differ from that CWD. The
+absolute temp exceptions cover common generated commands, while the
+external-directory allowlist remains a second boundary for additional absolute
+operands. In particular, `rm -rf /*` prompts rather than being silently denied;
+the later temp-descendant patterns are the narrow allowed exceptions. Secret-path
+deletion rules remain later still and therefore continue to prompt. Later
+current/parent-segment and common multi-operand rules keep forms such as
+`/tmp/..`, `/tmp/./../child`, redundant-slash root aliases such as `/tmp//`,
+`cache /etc`, and `cache ../child` prompt-gated. This is deliberately
+conservative but still cannot prove arbitrary shell syntax: quoting, variable
+and wildcard expansion, command substitution, unusual option placement, and
+symlink resolution remain outside what static command globs can establish.
 
 Host-exposed browser automation follows the open default: `rdny` commands are
 allowed for Build agents unless they hit a later risky pattern.

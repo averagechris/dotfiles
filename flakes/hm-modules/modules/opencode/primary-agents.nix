@@ -6,29 +6,52 @@
   deletionBashPermissions = {allowAbsoluteTempCleanup ? false}:
     builtins.concatStringsSep "\n" (
       [
-        "# Normal relative cleanup is allowed; broad or sensitive deletion targets"
-        "# are interrupted. These command globs are guardrails, not a shell sandbox."
-        ''"rm -rf /": "deny"''
-        ''"rm -rf /*": "deny"''
+        "# Normal relative cleanup beneath the Bash tool workdir is allowed."
+        "# Absolute, current-directory, upward, and sensitive targets prompt."
+        "# Simple command globs are guardrails, not an argument-aware sandbox."
+        ''"rm -rf /": "ask"''
+        ''"rm -rf /*": "ask"''
+        ''"rm -rf .": "ask"''
+        ''"rm -rf ./": "ask"''
+        ''"rm -rf ..": "ask"''
+        ''"rm -rf ../*": "ask"''
       ]
       ++ (
         if allowAbsoluteTempCleanup
         then [
-          "# OpenCode already limits these external paths to trusted temp"
-          "# namespaces. Permit the common absolute cleanup form as well."
-          ''"rm -rf /tmp/*": "allow"''
-          ''"rm -rf /private/tmp/*": "allow"''
-          ''"rm -rf /var/folders/*/T/opencode/*": "allow"''
-          ''"rm -rf /private/var/folders/*/T/opencode/*": "allow"''
+          "# Permit non-empty descendant paths in trusted temp namespaces. The"
+          "# ? keeps the namespace roots themselves behind the absolute-path ask."
+          ''"rm -rf /tmp/?*": "allow"''
+          ''"rm -rf /private/tmp/?*": "allow"''
+          ''"rm -rf /var/folders/*/T/opencode/?*": "allow"''
+          ''"rm -rf /private/var/folders/*/T/opencode/?*": "allow"''
         ]
         else []
       )
       ++ [
-        ''"rm -rf .": "ask"''
-        ''"rm -rf .*": "ask"''
+        # Temp descendant allows must not turn path aliases or traversal back
+        # into allows. These generic suffixes also cover ./.. and deeper /../.
+        ''"rm -rf */.": "ask"''
+        ''"rm -rf */..": "ask"''
+        ''"rm -rf */../*": "ask"''
+        # Redundant slashes can make apparent temp descendants resolve to their
+        # namespace roots. This also catches them as later operands.
+        ''"rm -rf *//*": "ask"''
+        # Conservatively catch dangerous later operands. Simple command globs
+        # cannot identify shell operands in general, but these cover common
+        # unquoted multi-target forms after an initially harmless target.
+        ''"rm -rf * /": "ask"''
+        ''"rm -rf * /*": "ask"''
+        ''"rm -rf * .": "ask"''
+        ''"rm -rf * ./": "ask"''
+        ''"rm -rf * ..": "ask"''
+        ''"rm -rf * ../*": "ask"''
         ''"rm -rf ~*": "ask"''
+        ''"rm -rf * ~*": "ask"''
         ''"rm -rf $HOME*": "ask"''
+        ''"rm -rf * $HOME*": "ask"''
         ''"rm -rf /Users*": "ask"''
+        ''"rm -rf * /Users*": "ask"''
         ''"rm -rf *secrets*": "ask"''
         ''"rm -r *secrets*": "ask"''
         ''"rm *secrets*": "ask"''

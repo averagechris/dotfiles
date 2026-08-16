@@ -293,6 +293,151 @@
             builtins.head (lib.splitString terminator (builtins.elemAt (lib.splitString marker prompt) 1));
           taskPermissions = blockAfter "  task:\n" "\n---";
           bashPermissions = blockAfter "  bash:\n" "\n  skill:";
+          buildBashPermissions = bashPermissions buildPrompt;
+          ruleOffset = rule:
+            builtins.stringLength (builtins.head (lib.splitString rule buildBashPermissions));
+          permissionRules = lib.filter (rule: rule != null) (
+            map (line: let
+              matched = builtins.match ''[ ]*"([^"]+)": "(allow|ask|deny)"'' line;
+            in
+              if matched == null
+              then null
+              else {
+                pattern = builtins.elemAt matched 0;
+                action = builtins.elemAt matched 1;
+              }) (lib.splitString "\n" buildBashPermissions)
+          );
+          globMatches = pattern: command: let
+            regex = lib.replaceStrings ["\\*" "\\?"] [".*" "."] (lib.escapeRegex pattern);
+          in
+            builtins.match regex command != null;
+          permissionFor = command:
+            lib.foldl' (
+              action: rule:
+                if globMatches rule.pattern command
+                then rule.action
+                else action
+            )
+            null
+            permissionRules;
+          deletionCases = [
+            {
+              command = "rm -rf build";
+              expected = "allow";
+            }
+            {
+              command = "rm -rf .*";
+              expected = "allow";
+            }
+            {
+              command = "rm -rf .venv";
+              expected = "allow";
+            }
+            {
+              command = "rm -rf .";
+              expected = "ask";
+            }
+            {
+              command = "rm -rf ..";
+              expected = "ask";
+            }
+            {
+              command = "rm -rf ../child";
+              expected = "ask";
+            }
+            {
+              command = "rm -rf /*";
+              expected = "ask";
+            }
+            {
+              command = "rm -rf /tmp";
+              expected = "ask";
+            }
+            {
+              command = "rm -rf /tmp/";
+              expected = "ask";
+            }
+            {
+              command = "rm -rf /tmp//";
+              expected = "ask";
+            }
+            {
+              command = "rm -rf /tmp/cache";
+              expected = "allow";
+            }
+            {
+              command = "rm -rf /tmp/.venv";
+              expected = "allow";
+            }
+            {
+              command = "rm -rf /private/tmp//";
+              expected = "ask";
+            }
+            {
+              command = "rm -rf /private/tmp/cache";
+              expected = "allow";
+            }
+            {
+              command = "rm -rf /tmp/.";
+              expected = "ask";
+            }
+            {
+              command = "rm -rf /tmp/..";
+              expected = "ask";
+            }
+            {
+              command = "rm -rf /tmp/../Users";
+              expected = "ask";
+            }
+            {
+              command = "rm -rf /tmp/./..";
+              expected = "ask";
+            }
+            {
+              command = "rm -rf /tmp/./../child";
+              expected = "ask";
+            }
+            {
+              command = "rm -rf /tmp/a/b/../child";
+              expected = "ask";
+            }
+            {
+              command = "rm -rf /var/folders/2r/session/T/opencode";
+              expected = "ask";
+            }
+            {
+              command = "rm -rf /var/folders/2r/session/T/opencode//";
+              expected = "ask";
+            }
+            {
+              command = "rm -rf /var/folders/2r/session/T/opencode/cache";
+              expected = "allow";
+            }
+            {
+              command = "rm -rf /private/var/folders/2r/session/T/opencode//";
+              expected = "ask";
+            }
+            {
+              command = "rm -rf /private/var/folders/2r/session/T/opencode/cache";
+              expected = "allow";
+            }
+            {
+              command = "rm -rf cache /tmp//";
+              expected = "ask";
+            }
+            {
+              command = "rm -rf cache /etc";
+              expected = "ask";
+            }
+            {
+              command = "rm -rf cache ../child";
+              expected = "ask";
+            }
+            {
+              command = "rm -rf /tmp/cache secrets/key";
+              expected = "ask";
+            }
+          ];
           nestedDelegationPolicy = blockAfter "## Nested delegation\n\n" "\n## Review routing" agentSelectionPolicy;
           expectedMinionTaskPermissions = lib.concatStringsSep "\n" [
             "    \"*\": \"deny\""
@@ -320,9 +465,29 @@
           # All coding agents share the same open-by-default bash policy.
           # With no opencode-specific override, `opencode run` remains allowed;
           # discouraging it is solely handoff guidance in the policy above.
-          assert lib.all (prompt: bashPermissions prompt == bashPermissions buildPrompt) codingPrompts;
-          assert lib.hasInfix ''"*": "allow"'' (bashPermissions buildPrompt);
-          assert !(lib.hasInfix ''"opencode run'' (bashPermissions buildPrompt));
+          assert lib.all (prompt: bashPermissions prompt == buildBashPermissions) codingPrompts;
+          assert lib.hasInfix ''"*": "allow"'' buildBashPermissions;
+          assert !(lib.hasInfix ''"opencode run'' buildBashPermissions);
+          # Relative hidden children use the broad allow. Current-directory and
+          # upward traversal forms remain explicit asks.
+          assert !(lib.hasInfix ''"rm -rf .*": "ask"'' buildBashPermissions);
+          assert lib.hasInfix ''"rm -rf .": "ask"'' buildBashPermissions;
+          assert lib.hasInfix ''"rm -rf ..": "ask"'' buildBashPermissions;
+          assert lib.hasInfix ''"rm -rf ../*": "ask"'' buildBashPermissions;
+          # Recursive absolute deletion prompts, including the shell wildcard
+          # form. Narrow non-root temp descendants override it later.
+          assert lib.hasInfix ''"rm -rf /*": "ask"'' buildBashPermissions;
+          assert lib.hasInfix ''"rm -rf /tmp/?*": "allow"'' buildBashPermissions;
+          assert lib.hasInfix ''"rm -rf /private/tmp/?*": "allow"'' buildBashPermissions;
+          assert lib.hasInfix ''"rm -rf /var/folders/*/T/opencode/?*": "allow"'' buildBashPermissions;
+          assert lib.hasInfix ''"rm -rf /private/var/folders/*/T/opencode/?*": "allow"'' buildBashPermissions;
+          assert ruleOffset ''"rm -rf /*": "ask"'' < ruleOffset ''"rm -rf /tmp/?*": "allow"'';
+          assert ruleOffset ''"rm -rf /*": "ask"'' < ruleOffset ''"rm -rf /private/tmp/?*": "allow"'';
+          assert ruleOffset ''"rm -rf /*": "ask"'' < ruleOffset ''"rm -rf /var/folders/*/T/opencode/?*": "allow"'';
+          assert ruleOffset ''"rm -rf /*": "ask"'' < ruleOffset ''"rm -rf /private/var/folders/*/T/opencode/?*": "allow"'';
+          # Exercise representative commands against the generated ordered
+          # rules, including later overrides and multi-operand guardrails.
+          assert lib.all (case: permissionFor case.command == case.expected) deletionCases;
             pkgs.runCommand "opencode-agent-routing-test" {} ''
               mkdir -p $out
               touch $out/success
