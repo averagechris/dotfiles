@@ -39,6 +39,32 @@
     }
   ];
   cfg = config.dotfiles.opencode;
+  optimizedNodeModules = pkgs.opencode.node_modules.overrideAttrs (old: let
+    buildSetupMarker = "export BUN_INSTALL_CACHE_DIR=$(mktemp -d)";
+    markerParts = lib.splitString buildSetupMarker old.buildPhase;
+  in
+    assert lib.assertMsg (builtins.length markerParts == 2) ''
+      OpenCode node_modules buildPhase marker drifted; update the direct-to-output injection
+    ''; {
+      buildPhase =
+        lib.replaceString buildSetupMarker ''
+          ${buildSetupMarker}
+          mkdir -p "$out"
+          cp -R . "$out"
+          cd "$out"
+        ''
+        old.buildPhase;
+      installPhase = ''
+        runHook preInstall
+
+        find "$out" -depth -mindepth 1 \
+          ! -path '*/node_modules' \
+          ! -path '*/node_modules/*' \
+          \( ! -type d -o -empty \) \
+          -delete
+        runHook postInstall
+      '';
+    });
   # Patches applied on top of the upstream opencode source (built from the
   # `github:anomalyco/opencode` flake input). Each patch targets a specific
   # upstream gap; when upstream incorporates the fix, the patch becomes a
@@ -46,6 +72,7 @@
   #   scripts/check-opencode-patches.sh
   # See docs/opencode-patches.md for the patch lifecycle.
   patchedOpencode = pkgs.opencode.overrideAttrs (old: {
+    node_modules = optimizedNodeModules;
     patches =
       (old.patches or [])
       ++ [

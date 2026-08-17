@@ -31,6 +31,28 @@ contains regression coverage.
   journals that predate the journal `name` column without replaying completed
   SQL migrations.
 
+## Local node-modules derivation override
+
+The Home Manager module overrides the already-evaluated fixed-output
+`opencode-node_modules` derivation to avoid recursively copying the completed
+dependency tree. A source patch on `patchedOpencode` would not work because the
+OpenCode package source fileset excludes `nix/node_modules.nix`, and its
+node-modules dependency has already been evaluated.
+
+The override injects a copy-to-`$out` and `cd` immediately after the upstream
+build phase's cache-directory setup, then retains the complete remainder of the
+upstream phase. Its guarded string transformation requires exactly one stable
+marker, so upstream phase drift fails evaluation rather than silently dropping
+new flags or canonicalization steps. The install phase recursively removes
+files and empty directories outside real `node_modules` directories. This
+retains workspace parent-directory layout and leaves selected dependency trees,
+symlinks, executable modes, and the fixed-output hash unchanged.
+
+`scripts/check-opencode-node-modules-install.sh` compares the transformation
+with the old install using source manifests, nested modules, symlinks, and an
+executable fixture. Keep the override local while it bakes and is benchmarked;
+translate the approach into a source change when proposing it upstream.
+
 ## Removal criteria
 
 Review patches whenever the pinned OpenCode revision changes. Remove a patch
@@ -46,3 +68,7 @@ Specifically, remove `opencode-route-nested-prompts.patch` once either:
 
 An announcement or planned v2 architecture alone is not sufficient for the
 second criterion.
+
+Remove the local node-modules derivation override once the pinned upstream source
+installs directly into the output (or uses an equivalent strategy) and has been
+verified to preserve the same fixed-output tree and hash.

@@ -289,6 +289,20 @@ overrides next to the upstream package selection, including narrow lockfile
 patches when needed. Overrides are scoped by full upstream revision and system so
 future upstream fixes are used automatically.
 
+The module locally overrides the already-evaluated node-modules derivation to
+avoid recursively copying the completed dependency tree. Patching
+`nix/node_modules.nix` through `patchedOpencode` cannot affect it because that
+file is excluded from the package source fileset. The override injects setup
+that copies the much smaller source tree to `$out` and runs the inherited
+upstream build phase there; a unique-marker assertion makes upstream phase drift
+fail evaluation instead of duplicating and potentially missing changed Bun flags
+or canonicalization steps. The cleanup install phase removes non-module source
+files while preserving workspace parent directories, dependency symlinks,
+executable modes, and the fixed-output hash. Bake and benchmark this local
+override before translating it into an upstream source change, and remove it
+once an equivalent output-verified implementation is pinned. See the patch
+lifecycle document for the fixture and exact removal criterion.
+
 Prefer this normalization patch over broad config patterns such as `*=* just *`.
 OpenCode permission wildcards are anchored but simple (`*` and `?` only), so a
 broad assignment-style pattern can accidentally match unrelated commands that
