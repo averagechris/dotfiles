@@ -13,6 +13,7 @@ frequent releases while preserving the normal `pkgs.opencode` and home-manager
 
 - custom primary and sub-agents
 - repo-managed skills deployed into `~/.config/opencode/skills/`
+- repo-managed slash commands deployed globally into `~/.config/opencode/commands/`, including `/what` for concise, jargon-free restatements
 - MCP server definitions written into the generated OpenCode config
 - optional `OPENROUTER_API_KEY` shell export via `dotfiles.opencode.openrouterApiKeyFile`
 - optional `CIRCLECI_TOKEN` shell export via `dotfiles.opencode.circleciTokenFile`
@@ -23,6 +24,14 @@ frequent releases while preserving the normal `pkgs.opencode` and home-manager
   workspaces favor the shared sccache without changing interactive shells
 - on hosts with direnv enabled, a `dotfiles-direnv` plugin loads each working
   directory's direnv-allowed dev shell environment into agent shell commands
+
+## Repo-managed slash commands
+
+The pinned Home Manager OpenCode module supports `programs.opencode.commands`
+with command names mapped to inline text or Markdown files. This module maps
+the repo-managed `commands/what.md` to the global `/what` command. It asks
+OpenCode to restate its last message plainly and concisely, and to use the
+`impactful-writing` skill if needed.
 
 ## Declarative CLI skills
 
@@ -45,8 +54,15 @@ dotfiles.agentSkills.rdny-browser = {
 dotfiles.agentSkills.gander-address-review.enable = false;
 ```
 
-The renderer copies the upstream `source`, applies `patches` in order with zero
-fuzz, then appends `extraText`. Use a patch when changing or removing upstream
+The upstream `source` may be either one `SKILL.md` file or a complete skill
+directory containing `SKILL.md`. Complete directories are copied recursively,
+so Agent Skills companion content such as `assets/` and `references/` remains
+available beside the instructions. The renderer applies `patches` in order with
+zero fuzz specifically to `SKILL.md`, then appends `extraText` to `SKILL.md`;
+companion files are left unchanged. A directory source without `SKILL.md` fails
+evaluation or rendering clearly. File sources retain the existing one-file skill-directory
+behavior and are not expanded to their parent directory, since flat Markdown
+bundles can share one parent. Use a patch when changing or removing upstream
 instructions; its build failure intentionally detects upstream drift. Use
 `extraText` only for additive local guidance. CLI modules own source
 registration, while hosts normally set only `enable`, `patches`, or `extraText`.
@@ -484,6 +500,8 @@ modules register bundled or repo-managed skills with `dotfiles.agentSkills`, so
 rendering, patching, extension, and per-skill enablement happen uniformly at
 build time. Current examples include:
 
+- `how`, for architecture and runtime explanations, and `why`, for
+  evidence-backed investigations of intent and history
 - `jj-vcs`
 - `jj-change-management`
 - `jj-conflict-resolution`

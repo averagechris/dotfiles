@@ -173,6 +173,36 @@
       };
     in {
       checks = {
+        agent-skills-directory-source = let
+          testConfig = home-manager.lib.homeManagerConfiguration {
+            inherit pkgs;
+            modules = [
+              ./modules/agent-skills.nix
+              {
+                home.username = "test";
+                home.homeDirectory = "/tmp/test-home";
+                home.stateVersion = "26.05";
+                programs.opencode.enable = true;
+                programs.opencode.package = pkgs.hello;
+                dotfiles.agentSkills.directory-fixture = {
+                  source = ./tests/agent-skills/directory-skill;
+                  patches = [./tests/agent-skills/description.patch];
+                  extraText = "Appended fixture guidance.";
+                };
+              }
+            ];
+          };
+          rendered = testConfig.config.xdg.configFile."opencode/skills/directory-fixture".source;
+        in
+          pkgs.runCommand "agent-skills-directory-source" {} ''
+            test -f "${rendered}/SKILL.md"
+            test -f "${rendered}/references/companion.md"
+            grep -Fqx 'description: Patched fixture description.' "${rendered}/SKILL.md"
+            grep -Fqx 'Appended fixture guidance.' "${rendered}/SKILL.md"
+            grep -Fqx 'Companion content remains unchanged.' "${rendered}/references/companion.md"
+            mkdir "$out"
+          '';
+
         rose-pine-gtk-modern-layout = let
           theme = pkgs.rose-pine-gtk-modern;
           closure = pkgs.closureInfo {rootPaths = [theme];};
@@ -654,7 +684,7 @@
           };
           rdnyCompletionPackages = builtins.filter (pkg: nixpkgs.lib.hasPrefix "rdny-completions" (pkg.name or "")) testConfig.config.home.packages;
           rdnyCompletions = builtins.head rdnyCompletionPackages;
-          rdnySkill = testConfig.config.xdg.configFile."opencode/skills/rdny-browser/SKILL.md".source;
+          rdnySkill = testConfig.config.xdg.configFile."opencode/skills/rdny-browser".source + "/SKILL.md";
         in
           pkgs.runCommand "rdny-module-completions-and-skills-test" {} ''
             test ${toString (builtins.length rdnyCompletionPackages)} -eq 1
@@ -717,7 +747,7 @@
             ];
           };
           rendered = testConfig.config.xdg.configFile."srht/config.toml".source;
-          srhtCiSkill = testConfig.config.xdg.configFile."opencode/skills/srht-ci/SKILL.md".source;
+          srhtCiSkill = testConfig.config.xdg.configFile."opencode/skills/srht-ci".source + "/SKILL.md";
         in
           pkgs.runCommand "srht-config-rendering-test" {} ''
             ${pkgs.gnugrep}/bin/grep -q '^ttl-minutes = 30$' ${rendered}
@@ -746,7 +776,7 @@
             fi
             test "$(cat ${srhtCiSkill})" = srht-ci
             test ${
-              if builtins.hasAttr "opencode/skills/srht-issues/SKILL.md" testConfig.config.xdg.configFile
+              if builtins.hasAttr "opencode/skills/srht-issues" testConfig.config.xdg.configFile
               then "1"
               else "0"
             } -eq 0
@@ -864,7 +894,7 @@
             ];
           };
           renderedConfig = testConfig.config.xdg.configFile."gander/config.toml".source;
-          ganderReviewSkill = testConfig.config.xdg.configFile."opencode/skills/gander-review/SKILL.md".source;
+          ganderReviewSkill = testConfig.config.xdg.configFile."opencode/skills/gander-review".source + "/SKILL.md";
           disabledSkillsConfig = home-manager.lib.homeManagerConfiguration {
             inherit pkgs;
             extraSpecialArgs = {
@@ -918,7 +948,7 @@
             activate=${testConfig.activationPackage}/activate
             test "$(cat ${ganderReviewSkill})" = gander-review
             test ${
-              if builtins.hasAttr "opencode/skills/gander-address-review/SKILL.md" testConfig.config.xdg.configFile
+              if builtins.hasAttr "opencode/skills/gander-address-review" testConfig.config.xdg.configFile
               then "1"
               else "0"
             } -eq 0

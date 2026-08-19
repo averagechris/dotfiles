@@ -209,6 +209,10 @@ in {
         # flakes/hm-modules/modules/opencode/skills/ and deployed to
         # ~/.config/opencode/skills/.
 
+        # Global commands are sourced from repo-managed Markdown files under
+        # flakes/hm-modules/modules/opencode/commands/.
+        commands.what = ./commands/what.md;
+
         agents = import ./primary-agents.nix {
           inherit runtimeNote;
           agentSelectionPolicy = builtins.readFile ./agent-selection-policy.md;

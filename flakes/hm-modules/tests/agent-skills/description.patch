@@ -1,0 +1,10 @@
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -1,6 +1,6 @@
+ ---
+ name: directory-fixture
+-description: Original fixture description.
++description: Patched fixture description.
+ ---
+ 
+ # Directory fixture

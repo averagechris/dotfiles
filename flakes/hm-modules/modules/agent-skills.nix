@@ -18,7 +18,7 @@
       source = lib.mkOption {
         type = lib.types.nullOr lib.types.path;
         default = null;
-        description = "Upstream SKILL.md source registered by the owning CLI module.";
+        description = "Upstream SKILL.md file or complete skill directory registered by the owning CLI module.";
       };
 
       patches = lib.mkOption {
@@ -44,20 +44,30 @@
     pkgs.runCommand "${name}-skill" {
       nativeBuildInputs = [pkgs.patch];
     } ''
-      cp ${skill.source} "$out"
-      chmod u+w "$out"
+      mkdir "$out"
+      if [ -d ${skill.source} ]; then
+        cp -R ${skill.source}/. "$out/"
+      else
+        cp ${skill.source} "$out/SKILL.md"
+      fi
+      if [ ! -f "$out/SKILL.md" ]; then
+        echo "dotfiles.agentSkills.${name}.source directory must contain SKILL.md" >&2
+        exit 1
+      fi
+      chmod u+w "$out/SKILL.md"
       ${lib.concatMapStringsSep "\n" (patchFile: ''
-          patch --batch --fuzz=0 "$out" < ${patchFile}
+          patch --batch --fuzz=0 "$out/SKILL.md" < ${patchFile}
         '')
         skill.patches}
       ${lib.optionalString (skill.extraText != "") ''
-        printf '\n' >> "$out"
-        cat ${extraText} >> "$out"
+        printf '\n' >> "$out/SKILL.md"
+        cat ${extraText} >> "$out/SKILL.md"
       ''}
     '';
   skillFiles = lib.mapAttrs' (name: skill:
-    lib.nameValuePair "opencode/skills/${name}/SKILL.md" {
+    lib.nameValuePair "opencode/skills/${name}" {
       source = renderSkill name skill;
+      recursive = true;
     })
   enabledSkills;
   bundleAssertions = lib.concatMap (bundleName: let
@@ -132,6 +142,17 @@ in {
         ++ lib.mapAttrsToList (name: skill: {
           assertion = !skill.enable || skill.source != null;
           message = "dotfiles.agentSkills.${name}.source is required while the skill is enabled.";
+        })
+        cfg
+        ++ lib.mapAttrsToList (name: skill: let
+          sourceIsLiteralDirectory =
+            skill.source
+            != null
+            && builtins.typeOf skill.source == "path"
+            && builtins.readFileType skill.source == "directory";
+        in {
+          assertion = !skill.enable || !sourceIsLiteralDirectory || builtins.pathExists (skill.source + "/SKILL.md");
+          message = "dotfiles.agentSkills.${name}.source directory must contain SKILL.md.";
         })
         cfg;
 
