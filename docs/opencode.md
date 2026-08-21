@@ -502,6 +502,8 @@ build time. Current examples include:
 
 - `how`, for architecture and runtime explanations, and `why`, for
   evidence-backed investigations of intent and history
+- `interrogate-me`, for independent adversarial reviews routed through the
+  shared `subagent-selection` policy; it returns a lead verdict without fixes
 - `jj-vcs`
 - `jj-change-management`
 - `jj-conflict-resolution`

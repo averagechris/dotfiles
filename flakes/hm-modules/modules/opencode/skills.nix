@@ -16,6 +16,8 @@ in {
   how = skillDirectory "how";
   # adapted from https://github.com/cursor/plugins/tree/fd6dd6f7276956a532bb78a748a8d2818b6eb5f4/pstack/skills/why
   why = skillDirectory "why";
+  # adapted from https://github.com/cursor/plugins/tree/46125561306434d8a1d7745d540d8932ab0cd2a2/pstack/skills/interrogate
+  interrogate-me = skillDirectory "interrogate-me";
   linear-cli = skillDirectory "linear-cli";
   subagent-selection = ''
     ${skill "subagent-selection"}
