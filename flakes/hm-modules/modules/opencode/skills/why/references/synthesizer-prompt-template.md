@@ -1,138 +1,89 @@
-# Synthesizer Prompt Template
+# Synthesizer prompt template
 
-Build the synthesizer's prompt from this template; fill in the placeholders.
+Fill every placeholder.
 
 ---
 
-You are answering a "why" question about a piece of code by synthesizing findings from multiple investigators who searched different historical sources (source control, issue / ticket tracker, long-form documents, infrastructure observability, error / exception tracking, product analytics warehouse, and code comments). Produce a confidence-weighted, evidence-cited narrative that honestly communicates what the evidence supports and what it doesn't.
+Answer a "why" question by weighing evidence from six possible categories: source control, issue tracking, long-form documents, infrastructure observability, error tracking, and product analytics. Separate evidence from inference. Keep contradictions and gaps visible.
 
-## The Question
+## Question
 
 > {QUESTION}
 
-## The Code Anchor
+## Code anchor
 
-**Target files:** {FILES_WITH_LINE_RANGES}
+**Target files and lines:** {FILES_WITH_LINE_RANGES}
 
 **Key symbols:** {SYMBOLS}
 
-## Investigator Findings
+## Findings
 
 {ALL_INVESTIGATOR_FINDINGS}
 
-## Sources That Weren't Searched
+## Skipped sources
 
 {SKIPPED_SOURCES_WITH_REASONS}
 
-## Epistemics Framework
+## Epistemics framework
 
-You MUST follow this framework, supplied by the parent from the why skill's actual reference content:
+Follow this supplied framework in full:
 
 {EPISTEMICS_FRAMEWORK}
 
-Apply it in full before writing the output. Key rules include:
+Every claim must be Direct, Supported, Inferred, Speculative, or Unknown. Direct and Supported claims need citations. Inferred and Speculative claims need hedged wording and an explicit reasoning chain. Code mechanics do not prove intent. Empty searches do not prove nonexistence. Test any hypothesis in the user's question.
 
-1. Every claim sits in one of these tiers: **Direct**, **Supported**, **Inferred**, **Speculative**, **Unknown**. The tier determines what section the claim goes in and how it's phrased.
-2. Every Direct/Supported claim must have a citation (PR #, ticket ID, doc URL, commit hash, or file:line).
-3. Inferred and Speculative claims must use hedged language ("appears to", "likely", "suggests", "one possibility is").
-4. Never cite code as evidence for its own intent.
-5. Gaps in the evidence must be documented. Don't fill them with plausible-sounding guesses.
-6. If the user's question embedded a hypothesis, treat it as a candidate, not a conclusion. Check the evidence independently.
+## Work
 
-## Instructions
+1. Read every finding, including null results and follow-up results.
+2. Merge duplicate references without losing distinct evidence.
+3. Show disagreements instead of choosing the easiest narrative.
+4. Assign each claim a confidence tier and matching wording.
+5. Spot-check citations with available read-only tools when needed.
+6. Leave unresolved questions open.
 
-1. **Read all investigator findings.** They gathered raw evidence, not conclusions. You weigh it.
-2. **Reconcile overlapping findings.** Multiple investigators may have cited the same PR, ticket, or doc. Merge into a single, authoritative reference.
-3. **Identify contradictions.** If two items of evidence disagree, don't pick one. Surface both.
-4. **Calibrate confidence.** For each claim, identify the evidence and the tier. State Direct claims plainly with a citation. Hedge Inferred claims and explain the inference. Mark Speculative claims explicitly. Put claims with no evidence in the gaps section.
-5. **Verify citations by spot-checking.** You can read the codebase and use available tools, skills, CLIs, or integrations to verify citations; do not write files, commit, or modify external state. Never inspect `secrets/`, decrypted secret material, `.age` files, credentials, or authentication material. If you're uncertain a cited item exists or says what's claimed, check it. Don't propagate errors.
-6. **Don't overreach.** The user will act on your output. Better to leave an open question open than to fill it with a confident-sounding guess.
+Do not write files or modify external state. Never inspect `secrets/`, decrypted secret material, `.age` files, credentials, or authentication material.
 
-## Output Format
+## Output
 
-Write the output for the user. Use this exact structure:
+Use these headings.
 
----
+### The question
 
-### The Question
+Restate it in one or two sentences.
 
-Restate the user's question in one or two sentences so the answer is anchored.
+### The code in question
 
-### The Code in Question
+Give paths, lines, and symbols.
 
-File paths, line ranges, key symbols. Two or three lines to orient a reader who lands here cold.
+### What we found
 
-### What We Found
+List cited `[Direct]` and `[Supported]` claims. Direct evidence explicitly states the reason. Supported evidence combines multiple indirect facts.
 
-**Claims with direct evidence**, one per bullet. Quote or paraphrase the source and cite precisely. Format each finding like:
+### What we can reasonably infer
 
-- **[Direct]** {Claim}. Source: PR #123 with URL / ticket ID / file:line. {Brief quote or paraphrase.}
-- **[Supported]** {Claim}. Evidence: {list of items and what each contributes}.
+List `[Inferred]` claims. Show the evidence and inference step. Use calibrated language. Omit this section if empty.
 
-Use `[Direct]` for single-source, explicit evidence. Use `[Supported]` when multiple indirect items converge on a conclusion.
+### Competing hypotheses
 
-### What We Can Reasonably Infer
+For each `[Speculative]` hypothesis, list evidence for it and contrary or missing evidence. Omit this section when one answer is well supported.
 
-**Claims that aren't explicitly stated anywhere but are well-supported by indirect evidence.** Make the inference chain visible: "Given A and B, it's likely that C." Use hedged language ("appears to", "likely", "suggests", "is consistent with"). Format:
+### What we don't know
 
-- **[Inferred]** {Hedged claim}. Reasoning: {the specific evidence and the inference step}.
+Name unanswered questions, exact null searches, unavailable sources, and limits such as access or retention. Suggest a person to ask only when evidence identifies one.
 
-If there's nothing to infer, skip this section.
+### Sources consulted
 
-### Competing Hypotheses
+Give one line for each of the six categories. Name the tool, queries or items, time windows, results, and skips with reasons. For warehouse findings, include fully qualified tables and compact numeric summaries.
 
-**If the evidence fits multiple stories, present them.** Don't force a winner when the record doesn't support one. For each hypothesis:
+### Confidence summary
 
-- **Hypothesis:** {one-sentence statement}
-- **Evidence for:** {specific items}
-- **Evidence against or missing:** {what would need to be true but isn't, or what counter-signals exist}
+Summarize which rationale is established, inferred, speculative, or unknown in one or two sentences.
 
-Skip this section if there's a single clear answer.
+## Final check
 
-### What We Don't Know
-
-**Explicit gaps.** Things the user asked that the evidence didn't answer. Sources searched that came up empty. Sources that weren't searchable at all.
-
-Be specific. "We searched the issue tracker for [query1], [query2], [query3] and found no issue discussing the rate-limit threshold" is useful. "We don't know why" is not. Include:
-
-- Specific questions that went unanswered
-- Searches that returned nothing
-- Sources that were unavailable (and why)
-- People who would likely know but who you can't ask
-
-### Sources Consulted
-
-Bulleted list of what was actually searched, so the user can judge coverage and redirect. Format:
-
-- **Source control history**: {file paths}, {number of changes reviewed}, PRs #{numbers}, and code comments searched. Or "Local history was unavailable" with the reason; report forge context separately if no forge tool was available.
-- **Issue / ticket tracker**: {ticket IDs and keyword searches}. Or "Not searched. No matching tool or integration available in this environment."
-- **Long-form documents**: {page titles and search queries}. Or "Not searched. No matching tool or integration available in this environment."
-- **Infrastructure observability**: {dashboards, monitors, metrics, logs, traces, or incidents searched}. Or "Not searched. No matching tool or integration available in this environment."
-- **Error / exception tracking**: {issues, events, or releases searched}. Or "Not searched. No matching tool or integration available in this environment."
-- **Product analytics warehouse**: {fully-qualified tables queried, the time windows, and the numeric summaries (counts, percentiles, first/last-seen timestamps) that bore on the question}. Or "Not searched. No matching tool or integration available in this environment."
-
-### Confidence Summary
-
-One or two sentences summarizing your overall confidence. E.g.:
-
-> "The core rationale (A) is well-supported by direct PR and ticket evidence. The specific threshold value (100) is inferred from the surrounding context but not explicitly documented. The question of whether this was driven by a customer request could not be answered. No relevant issue tracker or long-form doc content surfaced."
-
----
-
-## Quality Check Before Returning
-
-Before finalizing, review your output against this checklist:
-
-1. Does every claim in "What We Found" have a citation? If not, add one or move the claim to "Inferred" or "Hypotheses."
-2. Is the phrasing tier-appropriate? (Direct claims can use "because"; Inferred claims cannot.)
-3. Did you surface any contradictions you noticed, or did you quietly pick one?
-4. Does the "What We Don't Know" section exist and name specific gaps? If it's empty or missing, be suspicious. Historical investigations almost always have gaps.
-5. If the user embedded a hypothesis in their question, did you check it against the evidence rather than rubber-stamping it?
-6. Did you cite any code as evidence for its own intent? Remove those. Code is mechanics, not motivation.
-7. Is the overall tone calibrated? A confident-sounding answer with weak evidence is the exact failure mode this skill exists to prevent.
-
-If any item fails, revise before returning.
-
-## A Final Note
-
-The value of this output comes from its honesty, not its authority. A reader who takes your answer to the original author, an engineering lead, or a product manager should be well-positioned to ask the right follow-up questions. Be clear about what's known, what's inferred, and what's missing. Don't optimize for looking decisive. Optimize for being useful.
+- Verify every Direct and Supported citation.
+- Match wording to each tier.
+- Remove code-as-intent claims.
+- Keep contradictions.
+- Include concrete gaps, null searches, and skips.
+- Confirm that the user's hypothesis was tested.

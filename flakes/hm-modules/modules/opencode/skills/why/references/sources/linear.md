@@ -1,48 +1,25 @@
-# Linear Tickets
+# Linear tickets
 
-## What this source contains
+Linear is the current source for product and project context in this setup. Issues, comments, parents, projects, labels, status updates, attachments, and linked PRs can explain customer needs, deadlines, scope changes, and business constraints.
 
-- Issues describing features, bugs, and their motivation
-- Project docs attached to issues (often PRDs or specs)
-- Parent/sub-issue relationships (broader initiative → specific tickets)
-- Comments on issues (clarifications, scope changes, "why we're doing this" rationale)
-- Labels (e.g., `compliance`, `customer-request`, `perf`) that signal the type of motivation
-- Status updates that explain scope changes
-- Attachments and linked GitHub PRs
+## Search
 
-Linear is where the product/business context often lives: the "we're doing this because customer X asked" or "this is for the Q3 compliance initiative" layer.
+Use the available Linear skill, CLI, or integration. Read its instructions or help rather than assuming a schema. Adapt this playbook to another available tracker when needed.
 
-## How to search it
+1. Open ticket IDs from commits and PRs. Read descriptions, comments, and history.
+2. Search feature names, symbols, error text, and business terms with several phrasings.
+3. Walk parent, child, duplicate, and related issue links. Parents often contain the rationale.
+4. Inspect the owning project and its current documents or updates.
+5. Record labels, milestones, deadlines, and linked PRs.
 
-Use the available Linear skill, CLI, or integration. Inspect its instructions or help rather than assuming a command or MCP schema. If Linear is unavailable, adapt these searches to an available tracker such as Jira, GitHub Issues, Plane, or Shortcut.
+## Strong evidence
 
-1. **Start with linked tickets.** If the seed commits or PRs reference ticket IDs (e.g., `ENG-1234`, `[BUG-567]`), retrieve those first through the discovered skill, CLI, or integration, mapping the task to its documented operations. Read the full issue including comments.
-2. **List related issues by keyword.** Use the discovered interface's documented issue search for the feature name, key symbol, or business term. Try multiple phrasings.
-3. **Walk the issue tree.** If you land on a sub-issue, fetch its parent. Sub-issues are tactical; parents often carry the "why."
-4. **Read project docs.** If the issue belongs to a project, retrieve that project and check attached docs using the interface described by the applicable skill instructions or command help. Project-level documents are where specs and rationale are most often captured.
-5. **Check labels and milestones.** Labels hint at the category of motivation (customer-request, incident-followup, compliance). Milestones tie work to deadlines, which often reveal motivation.
+Prefer a specific problem statement, a decision comment that compares approaches, an initiative parent, or a substantive attached spec. Labels such as `customer:<name>`, `incident-followup`, `compliance`, or `perf-regression` support context but rarely prove intent alone.
 
-## What good evidence looks like here
+## Failure modes
 
-- An issue description stating the business problem: "Customer Acme needs X because of their SOC2 audit"
-- A comment recording a decision: "We decided to go with approach B because approach A would require touching the billing service"
-- A parent issue titled like an initiative: "Q3 Enterprise Readiness" or "Reduce Payment Failures"
-- An attached PRD or spec
-- Labels like `customer:acme`, `incident-followup`, `compliance`, `perf-regression`
+Read the full history because scope changes. Treat boilerplate "Why" text as weak evidence. Compare stale tickets with the ship date and implementation. Follow duplicates to the canonical issue. Record inaccessible workspace content as a gap.
 
-## Common pitfalls
+## Return
 
-- **Scope drift.** The ticket the PR references may have been closed and reopened with a different scope. Read the whole history.
-- **Mechanical templates.** Some teams require "Why" sections but fill them with boilerplate. Generic text ("improve user experience") is probably not a real answer.
-- **Stale tickets.** Old tickets often reflect a version of the plan that changed. Check dates and cross-reference with the code's ship date.
-- **Closed-as-duplicate chains.** Follow the duplicate-of relationships back to the canonical ticket.
-- **Private workspace content.** If you can't access an issue, note that as a gap rather than guessing.
-
-## What to return
-
-For each relevant ticket:
-- Ticket ID and title
-- The problem/motivation quoted from the description or comments (not paraphrased; the synthesizer needs the exact text to cite)
-- Labels, parent issue, project
-- Author, created date, closed date
-- Link to the ticket if available
+For each ticket, provide ID, title, URL, exact motivation text, author and dates, labels, parent, project, and relevant history.

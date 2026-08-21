@@ -1,6 +1,6 @@
 # Source playbooks
 
-The why skill spawns one investigator per available evidence category. The playbooks below are concrete examples for common tools and integrations. Search current repository Markdown directly, and use the historical Notion playbook for older RFCs and PRDs. Adapt a playbook for a different interface in the same category when needed.
+Use one playbook per available evidence category. Adapt it to another interface in the same category. Search repository Markdown directly for current documents. Use Notion for historical RFCs and PRDs.
 
 | Category | Playbook | Example source it documents |
 |---|---|---|
@@ -11,6 +11,4 @@ The why skill spawns one investigator per available evidence category. The playb
 | Error / exception tracking | [`sentry.md`](./sources/sentry.md) | Sentry (adapt for Rollbar, Bugsnag, Airbrake) |
 | Product analytics warehouse | [`databricks.md`](./sources/databricks.md) | Databricks SQL (adapt for Snowflake, BigQuery, ClickHouse, dbt) |
 
-Cross-cutting:
-
-- [`incident-postmortem.md`](./sources/incident-postmortem.md). Add this if the target code looks defensive (null checks, retry, timeout, rate limit, feature flag, egress guard, OOM handler).
+Also add [`incident-postmortem.md`](./sources/incident-postmortem.md) when the target looks defensive, such as a check, retry, timeout, rate limit, flag, egress guard, or OOM handler.
