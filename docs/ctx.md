@@ -44,3 +44,18 @@ ctx search "query text"
 
 Use `ctx import --provider <provider>` or `ctx import --path <path> --provider
 <provider>` for targeted one-off imports when debugging a source.
+
+## Agent workflow
+
+Recall and reflection searches stay within the active project unless the user
+asks to cross that boundary. Agents set a topic and time range first, inspect
+`ctx status`, `ctx sources`, and command help, then run bounded searches by
+project, path, symbol, feature, or issue identifier. They read only matching
+events and record the query scope plus source, session, and event identifiers
+when ctx provides them.
+
+Ctx records historical reports, not current truth. Agents verify important
+claims against live files, jj state, tests, pull requests, issues, docs, or
+telemetry. An empty search is limited by its query, indexing, and retention and
+does not prove that no record exists. Use targeted imports only when a relevant
+source is missing or stale, rather than broad imports for every lookup.

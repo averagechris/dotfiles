@@ -502,6 +502,12 @@ build time. Current examples include:
 
 - `how`, for architecture and runtime explanations, and `why`, for
   evidence-backed investigations of intent and history
+- `teach`, for paced explanations that build a mental model from mechanics and,
+  when needed, rationale
+- `recall`, for reconstructing current work state from live artifacts and bounded
+  ctx history
+- `reflect`, for evidence-backed lessons and proposed process or tooling
+  improvements; it waits for approval before applying anything
 - `interrogate-me`, for independent adversarial reviews routed through the
   shared `subagent-selection` policy; it returns a lead verdict without fixes
 - `technical-writing`, for substantive engineering artifacts such as READMEs,

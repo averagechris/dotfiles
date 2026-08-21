@@ -18,6 +18,12 @@ in {
   why = skillDirectory "why";
   # adapted from https://github.com/cursor/plugins/tree/46125561306434d8a1d7745d540d8932ab0cd2a2/pstack/skills/interrogate
   interrogate-me = skillDirectory "interrogate-me";
+  # adapted from https://github.com/cursor/plugins/tree/46125561306434d8a1d7745d540d8932ab0cd2a2/pstack/skills/teach
+  teach = skillDirectory "teach";
+  # adapted from https://github.com/cursor/plugins/tree/46125561306434d8a1d7745d540d8932ab0cd2a2/pstack/skills/recall
+  recall = skillDirectory "recall";
+  # adapted from https://github.com/cursor/plugins/tree/46125561306434d8a1d7745d540d8932ab0cd2a2/pstack/skills/reflect
+  reflect = skillDirectory "reflect";
   linear-cli = skillDirectory "linear-cli";
   subagent-selection = ''
     ${skill "subagent-selection"}
