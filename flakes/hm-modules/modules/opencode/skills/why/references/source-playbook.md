@@ -1,14 +1,16 @@
 # Source playbooks
 
-Use one playbook per available evidence category. Adapt it to another interface in the same category. Search repository Markdown directly for current documents. Use Notion for historical RFCs and PRDs.
+Use the applicable playbooks within each available evidence category. One category investigator may use several interfaces. Do not spawn duplicate investigators for Linear and SourceHut issues, or for repository Markdown, Granola, and Notion. Use `ctx` after normal searches or when a link is missing. It supplies leads, not evidence.
 
 | Category | Playbook | Example source it documents |
 |---|---|---|
-| Source control history | [`code-archaeology.md`](./sources/code-archaeology.md) | git, `gh` |
-| Issue / ticket tracker | [`linear.md`](./sources/linear.md) | Linear (adapt for Jira, GitHub Issues, Plane, Shortcut) |
-| Long-form documents | [`notion.md`](./sources/notion.md) | Repository Markdown first; historical Notion for older RFCs and PRDs |
+| Source control history | [`code-archaeology.md`](./sources/code-archaeology.md), [`sourcehut-ci.md`](./sources/sourcehut-ci.md) | `jj` or git, `gh`, relevant builds.sr.ht CI |
+| Issue / ticket tracker | [`linear.md`](./sources/linear.md), [`sourcehut-issues.md`](./sources/sourcehut-issues.md) | Linear for current work; SourceHut for repositories that use it, especially dotfiles |
+| Long-form documents | [`repository-markdown.md`](./sources/repository-markdown.md), [`granola.md`](./sources/granola.md), [`notion.md`](./sources/notion.md) | Repository Markdown first; Granola for meeting rationale; old or user-referenced Notion pages |
 | Infrastructure observability | [`datadog.md`](./sources/datadog.md) | Datadog (adapt for New Relic, Honeycomb, Grafana, Splunk) |
 | Error / exception tracking | [`sentry.md`](./sources/sentry.md) | Sentry (adapt for Rollbar, Bugsnag, Airbrake) |
 | Product analytics warehouse | [`databricks.md`](./sources/databricks.md) | Databricks SQL (adapt for Snowflake, BigQuery, ClickHouse, dbt) |
 
 Also add [`incident-postmortem.md`](./sources/incident-postmortem.md) when the target looks defensive, such as a check, retry, timeout, rate limit, flag, egress guard, or OOM handler.
+
+Use [`agent-history.md`](./sources/agent-history.md) across categories only to recover search trails and links. Verify each lead against an authoritative source.

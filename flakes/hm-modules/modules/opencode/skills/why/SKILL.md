@@ -57,9 +57,9 @@ Inspect the tools, skills, CLIs, and integrations available now. Do not assume a
 
 Source control is available through the repository, though a forge may not be. Use skill instructions, command help, and integration descriptions to classify other capabilities. Choose the primary category for ambiguous tools and note the ambiguity.
 
-In this setup, search repository Markdown first for current decisions and specs. Search Linear for current product and project context. Use Notion for old RFCs and PRDs from the pre-AI era, or when the user points to Notion. Do not treat an old Notion page as current without corroboration.
+For long-form context, search repository Markdown first. Use Granola when a meeting may hold the rationale. Use Notion for old RFCs and PRDs from the pre-AI era, or when the user points to Notion. For issue tracking, use Linear for current work and SourceHut in repositories that use it. This dotfiles repository uses SourceHut under `repo:dotfiles`.
 
-Launch one investigator per available category in one message. Never combine categories in one investigator. Each investigator stays read-only and receives:
+Launch one investigator per available category in one message. Never combine categories or launch duplicate investigators for interfaces in the same category. A category investigator may use every applicable playbook and interface. Each investigator stays read-only and receives:
 
 1. `references/investigator-prompt-template.md`, with all placeholders filled
 2. the matching file under `references/sources/`, adapted to the available interface
@@ -67,13 +67,13 @@ Launch one investigator per available category in one message. Never combine cat
 4. the code anchor
 5. the original question
 
-For current repository Markdown, search the repository directly. `references/source-playbook.md` indexes the examples.
+For current repository Markdown, search the repository directly. Source control may use `jj` or git, `gh`, and relevant SourceHut CI. Use `ctx` only after normal searches or to recover missing links. Verify its leads against a first-class source. `references/source-playbook.md` indexes the playbooks.
 
 ### What each category contributes
 
-- **Source control history.** Always search it. Commits, PR discussions, comments, tests, and co-changes can preserve implementation-time rationale.
-- **Issue or ticket tracking.** Tickets, parents, projects, comments, and labels often hold customer, product, deadline, or compliance reasons.
-- **Long-form documents.** Current repository Markdown can hold problem statements, alternatives, ADRs, strategy, and postmortems. Old Notion RFCs and PRDs may preserve earlier decisions. Search other Notion material when the user points to it.
+- **Source control history.** Always search it. Commits, PR discussions, review artifacts, tests, co-changes, and CI can preserve or corroborate implementation-time rationale.
+- **Issue or ticket tracking.** Linear and repository-specific trackers such as SourceHut can hold customer, product, deadline, or compliance reasons.
+- **Long-form documents.** Current repository Markdown and meeting notes can hold problem statements, alternatives, ADRs, strategy, and postmortems. Old Notion RFCs and PRDs may preserve earlier decisions. Search other Notion material when the user points to it.
 - **Infrastructure observability.** Metrics, monitors, logs, traces, and incidents show runtime conditions around a change.
 - **Error or exception tracking.** Issues, events, stack traces, and releases can connect defensive code to a failure.
 - **Product analytics warehouse.** Events, experiments, usage, query history, and distributions show user or data conditions around a change.

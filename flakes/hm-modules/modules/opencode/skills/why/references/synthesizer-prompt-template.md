@@ -40,6 +40,7 @@ Every claim must be Direct, Supported, Inferred, Speculative, or Unknown. Direct
 4. Assign each claim a confidence tier and matching wording.
 5. Spot-check citations with available read-only tools when needed.
 6. Leave unresolved questions open.
+7. Exclude agent-history conclusions unless an authoritative source verifies the claim. Keep unverified `ctx` results as leads or gaps.
 
 Do not write files or modify external state. Never inspect `secrets/`, decrypted secret material, `.age` files, credentials, or authentication material.
 

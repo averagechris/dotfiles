@@ -1,6 +1,6 @@
 # Investigator prompt template
 
-Fill every placeholder. Append the one category playbook indexed by `source-playbook.md`. If the target looks defensive, also append `sources/incident-postmortem.md`.
+Fill every placeholder. Append the applicable playbooks for one category from `source-playbook.md`. One investigator may use several interfaces in that category. If the target looks defensive, also append `sources/incident-postmortem.md`.
 
 ---
 
@@ -43,6 +43,7 @@ Use only available OpenCode tools, skills, CLIs, and integrations. Read the appl
 4. Capture exact quotes when wording matters. Include IDs, URLs, hashes, file lines, authors, and dates when available.
 5. Record exact searches that returned nothing and their scope.
 6. Preserve conflicting evidence and plausible alternative readings.
+7. Treat `ctx` results only as leads. Verify them against a source in the assigned category before reporting a claim.
 
 Do not substitute evidence about a nearby feature for the target. Do not answer the overall question.
 
