@@ -1,6 +1,6 @@
 ---
 name: why
-description: "Use for 'why does X work this way', 'why we picked Y', design rationale, regressions, postmortems, or data-backed thresholds. Discovers available tools and integrations and queries each evidence category (source control, issue tracker, long-form docs, real-time chat, infrastructure observability, error tracking, product analytics warehouse) in parallel, then returns a cited read on decisions and tradeoffs. Use how for runtime behavior."
+description: "Use for 'why does X work this way', 'why we picked Y', design rationale, regressions, postmortems, or data-backed thresholds. Discovers available tools and integrations and queries each evidence category (source control, issue tracker, long-form docs, infrastructure observability, error tracking, product analytics warehouse) in parallel, then returns a cited read on decisions and tradeoffs. Use how for runtime behavior."
 ---
 
 # Why
@@ -11,7 +11,7 @@ Companion to the `how` skill. `how` answers what the code does and how it works.
 
 ## How this skill works
 
-Historical context spreads across seven evidence categories: source control history, issue or ticket tracking, long-form documents, real-time team chat, infrastructure observability, error or exception tracking, and product analytics warehouses. You cannot predict from the question alone which one holds the answer, so the skill enumerates available OpenCode tools, skills, CLIs, and integrations at run time, maps each to a category, queries all available categories in parallel, then synthesizes with explicit confidence calibration. Null results from searched categories are first-class evidence about how the decision was made; report them alongside positive findings. The default is coverage, not minimalism.
+Historical context spreads across six evidence categories: source control history, issue or ticket tracking, long-form documents, infrastructure observability, error or exception tracking, and product analytics warehouses. You cannot predict from the question alone which one holds the answer, so the skill enumerates available OpenCode tools, skills, CLIs, and integrations at run time, maps each to a category, queries all available categories in parallel, then synthesizes with explicit confidence calibration. Null results from searched categories are first-class evidence about how the decision was made; report them alongside positive findings. The default is coverage, not minimalism.
 
 ## Operating Posture
 
@@ -30,13 +30,13 @@ This posture is the working method, not a disclaimer.
 
 ## Core Epistemics
 
-This skill builds a **patchwork understanding** from fragmented historical evidence. Tickets go stale. Chat threads get deleted. Commit messages lie. People change their minds between the PR description and the implementation. The original author may have left the company.
+This skill builds a **patchwork understanding** from fragmented historical evidence. Tickets go stale. Historical records disappear. Commit messages lie. People change their minds between the PR description and the implementation. The original author may have left the company.
 
 Be ruthlessly honest about what you know versus what you're inferring. The goal is not a satisfying story; it is to surface evidence, calibrate confidence, and let the user decide.
 
 Principles:
 
-- **Cite everything.** Every claim about intent should reference a specific commit hash, PR number, ticket ID, doc URL, chat permalink, or code comment. If you can't cite it, it's inference, not fact, and must be labeled as such.
+- **Cite everything.** Every claim about intent should reference a specific commit hash, PR number, ticket ID, doc URL, or code comment. If you can't cite it, it's inference, not fact, and must be labeled as such.
 - **Prefer "appears to" over "because".** Hedge when evidence is indirect. Reserve confident language for direct, explicit evidence.
 - **Surface contradictions.** If two sources disagree, show both. Don't quietly pick the one that fits your narrative.
 - **Acknowledge gaps.** If a question has no answer in any source you searched, say so. An honest "we couldn't find out why" beats a confident guess.
@@ -87,17 +87,18 @@ Capture this as seed context (file paths, symbols, commits, PR numbers, linked t
 
 Before spawning investigators, inspect the OpenCode tools, skills, CLIs, and integrations actually available in the current environment. The environment may expose a category through a CLI rather than an MCP. Do not assume a named integration is installed, and do not inspect credentials or secret material to enable one.
 
+Current source guidance matters. Search repository Markdown first for current decisions and specs. Search Linear for current product and project context. Use Notion for old RFCs and PRDs from the pre-AI era, or when the user points to Notion. Do not treat an old Notion page as current without corroborating evidence.
+
 Map each available capability to one evidence category:
 
 1. Source control history
 2. Issue / ticket tracker
 3. Long-form documents
-4. Real-time team chat
-5. Infrastructure observability
-6. Error / exception tracking
-7. Product analytics warehouse
+4. Infrastructure observability
+5. Error / exception tracking
+6. Product analytics warehouse
 
-Source control is always available through the local repository; a forge CLI may not be. For the other six, classify using available skill instructions, CLI help, integration descriptions, tool names, and resource descriptors. If a capability could fit more than one category, choose the one matching its primary evidence. Record ambiguous cases in the coverage map.
+Source control is always available through the local repository; a forge CLI may not be. For the other five, classify using available skill instructions, CLI help, integration descriptions, tool names, and resource descriptors. If a capability could fit more than one category, choose the one matching its primary evidence. Record ambiguous cases in the coverage map.
 
 Aim for a complete **coverage map**, not a minimal one. A null issue-tracker search is a scoped gap or negative result, constrained by the queries, access, retention, and indexing available; it is not evidence that no ticket exists. Document the search scope and null result, but do not turn it into a claim of nonexistence.
 
@@ -105,7 +106,7 @@ Launch all matching investigators in a single message so they run concurrently. 
 
 Each investigator gets:
 1. The base prompt from `references/investigator-prompt-template.md`
-2. The category playbook `references/sources/<source>.md` for the selected tool or integration, adapted from the examples in `references/source-playbook.md`
+2. The category playbook `references/sources/<source>.md` for the selected tool or integration, when one exists, adapted from the examples in `references/source-playbook.md`. For current repository Markdown, search the repository directly.
 3. The cross-cutting `references/sources/incident-postmortem.md` **if the target code looks defensive** (null checks, retry logic, timeout handling, rate limiting, feature flags, egress guards, OOM handlers)
 4. The code anchor from Step 2 (file paths, symbols, commit hashes, PR numbers, ticket IDs)
 5. The user's original question
@@ -122,26 +123,24 @@ Each entry lists what the category physically contains and the kind of "why" it 
 
 2. **Issue / ticket tracker investigator** (e.g. Linear, Jira, GitHub Issues, Plane, Shortcut MCP). Tickets, project docs, status updates, spec attachments. Best at surfacing *the product or business forcing function*. Customer requests ("Acme needs X for their SOC2 audit"), compliance deadlines, parent-initiative framing ("Q3 enterprise readiness"), ticket-level scope changes, and labels that categorize the motivation (`customer:*`, `incident-followup`, `compliance`, `perf-regression`). Strongest when the why is external to engineering.
 
-3. **Long-form documents investigator** (e.g. Notion, Confluence, Google Docs, Coda MCP). PRDs, specs, RFCs, design docs, ADRs, postmortems, team pages, meeting notes. Best at surfacing *long-form design rationale*. Problem statements, explicit "alternatives considered" and "rejected approaches" sections, strategy documents that set priorities, ADRs with finalized decisions, and postmortem action items that tie directly to code. Where the why is written out before it becomes code.
+3. **Long-form documents investigator** (repository Markdown first, then old Notion RFCs and PRDs or another available long-form source). Current specs and decisions usually live in Markdown files in repositories. Use Notion for RFCs and PRDs from the pre-AI era, or when the user points to a Notion page or workspace. Search Linear separately for current product and project context. This category is best at surfacing *long-form design rationale*: problem statements, explicit "alternatives considered" and "rejected approaches" sections, strategy documents that set priorities, ADRs with finalized decisions, and postmortem action items that tie directly to code.
 
-4. **Real-time team chat investigator** (e.g. Slack, Discord, Microsoft Teams, Mattermost MCP). Feature-name and symbol searches, PR URL mentions, incident channels (`#sev-*`, `#incident-*`), author-handle activity around the ship date. Best at surfacing *real-time deliberation that never reached a doc*. Fire-drill decisions during incidents, Q&A between the PR author and reviewers, casual "we decided X because Y" threads, and rationale for small changes that didn't warrant a PRD. Especially important when the source control, ticket, and doc paper trail is thin.
+4. **Infrastructure observability investigator** (e.g. Datadog, New Relic, Honeycomb, Grafana, Splunk MCP). Metrics, monitors, dashboards, logs, APM traces, formal incidents. Infra/runtime view. Best at surfacing *infrastructure and runtime reality that motivated the code*. Monitor thresholds whose numbers match code constants, metric spikes in the window right before a PR merge, dashboards created as postmortem action items, incident timelines that reference the target. Strongest when the target reacts to an infra signal (timeouts, retries, rate limits, circuit breakers).
 
-5. **Infrastructure observability investigator** (e.g. Datadog, New Relic, Honeycomb, Grafana, Splunk MCP). Metrics, monitors, dashboards, logs, APM traces, formal incidents. Infra/runtime view. Best at surfacing *infrastructure and runtime reality that motivated the code*. Monitor thresholds whose numbers match code constants, metric spikes in the window right before a PR merge, dashboards created as postmortem action items, incident timelines that reference the target. Strongest when the target reacts to an infra signal (timeouts, retries, rate limits, circuit breakers).
+5. **Error / exception tracking investigator** (e.g. Sentry, Rollbar, Bugsnag, Airbrake MCP). Issues, events, stack traces, releases. Best at surfacing *the specific exceptions and error trajectories that motivated defensive or corrective code*. Stack traces that pass through the target function, issues whose first-seen/last-seen windows bracket the PR ship date, release correlations that show an error stopping at a specific version. Strongest for catch blocks, null guards, type checks, retries, and other defenses.
 
-6. **Error / exception tracking investigator** (e.g. Sentry, Rollbar, Bugsnag, Airbrake MCP). Issues, events, stack traces, releases. Best at surfacing *the specific exceptions and error trajectories that motivated defensive or corrective code*. Stack traces that pass through the target function, issues whose first-seen/last-seen windows bracket the PR ship date, release correlations that show an error stopping at a specific version. Strongest for catch blocks, null guards, type checks, retries, and other defenses.
-
-7. **Product analytics warehouse investigator** (e.g. Databricks, Snowflake, BigQuery, ClickHouse, dbt, Redshift MCP). Product-analytics events, experiment and feature-flag exposure tables, usage and billing events, query history, warehouse telemetry. Product/data view. Complements infrastructure observability by covering *user behavior and data reality* around the ship date rather than infra metrics. Best at surfacing *product and data reality that shaped the code*. Feature-usage trajectories (a step-function ramp from zero is strong evidence that this PR launched it), experiment/flag exposure data tied to ship decisions, pre-ship distributions that reveal where a threshold constant came from (e.g., `limit = 128 * 1024` matching the p99 of an upload-size column), and data-pipeline scale evidence for migrations/backfills. Strongest for flag-gated code, experiment-driven ships, data migrations, and "where did this number come from" questions.
+6. **Product analytics warehouse investigator** (e.g. Databricks, Snowflake, BigQuery, ClickHouse, dbt, Redshift MCP). Product-analytics events, experiment and feature-flag exposure tables, usage and billing events, query history, warehouse telemetry. Product/data view. Complements infrastructure observability by covering *user behavior and data reality* around the ship date rather than infra metrics. Best at surfacing *product and data reality that shaped the code*. Feature-usage trajectories (a step-function ramp from zero is strong evidence that this PR launched it), experiment/flag exposure data tied to ship decisions, pre-ship distributions that reveal where a threshold constant came from (e.g., `limit = 128 * 1024` matching the p99 of an upload-size column), and data-pipeline scale evidence for migrations/backfills. Strongest for flag-gated code, experiment-driven ships, data migrations, and "where did this number come from" questions.
 
 ### When to skip an investigator
 
 Only skip with an **explicit, written justification** that goes in the final "Sources Consulted" section. Two valid reasons:
 
-- **No applicable tool or integration is available for that category** in this environment. Flag this as a gap, not a choice. Example: "Real-time team chat skipped. No matching integration available, so the conversational record was not searchable."
+- **No applicable tool or integration is available for that category** in this environment. Flag this as a gap, not a choice.
 - **The source is provably irrelevant**, not just "probably irrelevant." A high bar. Example: "Error / exception tracking skipped. Target is a build-time script with no runtime code path." Not "probably not in error tracking, it's a feature not an error."
 
 "It's pure feature code, error tracking won't have anything" is **not** sufficient, and neither is "I doubt long-form docs would have this." Run the search; let the null result speak. The cost of an investigator returning empty is one subagent. The cost of missing a design doc that actually exists is a wrong answer.
 
-If your scope assessment suggests a single-commit trivial target where the PR description already contains the complete answer, you may answer inline **only after** confirming all seven available category searches would be redundant. Say so explicitly. This should be rare.
+If your scope assessment suggests a single-commit trivial target where the PR description already contains the complete answer, you may answer inline **only after** confirming all six available category searches would be redundant. Say so explicitly. This should be rare.
 
 ## Step 4. Synthesize
 
@@ -168,7 +167,7 @@ The final output uses this structure. Adapt as needed, but keep the confidence s
 
 **The Code in Question**. File paths, line ranges, and key symbols. One or two lines so the reader is anchored.
 
-**What We Found (direct evidence)**. Claims with explicit citations (PR #, ticket ID, doc URL, chat permalink, commit hash, code comment with file:line). Each bullet is a thing we have textual evidence for. Use present tense and quote or paraphrase the source.
+**What We Found (direct evidence)**. Claims with explicit citations (PR #, ticket ID, doc URL, commit hash, code comment with file:line). Each bullet is a thing we have textual evidence for. Use present tense and quote or paraphrase the source.
 
 **What We Can Reasonably Infer**. Claims well-supported by indirect evidence or combinations of signals, but not explicitly stated anywhere. Each bullet must explain the inference chain: "Given A and B, it's likely that C." Use hedged language ("appears to", "likely", "suggests").
 
@@ -183,8 +182,7 @@ Format each line as: `- <Source>: <what was searched>. <what was found, or "no r
 Example:
 - Source control (jj/gh): inspected the history of `backend/retry.ts`, PRs #49074, #47812. Found PR #49074 introduced exponential backoff and linked ENG-4421.
 - Issue tracker (Linear): searched for "retry" and ENG-4421. Found ENG-4421 parent issue but no discussion of backoff parameters.
-- Long-form docs (Notion): searched for "retry policy," "backend retries," "ENG-4421." No relevant results.
-- Real-time team chat (Slack): skipped. No matching integration available in this environment. Gap: conversational record not searched.
+- Long-form docs (repository Markdown and historical Notion): searched for "retry policy," "backend retries," and "ENG-4421." No relevant results.
 - Infrastructure observability (Datadog): searched for `retry_count` metric and monitors around 2024-08-14. Found monitor "Upstream 5xx rate > 1%" created same day as PR #49074.
 - Error / exception tracking (Sentry): searched for issues first-seen in Aug 2024 with stack through `retry.ts`. Found issue SENTRY-3821 spiking in the week before the PR.
 - Product analytics warehouse (Databricks): queried `<your_analytics_db>.<schema>.stg_backend_upstream_retry` for the 30-day window around 2024-08-14. Daily failure-classified event count fell from ~1.2k/day pre-PR to <50/day post-PR. Also checked `system.query.history` for relevant migration queries. None found.
@@ -194,11 +192,11 @@ After the Sources Consulted block, if the user's `why` question is a precursor t
 ## Common Failure Modes to Avoid
 
 - **Confident storytelling**. A plausible narrative built from thin evidence. A bullet with no citation goes in "inferred" or "hypotheses," not "what we found."
-- **Citing the code as evidence for its own intent**. "Handles the null case because it checks for null" is mechanics, not motivation. Motivation comes from an external source (PR discussion, ticket, comment, conversation) or is labeled as inference.
+- **Citing the code as evidence for its own intent**. "Handles the null case because it checks for null" is mechanics, not motivation. Motivation comes from an external source (PR discussion, ticket, or comment) or is labeled as inference.
 - **Recency bias**. Assuming the most recent commit is authoritative. The current shape is often the accretion of many earlier decisions. Trace back.
 - **Sycophantic agreement**. If the user suggests a reason ("I assume this is for performance?"), treat it as a hypothesis and check the evidence independently, don't just confirm it.
 - **Skipping the gaps section**. An honest accounting of what you couldn't find out is part of the value.
-- **Skipping investigators by anticipation**. Deciding up front that "long-form docs probably don't have this" or "this isn't an error tracking thing" without searching. The default-to-all-seven posture prevents this. A null result is a data point; a skipped search is a blind spot.
+- **Skipping investigators by anticipation**. Deciding up front that "long-form docs probably don't have this" or "this isn't an error tracking thing" without searching. The default-to-all-six posture prevents this. A null result is a data point; a skipped search is a blind spot.
 - **Collapsing investigators into one agent**. Each evidence system has its own query vocabulary, result shape, and pitfalls; pooling them dilutes specialization and makes coverage harder to reason about. Always one investigator per category.
 
 ## Reference Files

@@ -70,7 +70,7 @@ Don't synthesize or form a final opinion on "the why." Collect the raw material 
 Return your findings in this structure. The synthesizer will read it directly.
 
 ### Source
-Which source you investigated (source control, issue / ticket tracker, long-form documents, real-time team chat, infrastructure observability, error / exception tracking, product analytics warehouse, code comments, etc.).
+Which source you investigated (source control, issue / ticket tracker, long-form documents, infrastructure observability, error / exception tracking, product analytics warehouse, code comments, etc.).
 
 ### What I Searched
 The queries you ran, the items you opened, the places you looked. Be specific. This tells the synthesizer how thorough the investigation was and what might still be unsearched.
@@ -78,7 +78,7 @@ The queries you ran, the items you opened, the places you looked. Be specific. T
 ### Direct Evidence Found
 For each piece that explicitly addresses the question:
 - **What it says**: verbatim quote or accurate paraphrase
-- **Where it's from**: PR #123, ticket ID, doc URL, chat permalink, commit hash, or file:line
+- **Where it's from**: PR #123, ticket ID, doc URL, commit hash, or file:line
 - **Author and date** (if available)
 - **Relevance**: one sentence on how it bears on the question
 
@@ -96,7 +96,7 @@ Two items that disagree with each other, with both citations.
 What you searched for and didn't find. Be specific: "Searched the issue tracker for [query] across [time range]. No matching issues." These absences are valuable data.
 
 ### Additional Leads
-Anything that suggests further investigation in a different source. For example, if a PR references a chat thread that wasn't in your source, record the exact lead so the parent can assess it and, if material, pursue it after the first wave with the applicable source investigator or tool.
+Anything that suggests further investigation in a different source. Record the exact lead so the parent can assess it and, if material, pursue it after the first wave with the applicable source investigator or tool.
 
 ## What You're Not Doing
 

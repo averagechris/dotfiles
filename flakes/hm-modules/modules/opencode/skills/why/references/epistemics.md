@@ -2,7 +2,7 @@
 
 How to reason about confidence when evidence is historical, fragmentary, and sometimes contradictory, and how to communicate it without flattening it into false certainty.
 
-Code doesn't carry its own motivation. You can read what code does; you can't read *why it exists*. That lives in commits, PRs, tickets, docs, and conversations, all incomplete, biased, and sometimes missing entirely. Pretending otherwise produces confident-sounding guesses that mislead the user.
+Code doesn't carry its own motivation. You can read what code does; you can't read *why it exists*. That lives in commits, PRs, tickets, and docs, all incomplete, biased, and sometimes missing entirely. Pretending otherwise produces confident-sounding guesses that mislead the user.
 
 ## Confidence Tiers
 
@@ -17,7 +17,7 @@ Examples:
 - A ticket that says "we're adding this because customer Acme requested it in their security review"
 - A code comment that says "// clamp to 100 because the upstream API rejects larger values"
 - A design doc that says "we chose option A over option B because we need persistence across restarts"
-- A chat message from the author saying "switching to this approach since the old one was flaky in tests"
+- A PR review comment from the author saying "switching to this approach since the old one was flaky in tests"
 
 Phrasing: confident, present tense. "This exists because X." Cite the source.
 
@@ -37,7 +37,7 @@ Phrasing: confident but clearly derived. "The evidence points strongly to X: [th
 A reasonable reading of the context, but nothing explicitly supports it. The reader should understand this is *your interpretation*, not a fact from the record.
 
 Examples:
-- The PR doesn't say why, but given the error was happening in production (per the incident channel timing) and the fix was rushed (merged the same day), it was likely a hotfix.
+- The PR doesn't say why, but given the error was happening in production (per the incident record timing) and the fix was rushed (merged the same day), it was likely a hotfix.
 - The function name suggests retry logic; the retry count is 3; this matches the team's general convention of "3 retries" seen elsewhere in the codebase.
 
 Phrasing: hedged. "It appears", "likely", "suggests", "is consistent with", "one reading is". Make the inference chain explicit: "Given A and B, C seems likely because D."

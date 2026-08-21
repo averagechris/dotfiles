@@ -1,40 +1,30 @@
-# Notion Docs
+# Notion docs
 
 ## What this source contains
 
-- PRDs (product requirement documents)
-- Technical specs and RFCs
-- Architectural decision records (ADRs)
-- Meeting notes from design reviews
-- Team pages with domain context
-- Postmortems from incidents
-- Runbooks that may explain defensive code
-- Strategy documents that set priorities
+- Old PRDs (product requirement documents) from the pre-AI era
+- Old RFCs from the pre-AI era
 
-Notion is where "why" often lives in long-form before it becomes code. A significant feature usually has a doc.
+Notion mainly contains old RFCs and PRDs in this setup. Current decisions and specs live primarily in repository Markdown files and Linear. Use Notion when the decision dates from the pre-AI era, another source points to an old RFC or PRD, or the user names or links a Notion page.
 
 ## How to search it
 
-Use the available Notion skill, CLI, or integration. Inspect its instructions or help rather than assuming a command or MCP schema. Adapt to an available long-form source such as Confluence, Google Docs, Coda, or a meeting-notes integration such as Granola.
+Search repository Markdown first for current docs. Search Linear for current product and project context. Then use the available Notion skill, CLI, or integration for old RFCs and PRDs. If the user points to Notion, inspect that page or search scope directly regardless of its age or type. Inspect the tool's instructions or help rather than assuming a command or MCP schema.
 
 1. **Run keyword searches through the discovered interface, following its skill instructions or command help.** Try:
    - The feature name
    - Key symbols / class names from the target code
-   - Author handles (design docs are often authored before the code lands)
-   - Error strings or user-visible terms
    - Time-bounded queries if you know when the code shipped
+   - Historical RFC and PRD titles from the target's era
 2. **Retrieve candidate pages through that interface.** Read the full content, not the preview; rationale is often buried mid-document.
 3. **Follow backlinks and child pages.** Design docs often have sub-pages for alternatives considered, appendices, or implementation notes.
-4. **Check related databases and meeting-note collections.** Map these conceptual searches to the operations documented by the discovered skill, CLI, or integration; they can surface meeting notes that discussed the decision.
-5. **Search author-specific spaces.** If the PR author has a personal notebook (common at some companies), it may hold exploratory thinking that preceded the code.
+4. **Check page status and dates.** Distinguish drafts from final documents, and prefer pages from the target's era over unrelated newer material.
 
 ## What good evidence looks like here
 
 - A PRD with a "Problem statement" or "Motivation" section that matches the target code's purpose
 - An "Alternatives considered" or "Rejected approaches" section
-- A postmortem that names the target code as the fix for a specific incident
-- Meeting notes that record "we decided X because Y" and tie to the same author/date range as the PR
-- An ADR template filled out non-trivially (status, context, decision, consequences)
+- An RFC that records "we decided X because Y" and ties to the same date range as the PR
 
 ## Common pitfalls
 
