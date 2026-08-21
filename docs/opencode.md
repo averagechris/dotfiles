@@ -504,6 +504,9 @@ build time. Current examples include:
   evidence-backed investigations of intent and history
 - `interrogate-me`, for independent adversarial reviews routed through the
   shared `subagent-selection` policy; it returns a lead verdict without fixes
+- `technical-writing`, for substantive engineering artifacts such as READMEs,
+  tutorials, RFCs, and design docs; it adds document structure and technical
+  accuracy while `impactful-writing` remains the general prose filter
 - `jj-vcs`
 - `jj-change-management`
 - `jj-conflict-resolution`

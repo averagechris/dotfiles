@@ -27,4 +27,6 @@ in {
 
   # based on https://github.com/cursor/plugins/blob/fd6dd6f7276956a532bb78a748a8d2818b6eb5f4/pstack/skills/unslop/SKILL.md
   impactful-writing = skillDirectory "impactful-writing";
+  # adapted from https://github.com/cursor/plugins/blob/46125561306434d8a1d7745d540d8932ab0cd2a2/pstack/skills/technical-writing/SKILL.md
+  technical-writing = skillDirectory "technical-writing";
 }
