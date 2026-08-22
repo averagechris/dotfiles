@@ -140,6 +140,9 @@ higher-capability `wise` agent uses `openrouter/anthropic/claude-fable-5` with
 policy so safety-rule changes stay consistent across tiers. Their concise
 descriptions summarize the intended delegation tradeoff so primary agents can
 choose effectively from the task tool.
+Wise also carries a stable judgment stance for high-consequence work: keep
+decisions falsifiable, treat implementation as design evidence, and make
+disagreement explicit.
 
 OpenCode's `subagent_depth` is set to `2`. Upstream counts a direct subagent at
 depth one, so this permits one nested handoff while still preventing longer
