@@ -67,6 +67,12 @@ instructions; its build failure intentionally detects upstream drift. Use
 `extraText` only for additive local guidance. CLI modules own source
 registration, while hosts normally set only `enable`, `patches`, or `extraText`.
 
+Sideshow uses both source forms for distinct skills: `sideshow-deck-author`
+comes from the selected upstream package source as a complete directory, so all
+of its companion files are deployed recursively, while `sideshow-work-story`
+remains a local repo-managed skill. A Sideshow package override without a `src`
+attribute installs normally but does not register or audit the upstream skill.
+
 New CLI modules should import `agent-skills.nix` and register every bundled skill
 with a default source; they should not add bespoke skill options or activation
 scripts:

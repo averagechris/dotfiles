@@ -6,6 +6,10 @@
   ...
 }: let
   cfg = config.dotfiles.sideshow;
+  skillSourceDirectory =
+    if cfg.package != null && cfg.package ? src
+    then cfg.package.src + "/skills"
+    else null;
   system = pkgs.stdenv.hostPlatform.system;
   tomlFormat = pkgs.formats.toml {};
   inputPackage =
@@ -177,6 +181,14 @@ in {
 
       dotfiles.agentSkills.sideshow-work-story.source = lib.mkDefault ./opencode/skills/sideshow-work-story/SKILL.md;
     }
+
+    (lib.mkIf (skillSourceDirectory != null) {
+      dotfiles.agentSkills.sideshow-deck-author.source = lib.mkDefault (skillSourceDirectory + "/sideshow-deck-author");
+      dotfiles.agentSkillBundles.sideshow = {
+        sourceDirectory = lib.mkDefault skillSourceDirectory;
+        expectedNames = ["sideshow-deck-author"];
+      };
+    })
 
     (lib.mkIf (config.programs.opencode.enable && cfg.opencode.exposeTool && cfg.package != null) {
       dotfiles.opencode.agentTools = lib.mkAfter [

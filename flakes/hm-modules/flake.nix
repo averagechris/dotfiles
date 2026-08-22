@@ -203,6 +203,70 @@
             mkdir "$out"
           '';
 
+        sideshow-agent-skills = let
+          opencodeAgentToolsStub = {lib, ...}: {
+            options.dotfiles.opencode.agentTools = lib.mkOption {
+              type = lib.types.listOf lib.types.attrs;
+              default = [];
+            };
+          };
+          testConfig = home-manager.lib.homeManagerConfiguration {
+            inherit pkgs;
+            extraSpecialArgs = {inherit inputs;};
+            modules = [
+              ./modules/sideshow.nix
+              opencodeAgentToolsStub
+              {
+                home.username = "test";
+                home.homeDirectory = "/tmp/test-home";
+                home.stateVersion = "26.05";
+                programs.opencode.enable = true;
+                programs.opencode.package = pkgs.hello;
+                dotfiles.sideshow = {
+                  enable = true;
+                  opencode.exposeTool = false;
+                };
+              }
+            ];
+          };
+          packageWithoutSource = pkgs.runCommand "sideshow-without-source" {} ''
+            mkdir -p "$out/bin"
+            touch "$out/bin/sideshow-without-source"
+            chmod +x "$out/bin/sideshow-without-source"
+          '';
+          overrideConfig = home-manager.lib.homeManagerConfiguration {
+            inherit pkgs;
+            extraSpecialArgs = {inherit inputs;};
+            modules = [
+              ./modules/sideshow.nix
+              opencodeAgentToolsStub
+              {
+                home.username = "test";
+                home.homeDirectory = "/tmp/test-home";
+                home.stateVersion = "26.05";
+                programs.opencode.enable = true;
+                programs.opencode.package = pkgs.hello;
+                dotfiles.sideshow = {
+                  enable = true;
+                  package = packageWithoutSource;
+                  opencode.exposeTool = false;
+                };
+              }
+            ];
+          };
+          renderedDeckAuthor = testConfig.config.xdg.configFile."opencode/skills/sideshow-deck-author".source;
+          renderedWorkStory = testConfig.config.xdg.configFile."opencode/skills/sideshow-work-story".source;
+        in
+          assert pkgs.lib.all (entry: entry.assertion) testConfig.config.assertions;
+          assert !(overrideConfig.config.dotfiles.agentSkills ? sideshow-deck-author);
+          assert overrideConfig.config.dotfiles.agentSkills ? sideshow-work-story;
+            pkgs.runCommand "sideshow-agent-skills" {} ''
+              test -f "${renderedDeckAuthor}/SKILL.md"
+              test -f "${renderedDeckAuthor}/fragment-patterns.md"
+              test -f "${renderedWorkStory}/SKILL.md"
+              mkdir "$out"
+            '';
+
         rose-pine-gtk-modern-layout = let
           theme = pkgs.rose-pine-gtk-modern;
           closure = pkgs.closureInfo {rootPaths = [theme];};

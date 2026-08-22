@@ -76,12 +76,20 @@ after `srht auth login`: generic password `service = srht`, `account = sr.ht`.
   exposes `sideshow` to OpenCode agents. Its story evidence gathering is centered
   on `srht` and the todo.sr.ht tracker rather than Linear.
 
-The module registers the repo-managed `sideshow-work-story` skill with the shared
-`dotfiles.agentSkills` renderer. It is enabled by default and supports the same
-per-skill `enable`, `patches`, and `extraText` controls documented in
-[`docs/opencode.md`](/docs/opencode.md). The skill nudges agents to collect
-bounded evidence from `ctx`, Linear, GitHub PRs, and local VCS before turning the
-work into an impact narrative or deck.
+The module registers two skills with the shared `dotfiles.agentSkills` renderer.
+The selected Sideshow package's upstream source provides
+`sideshow-deck-author`; the module deploys its complete skill directory, so
+companion files such as `fragment-patterns.md` remain available and future
+companions are included automatically. An audited bundle manifest requires the
+upstream source to contain exactly that registered skill until additions are
+reviewed. Package overrides without a `src` attribute skip this upstream
+registration.
+
+The separate `sideshow-work-story` skill remains repo-managed. It nudges agents
+to collect bounded evidence from `ctx`, Linear, GitHub PRs, and local VCS before
+turning the work into an impact narrative or deck. Both skills are enabled by
+default and support the per-skill `enable`, `patches`, and `extraText` controls
+documented in [`docs/opencode.md`](/docs/opencode.md).
 
 ## Useful commands
 
