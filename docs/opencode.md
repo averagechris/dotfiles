@@ -176,6 +176,41 @@ compact design packet, and hands implementation back to the orchestrator when
 requested. `how` remains the route for explaining or critiquing existing
 architecture. `code-review` and opt-in `interrogate-me` review implemented work.
 
+The repo-managed `project-map` skill is for efforts whose decisions cannot fit in
+one agent session. It keeps a durable, Wayfinder-compatible map plus child
+decision files. The map indexes resolved decisions and records unresolved fog;
+each child owns its question and answer. It creates children only for precise
+questions and supports Wayfinder's `research`, `prototype`, `grilling`, and
+`task` metadata through existing local capabilities rather than companion
+skills. Short-lived decisions are revised in place unless their old answer has
+created lasting external obligations.
+
+Project-map decisions may link supporting visual explanations, prototypes,
+demos, reviews, and verification results when prose alone makes structure,
+behavior, alternatives, or delivered behavior hard to judge. Each artifact
+names the question or claim it evaluates and links back to the relevant decision
+or canonical map. It remains a projection or evidence, not another authority;
+accepted review feedback is reconciled into the map or child decision. Verified
+results identify the exact implementation revision or delivered state and link
+the underlying checks without replacing automated checks or delivery records.
+External delivery items may link useful artifacts according to project
+conventions, but neither attachments nor one artifact per item are required.
+
+Project maps describe discovery, not delivery tracking. Linear or SourceHut
+holds organization-visible implementation work, ownership, progress, delivery
+dependencies, change links, and compliance evidence. The relationship is
+many-to-many: agents must not create one tracker issue per map item or copy map
+blockers into tracker dependencies by default. Delivery issues need a concrete
+outcome and normally one coherent, reviewable change or PR. They link to the
+canonical map and relevant named decisions. Cross-repository efforts use one
+ canonical map linked from each repository and tracker initiative when the user
+ explicitly asks or approves those backlinks. Synthesis may use `architect` and
+ `technical-writing`, then the repository's tracker skill, but ordinary delivery
+ issue creation and production implementation do not become allowed merely to
+ establish backlinks. Production implementation starts only after an explicit
+ human transition out of discovery, and the map alone never authorizes external
+ mutation.
+
 Implementation packets require proof at the boundary where behavior is claimed.
 Agents escalate when implementation disproves a design assumption, favor
 subtraction unless added scope has a clear payoff, and use fresh scoped handoffs

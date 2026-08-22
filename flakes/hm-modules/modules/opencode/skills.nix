@@ -28,6 +28,8 @@ in {
   blast-radius = skillDirectory "blast-radius";
   # adapted from https://github.com/cursor/plugins/tree/46125561306434d8a1d7745d540d8932ab0cd2a2/pstack/skills/architect
   architect = skillDirectory "architect";
+  # adapted from https://github.com/mattpocock/skills/blob/5b15a47f2d7150f545fbcacbfe381787fc0230dc/skills/engineering/wayfinder/SKILL.md
+  project-map = skillDirectory "project-map";
   linear-cli = skillDirectory "linear-cli";
   subagent-selection = ''
     ${skill "subagent-selection"}
