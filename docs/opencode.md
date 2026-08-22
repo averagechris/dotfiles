@@ -166,6 +166,13 @@ the task's capability threshold. Its canonical rubric defines capability bands,
 intrinsic response speed at comparable work, and nonlinear intrinsic model-cost
 bands independently of the tasks each tier is assigned.
 
+The local `architect` skill handles explicit design requests and costly-to-reverse
+contracts, data models, ownership boundaries, state models, extension points, and
+multi-system migrations. It grounds existing systems with `how`, produces a
+compact design packet, and hands implementation back to the orchestrator when
+requested. `how` remains the route for explaining or critiquing existing
+architecture. `code-review` and opt-in `interrogate-me` review implemented work.
+
 Implementation packets require proof at the boundary where behavior is claimed.
 Agents escalate when implementation disproves a design assumption, favor
 subtraction unless added scope has a clear payoff, and use fresh scoped handoffs
@@ -505,6 +512,9 @@ modules register bundled or repo-managed skills with `dotfiles.agentSkills`, so
 rendering, patching, extension, and per-skill enablement happen uniformly at
 build time. Current examples include:
 
+- `architect`, for explicit design work and expensive-to-reverse boundaries; it
+  does not trigger for routine features, clear-precedent placement, explanation,
+  critique, implemented-diff review, or mere multi-file breadth
 - `code-review`, for ordinary behavioral review of a named change. It judges
   stated intent and reachable behavior, distinct from `interrogate-me`
   adversarial review, `blast-radius` compatibility analysis, `how` architecture
