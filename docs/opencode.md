@@ -510,6 +510,8 @@ build time. Current examples include:
   improvements; it waits for approval before applying anything
 - `interrogate-me`, for independent adversarial reviews routed through the
   shared `subagent-selection` policy; it returns a lead verdict without fixes
+- `blast-radius`, for tracing compatibility and downstream breakage beyond a
+  diff, then testing the assumptions that make the change safe
 - `technical-writing`, for substantive engineering artifacts such as READMEs,
   tutorials, RFCs, and design docs; it adds document structure and technical
   accuracy while `impactful-writing` remains the general prose filter
