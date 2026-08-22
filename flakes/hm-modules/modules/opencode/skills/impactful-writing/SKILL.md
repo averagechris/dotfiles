@@ -1,11 +1,11 @@
 ---
 name: impactful-writing
-description: Write impactful text content without AI tells. Must always apply.
+description: Use for nearly all user-facing prose and durable content written on the user's behalf. Do not use for internal agent packets, raw tool output, or machine-consumed findings.
 ---
 
 # Impactful Writing
 
-Write text to with human voice, removing AI patterns.
+Write with a human voice and remove AI patterns. Apply this skill to direct user communication and durable prose. Skip internal coordination and machine-consumed output.
 
 ## Process
 

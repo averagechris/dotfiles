@@ -537,6 +537,8 @@ build time. Current examples include:
 - `technical-writing`, for substantive engineering artifacts such as READMEs,
   tutorials, RFCs, and design docs; it adds document structure and technical
   accuracy while `impactful-writing` remains the general prose filter
+- `impactful-writing`, for nearly all user-facing and durable prose, but not
+  internal agent packets, raw tool output, or machine-consumed findings
 - `jj-vcs`
 - `jj-change-management`
 - `jj-conflict-resolution`
