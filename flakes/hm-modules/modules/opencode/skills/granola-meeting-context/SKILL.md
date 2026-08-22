@@ -25,8 +25,8 @@ granola digest --since 14d --limit 10 --output list
 # Discover fields and compose shell pipelines
 granola notes fields search --output table
 granola notes fields get --output table
-granola notes search renewal --fields id --limit 1 | granola notes get --fields summary --output text
-granola notes search renewal --fields id --output text --limit 1 | granola notes get --fields transcript --output text
+granola notes search renewal --fields id --limit 1 | granola notes get --fields summary --output text --redact emails,phones,secrets,attendees
+granola notes search renewal --fields id --output text --limit 1 | granola notes get --fields transcript --output text --redact emails,phones,secrets,attendees
 
 # Pull bounded context by explicit selectors: filters, exact note IDs/Granola URLs,
 # --notes-file, --stdin, or --all. Do not call bare `granola context`.

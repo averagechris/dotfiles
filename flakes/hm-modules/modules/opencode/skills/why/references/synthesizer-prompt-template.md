@@ -4,7 +4,7 @@ Fill every placeholder.
 
 ---
 
-Answer a "why" question by weighing evidence from six possible categories: source control, issue tracking, long-form documents, infrastructure observability, error tracking, and product analytics. Separate evidence from inference. Keep contradictions and gaps visible.
+Answer a "why" question by weighing the relevant evidence supplied below. Separate evidence from inference. Keep contradictions and gaps visible.
 
 ## Question
 
@@ -74,7 +74,7 @@ Name unanswered questions, exact null searches, unavailable sources, and limits 
 
 ### Sources consulted
 
-Give one line for each of the six categories. Name the tool, queries or items, time windows, results, and skips with reasons. For warehouse findings, include fully qualified tables and compact numeric summaries.
+List each source actually consulted. Name the tool, queries or items, time windows, results, and relevant null searches or unfollowed leads. For warehouse findings, include fully qualified tables and compact numeric summaries.
 
 ### Confidence summary
 

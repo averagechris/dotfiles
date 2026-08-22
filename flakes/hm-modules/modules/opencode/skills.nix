@@ -4,14 +4,13 @@ let
   agentSelectionPolicy = builtins.readFile ./agent-selection-policy.md;
   agentSelectionTable = builtins.readFile ./agent-selection-table.md;
 in {
-  jj-vcs = skillDirectory "jj-vcs";
   jj-change-management = skillDirectory "jj-change-management";
   jj-conflict-resolution = skillDirectory "jj-conflict-resolution";
   jj-repo-workflow = skillDirectory "jj-repo-workflow";
   jj-workspaces = skillDirectory "jj-workspaces";
   conventional-commits = skillDirectory "conventional-commits";
   code-review = skillDirectory "code-review";
-  databricks-cli = skillDirectory "databricks-cli";
+  test-curation = skillDirectory "test-curation";
   # adapted from https://github.com/cursor/plugins/tree/fd6dd6f7276956a532bb78a748a8d2818b6eb5f4/pstack/skills/how
   how = skillDirectory "how";
   # adapted from https://github.com/cursor/plugins/tree/fd6dd6f7276956a532bb78a748a8d2818b6eb5f4/pstack/skills/why
@@ -30,7 +29,6 @@ in {
   architect = skillDirectory "architect";
   # adapted from https://github.com/mattpocock/skills/blob/5b15a47f2d7150f545fbcacbfe381787fc0230dc/skills/engineering/wayfinder/SKILL.md
   project-map = skillDirectory "project-map";
-  linear-cli = skillDirectory "linear-cli";
   subagent-selection = ''
     ${skill "subagent-selection"}
     ${agentSelectionPolicy}

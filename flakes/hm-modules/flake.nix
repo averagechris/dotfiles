@@ -543,7 +543,7 @@
           assert settings.default_agent == "orchestrator";
           assert settings.subagent_depth == 2;
           assert lib.hasInfix "Use this exceptional tier only" buildPrompt;
-          assert lib.hasInfix "orchestrator to Minion instead" buildPrompt;
+          assert lib.hasInfix "return control to the caller for canonical routing" buildPrompt;
           # Build re-delegation is constrained by orchestrator handoff guidance,
           # not banned by permissions: keep its task allowances intact.
           assert lib.hasInfix ''"minion": "allow"'' (taskPermissions buildPrompt);

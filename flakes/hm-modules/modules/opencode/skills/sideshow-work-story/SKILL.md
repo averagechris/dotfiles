@@ -1,11 +1,12 @@
 ---
 name: sideshow-work-story
-description: Use when the user asks to use sideshow to show off work, make an impact/story deck, or synthesize agent sessions with issue tracker and code-change evidence.
+description: Use when the user asks to synthesize work into an evidence-backed impact story, including bounded agent-history, tracker, and code-change research. If an actual deck is requested, hand a bounded story packet to sideshow-deck-author for deck mechanics.
 ---
 
 # sideshow Work Story
 
-Use `sideshow` to turn recent work into an evidence-backed narrative or deck.
+Turn recent work into an evidence-backed narrative and a bounded handoff for any
+requested deck.
 This is especially relevant for prompts like “look at my OpenCode sessions this
 week, cross-reference issue tracker work and code changes, and help me tell the
 story of the impact.”
@@ -21,29 +22,22 @@ story of the impact.”
    shipped PRs, review/incident/customer signals, and open follow-ups.
 3. Shape a concise arc: context → problem → interventions → measured impact →
    risks or next bets. Keep citations or source links in speaker notes.
-4. If the user wants a deck, create a `sideshow` source directory, run
-   `sideshow themes --format json`, pick a theme that fits the audience, and
-   author small `slides/*.html` or `slides/*.md` fragments.
-5. Verify before delivery:
-
-   ```bash
-   sideshow check <deck-dir>
-   sideshow build <deck-dir>
-   ```
-
-   If browser automation is available, open the exact built HTML path and run
-   `sideshow.audit()` plus screenshots before presenting it.
-6. For a human feedback pass, use `sideshow serve <deck-dir> --review --open`.
-   Review annotations stay in XDG state, not the deck; export them with
-   `sideshow review export <deck-dir> --format markdown` for an agent handoff.
+4. Return a bounded story packet containing the audience and purpose, time and
+   project bounds, narrative arc, strongest claims, evidence links or citations,
+   caveats, and open questions. Do not include an unbounded history dump.
+5. If the user asks to create or revise an actual deck, load
+   `sideshow-deck-author` only when that skill is available, and pass it that
+   packet. If it is absent (including with a supported source-less package
+   override), return the bounded story packet and clearly state that deck
+   authoring is unavailable. Do not attempt to load a missing skill or duplicate
+   its mechanics. Deck creation, revision,
+   themes, fragment authoring, project-artifact explain/prototype/verify
+   mechanics, checks, builds, review, and publishing belong to deck-author; do
+   not restate or improvise those command contracts here.
 
 ## Notes
 
-- `sideshow` config lives at `~/.config/sideshow/config.toml`; tool paths may be
-  managed there for `tailwindcss`, `ffmpeg`, `vhs`, and `aws`.
-- Deck-local `[[fonts]]` entries can embed deterministic subsets of licensed
-  TrueType `.ttf` faces. Verify redistribution/subsetting rights and preserve any
-  required license sidecar; technical validation is not a license grant.
 - Do not invent metrics. If impact is qualitative or inferred, label it that way
   and suggest what to measure next.
-- Prefer a stronger story with fewer claims over a busy deck full of weak links.
+- Prefer a stronger story with fewer claims over a busy narrative full of weak
+  links.

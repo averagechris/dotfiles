@@ -89,9 +89,12 @@ registration.
 
 The separate `sideshow-work-story` skill remains repo-managed. It nudges agents
 to collect bounded evidence from `ctx`, Linear, GitHub PRs, and local VCS before
-turning the work into an impact narrative or deck. Both skills are enabled by
-default and support the per-skill `enable`, `patches`, and `extraText` controls
-documented in [`docs/opencode.md`](/docs/opencode.md).
+shaping an impact narrative. If the user requests an actual deck, work-story
+passes a bounded evidence/story packet to `sideshow-deck-author`. Deck-author
+alone owns deck creation and revision, themes and fragments, project-artifact
+explain/prototype/verify mechanics, checks, builds, review, and publishing. Both
+skills are enabled by default and support the per-skill `enable`, `patches`, and
+`extraText` controls documented in [`docs/opencode.md`](/docs/opencode.md).
 
 ## Useful commands
 

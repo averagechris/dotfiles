@@ -1,6 +1,6 @@
 ---
 name: why
-description: "Use for design rationale, regressions, postmortems, data-backed thresholds, and questions such as 'why does X work this way?' Discovers available evidence categories, searches each in parallel, and returns a cited account of decisions and tradeoffs. Use how for runtime behavior."
+description: "Use for design rationale, regressions, postmortems, data-backed thresholds, and questions such as 'why does X work this way?' Starts with current code, docs, and linked history, then follows relevant evidence leads to a cited account of decisions and tradeoffs. Use how for runtime behavior."
 ---
 
 # Why
@@ -13,7 +13,7 @@ Investigate why code has its current shape. Find the constraints, edge cases, al
 - Cite claims about intent with a commit, PR, ticket, document, telemetry item, or code comment. Code mechanics alone do not prove intent.
 - Keep contradictions visible.
 - Treat the user's suggested reason as a hypothesis to test.
-- Report unavailable sources and null searches. Absence is not proof that a record never existed.
+- Report relevant unavailable sources and null searches. Absence is not proof that a record never existed.
 - Match wording to confidence. Do not trade accurate hedges for a smoother answer.
 - Never inspect secrets, credentials, authentication material, decrypted secret material, or `.age` files.
 
@@ -27,97 +27,67 @@ If the target is vague, infer it only from the conversation and available editor
 
 ## 2. Build a code anchor
 
-Collect:
+Collect file paths and lines, key symbols, commits that shaped the target, and any linked PR, ticket, document, or incident IDs. Use the repository's configured VCS and prefer `jj` in a jj repository. Consult local VCS guidance for attribution, rename-aware history, patches, and descriptions.
 
-- file paths and line ranges
-- key symbols
-- recent and older commits that shaped the target
-- PR numbers, ticket IDs, and incident IDs in those commits
+When a forge is available and a linked change appears material, retrieve its substantive description, discussion, reviews, and linked records with the appropriate read-only tool. Do not assume a particular forge.
 
-Use the repository's configured VCS. Prefer `jj` in a jj repository. Check local VCS skill instructions or command help for attribution, rename-aware history, patches, and descriptions.
+## 3. Follow relevant evidence
 
-When `gh` is available, retrieve substantive PR context:
+Start with current code and repository documentation, then inspect VCS history and records linked from commits, comments, or docs. These sources establish the target and usually reveal the vocabulary, dates, and IDs needed for precise follow-up.
 
-```bash
-gh pr view <number> --json title,body,author,createdAt,mergedAt,labels,closingIssuesReferences,comments,reviews
-```
+Search other sources only when a lead names them or when that source could plausibly decide between competing rationales. Depending on the question, useful evidence may include issue trackers, design documents, meeting notes, CI records, observability, error tracking, product analytics, or incident records. Inspect available tools and skill instructions without assuming an integration exists or inspecting credentials to enable it.
 
-Pass this anchor to every investigator.
+Direct investigation and synthesis are the default. When evidence volume or independent investigation justifies delegation, load `subagent-selection` and assign focused, non-overlapping sources or questions. Each investigator stays read-only and receives:
 
-## 3. Discover and search available categories
-
-Inspect the tools, skills, CLIs, and integrations available now. Do not assume an integration exists or inspect credentials to enable it. Map capabilities to these six categories:
-
-1. Source control history
-2. Issue or ticket tracking
-3. Long-form documents
-4. Infrastructure observability
-5. Error or exception tracking
-6. Product analytics warehouse
-
-Source control is available through the repository, though a forge may not be. Use skill instructions, command help, and integration descriptions to classify other capabilities. Choose the primary category for ambiguous tools and note the ambiguity.
-
-For long-form context, search repository Markdown first. Use Granola when a meeting may hold the rationale. Use Notion for old RFCs and PRDs from the pre-AI era, or when the user points to Notion. For issue tracking, use Linear for current work and SourceHut in repositories that use it. This dotfiles repository uses SourceHut under `repo:dotfiles`.
-
-Launch one investigator per available category in one message. Never combine categories or launch duplicate investigators for interfaces in the same category. A category investigator may use every applicable playbook and interface. Each investigator stays read-only and receives:
-
-1. `references/investigator-prompt-template.md`, with all placeholders filled
-2. the matching file under `references/sources/`, adapted to the available interface
-3. `references/sources/incident-postmortem.md` when the code looks defensive
+1. `references/investigator-prompt-template.md`, with its placeholders filled
+2. applicable guidance from `references/source-playbook.md`
+3. `references/sources/incident-postmortem.md` when the target looks defensive and incident evidence is plausible
 4. the code anchor
 5. the original question
 
-For current repository Markdown, search the repository directly. Source control may use `jj` or git, `gh`, and relevant SourceHut CI. Use `ctx` only after normal searches or to recover missing links. Verify its leads against a first-class source. `references/source-playbook.md` indexes the playbooks.
+Search repository Markdown directly. Use agent history only after normal searches or to recover missing links, and verify its leads against a first-class source. The source playbook provides generic, conditional examples rather than required coverage.
 
-### What each category contributes
+### What sources can contribute
 
-- **Source control history.** Always search it. Commits, PR discussions, review artifacts, tests, co-changes, and CI can preserve or corroborate implementation-time rationale.
-- **Issue or ticket tracking.** Linear and repository-specific trackers such as SourceHut can hold customer, product, deadline, or compliance reasons.
-- **Long-form documents.** Current repository Markdown and meeting notes can hold problem statements, alternatives, ADRs, strategy, and postmortems. Old Notion RFCs and PRDs may preserve earlier decisions. Search other Notion material when the user points to it.
-- **Infrastructure observability.** Metrics, monitors, logs, traces, and incidents show runtime conditions around a change.
-- **Error or exception tracking.** Issues, events, stack traces, and releases can connect defensive code to a failure.
-- **Product analytics warehouse.** Events, experiments, usage, query history, and distributions show user or data conditions around a change.
+- **Source control and linked changes.** Commits, reviews, tests, co-changes, and CI can preserve or corroborate implementation-time rationale.
+- **Trackers and documents.** Tickets, ADRs, RFCs, meeting notes, and postmortems can state product constraints, alternatives, or deadlines.
+- **Operational evidence.** Logs, metrics, traces, incidents, exceptions, and product data can establish the runtime or usage conditions around a decision.
 
-### Skips, gaps, and follow-up
+### Gaps and follow-up
 
-Skip a category only when no matching capability is available or the source is provably irrelevant. For example, error tracking is irrelevant to a build-time script with no runtime path. "This probably is not an error-tracking issue" is not enough. Record every skip in the final coverage map.
+Do not perform ceremonial searches. Record why a promising lead was not followed, but do not list unrelated source categories merely to prove coverage.
 
 A null search is useful only with its query, scope, time range, access, retention, and indexing limits. It does not prove nonexistence. An inaccessible or expired record is a gap, not a null result.
 
-First-wave investigators cannot use each other's leads. They record cross-source references under Additional Leads. After they return, follow each material lead with the matching investigator or tool. Keep this pass bounded. Skip duplicate, immaterial, inaccessible, or out-of-scope leads with a reason.
-
-Only answer inline for a trivial, single-commit target after confirming that every available category would add nothing. State that decision. This should be rare.
+Follow material leads with the matching tool or a focused investigator. Keep follow-up bounded. Skip duplicate, immaterial, inaccessible, or out-of-scope leads with a reason.
 
 ## 4. Synthesize
 
-Launch one read-only synthesizer with:
+Synthesize directly by default. If the evidence set is too large or contradictory for reliable synthesis in the current context, load `subagent-selection` and give one read-only synthesizer:
 
-1. all findings, null results, follow-up results, and justified skips
-2. the code anchor
-3. the original question
-4. the full text of `references/epistemics.md` in `{EPISTEMICS_FRAMEWORK}`
-5. `references/synthesizer-prompt-template.md`, with every placeholder filled
+1. all findings, null results, follow-up results, and justified unfollowed leads
+2. the code anchor and original question
+3. the full text of `references/epistemics.md`
+4. `references/synthesizer-prompt-template.md`, with every placeholder filled
 
-The synthesizer may spot-check citations with available tools. It must separate evidence from inference and retain contradictions and gaps.
+Separate evidence from inference. Retain contradictions and gaps. Any synthesizer may spot-check citations with available read-only tools.
 
 ## 5. Present and verify
 
-Lightly edit the result for clarity, but do not strengthen its confidence wording. Before responding, verify citations and use this structure:
+Before responding, verify citations and adapt this structure to the evidence:
 
 - **The question.** A concise restatement.
 - **The code in question.** Paths, lines, and symbols.
 - **What we found.** Direct and Supported claims with citations.
-- **What we can reasonably infer.** Inferred claims with explicit reasoning and hedged wording.
+- **What we can reasonably infer.** Inferred claims with explicit reasoning and calibrated wording.
 - **Competing hypotheses.** Speculative alternatives, evidence for each, and missing or contrary evidence. Omit when one answer is well supported.
-- **What we don't know.** Unanswered questions, null searches, and unavailable sources.
-- **Sources consulted.** One line per category, including empty and skipped searches.
+- **What we don't know.** Unanswered questions, relevant null searches, and unavailable sources.
+- **Sources consulted.** Searches that informed the answer, including relevant null searches and justified unfollowed leads.
 - **Confidence summary.** Overall calibration.
 
-Format coverage lines as:
+For each source, name the tool or record, search scope, and finding or limit. If the investigation precedes a code change, finish with Preserve, Change, Avoid, and Risk constraints for planning.
 
-`- <category and tool>: <search scope>. <finding, "no relevant results," or "skipped" with reason>.`
-
-If the investigation precedes a code change, finish with Preserve, Change, Avoid, and Risk constraints for planning.
+For a postmortem, preserve the same epistemic discipline while also distinguishing trigger, contributing conditions, detection, response, impact, and corrective actions. Do not let temporal correlation become causation.
 
 ## Final audit
 
@@ -128,13 +98,13 @@ Check that:
 - no claim uses code mechanics as proof of intent
 - the user's hypothesis was tested rather than accepted
 - contradictions remain visible
-- gaps, null searches, and skips include concrete scope
-- all six categories appear in the coverage map
+- gaps and null searches include concrete scope
+- searches stayed relevant to the question and material leads
 
 ## References
 
 - `references/epistemics.md`: confidence tiers and wording
-- `references/investigator-prompt-template.md`: investigator prompt
-- `references/source-playbook.md`: category playbook index
+- `references/investigator-prompt-template.md`: focused investigator prompt
+- `references/source-playbook.md`: optional source guidance
 - `references/sources/*.md`: source-specific search guidance
-- `references/synthesizer-prompt-template.md`: synthesizer prompt and output
+- `references/synthesizer-prompt-template.md`: optional synthesis prompt and output

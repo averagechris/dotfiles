@@ -645,6 +645,8 @@ in {
       cacheRefresh.enable = true;
       hygieneAutomation.enable = true;
     };
+    dotfiles.agentSkills.linear-admin.enable = false;
+    dotfiles.agentSkills.databricks-cli.enable = false;
   };
 
   fonts.packages = [pkgs.nerd-fonts.droid-sans-mono];

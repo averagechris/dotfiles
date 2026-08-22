@@ -1,3 +1,8 @@
+---
+name: sentry-cli
+description: Investigates Sentry with the local new `sentry` CLI.
+---
+
 # Sentry CLI
 
 Use when investigating Sentry with the local `sentry` CLI.

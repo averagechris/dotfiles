@@ -24,6 +24,10 @@ agents.
   standardized per-skill `enable`, `patches`, and `extraText` controls; see
   [`docs/opencode.md`](/docs/opencode.md).
 
+`suremac` disables `linear-admin` while its upstream one-off API-key guidance is
+unsafe for agent command arguments. The other six focused Linear skills remain
+enabled.
+
 The CLI resolves its user-level config directory with Rust's
 `dirs::config_dir()`: `~/Library/Application Support/linear-cli` on macOS and
 `$XDG_CONFIG_HOME/linear-cli` on Linux. The module targets that platform path;

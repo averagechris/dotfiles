@@ -294,8 +294,13 @@ jj new @
 # edit files
 jj describe -m "fix(scope): address PR feedback"
 jj bookmark set <pr-bookmark> -r @
+jj lint
 jj git push --bookmark <pr-bookmark>
 ```
+
+Do not raw-push a feedback change before `jj lint` succeeds. If the repository's
+canonical `jj push` helper targets the intended bookmark and preserves the same
+semantics, prefer it because it runs the lint gate before pushing.
 
 Then re-check the PR with GitHub/CircleCI tools as appropriate.
 

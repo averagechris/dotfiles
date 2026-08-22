@@ -25,7 +25,7 @@ Use only the lenses that fit the change. Prefer a few findings with traced evide
 ## Verification
 
 - Check whether tests and assertions cover behavior rather than implementation details.
-- For a bug fix, look for a regression test. For an integration boundary, follow the full path.
+- Ask for a permanent test only when it protects meaningful behavior through a stable boundary and justifies its maintenance and CI cost. A useful development check need not ship. For an integration boundary, follow the full path.
 - Verify real outputs and state rather than proxies, cached indicators, or delegated self-reports.
 
 ## Security

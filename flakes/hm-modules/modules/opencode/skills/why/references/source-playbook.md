@@ -1,12 +1,12 @@
 # Source playbooks
 
-Use the applicable playbooks within each available evidence category. One category investigator may use several interfaces. Do not spawn duplicate investigators for Linear and SourceHut issues, or for repository Markdown, Granola, and Notion. Use `ctx` after normal searches or when a link is missing. It supplies leads, not evidence.
+Use a playbook only when the question or a concrete lead makes its source relevant. One focused investigator may use several interfaces when that avoids duplicate work. Use agent history after normal searches or when a link is missing. It supplies leads, not evidence.
 
 | Category | Playbook | Example source it documents |
 |---|---|---|
 | Source control history | [`code-archaeology.md`](./sources/code-archaeology.md), [`sourcehut-ci.md`](./sources/sourcehut-ci.md) | `jj` or git, `gh`, relevant builds.sr.ht CI |
-| Issue / ticket tracker | [`linear.md`](./sources/linear.md), [`sourcehut-issues.md`](./sources/sourcehut-issues.md) | Linear for current work; SourceHut for repositories that use it, especially dotfiles |
-| Long-form documents | [`repository-markdown.md`](./sources/repository-markdown.md), [`granola.md`](./sources/granola.md), [`notion.md`](./sources/notion.md) | Repository Markdown first; Granola for meeting rationale; old or user-referenced Notion pages |
+| Issue / ticket tracker | [`linear.md`](./sources/linear.md), [`sourcehut-issues.md`](./sources/sourcehut-issues.md) | A tracker linked by repository conventions, commits, or the user |
+| Long-form documents | [`repository-markdown.md`](./sources/repository-markdown.md), [`granola.md`](./sources/granola.md), [`notion.md`](./sources/notion.md) | Repository docs first; meeting notes or document systems when a lead points there |
 | Infrastructure observability | [`datadog.md`](./sources/datadog.md) | Datadog (adapt for New Relic, Honeycomb, Grafana, Splunk) |
 | Error / exception tracking | [`sentry.md`](./sources/sentry.md) | Sentry (adapt for Rollbar, Bugsnag, Airbrake) |
 | Product analytics warehouse | [`databricks.md`](./sources/databricks.md) | Databricks SQL (adapt for Snowflake, BigQuery, ClickHouse, dbt) |

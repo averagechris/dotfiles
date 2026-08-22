@@ -1,10 +1,10 @@
 # Investigator prompt template
 
-Fill every placeholder. Append the applicable playbooks for one category from `source-playbook.md`. One investigator may use several interfaces in that category. If the target looks defensive, also append `sources/incident-postmortem.md`.
+Fill every placeholder. Append the playbooks relevant to the focused source or question. If the target looks defensive and incident evidence is plausible, also append `sources/incident-postmortem.md`.
 
 ---
 
-Investigate historical evidence about a piece of code. Other investigators cover other categories. Search only your assigned category. Return evidence for a separate synthesizer, not a final story.
+Investigate a focused source or question about the history of a piece of code. Stay within the assignment and return evidence for the caller's synthesis, not a final story.
 
 Be exact. Quote important wording and provide a citation that can be checked quickly. Search broadly before narrowing. Read full items, including comments and linked items within your category. Record contradictions, queries, null results, access limits, and retention limits.
 

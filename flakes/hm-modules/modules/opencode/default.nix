@@ -236,6 +236,7 @@ in {
       # so other modules can extend it: dev-cache appends host-specific
       # sccache guidance via extraText when enabled.
       dotfiles.agentSkills.rust-cargo.source = lib.mkDefault ./skills/rust-cargo/SKILL.md;
+      dotfiles.agentSkills.databricks-cli.source = lib.mkDefault ./skills/databricks-cli;
 
       home.packages = (map (tool: tool.package) installedAgentTools) ++ cfg.agentSupportPackages;
 

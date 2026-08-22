@@ -46,7 +46,7 @@ Choose a shape and record its rationale, rejected alternatives, risks, and the s
 
 ## Respect scope
 
-Design-only requests stop at the design. If implementation is requested, give the orchestrator a clear packet. Do not create VCS changes per phase by default. Never publish, deploy, mutate external systems, or implement beyond user scope.
+Design-only requests stop at the design. If implementation is requested, return a clear implementation packet to the caller. Do not create VCS changes per phase by default. Never publish, deploy, mutate external systems, or implement beyond user scope.
 
 Pause when the user asks, product or API alternatives differ materially, migration or compatibility is substantial, or reversal is about to become expensive. Otherwise reversible work may continue.
 

@@ -70,7 +70,10 @@ registration, while hosts normally set only `enable`, `patches`, or `extraText`.
 Sideshow uses both source forms for distinct skills: `sideshow-deck-author`
 comes from the selected upstream package source as a complete directory, so all
 of its companion files are deployed recursively, while `sideshow-work-story`
-remains a local repo-managed skill. A Sideshow package override without a `src`
+remains a local repo-managed evidence and narrative skill. Work-story hands a
+bounded evidence/story packet to deck-author when an actual deck is requested;
+deck-author exclusively owns deck creation, revision, project-artifact mechanics,
+checks, builds, review, and publishing. A Sideshow package override without a `src`
 attribute installs normally but does not register or audit the upstream skill.
 
 New CLI modules should import `agent-skills.nix` and register every bundled skill
@@ -150,6 +153,13 @@ Wise also carries a stable judgment stance for high-consequence work: keep
 decisions falsifiable, treat implementation as design evidence, and make
 disagreement explicit.
 
+The repo-managed `test-curation` skill is conditional. When the orchestrator
+delegates review of a code change that added or materially changed tests, it tells
+that reviewer to load the skill. The orchestrator does not load it itself. The
+reviewer decides which changed tests deserve permanent retention; an implementation
+handoff may then remove low-value tests and run focused checks. Non-code work and
+changes without test changes do not carry this guidance.
+
 OpenCode's `subagent_depth` is set to `2`. Upstream counts a direct subagent at
 depth one, so this permits one nested handoff while still preventing longer
 delegation chains. The orchestrator policy requires every handoff prompt to say
@@ -178,9 +188,14 @@ bands independently of the tasks each tier is assigned.
 The local `architect` skill handles explicit design requests and costly-to-reverse
 contracts, data models, ownership boundaries, state models, extension points, and
 multi-system migrations. It grounds existing systems with `how`, produces a
-compact design packet, and hands implementation back to the orchestrator when
+compact design packet, and returns implementation guidance to its caller when
 requested. `how` remains the route for explaining or critiquing existing
-architecture. `code-review` and opt-in `interrogate-me` review implemented work.
+architecture. It explores and synthesizes directly by default, using focused
+Explore agents only when breadth or uncertainty warrants the cost. `why` starts
+with code, repository docs, VCS history, and linked records. It searches other
+evidence sources or delegates investigation only when a lead or unresolved
+rationale makes that work useful. `code-review` and opt-in `interrogate-me`
+review implemented work.
 
 The repo-managed `project-map` skill is for efforts whose decisions cannot fit in
 one agent session. It keeps a durable, Wayfinder-compatible map plus child
@@ -563,6 +578,8 @@ build time. Current examples include:
   stated intent and reachable behavior, distinct from `interrogate-me`
   adversarial review, `blast-radius` compatibility analysis, `how` architecture
   critique, and forge or PR workflows
+- `test-curation`, for deciding which added or materially changed tests deserve
+  permanent retention when finalizing code delivery
 - `how`, for architecture and runtime explanations, and `why`, for
   evidence-backed investigations of intent and history
 - `teach`, for paced explanations that build a mental model from mechanics and,
@@ -580,20 +597,21 @@ build time. Current examples include:
   accuracy while `impactful-writing` remains the general prose filter
 - `impactful-writing`, for nearly all user-facing and durable prose, but not
   internal agent packets, raw tool output, or machine-consumed findings
-- `jj-vcs`
 - `jj-change-management`
 - `jj-conflict-resolution`
 - `jj-repo-workflow`
 - `jj-workspaces`
-- `linear-cli`
 - `linear-admin`, `linear-data`, `linear-git`, `linear-issues`,
   `linear-organization`, `linear-planning`, and `linear-tracking` (registered by
   `dotfiles.linearCli`)
 - `rdny-browser` (registered by `dotfiles.rdny`)
 - `gander-review` and `gander-address-review` (registered by `dotfiles.gander`)
-- `sideshow-work-story` (registered by `dotfiles.sideshow`)
+- `sideshow-work-story`, for bounded work evidence gathering and impact-story
+  synthesis, and package-backed `sideshow-deck-author`, for creating, revising,
+  checking, building, reviewing, and publishing actual decks (both registered by
+  `dotfiles.sideshow`)
 - `srht-issues`, `srht-ci`, and `srht-setup` (registered by `dotfiles.srht`)
-- `databricks-cli`
+- `databricks-cli` (registered globally, currently disabled on `suremac`)
 - `pup-cli`
 - `rust-cargo` (registered by the OpenCode module through the shared skill
   registry; `dotfiles.devCache` appends host-specific sccache guidance so
@@ -603,7 +621,7 @@ build time. Current examples include:
 Home Manager activation removes files left by the retired OpenCode PR-review
 tools from `~/.config/opencode/tools/`.
 
-The `databricks-cli` skill explains an important CLI detail: there is no
+When enabled, the `databricks-cli` skill explains an important CLI detail: there is no
 top-level `databricks sql` subcommand in the current official CLI. Agents
 should use `queries`, `query-history`, `warehouses`, `psql`, or `databricks api`
 depending on the task.
