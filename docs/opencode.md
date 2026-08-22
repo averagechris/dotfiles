@@ -500,6 +500,10 @@ modules register bundled or repo-managed skills with `dotfiles.agentSkills`, so
 rendering, patching, extension, and per-skill enablement happen uniformly at
 build time. Current examples include:
 
+- `code-review`, for ordinary behavioral review of a named change. It judges
+  stated intent and reachable behavior, distinct from `interrogate-me`
+  adversarial review, `blast-radius` compatibility analysis, `how` architecture
+  critique, and forge or PR workflows
 - `how`, for architecture and runtime explanations, and `why`, for
   evidence-backed investigations of intent and history
 - `teach`, for paced explanations that build a mental model from mechanics and,
