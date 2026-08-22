@@ -166,6 +166,11 @@ the task's capability threshold. Its canonical rubric defines capability bands,
 intrinsic response speed at comparable work, and nonlinear intrinsic model-cost
 bands independently of the tasks each tier is assigned.
 
+Implementation packets require proof at the boundary where behavior is claimed.
+Agents escalate when implementation disproves a design assumption, favor
+subtraction unless added scope has a clear payoff, and use fresh scoped handoffs
+when work or context no longer fits the packet.
+
 The built-in `explore` subagent keeps its upstream prompt and tools but is
 configured through `settings.agent.explore` to use
 `openrouter/openai/gpt-5.6-luna` with the `medium` variant. This favors cheap,

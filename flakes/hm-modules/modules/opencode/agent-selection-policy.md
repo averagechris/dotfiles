@@ -34,7 +34,10 @@ orchestrator defines normal tasks; Wise may define architecture or high-risk
 constraints when warranted. Once uncertainty becomes a checklist, hand routine
 implementation to Minion, bounded work to Luna, and mechanics to Tiny. A lower
 tier may retry or verify once after a miss, then escalate with the failed check
-and remaining uncertainty instead of looping.
+and remaining uncertainty instead of looping. If implementation contradicts a
+packet's design assumptions, treat that as evidence: stop and report the failed
+assumption instead of forcing the design through. If a session or task outgrows
+its packet, escalate or split it rather than expanding its scope.
 
 ## Nested delegation
 
