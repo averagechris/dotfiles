@@ -263,6 +263,7 @@
             pkgs.runCommand "sideshow-agent-skills" {} ''
               test -f "${renderedDeckAuthor}/SKILL.md"
               test -f "${renderedDeckAuthor}/fragment-patterns.md"
+              test -f "${renderedDeckAuthor}/project-artifacts.md"
               test -f "${renderedWorkStory}/SKILL.md"
               mkdir "$out"
             '';

@@ -79,8 +79,10 @@ after `srht auth login`: generic password `service = srht`, `account = sr.ht`.
 The module registers two skills with the shared `dotfiles.agentSkills` renderer.
 The selected Sideshow package's upstream source provides
 `sideshow-deck-author`; the module deploys its complete skill directory, so
-companion files such as `fragment-patterns.md` remain available and future
-companions are included automatically. An audited bundle manifest requires the
+companion files such as `fragment-patterns.md` and `project-artifacts.md` remain
+available and future companions are included automatically. The project-artifact
+reference covers explain, prototype, and verified-result decks without making
+the deck a second source of truth. An audited bundle manifest requires the
 upstream source to contain exactly that registered skill until additions are
 reviewed. Package overrides without a `src` attribute skip this upstream
 registration.

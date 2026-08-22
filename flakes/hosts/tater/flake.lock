@@ -3617,11 +3617,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1786311432,
-        "narHash": "sha256-PKt4MpXWTqgWS+tiXODSdFLtPjytwZ48Cq06XJF+X/c=",
+        "lastModified": 1787440035,
+        "narHash": "sha256-NvEyxTHEeaqACIE3O81byicdEQG/dvB/ggjdt/6E7ek=",
         "owner": "~averagechris",
         "repo": "sideshow",
-        "rev": "6337afd52fc5e26d04213c112fb7e33f2c579006",
+        "rev": "78b05ba424bd82595464e3d71ff3aed7af721817",
         "type": "sourcehut"
       },
       "original": {
