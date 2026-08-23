@@ -1,6 +1,6 @@
-# Dev Cache (`dotfiles.devCache`)
+# Dev cache (`dotfiles.devCache`)
 
-Home Manager module (`flakes/hm-modules/modules/dev-cache.nix`) managing
+The Home Manager module `flakes/hm-modules/modules/dev-cache.nix` manages
 development caches: a shared Rust compilation cache plus a periodic cleanup
 job covering nix garbage, Cargo target artifacts, and Docker resources.
 Rust is the current focus; future iterations may add Python and Node/JS
@@ -52,8 +52,8 @@ This exists because sccache's default behavior is to lazily start the server
 from whichever compile happens first, inheriting that process's environment
 permanently. On macOS, a server started inside a nix shell (where
 `DEVELOPER_DIR` points at the nix Apple SDK) poisons every later C-compile that
-goes through `/usr/bin/cc`'s xcselect shim — cc-rs wraps the C compiler with
-sccache when `RUSTC_WRAPPER` is set — failing with:
+goes through `/usr/bin/cc`'s xcselect shim. Because cc-rs wraps the C compiler
+with sccache when `RUSTC_WRAPPER` is set, those builds fail with:
 
 ```
 sccache: caused by: Compiler not supported: "error: tool 'clang' not found"
@@ -82,8 +82,8 @@ launchctl kickstart gui/$(id -u)/org.nix-community.home.sccache-server
 systemctl --user restart sccache-server
 ```
 
-Check the service with the macOS `launchctl print` command above or with
-`systemctl --user status sccache-server` on Linux.
+Check the service with `launchctl print gui/$(id -u)/org.nix-community.home.sccache-server`
+on macOS or with `systemctl --user status sccache-server` on Linux.
 
 For macOS descriptor-limit diagnosis, the generated plist should set
 `NumberOfFiles` to 16384 under `SoftResourceLimits`. Apply Home Manager again if
@@ -125,20 +125,18 @@ output flags, no `-j` throttling, rerun timed-out builds, never clear
 host-specific appendix to that skill with the managed-server restart commands
 and the `CARGO_INCREMENTAL=0` policy.
 
-## Cleanup job phases
-
 ## Rust linker on macOS
 
 `rustLinker.enable` (default: on for Darwin) adds `[target.aarch64-apple-darwin]`
 and `[target.x86_64-apple-darwin]` sections to the generated
 `~/.cargo/config.toml` with
 `rustflags = ["-C", "link-arg=--ld-path=<dispatcher>"]`. Every cargo/rustc
-invocation on the machine — dev shells, rustup toolchains, `cargo install`,
-rust-analyzer, agent builds — links through the dispatcher script.
+invocation on the machine links through the dispatcher script: dev shells,
+rustup toolchains, `cargo install`, rust-analyzer, agent builds.
 
 Rationale: nixpkgs can only ship the open-source *classic* ld64, the slowest
 Mach-O linker still in common use; Apple's fast rewritten linker ("ld-prime",
-Xcode 15+, `PROJECT:ld64-` versions >= 1000) is closed-source and cannot be
+Xcode 15+, `PROJECT:ld-` versions >= 1000) is closed-source and cannot be
 packaged. sccache never caches the link step, so linking dominates warm
 iterative builds. lld and ld-prime are both several times faster than classic
 ld64 and roughly comparable to each other.
@@ -147,8 +145,8 @@ The dispatcher (`dotfiles-rust-ld-dispatch`) chooses at link time:
 
 1. `/Library/Developer/CommandLineTools/usr/bin/ld`, then
    `/Applications/Xcode.app/.../XcodeDefault.xctoolchain/usr/bin/ld`, if
-   present **and** reporting a new-linker version (classic prints
-   `PROJECT:ld64-9xx`; ld-prime prints `PROJECT:ld-1015.7` or higher — the
+   present and reporting a new-linker version (classic prints
+   `PROJECT:ld64-9xx`; ld-prime prints `PROJECT:ld-1015.7` or higher; the
    dispatcher accepts either spelling with version >= 1000). A manually
    installed current Xcode CLT is picked up automatically with no Home
    Manager switch; classic Apple installs are never preferred.
@@ -167,19 +165,19 @@ Notes:
 
 ### Installing the fast Apple linker (recommended on new Macs)
 
-lld works out of the box with no manual steps. To get Apple's ld-prime —
-occasionally faster, and what the dispatcher prefers — install the Xcode
+lld works out of the box with no manual steps. To get Apple's ld-prime,
+occasionally faster and what the dispatcher prefers, install the Xcode
 Command Line Tools once per machine:
 
 ```bash
 xcode-select --install
 ```
 
-Do **not** run `xcode-select -s` afterwards: the developer-directory pointer
+Do not run `xcode-select -s` afterwards: the developer-directory pointer
 should stay whatever the nix toolchain expects, and the dispatcher finds the
 CLT by absolute path (`/Library/Developer/CommandLineTools/usr/bin/ld`), so no
-switch is needed. The next link picks it up automatically — no Home Manager
-switch, no rebuild (linker identity is not part of Cargo's fingerprint).
+switch is needed. The next link picks it up automatically, with no Home Manager
+switch and no rebuild; linker identity is not part of Cargo's fingerprint.
 
 Verify what the dispatcher will use:
 
@@ -202,18 +200,18 @@ Linux, but stays quiet while free space is healthy.
 
 Each full cleanup run:
 
-1. **sccache stats** — reported for visibility. sccache itself is bounded by
+1. **sccache stats.** Reported for visibility; sccache itself is bounded by
    `sccache.cacheSize` (LRU), so it needs no explicit cleanup.
-2. **Nix GC** (`nixGc`, default on, 7-day window) — runs
+2. **Nix GC** (`nixGc`, default on, 7-day window) runs
    `nix-collect-garbage --delete-older-than 7d` unprivileged. This only deletes
    *user* profile generations (home-manager, `nix profile`) older than the
    window; root-owned system generations under `/nix/var/nix/profiles` are
    never removed, and every store path referenced by a remaining generation is
    a GC root, so the current and immediately previous system profiles always
    remain rollback targets.
-3. **Root GC reminder** (`nixGc.rootGcReminder`, macOS only) — because
-   unprivileged GC cannot trim darwin system generations, the job posts a
-   macOS notification when more than `maxSystemGenerations` (default 10)
+3. **Root GC reminder** (`nixGc.rootGcReminder`, macOS only). Unprivileged GC
+   cannot trim darwin system generations, so the job posts a macOS
+   notification when more than `maxSystemGenerations` (default 10)
    accumulate. Handle it manually with:
 
    ```bash
@@ -225,7 +223,7 @@ Each full cleanup run:
    previous darwin profile is never lost. On NixOS hosts system generations
    are trimmed by normal `nixos-rebuild` retention/boot-menu management or a
    system-level `nix.gc` if configured.
-4. **Cargo sweep** (`cargoSweep`, default on, 7-day staleness) — runs
+4. **Cargo sweep** (`cargoSweep`, default on, 7-day staleness) runs
    `cargo-sweep sweep --recursive --time 7` over each directory in
    `cargoSweep.roots` (default `~/projects`). Unlike `cargo clean`, this
    deletes individual `target/` artifacts not used within the window and keeps
@@ -234,14 +232,14 @@ Each full cleanup run:
    `~/projects/ws/<repo>/<workspace>` and `~/sureapp/ws/<repo>/<workspace>`
    (hidden directories like `.git` are skipped). Worst case, swept artifacts
    are recompiled on the next build, mostly restored from sccache.
-5. **Docker/OrbStack pruning** (`docker.enable`, default on) — prunes builder
+5. **Docker/OrbStack pruning** (`docker.enable`, default on) prunes builder
     cache older than `docker.retention` while keeping it under
     `docker.builderMaxUsedSpace`, plus stopped containers, dangling images, and
     unused networks; `docker.pruneVolumes` optionally prunes unused volumes.
     Skips gracefully when no Docker-compatible daemon is running (e.g. podman
     hosts without the docker socket). Set `docker.enable = false` to drop the
     phase and the Docker CLI entirely.
-6. **Low-disk pressure cleanup** (`cleanup.lowDisk`, default off) — on hosts
+6. **Low-disk pressure cleanup** (`cleanup.lowDisk`, default off). On hosts
    that opt in, after the normal phases, if `/` still has less than
    `cleanup.lowDisk.minFreeGiB` available, the job escalates:
    - runs `nix-collect-garbage -d` to remove old user profile rollback
@@ -279,14 +277,14 @@ headroom.
 
 The shared readiness check does not invoke Nix or query its SQLite database. It
 takes one `ps` snapshot and reads macOS's one-minute load average and logical CPU
-count with `sysctl`. Maintenance is allowed while the user is active—including
-during meetings—when load is below 60% of logical CPU capacity. Active Nix,
+count with `sysctl`. Maintenance is allowed while the user is active, including
+during meetings, when load is below 60% of logical CPU capacity. Active Nix,
 nix-darwin, or Home Manager clients always defer maintenance to avoid store and
 SQLite contention. The always-resident `nix-daemon` is ignored; a
 `nix-daemon --stdio` remote-store connection is treated as active. If process or
 load inspection fails, the check fails closed and launchd retries later.
 
-All scheduled cleanup checks additionally defer for active Cargo, Rust, and
+All scheduled cleanup checks also defer for active Cargo, Rust, and
 Docker clients because cleanup can delete those tools' cache artifacts. The
 low-disk checker runs the normal phases first and only escalates to pressure
 cleanup if disk space is still low. It keeps its independent, usually more
@@ -297,8 +295,8 @@ GC and the suremac self-update also share the PID-aware `shlock` lock at
 `~/.local/state/dotfiles-nix-maintenance/lock`. This prevents both maintenance
 jobs from starting after they observe the same ready instant; stale PID locks are
 reclaimed by `shlock`. The check is advisory for ordinary
-commands—a new interactive Nix command can still begin after it passes—but it
-eliminates maintenance-versus-maintenance overlap.
+commands, and a new interactive Nix command can still begin after it passes,
+but it eliminates maintenance-versus-maintenance overlap.
 
 Direct `dotfiles-dev-cache-cleanup` invocations are explicit manual requests, so
 they bypass the readiness check while still respecting the shared lock. Scheduled

@@ -80,11 +80,10 @@ journalctl -u dotfiles-<host>-self-deploy.service
 `dotfiles-thorny-self-deploy.service`. Its build-cache timer remains the fleet
 cache warmer; self-deploy timers are the host-local activation layer.
 
-For now health checks wait for explicit required system units to become active,
-then require `systemctl is-system-running --quiet`. A future session should
-extend the module with richer post-activation smart checks so hosts can inspect
-application-level behavior, user units, HTTP endpoints, or other host-specific
-assertions before accepting a generation.
+Health checks currently wait for explicit required system units to become
+active, then require `systemctl is-system-running --quiet`. A future session
+could extend the module with richer post-activation checks so hosts can assert
+application-level behavior before accepting a generation.
 
 ## Activation wrapper architecture
 

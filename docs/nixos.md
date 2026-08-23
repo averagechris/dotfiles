@@ -1,7 +1,7 @@
 # Installation
 
 This is based on the installation guide in the [nixos manual](https://nixos.org/manual/nixos/stable/index.html#version-21-05)
-supplemented with the tips in [this fantastic blog post](https://qfpl.io/posts/installing-nixos/).
+supplemented with the tips in [this blog post](https://qfpl.io/posts/installing-nixos/).
 
 ## Shared CLI tools
 
@@ -41,8 +41,8 @@ deliberately when host behavior or fleet coverage matters:
   `nh darwin build -q --no-nom . --hostname suremac` for Darwin. These are
   intentionally narrower than a root fleet check.
 - Explicit full-fleet validation is `nix flake check --accept-flake-config` at
-  the root. It retains comprehensive coverage, but it evaluates and builds the
-  aggregate fleet checks and is too expensive for the ordinary CI path.
+  the root. It evaluates and builds the aggregate fleet checks, which is too
+  expensive for the ordinary CI path.
 
 SourceHut is the repository's only CI system and mirrors those tiers. git.sr.ht
 auto-submits exactly three bounded `.builds/*.yml` manifests on push:
@@ -194,7 +194,7 @@ NixOS will show a splash screen for a few seconds while it's setting up, then dr
 you into a shell with root logged in, or if using a graphical iso, into a desktop
 environment.
 
-> 💡 NOTE: that shell commands from here should be run as root
+> NOTE: that shell commands from here should be run as root
 
 ### Optionally connect to WiFi
 
@@ -279,15 +279,15 @@ encryption and swap well. Here's a direct quote.
 > Our partition table and primary partitions are in place. Now we can encrypt the
 > partition that will contain our LVM partitions. This is the second partition that
 > we created above - so should be something like `/dev/nvme0n1p2` or `/dev/sda2.`
-> We’ll refer to it as `$LVM_PARTITION` below. Note that our boot partition won’t
-> be encrypted. I can’t think of a reason why you would want this, and if you did,
+> We'll refer to it as `$LVM_PARTITION` below. Note that our boot partition won't
+> be encrypted. I can't think of a reason why you would want this, and if you did,
 > you probably wouldn't need partitioning advice from me. Also note that our swap
-> partition is encrypted. You don’t have any control over what’s moved into your
+> partition is encrypted. You don't have any control over what's moved into your
 > swap space, so it could end up containing all sorts of private stuff in the clear
 >
 > - for example passwords copied from a password manager
 >
-> 💡 NOTE: In the example below a swap of 32GB is created. But you can create whatever
+> NOTE: In the example below a swap of 32GB is created. But you can create whatever
 > size you want.
 
 ```shell
@@ -324,7 +324,7 @@ mkswap -L swap /dev/nixos-vg/swap
 swapon /dev/nixos-vg/swap
 ```
 
-### Generate the base NixOS Configuration
+### Generate the base NixOS configuration
 
 The installation NixOs provides a command to generate a base nix configuration with
 some useful defaults and some hardware-detection baked in. But before we run that,
@@ -340,7 +340,7 @@ mount $BOOT_PARTITION /mnt/boot
 nixos-generate-config --root /mnt
 ```
 
-### Required Configuration Changes
+### Required configuration changes
 
 The shell you're in has a few different text editors already installed that you can
 use. But thankfully, since this is nix, you can use `nix-shell -p` to get a shell
@@ -405,9 +405,9 @@ environment.systemPackages = with pkgs; [
 ];
 ```
 
-### Finish Installation
+### Finish installation
 
-> 💡 NOTE: this prompts you to set the root password now
+> NOTE: this prompts you to set the root password now
 
 ```shell
 nixos-install
@@ -435,11 +435,11 @@ mount /dev/nixos-vg/root /mnt
 # do whatever you need to, like editing the `configuration.nix`
 ```
 
-> 💡 Tip: if you do forget your root password, you _can_ reset it by booting back
+> Tip: if you do forget your root password, you _can_ reset it by booting back
 > into the usb live media and using [nixos-enter](https://nixos.wiki/wiki/Change_root).
 > Then use the `passwd` command to reset the root password.
 
-## Applying Dotfiles Configuration
+## Applying dotfiles configuration
 
 After installation, clone the dotfiles repo and apply:
 
@@ -449,22 +449,22 @@ cd ~/dotfiles
 nixos-rebuild switch --use-remote-sudo --flake .#HOSTNAME
 ```
 
-## Home Manager State Version Notes
+## Home Manager state version notes
 
-### 26.05 Changes
+### 26.05 changes
 
 The dotfiles use `home.stateVersion = "26.05"` across all hosts. Key changes from previous versions:
 
-- **GTK4 Theme**: `gtk.gtk4.theme` no longer mirrors `gtk.theme` automatically. If you use custom GTK themes and want them applied to GTK4 applications (like modern GNOME apps), you must explicitly set:
+- GTK4 theme: `gtk.gtk4.theme` no longer mirrors `gtk.theme` automatically. If you use custom GTK themes and want them applied to GTK4 applications (like modern GNOME apps), you must explicitly set:
   ```nix
   gtk.gtk4.theme = config.gtk.theme;
   ```
   See [Home Manager issue #6325](https://github.com/nix-community/home-manager/issues/6325) for context. GTK4 theming is not officially supported and uses a workaround that may cause issues with some applications.
 
-- **Zsh dotDir**: With `xdg.enable = true`, zsh config now defaults to `~/.config/zsh/` instead of `~`. This keeps your home directory cleaner.
+- Zsh dotDir: With `xdg.enable = true`, zsh config now defaults to `~/.config/zsh/` instead of `~`. This keeps your home directory cleaner.
 
-- **Yazi wrapper**: The shell wrapper function changed from `yy` to `y`. This repository explicitly sets `programs.yazi.shellWrapperName = "yy"` to preserve the old behavior.
+- Yazi wrapper: The shell wrapper function changed from `yy` to `y`. This repository explicitly sets `programs.yazi.shellWrapperName = "yy"` to preserve the old behavior.
 
-- **Git signing format**: For GPG signing, `programs.git.signing.format` no longer defaults to `"openpgp"`. This repository explicitly sets it for GPG users.
+- Git signing format: For GPG signing, `programs.git.signing.format` no longer defaults to `"openpgp"`. This repository explicitly sets it for GPG users.
 
-- **XDG user dirs**: `xdg.userDirs.setSessionVariables` now defaults to `false` instead of `true`.
+- XDG user dirs: `xdg.userDirs.setSessionVariables` now defaults to `false` instead of `true`.

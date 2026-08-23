@@ -1,4 +1,4 @@
-# jj Tag Workflow
+# jj tag workflow
 
 Human/agent-created release tags are opt-in. Repos whose CI/CD creates tags do
 not need this workflow.

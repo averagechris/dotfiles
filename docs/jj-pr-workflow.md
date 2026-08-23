@@ -1,4 +1,4 @@
-# jj PR Workflow
+# jj PR workflow
 
 `jj pr` is an opt-in Jujutsu alias backed by the repo-managed `jj-workflow`
 Rust helper. It is intended for `suremac` work repositories that use GitHub and
@@ -87,8 +87,8 @@ Behavior:
 9. Creates the PR using `gh pr create --repo owner/repo ...`.
 
 `create` only blocks on conflicts that are relevant to the PR stack, so
-unrelated conflicted changes elsewhere in the jj repo are reported by
-`doctor` as warnings rather than preventing an otherwise clean PR. Before it
+unrelated conflicted changes elsewhere in the jj repo appear as `doctor`
+warnings instead of blocking an otherwise clean PR. Before it
 creates an auto-bookmark or pushes, `create` also checks that the current change
 has a description and points to `jj describe -m ...` when it does not.
 

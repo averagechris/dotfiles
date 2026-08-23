@@ -1,4 +1,4 @@
-# Cache Policy and Observability
+# Cache policy and observability
 
 This repository treats evaluation, substitution, local builds, remote builds, and
 cache publication as separate policy decisions.

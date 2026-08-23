@@ -1,4 +1,4 @@
-# jj Aliases
+# jj aliases
 
 This repository installs a small set of global Jujutsu aliases through the Home
 Manager `jujutsu` module. The aliases are meant to keep day-to-day and

@@ -1,4 +1,4 @@
-# Flake Size and Evaluation Hygiene
+# Flake size and evaluation hygiene
 
 The top-level flake is an aggregator over per-host path flakes. When adding a
 new host flake or shared module flake input to `flake.nix`, make its local shared
@@ -94,7 +94,7 @@ nix why-depends .#nixosConfigurations.<host>.config.system.build.toplevel /nix/s
 ```
 
 When checking Linux systems from Darwin, these commands can only report complete
-runtime closure sizes for paths that are already realised or substitutable from a
+runtime closure sizes for paths that are already realized or substitutable from a
 configured cache. If Nix reports that required `x86_64-linux` or `aarch64-linux`
 builds are unavailable locally, run the same inspection on a Linux host or remote
 builder such as `thorny`.

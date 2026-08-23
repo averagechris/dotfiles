@@ -1,4 +1,4 @@
-# jj Workspace Workflow
+# jj workspace workflow
 
 This documents the repo-managed `jj ws` workflow for ergonomic Jujutsu workspace management.
 
@@ -31,7 +31,7 @@ jj ws root
 
 `jj ws` with no arguments prints a compact usage guide.
 
-## Quick Usage
+## Quick usage
 
 Create and print only the path:
 
@@ -71,7 +71,7 @@ jj ws prune
 
 Agents/scripts should use `jj ws add -q`, `jj ws path <name>`, and `jj ws list`. Avoid `--pick`; it requires an interactive terminal.
 
-## Build-Time Test Environment
+## Build-time test environment
 
 The repo-managed `jj-workflow` helper runs its Rust test suite as part of the
 Nix package build. Integration tests shell out to `jj`, `git`, and `npm`, create
@@ -80,7 +80,7 @@ check phase therefore provides those tools explicitly and sets an isolated
 `HOME`/`XDG_CONFIG_HOME` with test-only jj user identity so builds do not depend
 on the invoking user's configuration or Nix's default `/homeless-shelter` home.
 
-## Help and Error Ergonomics
+## Help and error ergonomics
 
 Keep output concise and actionable:
 
@@ -93,7 +93,7 @@ Keep output concise and actionable:
 
 Do not integrate this workflow with `jj ship` in v1. Shipping often requires CI follow-up or other cleanup decisions before deleting a workspace.
 
-## Project Groups and Directory Convention
+## Project groups and directory convention
 
 Workspace roots are configured as project groups. Each group has:
 
@@ -117,14 +117,14 @@ If canonical parent directories do not exist, create them automatically.
 
 The workspace namespace directory is configurable per project group. `/ws/` is the default convention.
 
-## Host Configuration Decisions
+## Host configuration decisions
 
 Configure these project groups through Nix/home-manager:
 
 - all personal hosts: `~/projects`, with workspace dir `ws`
 - `suremac`: `~/projects` and `~/sureapp`, each with workspace dir `ws`
 
-## jj Config Shape
+## jj config shape
 
 The generated jj config uses a flat project-group list. Each item is `path:workspace-dir`; omit `:workspace-dir` to use `ws`.
 
@@ -141,7 +141,7 @@ picker = "fzf"
 project-groups = ["~/projects:ws", "~/sureapp:ws"]
 ```
 
-## Main Checkout vs Managed Workspace
+## Main checkout vs managed workspace
 
 A checkout is considered a managed workspace if its repo root matches the configured convention:
 
@@ -153,7 +153,7 @@ Otherwise, if it is contained in a configured project group and not under that g
 
 This distinction controls the default base revision for `jj ws add`.
 
-## Base Revision Selection
+## Base revision selection
 
 `jj ws add <name>` supports an explicit revision:
 
@@ -186,7 +186,7 @@ Fetch behavior from a main checkout:
 
 If integration bookmark inference is ambiguous or impossible, fail clearly and ask the caller to specify `--revision`.
 
-## Output and Quiet Mode
+## Output and quiet mode
 
 Default output should be concise. Example:
 
@@ -255,7 +255,7 @@ CLI overrides:
 
 More elaborate setup hooks can be deferred, but the config shape should leave room for repo-configurable setup behavior later.
 
-## Picker Support
+## Picker support
 
 Include picker support in v1.
 
@@ -277,7 +277,7 @@ jj ws forget --pick
 jj ws prune --pick
 ```
 
-## Listing and Path Lookup
+## Listing and path lookup
 
 `jj ws list` lists registered workspaces for the current repo with compact output:
 
@@ -292,7 +292,7 @@ No cache is planned for v1. Listing should be cheap when scoped to the current r
 
 `jj ws path <name>` prints only the path, making it suitable for shell functions and agents.
 
-## Forget Behavior
+## Forget behavior
 
 `jj ws forget <name>` should:
 
@@ -331,7 +331,7 @@ jj --repository "$(jj ws path feature-x)" git fetch
 jj ws forget feature-x
 ```
 
-## Docker Compose Cleanup
+## Docker Compose cleanup
 
 On forget, detect Compose files in the workspace root:
 
@@ -360,7 +360,7 @@ when the workspace intentionally owns long-lived local data. `--docker-volumes`
 is still accepted as an explicit opt-in for repos that override the config to
 keep volumes by default.
 
-## Prune Behavior
+## Prune behavior
 
 `jj ws prune` cleans stale directories under:
 
@@ -381,7 +381,7 @@ jj ws prune --pick
 
 `--yes` is accepted for future confirmation flows; current deletion is gated by explicit `--delete` or picker selection.
 
-## Workspace Name Validation
+## Workspace name validation
 
 Allow workspace names matching:
 
@@ -391,7 +391,7 @@ Allow workspace names matching:
 
 Reject names containing path separators, `..`, whitespace, or shell metacharacters.
 
-## High-Level Implementation Checklist
+## High-level implementation checklist
 
 - [x] Inspect existing `jj-workflow` helper and jj alias configuration.
 - [x] Add workspace config parsing, including project groups and per-group `workspace-dir` defaulting to `ws`.

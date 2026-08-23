@@ -1,4 +1,4 @@
-# Flake Performance Audit
+# Flake performance audit
 
 This summarizes the 2026-07-09 Nix flake performance audit and follow-up
 burn-down tracked in SourceHut.
@@ -148,7 +148,7 @@ The complete service used 1.4 GiB peak RSS and 207 seconds wall time. The probe
 binary ran successfully on Thorny through binfmt, and its derivation metadata
 reported `system = aarch64-linux`. The probe was removed immediately afterward.
 
-This controlled miss does not justify native ARM infrastructure: a roughly
+This controlled miss does not justify native ARM infrastructure. A roughly
 one-minute occasional QEMU penalty is acceptable for the six-hour background
 warmer, and no emulation failure or memory pressure occurred. Revisit native ARM
 only if larger natural misses become frequent or unreliable.

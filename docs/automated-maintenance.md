@@ -188,7 +188,7 @@ Conservative cargo support can come next for projects with committed lockfiles:
 1. Run `cargo update` without editing `Cargo.toml`.
 2. Allow only `Cargo.lock` changes unless a project explicitly opts into
    manifest edits.
-3. Run the project’s declared checks, usually `cargo test` and `nix flake check`.
+3. Run the project's declared checks, usually `cargo test` and `nix flake check`.
 4. Push only if all checks pass.
 
 Library dependency widening, Python constraint widening, and npm semver range

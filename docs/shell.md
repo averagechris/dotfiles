@@ -29,8 +29,8 @@ per working directory; see [OpenCode](/docs/opencode.md#direnv-environments-for-
 
 ## Zellij
 
-Zellij is installed and configured by the shell module but is **disabled by
-default**. To enable it on a host, set:
+Zellij is installed and configured by the shell module but is disabled by
+default. To enable it on a host, set:
 
 ```nix
 programs.zellij.enable = true;

@@ -1,8 +1,8 @@
-# Agent Instructions for Dotfiles Repository
+# Agent instructions for the dotfiles repository
 
 Keep this file minimal. Put durable topic guidance in `docs/`.
 
-## Start Here
+## Start here
 
 - Before changing a module, host, package, workflow, or user-facing behavior,
   read `docs/README.md` and the most relevant topic doc.
@@ -11,7 +11,7 @@ Keep this file minimal. Put durable topic guidance in `docs/`.
 - Repository tickets live in the SourceHut projects tracker under the
   `repo:dotfiles` label; see `docs/srht.md` for the issue workflow.
 
-## Non-Negotiable Rules
+## Non-negotiable rules
 
 - Never read `secrets/`, decrypted secret material, or files ending in `.age`
   without explicit permission.
@@ -19,7 +19,7 @@ Keep this file minimal. Put durable topic guidance in `docs/`.
   keybinding, command, or workflow change should update the corresponding doc and
   `docs/README.md` when the doc set changes.
 
-## Repository Map
+## Repository map
 
 ```text
 flake.nix                         top-level aggregator flake
@@ -32,7 +32,7 @@ docs/                             canonical project documentation
 secrets/                          encrypted agenix material; do not read casually
 ```
 
-## Common Checks
+## Common checks
 
 Prefer these entry points; see the relevant docs for task-specific checks.
 
@@ -48,7 +48,7 @@ update-flakes --check
 Use `nh` for NixOS/Darwin build/switch workflows when possible, `nom` for raw
 Nix builds/develop shells, and `nix flake check` for flake checks.
 
-## Where to Put Knowledge
+## Where to put knowledge
 
 - Add or update durable instructions in the most specific doc under `docs/`.
 - Add new docs to `docs/README.md`.
@@ -56,7 +56,7 @@ Nix builds/develop shells, and `nix flake check` for flake checks.
 - Update `AGENTS.md` only for repo-wide bootstrap rules, safety constraints, or
   documentation routing that every agent must see by default.
 
-## High-Value References
+## High-value references
 
 - `docs/README.md` - documentation index.
 - `docs/nixos.md` - general NixOS notes.
