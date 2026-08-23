@@ -15,6 +15,7 @@
     ./dev-cache.nix
     ./shell.nix
     ./opencode
+    ./opencode/session-cleanup.nix
     ./helix
     ./helix-terminal-tools
     ./cosmic-workstation.nix

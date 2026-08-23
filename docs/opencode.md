@@ -12,6 +12,7 @@ frequent releases while preserving the normal `pkgs.opencode` and home-manager
 ## What it configures
 
 - custom primary and sub-agents
+- the `oconf` helper and shell function for interactive or direct model trials via `OPENCODE_CONFIG_CONTENT`
 - repo-managed skills deployed into `~/.config/opencode/skills/`
 - repo-managed slash commands deployed globally into `~/.config/opencode/commands/`, including `/what` for concise, jargon-free restatements
 - MCP server definitions written into the generated OpenCode config
@@ -24,6 +25,107 @@ frequent releases while preserving the normal `pkgs.opencode` and home-manager
   workspaces favor the shared sccache without changing interactive shells
 - on hosts with direnv enabled, a `dotfiles-direnv` plugin loads each working
   directory's direnv-allowed dev shell environment into agent shell commands
+
+## Session cleanup on suremac
+
+`dotfiles.opencode.sessionCleanup` installs `opencode-session-cleanup` and a
+macOS user launchd agent on `suremac`. The agent checks at the top of every hour
+on weekdays, but uses a date stamp so it performs deletion at most once per
+calendar day. It defers when the one-minute CPU load is at or above 60% of
+logical CPU capacity, or when an OpenCode or `ctx` process is running; launchd
+tries again at the next hourly check.
+
+The cleanup reads the active database read-only, selects sessions whose
+`time_updated` is more than 45 days old, and deletes them through OpenCode's
+supported `opencode session delete` command. It always preserves at least the
+25 newest sessions, including when every session is older than the retention
+window. Failed deletions do not advance the daily stamp, allowing a later check
+to retry. The database path defaults to
+`~/.local/share/opencode/opencode.db`. The script intentionally does not offer
+an alternate database override: session selection and the subsequent
+`opencode session delete` command must target the same database.
+
+The launchd log is `~/Library/Logs/opencode-session-cleanup.log`; the daily
+stamp is `~/.local/state/opencode-session-cleanup/last-run`. launchd does not
+wake a sleeping Mac, so the next hourly opportunity after wake performs the
+check.
+
+## Trying out models with `oconf`
+
+The module installs an `oconf` helper for trialing new models without
+touching any persistent configuration. It emits shell exports that set the
+`OPENCODE_CONFIG_CONTENT` environment variable, which OpenCode merges last,
+so the overrides beat the managed config for every opencode launched from
+that shell until cleared.
+
+A matching `oconf` shell function (installed for zsh and bash) evals the
+helper's output in the current shell:
+
+```zsh
+# Interactive picker: choose a session/general model plus optional per-agent
+# overrides, then launch.
+oconf && opencode
+
+# Direct: trial a model for every role (session model plus every agent that
+# has a pinned model in the deployed config).
+oconf openrouter/x-ai/grok-4.5 && opencode
+
+# Keep the normal orchestrator model, trial a coding model on specific agents.
+oconf openrouter/x-ai/grok-code minion build && opencode
+
+# Optionally set a reasoning variant on the targeted agents.
+oconf -v high openrouter/some-new-model && opencode
+
+# Clear overrides for the current shell.
+oconf -u
+```
+
+The interactive flow collects intent in two quick picks, then hands you the
+whole plan for review:
+
+1. **Trial model** — fuzzy-search over live `opencode models` output. `Esc`
+   skips, leaving the session model unchanged.
+2. **Scope** — one choice: all roles (session model plus every pinned agent),
+   session only, or pick specific agents (TAB multi-select).
+3. **Plan review** — the tool drafts a plan file and opens `$EDITOR` (like a
+   commit-message editor). One line per override; tweak any model, add or
+   delete agents, set variants:
+
+   ```
+   *       = openrouter/x-ai/grok-4.5
+   minion  = openrouter/x-ai/grok-code variant=low
+   ```
+
+   Save and quit to apply; quit with an empty plan to cancel. Every model is
+   validated against live `opencode models` output before applying. The plan
+   header also lists notable models — newest on OpenRouter and free-tier
+   options, filtered to models this opencode can access — sourced from the
+   OpenRouter catalog, cached for a day under `~/.cache/oconf/`, and silently
+   omitted when offline.
+
+Direct mode stays non-interactive for scripted use:
+
+```zsh
+# Trial a model for every role (session model plus every agent that has a
+# pinned model in the deployed config).
+oconf openrouter/x-ai/grok-4.5 && opencode
+
+# Keep the normal orchestrator model, trial a coding model on specific agents.
+oconf openrouter/x-ai/grok-code minion build && opencode
+
+# Optionally set a reasoning variant on the targeted agents.
+oconf -v high openrouter/some-new-model && opencode
+
+# Clear overrides for the current shell.
+oconf -u
+```
+
+In both modes the helper prints exactly what it overrode before emitting the
+exports, so an in-progress trial is always visible. Overrides persist in the
+shell until `oconf -u`. Agent discovery reads `$OPENCODE_CONFIG_DIR` (default
+`~/.config/opencode`), so tests can point it at a fixture directory. For
+scripted plan use, set `OCONF_PLAN_FILE` to a file of
+`<agent> = <model> [variant=<v>]` lines to skip the pickers and editor.
 
 ## Repo-managed slash commands
 

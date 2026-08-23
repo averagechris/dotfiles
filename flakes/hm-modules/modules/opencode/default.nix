@@ -110,6 +110,19 @@
   direnvPlugin = pkgs.replaceVars ./plugins/dotfiles-direnv.js {
     direnv = lib.getExe config.programs.direnv.package;
   };
+  # Print shell exports that override opencode models for the current shell
+  # session via OPENCODE_CONFIG_CONTENT (merged last, so it beats the managed
+  # config) without touching any persistent configuration. The `oconf` shell
+  # function evals this output so `oconf && opencode` works. Models come live
+  # from `opencode models` and agents are discovered from the deployed config;
+  # see docs/opencode.md.
+  ocTrial = pkgs.writeShellApplication {
+    name = "oconf";
+    # fzf deliberately comes from the user's PATH (guarded at runtime) rather
+    # than runtimeInputs, so a PATH-prefixed fzf can be swapped in tests.
+    runtimeInputs = [pkgs.jq];
+    text = builtins.readFile ./oconf.sh;
+  };
   managedJjWorkspaceExternalDirectories = lib.listToAttrs (map (group: {
       name = "${group.path}/${group.workspaceDir}/**";
       value = "allow";
@@ -238,7 +251,30 @@ in {
       dotfiles.agentSkills.rust-cargo.source = lib.mkDefault ./skills/rust-cargo/SKILL.md;
       dotfiles.agentSkills.databricks-cli.source = lib.mkDefault ./skills/databricks-cli;
 
-      home.packages = (map (tool: tool.package) installedAgentTools) ++ cfg.agentSupportPackages;
+      home.packages =
+        (map (tool: tool.package) installedAgentTools)
+        ++ cfg.agentSupportPackages
+        ++ [ocTrial];
+
+      # The oconf helper prints export lines; eval them in the current shell
+      # so `oconf && opencode` launches with the overrides applied.
+      programs.zsh.initContent = ''
+        # Apply oconf model-trial exports in the current shell.
+        oconf() {
+          local exports
+          exports=$(command oconf "$@") || return $?
+          eval "''${exports}"
+        }
+      '';
+
+      programs.bash.initExtra = ''
+        # Apply oconf model-trial exports in the current shell.
+        oconf() {
+          local exports
+          exports=$(command oconf "$@") || return $?
+          eval "''${exports}"
+        }
+      '';
 
       # These helpers were copied as writable files rather than managed symlinks,
       # so remove leftovers from profiles that previously enabled them.
