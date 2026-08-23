@@ -56,5 +56,6 @@ See [docs/troubleshooting/](/docs/troubleshooting/) for common issues and soluti
 - [Home Manager App Management permission fails on macOS](/docs/troubleshooting/home-manager-app-management.md)
 - [Home Manager package path collisions](/docs/troubleshooting/home-manager-package-collisions.md)
 - [Hyprland invalid source path during flake evaluation](/docs/troubleshooting/hyprland-invalid-source-path.md)
+- [Hyprland build fails fetching glaze with FetchContent](/docs/troubleshooting/hyprland-glaze-fetchcontent.md)
 - [MT7925e Wi-Fi instability on tater](/docs/troubleshooting/mt7925e-network-instability.md)
 - [Sudo setuid permission error: `nobody:nogroup` ownership](/docs/troubleshooting/sudo-setuid-nobody-nogroup.md)

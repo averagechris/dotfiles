@@ -66,6 +66,7 @@
 
     pi-coding-agent = final.callPackage ../packages/pi-coding-agent.nix {};
     pi = final.pi-coding-agent;
+    glaze-v7 = final.callPackage ../packages/glaze-v7.nix {};
     helium-bin = final.callPackage ../packages/helium-bin.nix {};
     notion-cli = final.callPackage ../packages/notion-cli.nix {};
     pup = final.callPackage ../packages/pup.nix {};

@@ -10,6 +10,11 @@
   # to read an unrealised source store path, so provide the tag from the flake
   # source directly instead.
   hyprlandPackage = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland.overrideAttrs (old: {
+    # hyprpm's CMakeLists requires glaze 7.x while nixpkgs ships 8.x, and the
+    # SameMajorVersion package check makes 8.x invisible to find_package. Put
+    # glaze-v7 on the CMake prefix path so configure does not fall back to a
+    # FetchContent git clone, which cannot run inside the build sandbox.
+    nativeBuildInputs = (old.nativeBuildInputs or []) ++ [pkgs.glaze-v7];
     env =
       (old.env or {})
       // {
