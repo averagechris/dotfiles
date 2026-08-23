@@ -23,7 +23,7 @@ All options live under `dotfiles.gui.hyprland`.
 | `enable` | bool | `false` | Apply the whole configuration |
 | `waybar.enable` | bool | `true` | Run the full Waybar bar |
 | `waybar.trayOnly.enable` | bool | `false` | Add a tray-only Waybar overlay next to the Eww bar |
-| `overview.enable` | bool | `false` | Load the Hyprspace overview plugin |
+| `overview.enable` | bool | `false` | Load the Hyprspace overview plugin when `overview.package` is also set |
 | `overview.package` | package or null | `null` | Hyprspace build matching your Hyprland package |
 | `hctl.enable` | bool | `true` | Install and run the hctl CLI and daemon |
 | `hctl.package` | package | built from `./hctl` | hctl derivation to install |
@@ -72,7 +72,7 @@ Window rules float and size Firefox Picture-in-Picture (pinned bottom-right), mp
 
 ## Bar, lock, and idle
 
-- **Eww bar.** A lid and display script keeps exactly one bar visible: `bar-internal` on `eDP-1`, or `bar-external-dp1`, `bar-external`, `bar-external-dp3`, `bar-external-hdmi-a-1`, or `bar-external-hdmi-a-2` on whichever external output is active. Quick actions keys `w` and `z` restart the bar. The widgets live in the separate Eww module; hctl feeds them state at `hctl.eww.stateFile`.
+- **Eww bar.** A lid and display script keeps exactly one bar visible: `bar-internal` on `eDP-1`, or `bar-external-dp1`, `bar-external`, `bar-external-dp3`, `bar-external-hdmi-a-1`, or `bar-external-hdmi-a-2` on whichever external output is active. Quick actions keys `w` and `z` restart the Eww daemon and reopen the bar for the active monitors. The widgets live in the separate Eww module; hctl feeds them state at `hctl.eww.stateFile`.
 - **Lock screen.** hyprlock. Quick actions key `l` runs it, and closing the lid while no external monitor is connected runs it too.
 - **Idle.** The shared swayidle unit locks with `swaylock -f -c 000000` after 180 seconds idle, suspends after 1200 seconds, and locks before sleep.
 - **Lid switch.** Any lid event refreshes displays and bars: opening the lid enables `eDP-1`; closing it disables `eDP-1` only when another enabled monitor exists. Opening the lid also wakes displays with dpms on.
@@ -106,7 +106,7 @@ Window rules float and size Firefox Picture-in-Picture (pinned bottom-right), mp
 | `Super+1` through `Super+0` | Switch to workspace 1 through 10 |
 | `Super+Shift+1` through `Super+Shift+0` | Move window to workspace 1 through 10 |
 | `Super+Alt+m` / `Super+Alt+i` | Previous / next workspace |
-| `Super+O` | Toggle the Hyprspace overview when enabled, otherwise open the wofi workspace overview |
+| `Super+O` | Toggle the Hyprspace overview when `overview.enable` is on and `overview.package` is set, otherwise open the wofi workspace overview |
 | `Super+mouse left/right button` | Previous / next workspace |
 | `` Super+` `` | Toggle the terminal scratchpad |
 | `` Super+Shift+` `` | Move the focused window to the terminal scratchpad |
@@ -118,7 +118,7 @@ Press the entry chord to enter a mode, then `Escape` to leave.
 
 | Chord | Mode | Keys inside |
 |-------|------|-------------|
-| `Super+a` | quick actions | `s`/`t` borrow Signal/Telegram, `k` summon KeePassXC, `b` focus-or-launch Zen, `o` focus-or-launch Obsidian, `l` lock with hyprlock, `p` pavucontrol, `c` color picker, `d` toggle swaync, `w`/`z` restart the Eww bar, `y` cycle keyboard layout, `5` screenshot area, `h` or `?` keybindings help |
+| `Super+a` | quick actions | `s`/`t` borrow Signal/Telegram, `k` summon KeePassXC, `b` focus-or-launch Zen, `o` focus-or-launch Obsidian, `l` lock with hyprlock, `p` pavucontrol, `c` color picker, `d` toggle swaync, `w`/`z` restart the Eww daemon and reopen the bar, `y` cycle keyboard layout, `5` screenshot area, `h` or `?` keybindings help |
 | `Super+r` | resize | `m/n/e/i` shrink width, grow height, shrink height, grow width; repeatable |
 | `Super+s` | scratchpad | `t` terminal scratchpad, `Shift+t` move there, `s` general scratchpad, `Shift+s` move there, `k`/`p` summon KeePassXC, `Shift+k`/`Shift+p` hide it |
 | `Super+c` | chat | `c` go to the `chat` workspace, `s` borrow Signal, `t` borrow Telegram |

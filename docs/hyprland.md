@@ -169,8 +169,8 @@ Submaps provide modal keybindings. Press `Super+<key>` to enter, `Escape` to exi
 | `p` | Open Pavucontrol (audio) |
 | `c` | Color picker (hyprpicker) |
 | `d` | Toggle notification center |
-| `w` | Toggle eww bar |
-| `z` | Toggle eww bar (alternate) |
+| `w` | Restart the Eww daemon and reopen the bar |
+| `z` | Restart the Eww daemon and reopen the bar (same as `w`) |
 | `y` | Toggle QWERTY/Colemak-DH layout |
 | `h` or `?` | Show keybindings help |
 | `Escape` | Exit submap |

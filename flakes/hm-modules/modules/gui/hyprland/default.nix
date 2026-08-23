@@ -620,8 +620,11 @@ in {
                 (modKey "0" "workspace, 10")
                 (modAltKey "m" "workspace, e-1")
                 (modAltKey "i" "workspace, e+1")
+                # Keep this condition in sync with the plugins setting above:
+                # the overview:toggle dispatcher exists only when the Hyprspace
+                # plugin is loaded, which requires a package.
                 (modKey "O" (
-                  if cfg.overview.enable
+                  if cfg.overview.enable && cfg.overview.package != null
                   then "overview:toggle, all"
                   else "exec, hyprland-workspace-overview"
                 ))
@@ -743,8 +746,13 @@ in {
         bind = , p, exec, pavucontrol
         bind = , c, exec, hyprpicker -a
         bind = , d, exec, swaync-client -d
-        bind = , w, exec, pkill -SIGUSR1 eww || eww open bar
-        bind = , z, exec, pkill -SIGUSR1 eww || eww open bar
+        # Restart the Eww daemon and reopen the bar for the active monitors.
+        # The daemon does not handle SIGUSR1, so kill it over IPC instead, then
+        # reuse the same sequence as startup: daemon, then eww-open-bars picks
+        # the window matching the current monitor layout (bar-internal or a
+        # bar-external-* window from the Eww module).
+        bind = , w, exec, eww kill; sleep 0.2; eww daemon; eww-open-bars
+        bind = , z, exec, eww kill; sleep 0.2; eww daemon; eww-open-bars
         bind = , y, exec, hyprctl switchxkblayout at-translated-set-2-keyboard next
         bind = , h, exec, ${term} -e hyprland-keybindings-help
         bind = , question, exec, ${term} -e hyprland-keybindings-help

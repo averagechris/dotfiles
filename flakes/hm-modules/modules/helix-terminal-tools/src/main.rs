@@ -4,6 +4,7 @@ use log::{debug, info};
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::io::Read;
 use std::collections::HashMap;
 use which::which;
 
@@ -972,9 +973,11 @@ fn send_to_claude_ai(
     no_metadata: bool,
     snippet: bool,
 ) -> Result<()> {
-    // Read content from stdin
+    // Read the full selection from stdin. Helix pipes the selection with
+    // :pipe-to and closes stdin after writing it, so reading to EOF captures
+    // multiline selections instead of just their first line.
     let mut content = String::new();
-    std::io::stdin().read_line(&mut content)?;
+    std::io::stdin().read_to_string(&mut content)?;
 
     // Create structured message
     let message = create_structured_message(
