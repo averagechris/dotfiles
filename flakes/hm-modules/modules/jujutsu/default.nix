@@ -112,6 +112,12 @@ in {
         configured artifact directories from managed workspaces.
       '';
     };
+
+    trashRetention = mkOption {
+      type = types.str;
+      default = "7d";
+      description = "How long jj ws gc keeps forgotten workspace trash. Duration with h, d, or w suffix.";
+    };
   };
 
   options.dotfiles.jujutsu.prWorkflow = with lib; {
@@ -320,6 +326,7 @@ in {
           picker = "fzf";
           clone-artifacts = dotCfg.workspaces.cloneArtifacts;
           sweep-idle = dotCfg.workspaces.sweepIdle;
+          trash-retention = dotCfg.workspaces.trashRetention;
           project-groups = map (group: "${group.path}:${group.workspaceDir}") dotCfg.workspaces.projectGroups;
         }
         // lib.optionalAttrs (dotCfg.workspaces.fetchRemote != null) {

@@ -3944,6 +3944,7 @@ fn run_ws(args: Vec<OsString>) -> Result<()> {
         "prune" => ws_prune(rest),
         "du" => ws_du(rest),
         "sweep" => ws_sweep(rest),
+        "gc" => ws_gc(rest),
         "root" => ws_root(rest),
         "-h" | "--help" | "help" => {
             print_ws_usage();
@@ -3956,7 +3957,7 @@ fn run_ws(args: Vec<OsString>) -> Result<()> {
 }
 
 fn print_ws_usage() {
-    eprintln!("Usage:\n  jj ws add <name> [-r <revset>] [-q]\n  jj ws list [--pick]\n  jj ws path <name>|--pick\n  jj ws forget <name>|--pick [--force] [--dry-run] [-q]\n  jj ws prune [--delete] [--pick]\n  jj ws du\n  jj ws sweep [--idle <duration>] [--dry-run]\n  jj ws root\n\nExamples:\n  jj ws add feature-x -q\n  cd \"$(jj ws path feature-x)\"\n  jj ws forget feature-x\n  jj ws sweep --idle 14d --dry-run\n\nPath: <project-group>/<workspace-dir>/<repo>/<workspace>\nHelp: jj ws <command> --help");
+    eprintln!("Usage:\n  jj ws add <name> [-r <revset>] [-q]\n  jj ws list [--pick]\n  jj ws path <name>|--pick\n  jj ws forget <name>|--pick [--force] [--purge] [--dry-run] [-q]\n  jj ws prune [--delete] [--pick]\n  jj ws du\n  jj ws sweep [--idle <duration>] [--dry-run]\n  jj ws gc [--older-than 7d] [--dry-run]\n  jj ws root\n\nExamples:\n  jj ws add feature-x -q\n  cd \"$(jj ws path feature-x)\"\n  jj ws forget feature-x\n  jj ws sweep --idle 14d --dry-run\n\nPath: <project-group>/<workspace-dir>/<repo>/<workspace>\nHelp: jj ws <command> --help");
 }
 
 fn print_ws_add_usage() {
@@ -3972,11 +3973,15 @@ fn print_ws_path_usage() {
 }
 
 fn print_ws_forget_usage() {
-    eprintln!("Usage:\n  jj ws forget <name> [--force] [--keep-dir] [--no-docker] [--docker-volumes|--keep-docker-volumes] [--dry-run] [-q]\n  jj ws forget --pick [options]\n\nForgets and deletes a workspace. Refuses current/non-empty work unless --force.\nDocker Compose cleanup removes volumes by default; use --keep-docker-volumes to keep them.\n\nExamples:\n  jj ws forget feature-x --dry-run\n  jj ws forget feature-x\n  jj ws forget scratch --force -q");
+    eprintln!("Usage:\n  jj ws forget <name> [--force] [--purge|--keep-dir] [--no-docker] [--docker-volumes|--keep-docker-volumes] [--dry-run] [-q]\n  jj ws forget --pick [options]\n\nForgets a workspace and moves its directory into <workspace-root>/.trash so\nuntracked files stay recoverable; `jj ws gc` deletes trash later.\n--purge deletes immediately instead of trashing. --keep-dir leaves the\ndirectory in place after forgetting. Refuses current/non-empty work unless --force.\nDocker Compose cleanup removes volumes by default; use --keep-docker-volumes to keep them.\n\nExamples:\n  jj ws forget feature-x --dry-run\n  jj ws forget feature-x\n  jj ws forget scratch --force --purge -q");
 }
 
 fn print_ws_prune_usage() {
-    eprintln!("Usage:\n  jj ws prune [--dry-run] [--delete] [--pick] [--yes]\n\nPrints stale workspace dirs. Use --delete to remove them. --pick requires a terminal.");
+    eprintln!("Usage:\n  jj ws prune [--dry-run] [--delete] [--pick] [--yes]\n\nPrints stale workspace dirs. Use --delete to move them into .trash (recoverable via `jj ws gc`). --pick requires a terminal.");
+}
+
+fn print_ws_gc_usage() {
+    eprintln!("Usage:\n  jj ws gc [--older-than <duration>] [--dry-run]\n\nDeletes trash entries under this repo's <workspace-root>/.trash that are at or\nolder than the retention period. Default retention comes from\ndotfiles.workspaces.trash-retention (7d). Durations use h, d, or w suffixes;\n`--older-than 0h` deletes all trash.\n\nExamples:\n  jj ws gc --dry-run\n  jj ws gc --older-than 0h");
 }
 
 fn print_ws_du_usage() {
@@ -4860,6 +4865,7 @@ struct WsForgetArgs {
     pick: bool,
     force: bool,
     keep_dir: bool,
+    purge: bool,
     no_docker: bool,
     docker_volumes: bool,
     keep_docker_volumes: bool,
@@ -4874,6 +4880,7 @@ fn parse_ws_forget_args(args: Vec<OsString>) -> Result<WsForgetArgs> {
             "--pick" => parsed.pick = true,
             "--force" => parsed.force = true,
             "--keep-dir" => parsed.keep_dir = true,
+            "--purge" => parsed.purge = true,
             "--no-docker" => parsed.no_docker = true,
             "--docker-volumes" => parsed.docker_volumes = true,
             "--keep-docker-volumes" => parsed.keep_docker_volumes = true,
@@ -4893,6 +4900,9 @@ fn parse_ws_forget_args(args: Vec<OsString>) -> Result<WsForgetArgs> {
     }
     if parsed.docker_volumes && parsed.keep_docker_volumes {
         bail!("--docker-volumes and --keep-docker-volumes are mutually exclusive");
+    }
+    if parsed.purge && parsed.keep_dir {
+        bail!("--purge and --keep-dir are mutually exclusive\n\n--purge deletes the workspace directory immediately; --keep-dir leaves it in place after forgetting.");
     }
     Ok(parsed)
 }
@@ -4933,11 +4943,23 @@ fn ws_forget(args: Vec<OsString>) -> Result<()> {
         bail!("workspace {name} has unpublished work at {}\n\nReview it first with:\n  jj --repository {} status\n\nIf this workspace was already pushed or merged, fetch remote refs and retry:\n  jj --repository {} git fetch\n\nUse --force to forget and delete anyway.", target.display(), target.display(), target.display());
     }
     let config = ws_config()?;
+    let ctx = current_context(&config, None)?;
     let has_compose = has_compose_file(&path);
     let remove_docker_volumes =
         parsed.docker_volumes || (config.docker_remove_volumes && !parsed.keep_docker_volumes);
     if parsed.dry_run {
         println!("would forget {name} at {}", path.display());
+        if !parsed.keep_dir {
+            if parsed.purge {
+                println!("would delete {}", path.display());
+            } else {
+                println!(
+                    "would move {} into {}",
+                    path.display(),
+                    ws_trash_dir(&ctx.workspace_root).display()
+                );
+            }
+        }
         if !parsed.no_docker && config.docker_cleanup == "auto" && has_compose {
             if remove_docker_volumes {
                 println!("would run: docker compose down --remove-orphans --volumes");
@@ -4960,8 +4982,15 @@ fn ws_forget(args: Vec<OsString>) -> Result<()> {
     }
     run_jj_status(["workspace", "forget", name.as_str()])?;
     if !parsed.keep_dir && path.exists() {
-        fs::remove_dir_all(&path)
-            .with_context(|| format!("failed to remove {}", path.display()))?;
+        if parsed.purge {
+            fs::remove_dir_all(&path)
+                .with_context(|| format!("failed to remove {}", path.display()))?;
+        } else {
+            let trashed = move_to_trash(&path, &name, &ctx.workspace_root)?;
+            if !parsed.quiet {
+                println!("moved workspace to {}", trashed.display());
+            }
+        }
     }
     if let Some(parent) = path.parent() {
         let _ = fs::remove_dir(parent);
@@ -5022,15 +5051,7 @@ fn ws_prune(args: Vec<OsString>) -> Result<()> {
         .into_iter()
         .map(|(_, p)| fs::canonicalize(&p).unwrap_or(PathBuf::from(p)))
         .collect();
-    let mut children = Vec::new();
-    if ctx.workspace_root.exists() {
-        for entry in fs::read_dir(&ctx.workspace_root)? {
-            let p = entry?.path();
-            if p.is_dir() {
-                children.push(p);
-            }
-        }
-    }
+    let children = collect_workspace_children(&ctx.workspace_root);
     let mut stale = stale_workspace_dirs(&children, &registered);
     if parsed.pick {
         let lines: Vec<String> = stale.iter().map(|p| p.display().to_string()).collect();
@@ -5041,7 +5062,11 @@ fn ws_prune(args: Vec<OsString>) -> Result<()> {
     }
     if parsed.delete && !parsed.dry_run {
         for p in &stale {
-            fs::remove_dir_all(p)?;
+            let name = p
+                .file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_else(|| "stale".to_string());
+            move_to_trash(p, &name, &ctx.workspace_root)?;
         }
     } else {
         for p in &stale {
@@ -5049,6 +5074,218 @@ fn ws_prune(args: Vec<OsString>) -> Result<()> {
         }
     }
     Ok(())
+}
+
+fn collect_workspace_children(workspace_root: &Path) -> Vec<PathBuf> {
+    let mut children = Vec::new();
+    if workspace_root.exists() {
+        if let Ok(entries) = fs::read_dir(workspace_root) {
+            for entry in entries.flatten() {
+                let p = entry.path();
+                if p.is_dir() && p.file_name() != Some(OsStr::new(".trash")) {
+                    children.push(p);
+                }
+            }
+        }
+    }
+    children
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+struct WsGcArgs {
+    older_than: Option<String>,
+    dry_run: bool,
+}
+
+fn parse_ws_gc_args(args: Vec<OsString>) -> Result<WsGcArgs> {
+    let mut parsed = WsGcArgs::default();
+    let mut iter = args.into_iter();
+    while let Some(arg) = iter.next() {
+        if arg == OsStr::new("--older-than") {
+            parsed.older_than =
+                Some(os_to_string(iter.next().ok_or_else(|| {
+                    anyhow!("missing duration after --older-than")
+                })?)?);
+        } else if let Some(value) = take_value_after_prefix(&arg, "--older-than=")? {
+            parsed.older_than = Some(value);
+        } else if arg == OsStr::new("--dry-run") {
+            parsed.dry_run = true;
+        } else if arg == OsStr::new("-h") || arg == OsStr::new("--help") {
+            print_ws_gc_usage();
+            return Ok(parsed);
+        } else {
+            bail!(
+                "unknown argument: {}\n\nUsage: jj ws gc [--older-than <duration>] [--dry-run]",
+                arg.to_string_lossy()
+            );
+        }
+    }
+    Ok(parsed)
+}
+
+fn ws_gc(args: Vec<OsString>) -> Result<()> {
+    let parsed = parse_ws_gc_args(args)?;
+    let config = ws_config()?;
+    let ctx = current_context(&config, None)?;
+    let retention_raw = parsed.older_than.unwrap_or_else(|| {
+        jj_config_string("dotfiles.workspaces.trash-retention")
+            .ok()
+            .flatten()
+            .unwrap_or_else(|| DEFAULT_TRASH_RETENTION.to_string())
+    });
+    let retention_secs = parse_retention_seconds(&retention_raw)?;
+    let trash = ws_trash_dir(&ctx.workspace_root);
+    let now = unix_now_secs();
+    let mut entries: Vec<PathBuf> = Vec::new();
+    match fs::symlink_metadata(&trash) {
+        Ok(metadata) if metadata.file_type().is_dir() => {
+            for entry in fs::read_dir(&trash)? {
+                entries.push(entry?.path());
+            }
+        }
+        Ok(_) => {
+            eprintln!(
+                "skipping trash path that is not a directory: {}",
+                trash.display()
+            );
+        }
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Err(error) => {
+            return Err(error).with_context(|| format!("failed to inspect {}", trash.display()));
+        }
+    }
+    entries.sort();
+    for path in entries {
+        let Some(name) = path.file_name().map(|n| n.to_string_lossy().to_string()) else {
+            continue;
+        };
+        let Some(timestamp) = parse_trash_entry_timestamp(&name) else {
+            eprintln!("skipping unrecognized trash entry: {}", path.display());
+            continue;
+        };
+        let age_secs = now.saturating_sub(timestamp);
+        if !trash_entry_is_expired(age_secs, retention_secs) {
+            continue;
+        }
+        if parsed.dry_run {
+            println!(
+                "would delete {} (age {})",
+                path.display(),
+                format_duration(age_secs)
+            );
+        } else {
+            let result = match fs::symlink_metadata(&path) {
+                Ok(metadata) if metadata.file_type().is_dir() => fs::remove_dir_all(&path),
+                Ok(_) => fs::remove_file(&path),
+                Err(error) => {
+                    eprintln!(
+                        "warning: failed to inspect trash entry {}: {}",
+                        path.display(),
+                        error
+                    );
+                    continue;
+                }
+            };
+            if let Err(error) = result {
+                eprintln!(
+                    "warning: failed to delete trash entry {}: {}",
+                    path.display(),
+                    error
+                );
+                continue;
+            }
+            println!(
+                "deleted {} (age {})",
+                path.display(),
+                format_duration(age_secs)
+            );
+        }
+    }
+    Ok(())
+}
+
+const DEFAULT_TRASH_RETENTION: &str = "7d";
+
+fn ws_trash_dir(workspace_root: &Path) -> PathBuf {
+    workspace_root.join(".trash")
+}
+
+fn unix_now_secs() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0)
+}
+
+fn parse_retention_seconds(raw: &str) -> Result<u64> {
+    let raw = raw.trim();
+    let invalid = || {
+        anyhow!(
+            "invalid duration {raw:?}; use a positive integer followed by h, d, or w (for example 12h, 7d, 2w)"
+        )
+    };
+    if raw.len() < 2 {
+        return Err(invalid());
+    }
+    let (digits, unit) = raw.split_at(raw.len() - 1);
+    if !digits
+        .bytes()
+        .next()
+        .is_some_and(|byte| byte.is_ascii_digit())
+    {
+        return Err(invalid());
+    }
+    let multiplier: u64 = match unit {
+        "h" => 3600,
+        "d" => 86_400,
+        "w" => 604_800,
+        _ => return Err(invalid()),
+    };
+    let value: u64 = digits.parse().map_err(|_| invalid())?;
+    value.checked_mul(multiplier).ok_or_else(invalid)
+}
+
+/// Trash entries are named `<unix-seconds>-<name>` with an optional trailing
+/// `-<n>` collision suffix; extract the leading timestamp.
+fn parse_trash_entry_timestamp(entry: &str) -> Option<u64> {
+    let (timestamp, _) = entry.split_once('-')?;
+    timestamp.parse::<u64>().ok()
+}
+
+fn trash_entry_is_expired(age_secs: u64, retention_secs: u64) -> bool {
+    age_secs >= retention_secs
+}
+
+fn format_duration(secs: u64) -> String {
+    if secs >= 86_400 {
+        format!("{}d", secs / 86_400)
+    } else if secs >= 3600 {
+        format!("{}h", secs / 3600)
+    } else {
+        format!("{}s", secs)
+    }
+}
+
+fn move_to_trash(path: &Path, name: &str, workspace_root: &Path) -> Result<PathBuf> {
+    let trash = ws_trash_dir(workspace_root);
+    fs::create_dir_all(&trash).with_context(|| format!("failed to create {}", trash.display()))?;
+    let secs = unix_now_secs();
+    let mut candidate = trash.join(format!("{secs}-{name}"));
+    let mut suffix: u32 = 0;
+    while candidate.exists() {
+        suffix += 1;
+        candidate = trash.join(format!("{secs}-{name}-{suffix}"));
+    }
+    // Same-filesystem rename only; on failure the source directory stays in
+    // place and no copy fallback is attempted.
+    fs::rename(path, &candidate).with_context(|| {
+        format!(
+            "failed to move {} into trash at {}; the directory was left in place",
+            path.display(),
+            candidate.display()
+        )
+    })?;
+    Ok(candidate)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
@@ -7867,28 +8104,30 @@ struct JjOutput {
 mod tests {
     use super::{
         choose_ship_bookmark, choose_sync_base, clone_artifact_dirs, clone_dir_strict,
-        configured_lints, current_context, effective_clone_artifacts, effective_venv_plan,
-        fetch_remote_choice, first_unsupported_pr_flag, infer_lint_name,
+        collect_workspace_children, configured_lints, current_context, effective_clone_artifacts,
+        effective_venv_plan, fetch_remote_choice, first_unsupported_pr_flag, infer_lint_name,
         infer_remote_integration_bookmark_from, is_check_only_format_script,
         is_integration_bookmark, is_safe_package_check_script, is_validation_name,
         lint_config_toml, lint_display_name, lint_onboard_json, lint_onboard_report,
         load_reviewer_config_from, makefile_targets, managed_workspace_candidates, measure_tree,
-        parse_checks_json, parse_common_args, parse_config_string_array, parse_duration_arg,
-        parse_github_remote_url, parse_idle_duration, parse_lint_selection, parse_lints_toml,
-        parse_pr_args, parse_pr_hygiene_args, parse_pr_hygiene_graphql, parse_review_state_json,
-        parse_tag_push_args, parse_toml_string_array, parse_ws_add_args, parse_ws_forget_args,
-        parse_ws_path_args, parse_ws_prune_args, parse_ws_sweep_args, path_is_contained,
-        python_runner, render_bookmark_template, resolve_pr_base, resolve_reviewer_values,
-        resolve_reviewers_from_path, review_effort, run_lint, run_lint_onboard, run_ship, run_sync,
-        run_ws, scan_workspace, selected_lints, ship_plan, short_description_from_title,
-        source_venv_python_usable, stale_workspace_dirs, sweepable, sync_base_candidates, tag_push,
-        top_level_artifact_paths, valid_github_handle, validate_body_source,
-        validate_pr_watch_args, validate_release_tag, validate_ticket, validate_ws_name,
-        workspace_context_for_repo, workspace_has_unpublished_work, write_tracked_lint_config,
-        ws_config, Cli, CliCommand, FetchChoice, LintCommand, LintOnboardReport, LintSuggestion,
-        ParsedArgs, PrArgs, ProjectGroup, Reviewer, ReviewerConfig, ShipPlan, TagCommand,
-        TagPushArgs, TagSigning, VenvPlan, WorkspaceUsage, WsAddArgs, WsConfig, WsForgetArgs,
-        WsPathArgs, WsPruneArgs, WsSweepArgs, DEFAULT_CLONE_ARTIFACTS, DEFAULT_SWEEP_IDLE,
+        move_to_trash, parse_checks_json, parse_common_args, parse_config_string_array,
+        parse_duration_arg, parse_github_remote_url, parse_idle_duration, parse_lint_selection,
+        parse_lints_toml, parse_pr_args, parse_pr_hygiene_args, parse_pr_hygiene_graphql,
+        parse_retention_seconds, parse_review_state_json, parse_tag_push_args,
+        parse_toml_string_array, parse_trash_entry_timestamp, parse_ws_add_args,
+        parse_ws_forget_args, parse_ws_path_args, parse_ws_prune_args, parse_ws_sweep_args,
+        path_is_contained, python_runner, render_bookmark_template, resolve_pr_base,
+        resolve_reviewer_values, resolve_reviewers_from_path, review_effort, run_lint,
+        run_lint_onboard, run_ship, run_sync, run_ws, scan_workspace, selected_lints, ship_plan,
+        short_description_from_title, source_venv_python_usable, stale_workspace_dirs, sweepable,
+        sync_base_candidates, tag_push, top_level_artifact_paths, trash_entry_is_expired,
+        valid_github_handle, validate_body_source, validate_pr_watch_args, validate_release_tag,
+        validate_ticket, validate_ws_name, workspace_context_for_repo,
+        workspace_has_unpublished_work, write_tracked_lint_config, ws_config, Cli, CliCommand,
+        FetchChoice, LintCommand, LintOnboardReport, LintSuggestion, ParsedArgs, PrArgs,
+        ProjectGroup, Reviewer, ReviewerConfig, ShipPlan, TagCommand, TagPushArgs, TagSigning,
+        VenvPlan, WorkspaceUsage, WsAddArgs, WsConfig, WsForgetArgs, WsPathArgs, WsPruneArgs,
+        WsSweepArgs, DEFAULT_CLONE_ARTIFACTS, DEFAULT_SWEEP_IDLE,
     };
     use clap::Parser;
     use std::env;
@@ -8977,6 +9216,7 @@ aliases = ["sammy", "Sam Smith"]
                 pick: false,
                 force: true,
                 keep_dir: true,
+                purge: false,
                 no_docker: true,
                 docker_volumes: true,
                 keep_docker_volumes: false,
@@ -8992,6 +9232,109 @@ aliases = ["sammy", "Sam Smith"]
         .is_err());
         assert!(parse_ws_forget_args(vec!["feature".into(), "--pick".into()]).is_err());
         assert!(parse_ws_forget_args(vec![]).is_err());
+        assert!(parse_ws_forget_args(vec!["feature".into(), "--purge".into()]).is_ok());
+        assert!(parse_ws_forget_args(vec![
+            "feature".into(),
+            "--purge".into(),
+            "--keep-dir".into(),
+        ])
+        .is_err());
+    }
+
+    #[test]
+    fn retention_parser_accepts_suffixes_and_rejects_garbage() {
+        assert_eq!(parse_retention_seconds("0h").unwrap(), 0);
+        assert_eq!(parse_retention_seconds("1h").unwrap(), 3600);
+        assert_eq!(parse_retention_seconds("7d").unwrap(), 604_800);
+        assert_eq!(parse_retention_seconds("2w").unwrap(), 1_209_600);
+        assert_eq!(parse_retention_seconds(" 12h ").unwrap(), 43_200);
+        assert!(parse_retention_seconds("").is_err());
+        assert!(parse_retention_seconds("7").is_err());
+        assert!(parse_retention_seconds("d").is_err());
+        assert!(parse_retention_seconds("-1d").is_err());
+        assert!(parse_retention_seconds("+5h").is_err());
+        assert!(parse_retention_seconds("7x").is_err());
+        assert!(parse_retention_seconds("7dd").is_err());
+    }
+
+    #[test]
+    fn trash_timestamp_parsing_requires_leading_timestamp() {
+        let secs = 1_700_000_000u64;
+        assert_eq!(
+            parse_trash_entry_timestamp(&format!("{secs}-feature-x")),
+            Some(secs)
+        );
+        // Workspace names may themselves contain digits and hyphens.
+        assert_eq!(
+            parse_trash_entry_timestamp(&format!("{secs}-build-99999999999")),
+            Some(secs)
+        );
+        assert_eq!(
+            parse_trash_entry_timestamp(&format!("{secs}-feature-2-1")),
+            Some(secs)
+        );
+        assert_eq!(
+            parse_trash_entry_timestamp(&format!("feature-x-{secs}")),
+            None
+        );
+        assert_eq!(parse_trash_entry_timestamp("notrash"), None);
+    }
+
+    #[test]
+    fn trash_entries_at_retention_boundary_are_expired() {
+        assert!(trash_entry_is_expired(7 * 86_400, 7 * 86_400));
+        assert!(!trash_entry_is_expired(7 * 86_400 - 1, 7 * 86_400));
+    }
+
+    #[test]
+    fn move_to_trash_renames_and_avoids_collisions() {
+        let root = named_tempdir("trash-collision");
+        let workspace_root = root.join("ws/demo");
+        let dir = workspace_root.join("scratch");
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(dir.join("untracked.txt"), "keep me\n").unwrap();
+
+        let first = move_to_trash(&dir, "scratch", &workspace_root).unwrap();
+        assert!(!dir.exists());
+        assert!(first
+            .file_name()
+            .unwrap()
+            .to_string_lossy()
+            .ends_with("-scratch"));
+        let first_name = first.file_name().unwrap().to_string_lossy();
+        let first_timestamp = parse_trash_entry_timestamp(&first_name).unwrap();
+        assert_eq!(first_name, format!("{first_timestamp}-scratch"));
+        assert!(first.join("untracked.txt").exists());
+
+        // A second removal in the same second must not collide.
+        let second_dir = workspace_root.join("scratch");
+        fs::create_dir_all(&second_dir).unwrap();
+        let second = move_to_trash(&second_dir, "scratch", &workspace_root).unwrap();
+        assert_ne!(first, second);
+        assert!(second.exists());
+        let second_name = second.file_name().unwrap().to_string_lossy();
+        assert!(second_name.ends_with("-scratch") || second_name.ends_with("-scratch-1"));
+        assert!(parse_trash_entry_timestamp(&second_name).is_some());
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn collect_workspace_children_excludes_trash() {
+        let root = named_tempdir("prune-scan");
+        let workspace_root = root.join("ws/demo");
+        fs::create_dir_all(workspace_root.join(".trash")).unwrap();
+        fs::create_dir_all(workspace_root.join(".trash/stale-123")).unwrap();
+        fs::create_dir_all(workspace_root.join("stale-ws")).unwrap();
+
+        let children = collect_workspace_children(&workspace_root);
+        let names: Vec<String> = children
+            .iter()
+            .map(|p| p.file_name().unwrap().to_string_lossy().to_string())
+            .collect();
+        assert_eq!(names, vec!["stale-ws".to_string()]);
+
+        let _ = fs::remove_dir_all(&root);
     }
 
     #[test]
@@ -10150,6 +10493,133 @@ tests = []
         env::set_current_dir(&old).unwrap();
 
         assert!(!ws.exists());
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn integration_forget_trashes_gc_purges_and_prune_excludes_trash() {
+        let _guard = INTEGRATION_LOCK.lock().unwrap();
+        let root = named_tempdir("trash-gc");
+        let group = root.join("projects");
+        let repo = group.join("demo");
+        fs::create_dir_all(&group).unwrap();
+        run(Command::new("jj").arg("git").arg("init").arg(&repo));
+        jj(
+            &repo,
+            &[
+                "config",
+                "set",
+                "--repo",
+                "dotfiles.workspaces.project-groups",
+                &format!("[\"{}:ws\"]", group.display()),
+            ],
+        );
+        jj(
+            &repo,
+            &[
+                "config",
+                "set",
+                "--repo",
+                "dotfiles.workspaces.direnv-allow",
+                "false",
+            ],
+        );
+        fs::write(repo.join(".gitignore"), "ignored.txt\n").unwrap();
+        fs::write(repo.join("tracked.txt"), "hello\n").unwrap();
+        jj(&repo, &["describe", "-m", "initial"]);
+
+        let old = env::current_dir().unwrap();
+        env::set_current_dir(&repo).unwrap();
+        run_ws(vec![
+            "add".into(),
+            "scratch".into(),
+            "-r".into(),
+            "@".into(),
+            "-q".into(),
+        ])
+        .unwrap();
+        let ws = group.join("ws/demo/scratch");
+        fs::write(ws.join("ignored.txt"), "untracked\n").unwrap();
+
+        // Normal forget moves the workspace into .trash, preserving untracked files.
+        run_ws(vec![
+            "forget".into(),
+            "scratch".into(),
+            "--force".into(),
+            "-q".into(),
+        ])
+        .unwrap();
+        assert!(!ws.exists());
+        let trash_dir = group.join("ws/demo/.trash");
+        let entries: Vec<PathBuf> = fs::read_dir(&trash_dir)
+            .unwrap()
+            .map(|e| e.unwrap().path())
+            .collect();
+        assert_eq!(entries.len(), 1);
+        let trashed = &entries[0];
+        assert!(trashed
+            .file_name()
+            .unwrap()
+            .to_string_lossy()
+            .ends_with("-scratch"));
+        assert_eq!(
+            fs::read_to_string(trashed.join("ignored.txt")).unwrap(),
+            "untracked\n"
+        );
+
+        // A parseable non-directory entry must not abort collection of later entries.
+        let stray_file = trash_dir.join("0-stray-file");
+        fs::write(&stray_file, "remove me\n").unwrap();
+
+        // gc --dry-run keeps the entries; real gc with 0h retention deletes them.
+        run_ws(vec![
+            "gc".into(),
+            "--older-than".into(),
+            "0h".into(),
+            "--dry-run".into(),
+        ])
+        .unwrap();
+        assert!(trashed.exists());
+        assert!(stray_file.exists());
+        run_ws(vec!["gc".into(), "--older-than".into(), "0h".into()]).unwrap();
+        assert!(!trashed.exists());
+        assert!(!stray_file.exists());
+
+        // prune must not see .trash content as stale candidates.
+        let preserved = trash_dir.join("1-preserved");
+        fs::create_dir_all(&preserved).unwrap();
+        let trash_count_before_prune = fs::read_dir(&trash_dir).unwrap().count();
+        run_ws(vec!["prune".into(), "--delete".into()]).unwrap();
+        assert_eq!(
+            fs::read_dir(&trash_dir).unwrap().count(),
+            trash_count_before_prune
+        );
+
+        // --purge deletes immediately without touching .trash.
+        run_ws(vec![
+            "add".into(),
+            "purge-me".into(),
+            "-r".into(),
+            "@".into(),
+            "-q".into(),
+        ])
+        .unwrap();
+        let purge_ws = group.join("ws/demo/purge-me");
+        run_ws(vec![
+            "forget".into(),
+            "purge-me".into(),
+            "--force".into(),
+            "--purge".into(),
+            "-q".into(),
+        ])
+        .unwrap();
+        assert!(!purge_ws.exists());
+        assert_eq!(
+            fs::read_dir(&trash_dir).unwrap().count(),
+            trash_count_before_prune
+        );
+        env::set_current_dir(old).unwrap();
+
         let _ = fs::remove_dir_all(&root);
     }
 

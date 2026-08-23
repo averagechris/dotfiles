@@ -21,7 +21,7 @@ jj ws add <name> -r <revset> -q  # create from explicit base/current change
 jj ws path <name>                # resolve path for existing workspace
 jj ws list                       # inspect registered workspaces
 jj ws forget <name> --dry-run    # preview cleanup/deletion
-jj ws forget <name>              # forget/delete when safe
+jj ws forget <name>              # forget and move to .trash when safe
 jj ws prune --dry-run            # find stale workspace dirs
 jj ws du                         # per-workspace apparent size breakdown (TSV)
 jj ws sweep --dry-run            # preview artifact cleanup for idle workspaces
@@ -79,9 +79,13 @@ jj ws list
 jj ws forget <name> --dry-run
 jj ws forget <name> --force
 jj ws prune --dry-run
+jj ws gc --dry-run
 ```
 
 - `forget` refuses the current workspace and refuses unpublished work unless forced with `--force`.
+- After `jj workspace forget`, the directory is moved into `<workspace-root>/.trash/<unix-seconds>-<name>` (same-filesystem rename; collision suffixes are appended at the end), so untracked files stay recoverable. `--purge` deletes immediately; `--keep-dir` leaves the directory in place.
+- `jj ws gc [--older-than <duration>] [--dry-run]` deletes trash older than the retention period (`dotfiles.workspaces.trash-retention`, default `7d`; `0h` deletes all).
+- `prune --delete` moves stale dirs into `.trash`; `.trash` itself never appears in prune or pickers.
 - Safety checks the whole non-empty stack ending at the workspace's `@`, not just `@`: an empty `@` is safe only when its non-empty ancestors are already reachable from remote bookmarks or remote tags. This avoids false positives after agents push a PR directly from the working-copy commit while still catching unpublished work left in `@-`.
 - If a just-merged workspace still looks unpublished, run `jj --repository "$(jj ws path <name>)" git fetch` and retry before using `--force`.
 - When Compose files are detected, `forget` runs Docker Compose cleanup and removes Compose volumes by default so smoke-test databases/queues do not leak after deletion. Use `--keep-docker-volumes` to preserve local Compose data intentionally; `--docker-volumes` remains an explicit opt-in for repos that override the default config.

@@ -23,11 +23,12 @@ jj ws add <name> [-r <revset>] [--venv=<copy|link|none>] [--no-envrc] [--no-venv
 jj ws list [--pick]
 jj ws path <name>
 jj ws path --pick
-jj ws forget <name> [--force] [--keep-dir] [--no-docker] [--docker-volumes|--keep-docker-volumes] [--dry-run]
+jj ws forget <name> [--force] [--purge|--keep-dir] [--no-docker] [--docker-volumes|--keep-docker-volumes] [--dry-run]
 jj ws forget --pick [options]
 jj ws prune [--dry-run] [--delete] [--pick] [--yes]
 jj ws du
 jj ws sweep [--idle <duration>] [--dry-run]
+jj ws gc [--older-than <duration>] [--dry-run]
 jj ws root
 ```
 
@@ -59,10 +60,16 @@ Preview deletion:
 jj ws forget feature-x --dry-run
 ```
 
-Forget and delete:
+Forget and move to trash:
 
 ```bash
 jj ws forget feature-x
+```
+
+Delete immediately instead of trashing:
+
+```bash
+jj ws forget feature-x --purge
 ```
 
 List stale dirs:
@@ -140,6 +147,7 @@ docker-remove-volumes = true
 picker = "fzf"
 clone-artifacts = [".direnv", "target", "node_modules", ".venv"]
 sweep-idle = "14d"
+trash-retention = "7d"
 # Optional when multiple remotes exist:
 # fetch-remote = "origin"
 project-groups = ["~/projects:ws", "~/sureapp:ws"]
@@ -347,13 +355,19 @@ No cache is planned for v1. Listing should be cheap when scoped to the current r
 4. refuse unless `--force` if any non-empty commit in the workspace stack is not reachable from remote bookmarks or remote tags
 5. run Docker Compose cleanup if applicable and enabled
 6. run `jj workspace forget <name>`
-7. delete the workspace directory unless `--keep-dir` is set
+7. move the workspace directory into `<workspace-root>/.trash/<unix-seconds>-<name>` unless `--keep-dir` is set; `--purge` deletes it immediately instead of trashing
 8. remove empty canonical parent directories
+
+The trash move is a same-filesystem rename. If the rename fails, the directory
+stays in place and the command errors; there is no copy fallback. Trash names
+get a numeric suffix at the end when a same-second removal would collide. Forgotten
+workspaces stay recoverable under `.trash` until `jj ws gc` deletes them.
 
 Supported options:
 
 ```bash
 --force
+--purge
 --keep-dir
 --no-docker
 --docker-volumes
@@ -361,6 +375,8 @@ Supported options:
 --dry-run
 -q, --quiet
 ```
+
+`--purge` and `--keep-dir` are mutually exclusive.
 
 The published-work check intentionally looks at the whole non-empty stack ending
 at the workspace's `@`, not just `@` itself. An empty `@` is only safe if its
@@ -413,7 +429,7 @@ keep volumes by default.
 <project-group-path>/<workspace-dir>/<repo-name>/
 ```
 
-A stale directory is a canonical workspace directory that is not a registered jj workspace.
+A stale directory is a canonical workspace directory that is not a registered jj workspace. The `.trash` directory itself and its contents are never candidates.
 
 Default behavior is conservative and non-destructive: print candidates only.
 
@@ -424,7 +440,15 @@ jj ws prune --delete
 jj ws prune --pick
 ```
 
+`--delete` moves stale directories into `.trash` (recoverable until `jj ws gc` runs) rather than deleting them outright.
+
 `--yes` is accepted for future confirmation flows; current deletion is gated by explicit `--delete` or picker selection.
+
+## Trash collection
+
+`jj ws gc [--older-than <duration>] [--dry-run]` deletes trash entries under the current repo's `<workspace-root>/.trash` that are at or older than the retention period. Retention comes from `dotfiles.workspaces.trash-retention` (default `7d`) or `--older-than`. Durations are positive integers with an `h`, `d`, or `w` suffix; `--older-than 0h` deletes all trash. `--dry-run` prints each path with its age without deleting anything.
+
+A launchd/systemd timer for automatic collection is a possible follow-up; run `jj ws gc` manually or from a scheduled job for now.
 
 ## Workspace name validation
 
