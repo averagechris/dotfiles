@@ -8,8 +8,8 @@
 # find_package(glaze 7.0.0), and glaze's package config uses SameMajorVersion
 # checks, so nixpkgs glaze 8.x is rejected and configure falls back to a
 # FetchContent git clone that cannot run in the build sandbox. Hosts building
-# the pinned Hyprland add this package to nativeBuildInputs so the version
-# check succeeds against real headers instead.
+# the pinned Hyprland pass -Dglaze_DIR=<this package>/share/glaze in cmakeFlags
+# so the version check succeeds against real headers instead.
 stdenv.mkDerivation rec {
   pname = "glaze-v7";
   version = "7.9.1";
