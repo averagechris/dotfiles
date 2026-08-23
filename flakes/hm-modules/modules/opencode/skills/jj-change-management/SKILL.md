@@ -1,15 +1,11 @@
 ---
 name: jj-change-management
-description: |
-  Everyday Jujutsu change work: inspect state, understand history, describe,
-  split/squash, rebase, move bookmarks, and recover mistakes.
+description: "Use in `.jj/` repos for everyday change work: inspecting status/diff/log, describing changes, split/squash, rebase/sync, moving bookmarks, and recovering mistakes with undo/op log. Do not use for conflict resolution (load `jj-conflict-resolution`) or push/ship/PR handoff (load `jj-repo-workflow`)."
 ---
 
-# jj Change Management
+# jj change management
 
-Use in repos with `.jj/` while editing and shaping local changes.
-
-Load `jj-conflict-resolution` when a command creates conflicts or `jj status` reports conflicts.
+Use in repos with `.jj/` while editing and shaping local changes. Load `jj-conflict-resolution` when a command creates conflicts or `jj status` reports conflicts.
 
 ## Model
 
@@ -17,19 +13,19 @@ Load `jj-conflict-resolution` when a command creates conflicts or `jj status` re
 - Edits automatically amend `@`; there is no staging area.
 - Prefer jj over git in colocated repos.
 
-## Inspect: what changed and why
+## Inspect
 
-Use compact output first; expand only when needed.
+Compact output first; expand only when needed.
 
 ```bash
-jj status --no-pager --color=never              # current working-copy summary
+jj status --no-pager --color=never              # working-copy summary
 jj diff --stat --no-pager --color=never         # changed files/size
 jj diff --no-pager --color=never                # full patch
 jj show --stat --no-pager --color=never         # current change metadata + stat
 jj log-recent || jj log -n 20 --no-pager --color=never # nearby history
 ```
 
-When available, prefer dotfiles aliases:
+Prefer these dotfiles aliases when available:
 
 ```bash
 jj df --stat --no-pager --color=never       # diff from trunk(); good before review/PR
@@ -43,53 +39,45 @@ jj la --no-pager --color=never              # ancestors of @
 jj log-all --no-pager --color=never         # all revisions; use sparingly
 ```
 
-## Describe: make the changelog entry
+## Describe
 
-Use when the current change has a coherent purpose or before handoff.
+When the current change has a coherent purpose or before handoff:
 
 ```bash
 jj describe -m "feat(scope): concise summary"
 ```
 
-Use Conventional Commits. Load `conventional-commits` if uncertain.
+Use Conventional Commits; load `conventional-commits` if uncertain.
 
 ## Shape changes
 
 ```bash
-jj new                         # start separate work after finishing current @
+jj new                                # start separate work after finishing current @
 jj squash -m "feat(scope): combined change"          # fold @ into @- with explicit message
 jj squash --use-destination-message                  # fold @ into @- keeping @- message
 jj split root:"path/to/file" -m "feat(scope): part"  # split files/paths into a new change
-jj sync -q --fail-on-conflicts                       # common update: fetch + rebase current stack onto inferred integration base
-jj rebase -d 'trunk()'                                # manual fallback: move current stack to trunk()
-jj rebase -b '<rev>' -d '<dest>'                      # move branch/stack containing rev
-jj rebase -s '<rev>' -d '<dest>'                      # move rev plus descendants
-jj rebase -r '<rev>' -A '<after-rev>'                 # reorder/insert after another rev
+jj sync -q --fail-on-conflicts                       # preferred update: fetch + rebase stack onto inferred integration base
+jj rebase -d 'trunk()'                               # manual fallback: move current stack to trunk()
+jj rebase -b '<rev>' -d '<dest>'                     # move branch/stack containing rev
+jj rebase -s '<rev>' -d '<dest>'                     # move rev plus descendants
+jj rebase -r '<rev>' -A '<after-rev>'                # reorder/insert after another rev
 jj tug                         # move nearest ancestor bookmark to @- when available
 jj bookmark set <name> -r @    # create/update explicit bookmark at @
 jj undo                        # undo last jj operation if it was wrong
 ```
 
-Why/when:
-
-- `jj new`: keep unrelated follow-up work separate.
-- `jj squash`: combine fixups with their parent change.
-- `jj split`: separate unrelated edits before describing/shipping.
-- `jj sync`: preferred day-to-day update; fetches from remote, infers one integration base, then rebases the current branch/stack containing `@` onto it.
-- `jj rebase`: manual parentage/order changes; do not use it to edit content.
+- `jj new` keeps unrelated follow-up work separate; `jj squash` combines fixups with their parent; `jj split` separates unrelated edits before describing/shipping.
+- `jj rebase` changes parentage/order only, never content, and requires a destination (`-d`, `-A`, or `-B`).
 - `jj tug`: after `jj new` or describing a stack, move the nearby feature bookmark to the completed parent.
-- `jj undo`: recover from an accidental jj operation; inspect `jj op log` first if unsure.
+- `jj undo`: recover from an accidental operation; inspect `jj op log` first if unsure.
 
 Sync/rebase notes:
 
-- Prefer `jj sync -q --fail-on-conflicts` for the common "update my work on top of upstream integration" workflow.
-- Use plain `jj sync` when base inference is unambiguous.
-- Use `jj sync --bookmark <name>`, `jj sync --bookmark <name>@<remote>`, or `jj sync --onto '<revset>'` when the desired base is known or inference may be ambiguous.
-- Use `jj sync --json --fail-on-conflicts` when structured output is useful; pipe to `jq -r '.base'` or `jq -r '.conflicts[]?'` only when extracting fields.
-- `jj rebase` is noninteractive but requires a destination (`-d`, `-A`, or `-B`).
+- Prefer `jj sync -q --fail-on-conflicts`. It fetches from remote, infers one integration base, then rebases the branch/stack containing `@` onto it. Use plain `jj sync` when inference is unambiguous.
+- Known or possibly ambiguous base: `jj sync --bookmark <name>`, `--bookmark <name>@<remote>`, `--remote origin`, or `--onto '<revset>'`.
+- Structured output: `jj sync --json --fail-on-conflicts`; pipe to `jq -r '.base'` or `jq -r '.conflicts[]?'` only when extracting fields.
 - Quote revsets: `trunk()`, `conflicts()`, `@-`, and operators are shell-sensitive.
-- Default selection is effectively the branch containing `@`; use explicit `-b/-s/-r` when intent matters.
-- Use `-b` for a whole branch/stack, `-s` for a source plus descendants, `-r` for only selected revisions.
+- Default selection is effectively the branch containing `@`; use explicit flags when intent matters: `-b` for a whole branch/stack, `-s` for a source plus descendants, `-r` for only selected revisions.
 - After any rebase, check both status and conflicts because rebase can exit successfully while creating conflicts:
 
 ```bash
@@ -99,7 +87,7 @@ jj log -r 'conflicts()' --no-pager --color=never
 
 ## Repo-level aliases
 
-When available, prefer high-level aliases; load `jj-repo-workflow` for details.
+Prefer high-level aliases when available; load `jj-repo-workflow` for details.
 
 ```bash
 jj lint    # run configured checks; use before handoff
@@ -113,7 +101,7 @@ Do not run `jj push` or `jj ship` unless the user explicitly asks to push/ship/p
 
 ## Noninteractive rules
 
-Agents must avoid editors, pickers, and TUIs.
+Avoid editors, pickers, and TUIs.
 
 ```bash
 # good
@@ -125,28 +113,16 @@ jj squash --use-destination-message
 jj squash root:"src/foo.rs" -m "fix(api): combine foo fix"
 
 # bad
-jj describe
-jj describe --editor
-jj split
-jj split src/foo.rs
-jj split --interactive
-jj split --tool meld
-jj squash
-jj squash -i
-jj squash --tool meld
-jj squash --editor
-jj ch        # fzf picker
-jj prune     # fzf picker
+jj describe            # opens an editor without -m/--stdin
+jj describe --editor   # any --editor/--tool/--interactive/-i form is not agent-safe
+jj split               # opens a diff editor/TUI without filesets
+jj split src/foo.rs    # may open description editor(s) without -m
+jj squash              # can open an editor when combining non-empty descriptions
+jj ch                  # fzf picker
+jj prune               # fzf picker
 ```
 
-Important editor traps:
-
-- `jj describe` without `-m` or `--stdin` opens an editor.
-- `jj split` without filesets opens a diff editor/TUI.
-- `jj split <filesets>` without `-m` can open one or more description editors.
-- Plain `jj squash` can open an editor when combining non-empty descriptions.
-- Path-limited `jj squash <filesets>` can still open an editor if it empties the source change.
-- Any `--interactive`, `-i`, `--tool`, or `--editor` form is not agent-safe.
+Path-limited `jj squash <filesets>` can still open an editor if it empties the source change.
 
 Agent-safe recipes:
 
@@ -159,11 +135,10 @@ jj squash --from <source> --into <dest> --use-destination-message
 
 Use `root:"path"` filesets or run commands from the repo root so paths resolve predictably.
 
-## Conflicts and bookmarks
+## Bookmarks and recovery
 
-- `main*` display means bookmark differs from its tracked remote; `*` is not part of the name.
-- Inspect both sides before resolving conflicted bookmarks.
-- Prefer rebasing to preserve work; discard only when certain.
+- `main*` display means the bookmark differs from its tracked remote; `*` is not part of the name.
+- Inspect both sides before resolving conflicted bookmarks; prefer rebasing to preserve work and discard only when certain.
 
 ```bash
 jj op log --limit 10 --no-pager --color=never       # recent operations/recovery points

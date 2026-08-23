@@ -1,9 +1,9 @@
 ---
 name: pup-cli
-description: Use when querying Datadog with the local pup CLI, especially logs, metrics, monitors, Bits AI, docs, or raw Datadog API calls.
+description: "Use when querying Datadog through the local `pup` CLI: logs, traces, APM services, metrics, monitors, Bits AI, Datadog docs questions, or raw Datadog API calls. Do not use for Sentry (use `sentry`) or live Kubernetes state (use `kubectl`)."
 ---
 
-# Pup CLI
+# pup CLI
 
 Use `pup` for Datadog. Keep output small.
 
@@ -18,20 +18,17 @@ pup COMMAND --limit 1 --read-only --no-agent --jq 'paths(scalars)|join(".")' -o 
 ```
 
 - Prefer `--read-only` unless the user explicitly asks to create/update/delete.
-- Prefer `--no-agent` to avoid the `status/data/metadata` wrapper. Use `--agent`
-  only when that envelope is useful.
+- Prefer `--no-agent` to skip the `status/data/metadata` wrapper; use `--agent` only when that envelope is useful.
 - `--jq` runs on the response payload before formatting, not on the agent wrapper.
-- Prefer `-o csv` for flat selected fields; use `-o json` only for nested data.
+- Prefer `-o csv` for flat selected fields; `-o json` only for nested data.
 - Always bound data with `--from`, `--to`, `--limit`, `--page`, or `--per-page`.
 - Aggregate first; fetch raw logs/traces only after narrowing the query.
 - Flatten with `--jq` before `-o csv`; nested payloads otherwise become JSON-in-CSV.
-- Avoid broad `paths(scalars)` on spans/logs except with `--limit 1`; jq errors can
-  dump too much context.
+- Avoid broad `paths(scalars)` on spans/logs except with `--limit 1`; jq errors can dump too much context.
 
 ## Sure stack context
 
-On `suremac`, use `sure-stack-context` for Sure-specific service, ecosystem, and
-environment hints.
+On `suremac`, use `sure-stack-context` for Sure-specific service, ecosystem, and environment hints.
 
 ## Compact patterns
 
@@ -69,8 +66,6 @@ pup docs ask 'short Datadog question'
 pup bits ask --no-stream 'short account-specific question'
 ```
 
-`pup profiling` does not expose flamegraphs yet. If profiling/flamegraphs matter,
-ask Chris to enable the Datadog MCP temporarily; it is disabled by default to save
-tokens.
+`pup profiling` does not expose flamegraphs yet. If profiling/flamegraphs matter, ask Chris to enable the Datadog MCP temporarily; it is disabled by default to save tokens.
 
 Run `pup <group> <command> --help` before guessing flags.

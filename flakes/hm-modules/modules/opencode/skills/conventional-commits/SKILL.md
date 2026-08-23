@@ -1,40 +1,37 @@
 ---
 name: conventional-commits
-description: |
-  Conventional Commits specification reference. Use when drafting commit messages
-  to ensure consistent, semantic versioning-friendly commits.
+description: Use when drafting, reviewing, or correcting commit messages or `jj describe` messages, choosing a commit type or scope, marking breaking changes, or mapping changes to semantic version bumps. Do not use for non-commit prose.
 ---
 
 # Conventional Commits
 
-Format: `type(scope): description`
+Format: `type(scope): description`. Scope is optional and names the codebase section.
 
 ## Types
 
-| Type | Description | Bumps |
-|------|-------------|-------|
+| Type | Meaning | Version bump |
+|------|---------|--------------|
 | feat | New feature | MINOR |
 | fix | Bug fix | PATCH |
-| docs | Documentation only | - |
-| style | Formatting, no code change | - |
-| refactor | Code change, no feature/fix | - |
 | perf | Performance improvement | PATCH |
-| test | Adding/fixing tests | - |
-| build | Build system changes | - |
-| chore | Maintenance tasks | - |
-| revert | Reverting a change | - |
+| docs | Documentation only | none |
+| style | Formatting, no code change | none |
+| refactor | Code change, no feature/fix | none |
+| test | Adding/fixing tests | none |
+| build | Build system changes | none |
+| chore | Maintenance tasks | none |
+| revert | Reverting a change | none |
 
-## Breaking Changes
+## Breaking changes
 
-Add `!` after type or `BREAKING CHANGE:` in footer:
-- `feat!: remove deprecated API`
-- `feat(api): change response format\n\nBREAKING CHANGE: response is now JSON`
+Add `!` after the type or a `BREAKING CHANGE:` footer:
 
-## Scope
+```
+feat!: remove deprecated API
+feat(api): change response format
 
-Optional, describes the section of codebase:
-- `feat(auth): add login endpoint`
-- `fix(ui): correct button alignment`
+BREAKING CHANGE: response is now JSON
+```
 
 ## Examples
 

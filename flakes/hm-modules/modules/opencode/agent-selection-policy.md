@@ -13,11 +13,11 @@ by default. Select for cost-effective success with verification.
   reasoning. Escalate with evidence rather than looping when the task outgrows
   its clear boundary.
 - `minion`: the default and bulk implementation tier, and the default ordinary
-  behavioral reviewer. It offers the best routine coding value because the
-  orchestrator removes uncertainty with clear acceptance criteria and Minion
-  then clears the required capability threshold reliably; this is independent
-  of its intrinsic model cost or raw score. It handles sustained coding, broader
-  context, tool sequencing, and judgment across multiple files.
+  behavioral reviewer. The orchestrator removes uncertainty with clear
+  acceptance criteria, and Minion then reliably clears the required capability
+  threshold; its routine coding value is independent of intrinsic model cost or
+  raw score. It handles sustained coding, broader context, tool sequencing, and
+  judgment across multiple files.
 - `build`: reserve for implementation or review whose ambiguity, breadth,
   investigation, or coordination cannot reasonably be removed by upfront
   planning and decomposition. Ordinary multi-file coding is not enough.
@@ -66,8 +66,8 @@ bypasses the intended routing context. This is guidance, not a permission ban.
 - Use Minion by default for ordinary behavioral review.
 - Use Build for broad or ambiguous review.
 - Use Wise only for high-consequence, adversarial, or cross-system review. Allow
-  one initial Wise review and at most one follow-up to validate blocker/high-
-  severity remediation or a material high-risk design change, even when
+  one initial Wise review and at most one follow-up to validate blocker or
+  high-severity remediation or a material high-risk design change, even when
   localized. Do not repeat Wise review merely because a blocker remains: a
   further pass requires materially different remediation or design, or a new
   risk class; otherwise escalate the unresolved issue to the user.

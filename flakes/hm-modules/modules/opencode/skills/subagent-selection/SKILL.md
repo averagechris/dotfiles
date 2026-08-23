@@ -1,6 +1,6 @@
 ---
 name: subagent-selection
-description: Route implementation, review, and logistics among tiny, luna, minion, build, and wise by residual uncertainty, consequence, capability, and cost.
+description: Use when choosing a subagent tier (tiny, luna, minion, build, wise, explore) for implementation, review, research, verification, or logistics handoffs, or when deciding whether to escalate, retry once, or split an outgrown task. Do not use for performing delegated work directly.
 ---
 
 # Subagent selection
