@@ -24,7 +24,9 @@ This directory contains the modular flake-based architecture for the dotfiles re
         ├─ tom                           ├─ nix-darwin
         ├─ cruber                        ├─ deploy-rs
         ├─ taz                           ├─ agenix
-        └─ tootsie                       └─ ...
+        ├─ tootsie                       └─ ...
+        ├─ tater
+        └─ trainwreck
 ```
 
 ## Flake dependency graph
@@ -34,7 +36,7 @@ This directory contains the modular flake-based architecture for the dotfiles re
 **Purpose**: Aggregates all host configurations and re-exports them for building and deployment.
 
 **Inputs**:
-- All host flakes (suremac, trap, thorny, tom, cruber, taz, tootsie)
+- All host flakes (suremac, trap, thorny, tom, cruber, taz, tootsie, tater, trainwreck)
 - Module flakes (base-lib, nixos-modules, hm-modules, darwin-modules)
 - Shared dependencies (nixpkgs, flake-utils, deploy-rs, pre-commit-hooks)
 
