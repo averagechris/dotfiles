@@ -51,8 +51,10 @@
 
 See [docs/troubleshooting/](/docs/troubleshooting/) for common issues and solutions, including:
 
-- [GPG Agent Lock / keyboxd Timeout](/docs/troubleshooting/gpg-agent-lock.md)
-- [Hyprland Invalid Source Path](/docs/troubleshooting/hyprland-invalid-source-path.md)
-- [Home Manager App Management Permission Fails on macOS](/docs/troubleshooting/home-manager-app-management.md)
-- [Home Manager Package Path Collisions](/docs/troubleshooting/home-manager-package-collisions.md)
-- [MT7925e Network Instability on tater](/docs/troubleshooting/mt7925e-network-instability.md)
+- [GPG agent lock / keyboxd timeout](/docs/troubleshooting/gpg-agent-lock.md)
+- [Home Manager activation timeout](/docs/troubleshooting/home-manager-activation-timeout.md)
+- [Home Manager App Management permission fails on macOS](/docs/troubleshooting/home-manager-app-management.md)
+- [Home Manager package path collisions](/docs/troubleshooting/home-manager-package-collisions.md)
+- [Hyprland invalid source path during flake evaluation](/docs/troubleshooting/hyprland-invalid-source-path.md)
+- [MT7925e Wi-Fi instability on tater](/docs/troubleshooting/mt7925e-network-instability.md)
+- [Sudo setuid permission error: `nobody:nogroup` ownership](/docs/troubleshooting/sudo-setuid-nobody-nogroup.md)
