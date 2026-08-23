@@ -29,7 +29,7 @@
 
   # Agenix secrets
   age.secrets.openrouter-api-key = {
-    file = ../../../secrets/openrouter-api-key.age;
+    file = ../../../secrets/openrouter-api-key-personal.age;
     owner = "chris";
     group = "users";
     mode = "0400";

@@ -139,7 +139,7 @@ in {
 
   age.secrets = {
     openrouter-api-key = {
-      file = ../../../secrets/openrouter-api-key.age;
+      file = ../../../secrets/openrouter-api-key-work.age;
       owner = "chris";
       mode = "0400";
     };

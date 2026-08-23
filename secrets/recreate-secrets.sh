@@ -19,7 +19,8 @@ NC='\033[0m'
 
 # All known secrets (add new ones here)
 SECRETS=(
-  "openrouter-api-key.age"
+  "openrouter-api-key-work.age"
+  "openrouter-api-key-personal.age"
   "fastmail_password.age"
   "fastmail_primary_address.age"
   "gpg-private-key.age"
@@ -29,7 +30,6 @@ SECRETS=(
   "trainwreck/telegram-bot-token.age"
   "trainwreck/telegram-bot-token-staging.age"
   "trainwreck/telegram-user-ids.age"
-  "trainwreck/openrouter-api-key.age"
   "trainwreck/kagi-api-token.age"
   "trainwreck/gateway-auth-token.age"
   "trainwreck/imgflip-username.age"

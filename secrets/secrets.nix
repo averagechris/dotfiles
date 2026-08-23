@@ -21,10 +21,15 @@ in {
   "fastmail_primary_address.age".publicKeys = systems-keys-plus-tater;
 
   # Shared secrets (accessible from all machines)
-  "openrouter-api-key.age".publicKeys = all-keys;
   "circleci-token.age".publicKeys = all-keys;
   "gpg-private-key.age".publicKeys = all-keys;
   "gpg-key-id.age".publicKeys = all-keys;
+
+  # OpenRouter API keys, split by account scope. The work key is readable
+  # only by suremac; the personal key covers every other machine.
+  "openrouter-api-key-work.age".publicKeys = [suremac-key];
+  "openrouter-api-key-personal.age".publicKeys =
+    systems-keys ++ trainwreck-keys ++ [tater-key];
   "granola-token.age".publicKeys = [suremac-key];
   "opencode-sure-stack-context.age".publicKeys = [suremac-key];
 
