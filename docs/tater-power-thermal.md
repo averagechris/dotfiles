@@ -1,4 +1,4 @@
-# tater Power and Thermal Tuning
+# tater power and thermal tuning
 
 `tater` is a ThinkPad T14s Gen 5 AMD. Its power policy is intentionally tuned
 for a quieter laptop profile while preserving responsive plugged-in desktop use.
@@ -133,10 +133,10 @@ The Eww bar shows an idle-inhibit button on `tater`:
 
 The shared helper is `dotfiles-idle-inhibit`. It stores the inhibit only for the
 current runtime posture, represented by AC power state, lid state, and active
-Hyprland monitor layout. If any of those change — for example plugging in,
-unplugging, opening or closing the lid, or changing dock/display state — the next
+Hyprland monitor layout. If any of those change, such as plugging in,
+unplugging, opening or closing the lid, or changing dock/display state, the next
 status check automatically clears the inhibit and normal Hypridle policy resumes.
-This makes it useful for “keep this long task running while I walk around”
+This makes it useful for "keep this long task running while I walk around"
 without accidentally carrying the no-lock state into travel or clamshell use.
 
 Useful runtime checks:

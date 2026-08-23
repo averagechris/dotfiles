@@ -1,4 +1,4 @@
-# Helix Editor
+# Helix editor
 
 Home Manager module: `flakes/hm-modules/modules/helix/default.nix`.
 

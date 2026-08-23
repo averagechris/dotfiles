@@ -10,6 +10,6 @@ The trace points at Hyprland's upstream package reading `VERSION` from its
 fileset-filtered `finalAttrs.src` while constructing `GIT_TAG`. In no-build
 evaluation contexts that filtered source may not be realised yet.
 
-Tater and Thorny work around this by overriding only `env.GIT_TAG` from the
+Tater and thorny work around this by overriding only `env.GIT_TAG` from the
 Hyprland flake source's `VERSION` file, while leaving the pinned Hyprland package
 and plugin ABI intact.

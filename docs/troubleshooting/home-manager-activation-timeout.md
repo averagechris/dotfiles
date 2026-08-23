@@ -1,4 +1,4 @@
-# Home-Manager Activation Timeout
+# Home Manager activation timeout
 
 ## Symptoms
 
@@ -9,7 +9,7 @@
   Starting units: blueman-applet.service, waybar.service, hyprpaper.service, ...
   ```
 
-## Root Cause
+## Root cause
 
 Home-manager's `systemd.user.startServices` defaults to `true` (as of 25.05+), which uses `sd-switch` to synchronously start/restart user systemd services during activation.
 
@@ -48,7 +48,7 @@ in {
 };
 ```
 
-## How It Works
+## How it works
 
 | Service Type | During Activation | On Login |
 |--------------|-------------------|----------|
@@ -57,7 +57,7 @@ in {
 
 Because GUI services are skipped during activation, changes to them only take effect on the next login. To apply an updated unit or package immediately, **log out and back in** so `graphical-session.target` restarts them. `systemctl --user restart <service>` is often blocked by `RefuseManualStart` and is not reliable for these services.
 
-## Alternative Approaches (and why they don't work)
+## Alternative approaches (and why they don't work)
 
 ### `ConditionEnvironment`
 
@@ -75,7 +75,7 @@ systemd.user.startServices = false;
 
 **Why it's not ideal**: Prevents ALL services from restarting during activation, including ones that would work fine (like ssh-agent). You'd need to manually restart services or log out/in after every switch.
 
-## Debugging Tips
+## Debugging tips
 
 1. Check which services are being started:
    ```bash
@@ -92,7 +92,7 @@ systemd.user.startServices = false;
    cat /nix/store/<hash>-home-manager-generation/activate | grep -A 50 reloadSystemd
    ```
 
-## Related Issues
+## Related issues
 
 - Home-manager 25.05 changed `startServices` default from `false` to `true`
 - The `sd-switch` tool is used when `startServices = true`

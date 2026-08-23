@@ -1,4 +1,4 @@
-# Tater Desktop Testing
+# Tater desktop testing
 
 This document describes the automated and semi-automated checks for tater's Hyprland desktop, greeter, Eww bar, fingerprint, and Wi-Fi setup.
 

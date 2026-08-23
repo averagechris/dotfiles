@@ -1,4 +1,4 @@
-# Helium Browser
+# Helium browser
 
 This repository packages the upstream Helium Linux binary tarball for NixOS via Home Manager.
 The package derivation lives at `flakes/base-lib/packages/helium-bin.nix` and is

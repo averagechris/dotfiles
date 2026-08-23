@@ -1,4 +1,4 @@
-# LAN SSH Discovery and Safe Helpers
+# LAN SSH discovery and safe helpers
 
 The dotfiles shell profile installs DHCP-friendly LAN SSH helpers for machines
 whose local IP address changes often and therefore should not be pinned in
@@ -35,7 +35,7 @@ UpdateHostKeys=no
 HostKeyAlgorithms=ssh-ed25519
 ```
 
-`StrictHostKeyChecking` is actually set to `yes`: discovery uses an immutable
+`StrictHostKeyChecking` is set to `yes`: discovery uses an immutable
 generated `known_hosts` file containing the configured fleet host keys, while
 the final `ssh-lan HOST` connection uses only that host's key. The wildcard in
 the generated file binds the trusted key rather than a volatile DHCP address.

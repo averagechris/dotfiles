@@ -1,6 +1,6 @@
-# Helix-Yazi Integration for WezTerm
+# Helix-Yazi integration for WezTerm
 
-This integration enables a seamless workflow between the Helix editor and Yazi file manager within WezTerm, creating an IDE-like experience.
+This integration opens the Yazi file manager in a WezTerm pane next to Helix, so you can pick files without leaving the editor.
 
 ## Features
 
@@ -29,7 +29,7 @@ This integration is designed as a Home Manager module. Add it to your Home Manag
     # Optional: Customize settings
     pickerWidth = 30;  # Width of file picker as percentage
     pickerSide = "left";  # "left" or "right"
-    helixKeybinding = "space.e";  # Helix keybinding to open picker
+    helixKeybinding = "space.t.f";  # Currently hardcoded
   };
 }
 ```
@@ -37,12 +37,12 @@ This integration is designed as a Home Manager module. Add it to your Home Manag
 ## Usage
 
 1. In Helix, press your configured keybinding (default: `Space` + `t` + `f`) to open the Yazi file picker
-2. Navigate the file tree with Yazi's controls (all your regular Yazi keybindings work!)
+2. Navigate the file tree with Yazi's controls (your regular Yazi keybindings all work)
 3. Press `Enter` on a file to open it in Helix (Yazi stays open for more browsing)
 4. Press `q` to close Yazi and return to Helix
 5. Press `Space` + `t` + `f` again to toggle the file picker off
 
-## Command-line Interface
+## Command-line interface
 
 The integration provides a CLI with the following commands:
 
@@ -59,7 +59,7 @@ helix-yazi-integration install
 
 ## Configuration
 
-### Home Manager Options
+### Home Manager options
 
 | Option | Description | Default |
 |--------|-------------|---------|
@@ -71,7 +71,7 @@ helix-yazi-integration install
 | `pickerSide` | Side to show picker | `"left"` |
 | `helixKeybinding` | Helix keybinding (Note: currently hardcoded to space.t.f) | `"space.t.f"` |
 
-## How It Works
+## How it works
 
 The integration manages communication between Helix, Yazi, and WezTerm:
 
@@ -82,11 +82,9 @@ The integration manages communication between Helix, Yazi, and WezTerm:
 5. When a file is selected in Yazi, it finds the Helix pane (using the saved pane ID) and sends commands to open the file
 6. The Yazi pane stays open so you can browse and open multiple files
 7. When quitting Yazi with `q`, the pane automatically closes
-8. The integration intelligently searches for Helix panes within the current tab if the environment variable is not available
+8. The integration searches for Helix panes within the current tab if the environment variable is not available
 
-## Possible Future Enhancements
-
-Here are some ideas for future improvements to the integration:
+## Possible future enhancements
 
 1. **Customizable Keybindings**: Make the Helix keybinding fully configurable (currently hardcoded to `space.t.f`)
 2. **Additional Configuration Options**:
@@ -100,7 +98,7 @@ Here are some ideas for future improvements to the integration:
 7. **Advanced Layout Management**: Support for more complex layouts (vertical splits, etc.)
 8. **Improved Error Messages**: More user-friendly error messages for common issues
 
-Contributions to any of these enhancements are welcome!
+Contributions are welcome.
 
 ## License
 

@@ -1,4 +1,4 @@
-# Host Configurations
+# Host configurations
 
 Each host is a self-contained flake that can be built and deployed independently.
 
@@ -8,13 +8,15 @@ Each host is a self-contained flake that can be built and deployed independently
 |------|--------|---------|--------|
 | **suremac** | aarch64-darwin | Personal MacBook | Active |
 | **trap** | x86_64-linux | COSMIC desktop, System76 | Active |
-| **thorny** | x86_64-linux | COSMIC desktop, System76 Thelio | Active |
+| **thorny** | x86_64-linux | Hyprland desktop, System76 Thelio | Active |
+| **tater** | x86_64-linux | ThinkPad T14s Gen 5 AMD laptop | Active |
+| **trainwreck** | aarch64-linux | Hetzner VPS | Active |
 | **tom** | x86_64-linux | Home server (home-assistant) | Active |
 | **cruber** | x86_64-linux | COSMIC desktop, Dell XPS | Active |
 | **taz** | x86_64-linux | Linode VM, Searx | Inactive |
 | **tootsie** | x86_64-linux | Linode VM, Tailscale exit node | Inactive |
 
-## Build Commands
+## Build commands
 
 ```bash
 # NixOS
@@ -30,7 +32,7 @@ nix run .#deploy -- .#HOSTNAME
 nix run .#deploy -- --dry-activate .#HOSTNAME  # dry-run
 ```
 
-## Host Structure
+## Host structure
 
 ```
 flakes/hosts/HOSTNAME/
@@ -40,11 +42,11 @@ flakes/hosts/HOSTNAME/
 └── hardware.nix        # Hardware config (NixOS only)
 ```
 
-## Input Duplication Pattern
+## Input duplication pattern
 
 Each host flake declares nearly identical input blocks. **This is intentional** and supports flake independence:
 
-### Why Inputs Are Duplicated
+### Why inputs are duplicated
 
 1. **Standalone builds**: Each host can be built independently without the root flake
    ```bash
@@ -55,7 +57,7 @@ Each host flake declares nearly identical input blocks. **This is intentional** 
 
 3. **Flexible updates**: Individual hosts can be updated independently if needed (though `follows` keeps them synchronized)
 
-### The `follows` Pattern
+### The `follows` pattern
 
 All host flakes use `follows` to ensure consistent versions across the repository:
 
@@ -74,7 +76,7 @@ This pattern ensures:
 - Dependency versions are controlled from `base-lib/flake.nix`
 - No version conflicts between hosts
 
-### Not Technical Debt
+### Not technical debt
 
 The duplication is **not** a limitation to be refactored away. It's an architectural choice that:
 - Enables independent host builds
@@ -82,12 +84,12 @@ The duplication is **not** a limitation to be refactored away. It's an architect
 - Allows future flexibility (e.g., one host on a different nixpkgs version if needed)
 - Follows Nix flake best practices for modular systems
 
-## Special Notes
+## Special notes
 
 - **suremac**: Uses `darwin-rebuild`, not deploy-rs
 - **tom**: Requires `openssl-1.1.1w` for home-assistant (permitted in base-lib)
 
-## Creating a New Host
+## Creating a new host
 
 1. Copy an existing host directory as template (trap for NixOS, suremac for Darwin)
 2. Update `flake.nix` description and hostname

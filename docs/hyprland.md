@@ -1,10 +1,10 @@
-# Hyprland Window Manager
+# Hyprland window manager
 
 This document describes the Hyprland window manager configuration, keybindings, and features.
 
 ## Overview
 
-Hyprland is a modern Wayland compositor with GPU acceleration, smooth animations, and a flexible configuration system. This configuration uses Colemak Mod-DH navigation keys (M=Left, N=Down, E=Up, I=Right).
+Hyprland is a Wayland compositor with GPU acceleration, smooth animations, and a flexible configuration system. This configuration uses Colemak Mod-DH navigation keys (M=Left, N=Down, E=Up, I=Right).
 
 ## GTK theme package
 
@@ -38,7 +38,7 @@ Use the local helpers (`modKey`, `modShiftKey`, `bind`, `binde`, etc.) when
 editing bindings so the tree stays easy to scan while still producing plain
 Hyprland config lines.
 
-### Core Window Management
+### Core window management
 
 | Key | Action |
 |-----|--------|
@@ -53,7 +53,7 @@ Hyprland config lines.
 | `Super+]` | Increase focused window opacity by 5% |
 | `Super+Shift+]` | Reset focused window opacity to 100% |
 
-### Window Navigation (Colemak-DH)
+### Window navigation (Colemak-DH)
 
 | Key | Action |
 |-----|--------|
@@ -139,9 +139,9 @@ way, can turn that close request into a tray hide. Apps without close-to-tray
 support may exit, so use the binding for windows you expect to have native tray
 behavior.
 
-### Workspace Overview
+### Workspace overview
 
-`Super+O` opens the script-backed workspace overview / move menu. This fallback is intentionally used on tater while Hyprspace is disabled: after reboot, Hyprland can start without the plugin dispatcher (`overview:toggle`), and the plugin path has been unstable enough to trigger Hyprland safe mode.
+`Super+O` opens the script-backed workspace overview / move menu. This fallback is intentionally used on tater while Hyprspace is disabled. After reboot, Hyprland can start without the plugin dispatcher (`overview:toggle`), and the plugin path has been unstable enough to trigger Hyprland safe mode.
 
 Hyprspace remains available as an option in the shared module for future retesting. If re-enabled, it must be compiled against the exact active Hyprland build because Hyprland plugins depend on internal compositor headers. Update Hyprland and Hyprspace together and verify a full tater system build before enabling it again.
 
@@ -152,11 +152,11 @@ Hyprspace remains available as an option in the shared module for future retesti
 | Select a move target while a window is focused | Move the focused window to that workspace |
 | `Escape` | Close the menu |
 
-### Submaps (Modal Modes)
+### Submaps (modal modes)
 
 Submaps provide modal keybindings. Press `Super+<key>` to enter, `Escape` to exit.
 
-#### Quick Actions (`Super+A`)
+#### Quick actions (`Super+A`)
 
 | Key | Action |
 |-----|--------|
@@ -175,7 +175,7 @@ Submaps provide modal keybindings. Press `Super+<key>` to enter, `Escape` to exi
 | `h` or `?` | Show keybindings help |
 | `Escape` | Exit submap |
 
-#### Window Actions (`Super+W`)
+#### Window actions (`Super+W`)
 
 | Key | Action |
 |-----|--------|
@@ -186,7 +186,7 @@ Submaps provide modal keybindings. Press `Super+<key>` to enter, `Escape` to exi
 | `o` | Enter Opacity Mode for the focused window |
 | `Escape` | Exit submap |
 
-#### Opacity Mode (`Super+W, o`)
+#### Opacity mode (`Super+W, o`)
 
 Opacity controls apply to the currently focused window and show a desktop notification with the new percentage. Use the direct `Super+[` / `Super+]` bindings for quick 5% nudges, or enter this mode when you want repeatable adjustments and presets.
 
@@ -202,7 +202,7 @@ Opacity controls apply to the currently focused window and show a desktop notifi
 | `0` or `1` | Reset opacity to 100% |
 | `Escape` | Exit opacity mode |
 
-#### Chat Mode (`Super+C`)
+#### Chat mode (`Super+C`)
 
 | Key | Action |
 |-----|--------|
@@ -211,7 +211,7 @@ Opacity controls apply to the currently focused window and show a desktop notifi
 | `t` | Toggle borrowing Telegram into the current workspace / returning it to `chat` |
 | `Escape` | Exit submap |
 
-#### Resize Mode (`Super+R`)
+#### Resize mode (`Super+R`)
 
 | Key | Action |
 |-----|--------|
@@ -221,7 +221,7 @@ Opacity controls apply to the currently focused window and show a desktop notifi
 | `I` | Grow width |
 | `Escape` | Exit resize mode |
 
-#### Scratchpad Mode (`Super+S`)
+#### Scratchpad mode (`Super+S`)
 
 | Key | Action |
 |-----|--------|
@@ -233,7 +233,7 @@ Opacity controls apply to the currently focused window and show a desktop notifi
 | `Shift+K` or `Shift+P` | Hide KeePassXC back to tray, when app settings allow it |
 | `Escape` | Exit submap |
 
-### Special Workspaces
+### Special workspaces
 
 | Key | Action |
 |-----|--------|
@@ -249,7 +249,7 @@ Opacity controls apply to the currently focused window and show a desktop notifi
 | `Shift+Print` | Screenshot output/monitor (copy + save) |
 | `Super+Print` | Screenshot active window (copy + save) |
 
-### Media & System
+### Media & system
 
 | Key | Action |
 |-----|--------|
@@ -263,21 +263,21 @@ Opacity controls apply to the currently focused window and show a desktop notifi
 | `XF86MonBrightness-` | Brightness down |
 | `Super+Shift+Ctrl+Alt+Space` | Toggle QWERTY/Colemak-DH layout (mega keychord) |
 
-## Lock Screen (Hyprlock)
+## Lock screen (Hyprlock)
 
 The lock screen displays a blurred screenshot of your desktop with an overlay. Key features:
 
-- **Time and date** displayed prominently at the top
-- **Password input** with asterisks (`*`) for better visibility
-- **Now playing** info (when music is playing)
-- **Fingerprint auth** when fprintd + PAM are enabled for hyprlock
-- **Fingerprint hint text** so laptop unlock makes it clear that touching the sensor and typing the password are both valid paths.
+- Time and date at the top
+- Password input with asterisks (`*`)
+- Now playing info (when music is playing)
+- Fingerprint auth when fprintd + PAM are enabled for hyprlock
+- Fingerprint hint text so laptop unlock makes it clear that touching the sensor and typing the password are both valid paths.
 
 > **Note:** Since you use multiple keyboard layouts (Colemak-DH and QWERTY), typos can be confusing. The password field shows asterisks (`*`) instead of dots for better visibility.
 >
 > **Keyboard layout:** Layout switching does not work inside hyprlock (it's a secure lock screen). Make sure you're typing with the correct layout before locking. The Colemak-DH/QWERTY toggle (Shift+Space) only works when Hyprland is running, not during authentication.
 
-### Activating the Lock Screen
+### Activating the lock screen
 
 | Method | Action |
 |--------|--------|
@@ -289,8 +289,8 @@ The lock screen displays a blurred screenshot of your desktop with an overlay. K
 
 If the host enables `fprintd` and fingerprint auth is configured, you can unlock with either fingerprint or password. In this setup:
 
-- **Hyprlock** uses Hyprlock's `auth.fingerprint.enabled` for parallel fingerprint auth (keeps PAM password fallback via `unixAuth`).
-- **ReGreet** (login/greeter session) uses lid-aware PAM fingerprint auth on tater. When the lid is open, fingerprint login is available. When the lid is closed, a small `pam_exec` guard skips `pam_fprintd` so clamshell login immediately falls back to password entry instead of waiting on an inaccessible fingerprint sensor.
+- Hyprlock uses its `auth.fingerprint.enabled` option for parallel fingerprint auth (keeps PAM password fallback via `unixAuth`).
+- ReGreet (the login/greeter session) uses lid-aware PAM fingerprint auth on tater. When the lid is open, fingerprint login is available. When the lid is closed, a small `pam_exec` guard skips `pam_fprintd` so clamshell login immediately falls back to password entry instead of waiting on an inaccessible fingerprint sensor.
 
 Password entry remains available; ensure the PAM service enables `unixAuth` for password fallback when needed.
 
@@ -298,11 +298,11 @@ Password entry remains available; ensure the PAM service enables `unixAuth` for 
 
 On ThinkPads with Goodix sensors, enable the libfprint TOD driver (e.g. `services.fprintd.tod.driver = pkgs.libfprint-2-tod1-goodix;`).
 
-## Idle & Locking
+## Idle & locking
 
-Hyprland uses **hypridle** for idle timeouts and **hyprlock** for locking. The Hypridle module exposes timeout settings so you can tune lock and power behavior for laptops.
+Hyprland uses hypridle for idle timeouts and hyprlock for locking. The Hypridle module exposes timeout settings so you can tune lock and power behavior for laptops.
 
-The dim action is **relative to your current brightness** (it never increases brightness), so late-night low-brightness sessions won't be bumped up by the idle dim.
+The dim action is relative to your current brightness (it never increases brightness), so late-night low-brightness sessions won't be bumped up by the idle dim.
 
 ### Hypridle timeout options
 
@@ -365,7 +365,7 @@ dotfiles.hypridle.timeouts = {
 
 > Note: hibernate requires working swap. If hibernation is not configured, set `hibernate = 0` and use `suspend` instead.
 
-## Laptop, Docking, and External Monitors
+## Laptop, docking, and external monitors
 
 The shared Hyprland config has conservative monitor defaults:
 
@@ -427,7 +427,7 @@ Both the greetd default session and `/etc/greetd/environments` launch Hyprland t
 
 If a particular monitor needs exact refresh/scale/position, add a more specific tater `services.kanshi.settings` profile using the monitor model/serial from `hyprctl monitors`.
 
-## Application Integration
+## Application integration
 
 ### Signal
 
@@ -460,7 +460,7 @@ If a particular monitor needs exact refresh/scale/position, add a more specific 
 - Without those KeePassXC settings, `hctl hide keepassxc`, `Super+S, Shift+K`,
   `Super+S, Shift+P`, or `Super+Q` can quit KeePassXC instead of hiding it.
 
-## Window Rules
+## Window rules
 
 See `windowrules.nix` for detailed window behavior configuration:
 
@@ -472,7 +472,7 @@ See `windowrules.nix` for detailed window behavior configuration:
 - **Calculator**: Floats at 400x500
 - **Image viewer (imv)**: Floats at 80% size centered
 
-## Submap Indicator
+## Submap indicator
 
 The eww bar displays the current submap with a pulsing gold indicator. Hover the
 indicator for the mode-specific key hints, or click it to open the full
@@ -484,7 +484,7 @@ Hyprland keybindings help in a terminal:
 - **󰖲 WINDOW** - Focused-window hctl actions (`V/Z/P`, `Esc`)
 - **󰍜 ACTIONS** - Quick actions mode (`S/T/K/B/O/L/H/?`, `Esc`)
 
-## System Tray
+## System tray
 
 The Eww bar uses Eww's native `systray` widget to host Wayland
 StatusNotifierItem tray icons inside the bar. On tater, Waybar remains disabled:
@@ -496,11 +496,11 @@ KeePassXC, Telegram, and other apps that expose StatusNotifier items should show
 up directly in the Eww bar. KeePassXC and chat quick actions remain available as
 custom Eww/hctl affordances alongside the real tray icons.
 
-## Keybindings Help
+## Keybindings help
 
-Press `Super+A` then `h` or `?` to display a comprehensive cheat sheet of all keybindings in a floating terminal window.
+Press `Super+A` then `h` or `?` to display a cheat sheet of all keybindings in a floating terminal window.
 
-## Configuration Files
+## Configuration files
 
 | File | Purpose |
 |------|---------|

@@ -1,4 +1,4 @@
-# Sudo Setuid Permission Error: `nobody:nogroup` Ownership
+# Sudo setuid permission error: `nobody:nogroup` ownership
 
 ## Symptoms
 
@@ -18,7 +18,7 @@ $ ls -la /nix/store/ | head -5
 drwxrwxr-t 2711 nobody nogroup 1785856 Jan 26 16:07 .
 ```
 
-## Root Cause
+## Root cause
 
 This issue occurs when the NixOS system was **installed from within a user namespace** where UID 0 (root) was mapped to an unprivileged user. This can happen when:
 
@@ -135,13 +135,13 @@ When installing NixOS:
 2. **Avoid running `nixos-install` or `disko`** from environments that use user namespaces
 3. **If using a custom installation environment**, ensure UID 0 maps to real root (check with `cat /proc/self/uid_map`)
 
-## Related Issues
+## Related issues
 
 - Affects all setuid binaries: `sudo`, `su`, `pkexec`, `mount`, `umount`, `passwd`, etc.
 - The `suid-sgid-wrappers.service` runs correctly but the resulting files have wrong ownership
 - NixOS creates wrappers fresh on each boot in `/run/wrappers` (tmpfs), so the issue recurs every boot until the underlying `/nix/store` ownership is fixed
 
-## Technical Details
+## Technical details
 
 NixOS uses a wrapper system for setuid binaries located at `/run/wrappers/bin/`. The `suid-sgid-wrappers.service` runs during early boot to:
 

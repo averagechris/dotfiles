@@ -1,8 +1,8 @@
-# Hyprland Window Manager Configuration
+# Hyprland window manager configuration
 
-This module provides a modern Hyprland window manager setup for Wayland, featuring advanced animations, window rules, and comprehensive keybindings with Colemak Mod-DH support.
+This module configures the Hyprland Wayland compositor with Colemak Mod-DH keybindings, window rules, and animations.
 
-**📖 Full documentation**: See [docs/hyprland.md](/docs/hyprland.md) for complete keybindings reference and usage guide.
+Full documentation: see [docs/hyprland.md](/docs/hyprland.md) for the complete keybinding reference and usage guide.
 
 ## Features
 
@@ -47,7 +47,7 @@ Enable Hyprland in your Home Manager configuration:
 
 The Hyprland configuration uses Colemak Mod-DH navigation keys (m, n, e, i for left, down, up, right).
 
-### Core Keybindings
+### Core keybindings
 
 - **Super+T**: Open terminal
 - **Super+Q**: Close active window
@@ -57,14 +57,14 @@ The Hyprland configuration uses Colemak Mod-DH navigation keys (m, n, e, i for l
 - **Super+P**: Toggle floating and pin window
 - **Super+Space**: Application launcher (anyrun)
 
-### Window Navigation
+### Window navigation
 
 - **Super+M**: Focus left
 - **Super+N**: Focus down
 - **Super+E**: Focus up
 - **Super+I**: Focus right
 
-### Window Movement
+### Window movement
 
 - **Super+Shift+M**: Swap window left
 - **Super+Shift+N**: Swap window down
@@ -87,18 +87,18 @@ The Hyprland configuration uses Colemak Mod-DH navigation keys (m, n, e, i for l
 - **Super+Shift+-**: Move window to scratchpad
 - **Super+-**: Toggle scratchpad visibility
 
-### Submaps (Modal Modes)
+### Submaps (modal modes)
 
 - **Super+A**: Quick Actions submap (apps, system, tools)
 - **Super+R**: Resize mode
 - **Super+S**: Scratchpad mode
 
-### Keyboard Layout
+### Keyboard layout
 
 - **Super+Shift+Ctrl+Alt+Space**: Toggle between Colemak DH and QWERTY layouts (mega keychord)
 - **Super+A, y**: Toggle layout (alternative via quick actions)
 
-### Media Controls
+### Media controls
 
 - **XF86AudioRaiseVolume**: Increase volume
 - **XF86AudioLowerVolume**: Decrease volume
@@ -109,12 +109,12 @@ The Hyprland configuration uses Colemak Mod-DH navigation keys (m, n, e, i for l
 - **XF86MonBrightnessUp**: Increase brightness
 - **XF86MonBrightnessDown**: Decrease brightness
 
-### Mouse Controls
+### Mouse controls
 
 - **Super+LMB**: Move window
 - **Super+RMB**: Resize window
 
-## Visual Configuration
+## Visual configuration
 
 ### Decoration
 
@@ -137,14 +137,14 @@ The Hyprland configuration uses Colemak Mod-DH navigation keys (m, n, e, i for l
 - **Pseudo-tiling**: Enabled
 - **Split Preservation**: Enabled
 
-## Input Configuration
+## Input configuration
 
 - **Keyboard Layout**: US Colemak DH (primary) and US QWERTY (secondary)
 - **Mouse**: Natural scrolling enabled, sensitivity 0.0
 - **Touchpad**: Natural scrolling, 0.5x scroll factor, middle button emulation, clickfinger behavior
 - **Numlock**: Enabled by default
 
-## Included Packages
+## Included packages
 
 - imv, libnotify, mpv, pavucontrol, playerctl
 - pulseaudio, swaylock-effects, wl-clipboard, anyrun
@@ -157,13 +157,13 @@ The Hyprland configuration uses Colemak Mod-DH navigation keys (m, n, e, i for l
 - **Wallpaperd**: Wallpaper management with Hyprland integration
 - **Swayidle**: Idle management
 
-## Device Configuration
+## Device configuration
 
 The module includes configuration for:
 - **at-translated-set-2-keyboard**: Built-in laptop keyboard with Colemak DH
 - **dygma-defy-keyboard**: External Dygma Defy keyboard with QWERTY
 
-## Lid Switch Handling
+## Lid switch handling
 
 Automatic display management when laptop lid is closed/opened:
 - When lid is open: Enable built-in display

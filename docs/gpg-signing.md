@@ -1,4 +1,4 @@
-# GPG Signing for Git and Jujutsu
+# GPG signing for Git and Jujutsu
 
 This document describes the automatic GPG signing setup for git and jj (jujutsu) commits using agenix for secret management.
 
@@ -40,7 +40,7 @@ The dotfiles repository includes an automated GPG signing configuration that:
 5. **GPG Agent** (NixOS configuration)
    - Configured in `flakes/nixos-modules/modules/users/chris.nix`
    - Uses pinentry-qt for graphical passphrase prompts
-   - **7-day cache TTL (604800 seconds)** - enter passphrase once, cached for a week
+   - 7-day cache TTL (604800 seconds) - enter passphrase once, cached for a week
    - 1-year max cache TTL (31536000 seconds)
 
 6. **GPG Cleanup Service** (home-manager)
@@ -49,9 +49,9 @@ The dotfiles repository includes an automated GPG signing configuration that:
    - Restarts `gpg-agent` to ensure clean state
    - Configured in `flakes/hm-modules/modules/gpg.nix`
 
-## Setup Instructions
+## Setup instructions
 
-### Initial Setup (One-time)
+### Initial setup (one-time)
 
 1. **Get your GPG key ID**:
    ```bash
@@ -103,7 +103,7 @@ The dotfiles repository includes an automated GPG signing configuration that:
    sudo nixos-rebuild switch --flake ./flakes/hosts/tater#tater
    ```
 
-### Adding to a New Machine
+### Adding to a new machine
 
 To add GPG signing to a new machine:
 
@@ -116,9 +116,9 @@ To add GPG signing to a new machine:
 3. Enable the GPG module: `dotfiles.gpg.enable = true`
 4. Rebuild the system
 
-## How It Works
+## How it works
 
-### During System Rebuild
+### During system rebuild
 
 1. Agenix decrypts secrets to `/run/agenix/`
    - `gpg-private-key.age` → `/run/agenix/gpg-private-key`
@@ -130,7 +130,7 @@ To add GPG signing to a new machine:
 6. It configures jj: `jj config set --user user.signing-key $KEY_ID`
 7. The GPG agent is started with 7-day passphrase cache
 
-### During Normal Operation
+### During normal operation
 
 - Git automatically signs all commits with the configured key
 - Jujutsu automatically signs all commits with the same key
@@ -138,12 +138,12 @@ To add GPG signing to a new machine:
   release tags by default when jj GPG signing is configured. They invoke Git
   with `--git-dir "$(jj git root)"`, so tag signing works from non-colocated jj
   workspaces that do not have a `.git` directory at the workspace root.
-- **GPG agent caches the passphrase for 7 days** - you only need to enter it once per week
+- The GPG agent caches the passphrase for 7 days - you only need to enter it once per week
 - The key persists in the GPG keyring across rebuilds
 - The key ID is read from agenix on each rebuild
 - Profile switches should preserve the in-memory passphrase cache; the automatic cleanup service avoids killing `gpg-agent` because that daemon owns the cache.
 
-### Passphrase Caching
+### Passphrase caching
 
 The GPG agent is configured with:
 - `default-cache-ttl` = 604800 seconds (7 days)
@@ -168,13 +168,13 @@ git commit -m "Second commit"  # Will NOT prompt for passphrase
 
 ## Troubleshooting
 
-### GPG Agent Lock / Timeout
+### GPG agent lock / timeout
 
 If you see "waiting for lock" errors or timeouts when signing with jj or git:
 
 **Cause**: Stale `keyboxd` process holding a lock after reboot
 
-**Solution**: See [GPG Agent Lock Troubleshooting Guide](../troubleshooting/gpg-agent-lock.md)
+**Solution**: See [GPG agent lock troubleshooting guide](troubleshooting/gpg-agent-lock.md)
 
 The dotfiles include an automatic cleanup service that kills stale `keyboxd` processes on login without killing `gpg-agent`, preserving the passphrase cache across profile switches.
 
@@ -194,7 +194,7 @@ gpg-agent-recover
 
 This kills stale `keyboxd`, restarts `gpg-agent`, and relaunches it. Your next signing operation will prompt for the passphrase again.
 
-### "No secret key" Error
+### "No secret key" error
 
 If you see this error when committing:
 ```
@@ -210,7 +210,7 @@ fatal: failed to write commit object
 3. Check home-manager activation logs: `journalctl --user -u home-manager-chris.service`
 4. Manually import the key: `gpg --import /run/agenix/gpg-private-key`
 
-### Pinentry Not Working
+### Pinentry not working
 
 If GPG prompts don't appear:
 
@@ -221,7 +221,7 @@ If GPG prompts don't appear:
 2. Check GPG agent status: `gpg-agent --daemon`
 3. Test pinentry: `echo "test" | gpg --clearsign`
 
-### Key ID Changes
+### Key ID changes
 
 If you generate a new GPG key:
 
@@ -232,7 +232,7 @@ If you generate a new GPG key:
    - Update `gpg-key-id.age` with the new key ID
 3. Rebuild: `sudo nixos-rebuild switch --flake ./flakes/hosts/<hostname>#<hostname>`
 
-## Security Considerations
+## Security considerations
 
 - The GPG private key is encrypted with agenix and only decrypted at runtime
 - The decrypted key exists only at `/run/agenix/gpg-private-key` (tmpfs, not persisted to disk)
@@ -240,7 +240,7 @@ If you generate a new GPG key:
 - Always use `gpg --export-secret-key --armor` to export keys (never share the binary format)
 - The agenix secret is accessible to all machines defined in `secrets/secrets.nix`
 
-## Related Files
+## Related files
 
 - `secrets/secrets.nix` - Defines which machines can access the GPG secrets
 - `secrets/recreate-secrets.sh` - Interactive script to create/update secrets
@@ -251,7 +251,7 @@ If you generate a new GPG key:
 - `flakes/hm-modules/modules/jujutsu/default.nix` - Jujutsu configuration
 - `flakes/nixos-modules/modules/users/chris.nix` - GPG agent configuration
 
-## Future Improvements
+## Future improvements
 
 - [ ] Add support for multiple GPG keys
 - [ ] Create a wrapper script to rotate GPG keys

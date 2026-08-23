@@ -1,4 +1,4 @@
-# WezTerm Home Manager Configuration
+# WezTerm Home Manager configuration
 
 This directory contains a modular configuration for the [WezTerm](https://wezfurlong.org/wezterm/) terminal emulator
 using Home Manager.
@@ -13,7 +13,7 @@ The configuration is split into several modules:
 - **keys.lua**: Modal keybinding system similar to Vim/Helix
 - **prototyping.lua.example**: Template for experimenting with configurations
 
-## Key Features
+## Key features
 
 1. **Modal keybinding system**
    - Leader key (SHIFT+Space) followed by context-specific commands
@@ -32,20 +32,20 @@ The configuration is split into several modules:
 
 ## Usage
 
-### Normal Mode
+### Normal mode
 
 - **SHIFT+Space**: Enter leader mode
 - **SHIFT+Space, w**: Window management
 - **SHIFT+Space, t**: Tab management
 - **SHIFT+Space, l**: Configuration reload
 
-### Experimental Configuration
+### Experimental configuration
 
 1. Copy `prototyping.lua.example` to `~/.config/wezterm/prototyping.lua`
 2. Edit the file to add experimental settings
 3. Reload WezTerm (SHIFT+Space, l) to apply changes
 
-## Extending the Configuration
+## Extending the configuration
 
 When adding new features:
 

@@ -1,8 +1,8 @@
-# Multi-Flake Architecture
+# Multi-flake architecture
 
 This directory contains the modular flake-based architecture for the dotfiles repository. Each component is a separate flake with clear dependencies and responsibilities.
 
-## Architecture Overview
+## Architecture overview
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -27,9 +27,9 @@ This directory contains the modular flake-based architecture for the dotfiles re
         └─ tootsie                       └─ ...
 ```
 
-## Flake Dependency Graph
+## Flake dependency graph
 
-### Root Flake (`flake.nix`)
+### Root flake (`flake.nix`)
 
 **Purpose**: Aggregates all host configurations and re-exports them for building and deployment.
 
@@ -48,7 +48,7 @@ This directory contains the modular flake-based architecture for the dotfiles re
 - `devShells.ide` - Rust shell plus Nix/Bash/Rust language servers
 - `checks.*` - Pre-commit hooks and linting
 
-### Base Library Flake (`base-lib/flake.nix`)
+### Base library flake (`base-lib/flake.nix`)
 
 **Purpose**: Provides shared library functions, utilities, and dependencies for all other flakes.
 
@@ -75,7 +75,7 @@ This directory contains the modular flake-based architecture for the dotfiles re
 - `ssh-keys/default.nix` - SSH key definitions
 - `overlays/default.nix` - Package overlays
 
-### Module Flakes
+### Module flakes
 
 #### `nixos-modules/flake.nix`
 **Purpose**: Shared NixOS modules used by multiple hosts.
@@ -92,7 +92,7 @@ This directory contains the modular flake-based architecture for the dotfiles re
 
 **Exports**: Darwin modules for macOS-specific settings
 
-### Host Flakes (`hosts/*/flake.nix`)
+### Host flakes (`hosts/*/flake.nix`)
 
 **Purpose**: Individual system configurations for each host.
 
@@ -130,9 +130,9 @@ This directory contains the modular flake-based architecture for the dotfiles re
 - `nixosConfigurations.HOSTNAME` or `darwinConfigurations.HOSTNAME` - System configuration
 - `deploy.nodes.HOSTNAME` - Deployment configuration (NixOS only)
 
-## How Each Flake Relates to Others
+## How each flake relates to others
 
-### Dependency Flow
+### Dependency flow
 
 ```
 Host Flakes (suremac, trap, etc.)
@@ -142,7 +142,7 @@ base-lib + Module Flakes (nixos-modules, hm-modules, darwin-modules)
 External Inputs (nixpkgs, home-manager, nix-darwin, etc.)
 ```
 
-### Data Flow
+### Data flow
 
 1. **Root flake** imports all host flakes
 2. Each **host flake** imports `base-lib` and module flakes
@@ -150,7 +150,7 @@ External Inputs (nixpkgs, home-manager, nix-darwin, etc.)
 4. **Module flakes** provide reusable NixOS/home-manager/Darwin modules
 5. **Host configurations** use library functions to build system configurations
 
-### Shared Dependencies
+### Shared dependencies
 
 All flakes follow the same nixpkgs version through `follows`:
 
@@ -162,7 +162,7 @@ home-manager.follows = "base-lib/home-manager";
 
 This ensures consistency across all hosts and modules.
 
-## Adding Modules
+## Adding modules
 
 Create module in appropriate location, export from flake, import in host config:
 
@@ -186,7 +186,7 @@ imports = [ inputs.nixos-modules.nixosModules.mymodule ];
 dotfiles.mymodule.enable = true;
 ```
 
-## Common Commands
+## Common commands
 
 ```bash
 # Testing
@@ -207,10 +207,10 @@ nix flake show
 nix eval .#nixosConfigurations.HOSTNAME.config --apply 'x: x.networking.hostName'
 ```
 
-## Best Practices
+## Best practices
 
-- **Keep base-lib stable** — changes affect all hosts
-- **Use `follows`** — ensures consistent dependency versions
-- **Test before committing** — run `nix flake check`
-- **Use `flake.lock`** — commit for reproducible builds
-- **Respect update cooldowns** — use `update-flakes` for routine updates so gated fast-moving agent packages such as `pi` / `pi-coding-agent` are not pulled immediately after upstream changes
+- **Keep base-lib stable**: changes affect all hosts
+- **Use `follows`**: ensures consistent dependency versions
+- **Test before committing**: run `nix flake check`
+- **Use `flake.lock`**: commit for reproducible builds
+- **Respect update cooldowns**: use `update-flakes` for routine updates so gated fast-moving agent packages such as `pi` / `pi-coding-agent` are not pulled immediately after upstream changes

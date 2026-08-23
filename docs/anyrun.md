@@ -1,4 +1,4 @@
-# Anyrun Launcher
+# Anyrun launcher
 
 Anyrun is the primary application launcher for Hyprland. It provides fast app search, shell command execution with inline output, a calculator, and symbol/emoji lookup with a compact, Raycast-style UI.
 

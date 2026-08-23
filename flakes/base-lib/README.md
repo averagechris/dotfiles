@@ -1,10 +1,10 @@
-# base-lib Flake
+# base-lib flake
 
-Foundation library for the dotfiles repository containing shared functions, utilities, and configurations. This flake provides the core building blocks used by all host configurations.
+Foundation library for the dotfiles repository. It provides shared functions, utilities, and configurations used by all host flakes.
 
 ## Overview
 
-The base-lib flake serves as the central hub for:
+The base-lib flake provides:
 - System configuration creation (`mkNixosHost`, `mkDarwinHost`)
 - Deployment configuration (`mkDeploy`, `mkDeploy'`)
 - SSH key management
@@ -245,7 +245,7 @@ This creates an option that:
 - Can be set to `false` to disable the module
 - Has proper documentation
 
-## SSH Keys Structure
+## SSH keys structure
 
 SSH public keys are organized in `ssh-keys/default.nix` by user and host.
 
@@ -262,13 +262,13 @@ SSH public keys are organized in `ssh-keys/default.nix` by user and host.
 }
 ```
 
-### Naming Convention
+### Naming convention
 
 - `chris.HOSTNAME`: Chris's personal key for HOSTNAME
 - `system.HOSTNAME`: System key for HOSTNAME
 - `usesRemoteBuilders`: Set of systems that use remote builders
 
-### Using SSH Keys
+### Using SSH keys
 
 ```nix
 { config, sshKeys, ... }:
@@ -295,32 +295,36 @@ Package overlays for extending nixpkgs with custom packages or modifications.
 
 ### `overlays.default`
 
-The default overlay function that can be extended with custom packages.
+The default overlay applied by `mkNixosHost` and `mkDarwinHost`.
 
 **Current Exports**:
-- `titlecase`: Custom package from sourcehut
+- `opencode`: pinned OpenCode build when the `opencode` input is provided
+- `pi` / `pi-coding-agent`: Pi coding agent from the native release archive
+- `helium-bin`: wrapped upstream Helium browser
+- `notion-cli`, `pup`, `sentry`, `showboat`: packaged CLI tools
+- `rose-pine-gtk-modern`: repository-managed Rosé Pine GTK theme package
+- `keepassxc`: KeePassXC, linked with lld on Darwin to work around a QtMacExtras linker failure
 
 **Example Usage**:
 
 ```nix
-{ config, overlays, ... }:
+{ config, pkgs, ... }:
 
 {
   environment.systemPackages = [
-    overlays.titlecase  # From overlay
+    pkgs.helium-bin  # From the base-lib overlay
   ];
 }
 ```
 
-### Adding Custom Overlays
+### Adding custom overlays
 
 Edit `overlays/default.nix` to add new packages:
 
 ```nix
-{
-  overlays.default = system: final: prev: {
+{ inputs, nixpkgs, titlecase, opencode ? null }: {
+  default = final: prev: {
     mypackage = prev.callPackage ./mypackage.nix {};
-    titlecase = inputs.titlecase.packages.${system}.default;
   };
 }
 ```
@@ -340,9 +344,9 @@ The base-lib flake depends on several external inputs:
 | `titlecase` | sourcehut:~averagechris/titlecase | Text utility |
 | `flake-utils` | github:numtide/flake-utils | Flake utilities |
 
-## Usage Examples
+## Usage examples
 
-### Basic NixOS Host Configuration
+### Basic NixOS host configuration
 
 ```nix
 # flakes/hosts/myhost/flake.nix
@@ -364,7 +368,7 @@ The base-lib flake depends on several external inputs:
 }
 ```
 
-### Basic Darwin Host Configuration
+### Basic Darwin host configuration
 
 ```nix
 # flakes/hosts/mymac/flake.nix
@@ -384,11 +388,11 @@ The base-lib flake depends on several external inputs:
 }
 ```
 
-### Using Special Arguments in Modules
+### Using special arguments in modules
 
 ```nix
 # configuration.nix
-{ config, lib, pkgs, inputs, sshKeys, system, overlays, dotfiles_lib, agenix, ... }:
+{ config, lib, pkgs, inputs, sshKeys, system, dotfiles_lib, agenix, ... }:
 
 with lib;
 
@@ -402,15 +406,11 @@ with lib;
     users.users.root.openssh.authorizedKeys.keys = [
       sshKeys.chris.thelio
     ];
-
-    environment.systemPackages = [
-      overlays.titlecase
-    ];
   };
 }
 ```
 
-### Creating a Shared Module
+### Creating a shared module
 
 ```nix
 # flakes/nixos-modules/modules/mymodule/default.nix
@@ -436,7 +436,7 @@ with lib;
 
 ## Testing
 
-### Run Flake Checks
+### Run flake checks
 
 ```bash
 # Check base-lib itself
@@ -446,7 +446,7 @@ nix flake check ./flakes/base-lib
 nix flake check
 ```
 
-### Show Flake Outputs
+### Show flake outputs
 
 ```bash
 # Show base-lib exports
@@ -456,7 +456,7 @@ nix flake show ./flakes/base-lib
 nix flake show
 ```
 
-### Evaluate Library Functions
+### Evaluate library functions
 
 ```bash
 # Check mkHost function
@@ -466,7 +466,7 @@ nix eval ./flakes/base-lib#lib.mkHost
 nix eval ./flakes/base-lib#sshKeys
 ```
 
-### Build a Configuration
+### Build a configuration
 
 ```bash
 # Build using mkHost
@@ -478,7 +478,7 @@ nom build .#nixosConfigurations.myhost.config.home-manager.users.USERNAME.home.a
 
 ## Troubleshooting
 
-### Module Not Found
+### Module not found
 
 Ensure the module is properly exported from the flake:
 
@@ -486,7 +486,7 @@ Ensure the module is properly exported from the flake:
 nix eval ./flakes/base-lib#lib.mkHost
 ```
 
-### Special Arguments Not Available
+### Special arguments not available
 
 Check that the module is using the correct specialArgs:
 
@@ -498,7 +498,7 @@ Check that the module is using the correct specialArgs:
 { config, lib, pkgs, ... }:
 ```
 
-### SSH Keys Not Accessible
+### SSH keys not accessible
 
 Verify SSH keys are exported from base-lib:
 
@@ -506,7 +506,7 @@ Verify SSH keys are exported from base-lib:
 nix eval ./flakes/base-lib#sshKeys
 ```
 
-### Overlay Not Applied
+### Overlay not applied
 
 Check that overlays are properly configured in mkHost and used in modules:
 
@@ -514,7 +514,7 @@ Check that overlays are properly configured in mkHost and used in modules:
 nix eval .#nixosConfigurations.myhost.config.environment.systemPackages
 ```
 
-## Best Practices
+## Best practices
 
 1. **Keep base-lib stable**: Changes affect all hosts
 2. **Use specialArgs**: Pass data through specialArgs rather than modifying modules

@@ -1,4 +1,4 @@
-# Hyprland Ergonomics Requirements
+# Hyprland ergonomics requirements
 
 This document captures the tater/shared Hyprland ergonomics plan and current implementation status. The goal is to turn several awkward window-management flows into one coherent command surface, backed by a repo-managed Rust CLI/daemon rather than a pile of one-off scripts.
 

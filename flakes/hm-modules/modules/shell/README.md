@@ -1,6 +1,6 @@
-# Shell Configuration Module
+# Shell configuration module
 
-This module provides a comprehensive shell environment configuration including terminal tools, CLI utilities, and shell integrations.
+This module provides the shell environment, including terminal tools, CLI utilities, and shell integrations.
 
 ## Features
 
@@ -40,7 +40,7 @@ Enable the shell module in your Home Manager configuration:
 }
 ```
 
-## Included Sub-modules
+## Included sub-modules
 
 - **zsh**: Shell configuration with Oh-My-Zsh
 - **zellij**: Terminal multiplexer
@@ -56,13 +56,13 @@ Enable the shell module in your Home Manager configuration:
 - **pipx**: Python package manager
 - **calibre-utils**: Calibre utilities
 
-## Default Packages
+## Default packages
 
 When enabled, the module installs:
 - curl, fd, just, procs, titlecase
 - Additional shell scripts (if `shell_scripts.enable = true`)
 
-## Environment Variables
+## Environment variables
 
 - `EDITOR`: Set to configured editor (hx or nvim)
 - `GIT_EDITOR`: Set to configured editor

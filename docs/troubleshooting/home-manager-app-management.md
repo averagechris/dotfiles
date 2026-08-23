@@ -9,7 +9,7 @@
 ## Cause
 
 Home Manager's macOS app copying uses `targets.darwin.copyApps` and checks the
-**App Management** TCC permission. If your terminal emulator is installed from
+App Management TCC permission. If your terminal emulator is installed from
 the Nix store (e.g., WezTerm via Nix), the app bundle path changes between
 rebuilds and macOS removes the permission.
 
@@ -29,9 +29,9 @@ This keeps app copying enabled but skips the permission check.
 
 Run `darwin-rebuild` from a stable, system-installed terminal app (like
 `/System/Applications/Utilities/Terminal.app`) and grant App Management to that
-app. This only works reliably if the terminal app path is stable (non‑Nix).
+app. This only works reliably if the terminal app path is stable (non-Nix).
 
-## Related Issue: rsync permission denied in Home Manager Apps
+## Related issue: rsync permission denied in Home Manager Apps
 
 If you see errors like:
 

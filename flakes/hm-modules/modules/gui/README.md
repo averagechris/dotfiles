@@ -1,6 +1,6 @@
-# GUI Configuration Module
+# GUI configuration module
 
-This module provides a comprehensive graphical user interface setup with window managers, terminal emulators, and desktop applications.
+This module provides the graphical user interface setup with window managers, terminal emulators, and desktop applications.
 
 ## Features
 
@@ -24,19 +24,19 @@ This module provides a comprehensive graphical user interface setup with window 
 
 ## Sub-modules
 
-### Window Managers
+### Window managers
 
 - **sway**: i3-like Wayland compositor with custom keybindings and status bar
 - **hyprland**: Modern Wayland compositor with animations and advanced features
 
-### Terminal Emulators
+### Terminal emulators
 
 - **kitty**: GPU-based terminal (default)
 - **wezterm**: Cross-platform terminal with Lua configuration
 - **alacritty**: GPU-accelerated terminal
 - **ghostty**: Fast terminal emulator
 
-### Desktop Applications
+### Desktop applications
 
 - **firefox**: Web browser
 - **zoom**: Video conferencing
@@ -66,7 +66,7 @@ This will enable:
 - Kanshi display management
 - Mako notifications
 
-## Default Behavior
+## Default behavior
 
 When `dotfiles.gui.enable = true`:
 - Sway is enabled by default (`dotfiles.gui.sway.enable = true`)

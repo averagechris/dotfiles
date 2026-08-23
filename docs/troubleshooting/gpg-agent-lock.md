@@ -1,4 +1,4 @@
-# GPG Agent Lock / keyboxd Timeout
+# GPG agent lock / keyboxd timeout
 
 ## Symptoms
 
@@ -21,7 +21,7 @@ fatal: failed to write commit object
 
 The GPG `keyboxd` daemon (or sometimes `scdaemon`) can get stuck holding a lock after a reboot, crash, or unclean shutdown. This prevents new GPG operations from completing.
 
-## Solution (Immediate)
+## Solution (immediate)
 
 Kill the stuck processes and restart the GPG agent:
 
@@ -39,7 +39,7 @@ Then test:
 jj st  # or git commit
 ```
 
-## Permanent Fix
+## Permanent fix
 
 The dotfiles now include a systemd service that automatically cleans stale GPG locks on login:
 
@@ -69,7 +69,7 @@ Failed at step EXEC spawning .../bin/pkill: No such file or directory
 
 then your currently installed user unit still has the old broken cleanup command. Rebuild and switch your Home Manager or NixOS configuration so the fixed unit from `flakes/hm-modules/modules/gpg.nix` is installed.
 
-## Manual Fix (If systemd service fails)
+## Manual fix (if the systemd service fails)
 
 If the issue persists and you are willing to lose the current passphrase cache:
 
@@ -93,7 +93,7 @@ To verify the installed unit is valid before or after rebuilding:
 systemd-analyze --user verify ~/.config/systemd/user/gpg-agent-cleanup.service
 ```
 
-## Related Files
+## Related files
 
 - `flakes/hm-modules/modules/gpg.nix` - Contains the cleanup service
 - `flakes/nixos-modules/modules/users/chris.nix` - GPG agent configuration

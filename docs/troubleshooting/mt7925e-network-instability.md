@@ -9,7 +9,7 @@
 
 This has been observed on `tater`, which uses a MEDIATEK MT7925 wireless card with the `mt7925e` kernel driver.
 
-## Likely Cause
+## Likely cause
 
 This appears to be primarily a driver and/or firmware stability issue. NetworkManager may be the visible failure point, but the underlying trigger can still be a wedged `mt7925e`/`mt76` driver or firmware state.
 
@@ -37,7 +37,7 @@ services.tlp.settings = {
 
 Keep these mitigations in place until the host remains stable across newer `nixpkgs`, `linux-firmware`, and platform firmware updates. If the system is stable for a meaningful period, back these out one at a time rather than all at once so regressions are attributable.
 
-## Immediate Recovery (Without Reboot)
+## Immediate recovery (without reboot)
 
 Try these in order.
 
@@ -94,7 +94,7 @@ nmcli device status
 
 This is the most likely non-reboot recovery path if the underlying driver has wedged.
 
-## What to Capture When It Breaks
+## What to capture when it breaks
 
 As soon as the failure happens, collect the following before rebooting:
 
@@ -114,7 +114,7 @@ This helps distinguish between:
 - a kernel driver reset or firmware hang
 - a connectivity failure that only affects upper-layer services
 
-## Verification After Rebuilds
+## Verification after rebuilds
 
 After updating `nixpkgs`, `linux-firmware`, or system firmware, verify the current state:
 
@@ -133,7 +133,7 @@ If the system remains stable for a meaningful period across battery use, suspend
 4. Re-enable TLP Wi-Fi powersave on battery.
 5. Return from `linuxPackages_latest` to the default kernel once MT7925e fixes are in the default kernel.
 
-## Related Files
+## Related files
 
 - `flakes/hosts/tater/configuration.nix` - host-specific MT7925e stability profile and `tater-network-recover` helper
 - `docs/README.md` - documentation index
