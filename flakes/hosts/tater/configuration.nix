@@ -97,7 +97,6 @@ in {
     })
   ];
 
-  # Enable Hyprland desktop environment
   dotfiles.hyprland-desktop.enable = true;
   # Hyprspace is a Hyprland plugin and must be loaded by the exact Hyprland
   # build it was compiled against. Use the pinned tater Hyprland input for the
@@ -256,9 +255,9 @@ in {
     lib,
     ...
   }: let
-    # GUI services that require a display and will hang during activation
+    # GUI services that require a display and will hang during activation.
     # These get RefuseManualStart=yes so sd-switch skips them, but they still
-    # start normally via graphical-session.target when you log in
+    # start normally via graphical-session.target when you log in.
     guiServicesToSkip = [
       "blueman-applet"
       "hyprpaper"
@@ -275,8 +274,6 @@ in {
     mkSkipDuringActivation = name:
       lib.nameValuePair name {
         Unit = {
-          # Skip this service during home-manager activation (sd-switch respects this)
-          # The service will still start normally via WantedBy when graphical session starts
           RefuseManualStart = lib.mkForce true;
         };
       };
@@ -431,7 +428,7 @@ in {
 
         # If tater was unplugged while the home clamshell profile had eDP-1
         # disabled, Hyprland can briefly have no enabled output for Eww to bind
-        # to.  Make the laptop panel the fail-safe whenever no external monitor
+        # to. Make the laptop panel the fail-safe whenever no external monitor
         # is currently enabled; kanshi still owns the normal steady-state layout.
         if [[ "$(enabled_external_count)" -eq 0 ]]; then
           hyprctl keyword monitor "eDP-1,1920x1200@60,0x0,1.5" || true
@@ -670,7 +667,7 @@ in {
       '';
     };
   in {
-    # secrets are passed via _module.args in nixos-modules/modules/users/chris.nix
+    # Secrets are passed via _module.args in nixos-modules/modules/users/chris.nix
     home.stateVersion = "26.05";
     imports = [
       inputs.hm-modules.homeManagerModules.default

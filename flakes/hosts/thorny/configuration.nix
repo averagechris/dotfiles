@@ -609,7 +609,7 @@ in {
 
   services.fwupd.enable = true;
 
-  # Hister — self-hosted personal web search engine. Served publicly at
+  # Hister is a self-hosted personal web search engine. Served publicly at
   # https://hister.thesogu.com via Caddy on trainwreck, which reverse-proxies
   # to thorny over the tailnet. Port 4433 is intentionally NOT opened in the
   # firewall: the shared tailscale module trusts tailscale0, so trainwreck can

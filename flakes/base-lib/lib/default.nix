@@ -65,7 +65,6 @@
   };
 
   # Create a NixOS system configuration
-  # This replaces the duplicated mkHostWithModules pattern in host flakes
   mkNixosHost = {
     system,
     hostPath,
@@ -115,7 +114,6 @@
     };
 
   # Create a Darwin (macOS) system configuration
-  # This replaces the duplicated mkHostWithModules pattern in host flakes
   mkDarwinHost = {
     system ? "aarch64-darwin",
     hostPath,

@@ -320,7 +320,6 @@ in {
   };
 
   config = lib.mkIf config.dotfiles.hyprland-desktop.enable {
-    # Enable Hyprland
     programs.hyprland = {
       enable = true;
       xwayland.enable = true;

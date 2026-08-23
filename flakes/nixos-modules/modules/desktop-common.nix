@@ -40,7 +40,6 @@
     settings.PasswordAuthentication = false;
   };
 
-  # Enable CUPS to print documents.
   services.printing.enable = true;
 
   # Select internationalization properties.
@@ -49,7 +48,6 @@
     keyMap = "us";
   };
 
-  # Use the systemd-boot EFI boot loader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 }

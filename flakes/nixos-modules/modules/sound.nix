@@ -18,7 +18,7 @@
     pulse.enable = true;
   };
 
-  # unstable uses wireplumber now: https://nixos.wiki/wiki/PipeWire
+  # WirePlumber is the PipeWire session manager: https://nixos.wiki/wiki/PipeWire
   services.pipewire.wireplumber = {
     enable = true;
 
@@ -27,7 +27,7 @@
     # ordered from lowest to highest priority so more specific later matches can
     # override generic earlier matches. Generic USB sinks rank as speakers, while
     # explicit headset/headphone labels rank higher as headphones. AudioEngine
-    # sinks are matched before the generic USB rule so the HD3's misleading
+    # sinks are matched after the generic USB rule so the HD3's misleading
     # chipset description does not stop it from being preferred over monitor and
     # laptop audio.
     # The helper CLI in the home-manager audio-output module is still the
@@ -158,7 +158,6 @@
   #   '';
   # };
 
-  # bluetooth config is related to sound right? 😀👍
   hardware.bluetooth.enable = true;
   hardware.bluetooth.hsphfpd.enable = false; # Using Wireplumber conflicts with hsphfpd, as it provides the same functionality.
   # hardware.bluetooth.hsphfpd.enable = true;

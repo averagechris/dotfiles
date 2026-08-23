@@ -1,4 +1,5 @@
-# Empty overlay - titlecase is now handled directly in mkNixosHost/mkDarwinHost
+# Package overrides shared by all hosts. Titlecase is handled directly in
+# mkNixosHost/mkDarwinHost instead of here.
 {
   inputs,
   nixpkgs,

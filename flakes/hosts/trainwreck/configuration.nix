@@ -87,7 +87,6 @@ in {
 
   system.stateVersion = "26.05";
 
-  # Home Manager configuration for chris
   home-manager.users.chris = {...}: {
     home.stateVersion = "26.05";
 
@@ -99,7 +98,6 @@ in {
     dotfiles.shell.enable = false;
     dotfiles.gpg.enable = false;
 
-    # Enable jj and opencode
     programs.jujutsu.enable = true;
     dotfiles.jujutsu.workflowAliases.enable = false;
     programs.opencode.enable = true;
