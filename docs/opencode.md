@@ -122,8 +122,8 @@ name has a registry entry, then keep its default enablement, patch it, or disabl
 it explicitly.
 
 On Linux, the module wraps the OpenCode package with `LD_LIBRARY_PATH` pointing
-at `stdenv.cc.cc.lib`. This makes OpenCode's native file-watcher binding able to
-find `libstdc++.so.6` on NixOS. Without the wrapper, OpenCode may log or surface
+at `stdenv.cc.cc.lib`. This lets OpenCode's native file-watcher binding find
+`libstdc++.so.6` on NixOS. Without the wrapper, OpenCode may log or surface
 startup failures while loading project or global files, including custom tools.
 
 ## Agent-exposed tools
@@ -136,8 +136,8 @@ profile.
 
 The `orchestrator` is the generated OpenCode default agent, making decomposition
 and Minion-first routing the normal entry point. It uses the same open-by-default
-bash safety posture as Build and is tuned for ambitious projects
-and can delegate work across five coding tiers: `tiny`, `luna`, `minion`,
+bash safety posture as Build, is tuned for ambitious projects, and can delegate
+work across five coding tiers: `tiny`, `luna`, `minion`,
 `build`, and `wise`. Tiny uses GPT-5.6 Luna at `low` for mechanical work, while
 the distinct Luna tier uses the same model at `high` for bounded work requiring
 more reasoning. Minion uses GPT-5.6 Sol at `low` and is the default implementation
@@ -224,13 +224,13 @@ many-to-many: agents must not create one tracker issue per map item or copy map
 blockers into tracker dependencies by default. Delivery issues need a concrete
 outcome and normally one coherent, reviewable change or PR. They link to the
 canonical map and relevant named decisions. Cross-repository efforts use one
- canonical map linked from each repository and tracker initiative when the user
- explicitly asks or approves those backlinks. Synthesis may use `architect` and
- `technical-writing`, then the repository's tracker skill, but ordinary delivery
- issue creation and production implementation do not become allowed merely to
- establish backlinks. Production implementation starts only after an explicit
- human transition out of discovery, and the map alone never authorizes external
- mutation.
+canonical map linked from each repository and tracker initiative when the user
+explicitly asks or approves those backlinks. Synthesis may use `architect` and
+`technical-writing`, then the repository's tracker skill, but ordinary delivery
+issue creation and production implementation do not become allowed merely to
+establish backlinks. Production implementation starts only after an explicit
+human transition out of discovery, and the map alone never authorizes external
+mutation.
 
 Implementation packets require proof at the boundary where behavior is claimed.
 Agents escalate when implementation disproves a design assumption, favor
@@ -621,7 +621,7 @@ build time. Current examples include:
 Home Manager activation removes files left by the retired OpenCode PR-review
 tools from `~/.config/opencode/tools/`.
 
-When enabled, the `databricks-cli` skill explains an important CLI detail: there is no
+When enabled, the `databricks-cli` skill notes that there is no
 top-level `databricks sql` subcommand in the current official CLI. Agents
 should use `queries`, `query-history`, `warehouses`, `psql`, or `databricks api`
 depending on the task.

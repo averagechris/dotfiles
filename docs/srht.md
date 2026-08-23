@@ -87,9 +87,9 @@ matchers. The shared profile contains:
 - unmatched repositories fail with `[todo-fallback] mode = "error"` rather
   than silently guessing a tracker.
 
-The prior `personal-oss-projects` route and `projects` route policy were removed:
-they only selected the same umbrella tracker and repository context label now
-provided by the explicit profile. Routes remain supported under
+The prior `personal-oss-projects` route and `projects` route policy were removed
+because they only selected the same umbrella tracker and repository context
+label now provided by the explicit profile. Routes remain supported under
 `dotfiles.srht.settings` for future cases that genuinely need automatic
 repository-to-tracker matching.
 

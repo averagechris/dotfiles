@@ -1,4 +1,4 @@
-# Sure Stack Context Skill
+# Sure stack context skill
 
 `suremac` installs a host-specific OpenCode skill named `sure-stack-context` for
 debugging Sure deployed environments across Datadog, Sentry, and Kubernetes.
@@ -44,5 +44,5 @@ agenix -e opencode-sure-stack-context.age
 ```
 
 Do not copy decrypted content into public docs, AGENTS.md, skill files, or chat
-summaries. Summarize changes at the level of “updated private stack context” when
+summaries. Summarize changes at the level of "updated private stack context" when
 needed.

@@ -1,4 +1,4 @@
-# suremac macOS Configuration
+# suremac macOS configuration
 
 `suremac` is the Darwin/macOS host configured in `flakes/hosts/suremac/`.
 
@@ -36,10 +36,10 @@ parallel agents/builds pile up with `warning: SQLite database
 '/nix/var/nix/db/db.sqlite' is busy`. The warning itself is harmless (Nix
 retries; see NixOS/nix#6656), but it signals the DB serializing everyone.
 
-Setting `fsync-metadata = false` dramatically shortens lock hold times.
-Trade-off: a system crash (kernel panic/power loss) can lose the most recent
-DB registrations; recover with `nix store verify --repair` or by
-re-substituting. Process crashes are unaffected.
+Setting `fsync-metadata = false` shortens lock hold times. The trade-off is
+that a system crash (kernel panic or power loss) can lose the most recent DB
+registrations; recover with `nix store verify --repair` or by re-substituting.
+Process crashes are unaffected.
 
 If the WAL file (`/nix/var/nix/db/db.sqlite-wal`) grows large again under
 sustained parallel load, a daemon restart checkpoints and truncates it.
@@ -62,7 +62,7 @@ tater's `system.tater` host key; see [LAN SSH](/docs/lan-ssh.md) for the
 DHCP-friendly `dotfiles-lan-hosts`, `ssh-lan`, and `ssh-suremac-lan` helpers and
 for the current key-trust caveat around a future dedicated `chris@tater` user key.
 
-## Time Zone
+## Time zone
 
 `suremac` does not pin `time.timeZone` to a fixed IANA zone. Instead, the host
 leaves `time.timeZone = null`, enables macOS's automatic time zone preference
@@ -74,7 +74,7 @@ If automatic time zone updates do not take effect after applying the config,
 check **System Settings → Privacy & Security → Location Services → System
 Services** and make sure time zone/location services are allowed.
 
-## Spaces / Desktops
+## Spaces / desktops
 
 Mission Control desktop switching is configured with stable Space ordering:
 
@@ -94,7 +94,7 @@ These are intentionally arrow-key shortcuts rather than letter shortcuts because
 letter-based Mission Control hotkeys can be layout-sensitive under Colemak and
 may not be reproduced correctly by external device software.
 
-## Colemak Mod-DH Keyboard Layout
+## Colemak Mod-DH keyboard layout
 
 `suremac` enables `dotfiles.colemakDh`, the first shared nix-darwin module in
 `flakes/darwin-modules/`. The module vendors the ColemakMods Mod-DH keyboard
@@ -125,7 +125,7 @@ HIToolbox and keyboard-layout cache changes may require logging out and back in,
 or waiting for/restarting `cfprefsd`, before every UI surface notices the new
 layout. The module does not kill `cfprefsd` during activation.
 
-## Terminal Hotkey
+## Terminal hotkey
 
 `suremac` explicitly enables the Home Manager WezTerm module with
 `dotfiles.wezterm.enable = true` and sets `dotfiles.gui.terminal` to WezTerm.
@@ -157,13 +157,13 @@ falls back to `open about:blank`, which launches the system default browser.
 These hotkeys are historical notes only while `dotfiles.macosHotkeys.enable` is
 disabled on suremac.
 
-## Raycast Configuration
+## Raycast configuration
 
 Raycast does not expose a stable declarative config file for aliases and
 hotkeys. Use Raycast's built-in sync for Raycast-managed configuration instead
 of committing `.rayconfig` exports to this repository.
 
-## Coding Agents
+## Coding agents
 
 `suremac` enables both `programs.opencode` and `programs.pi` in Home Manager.
 Pi is installed through the minimal `programs.pi.enable = true` module; see
@@ -197,7 +197,7 @@ linking QtMacExtras 5.15.19 and KeePassXC's executables. The override is
 Darwin-only and does not pin or downgrade nixpkgs, KeePassXC, or Qt; remove it
 once the upstream Darwin linker/package combination builds both normally again.
 
-## Daily dotfiles Self-Update
+## Daily dotfiles self-update
 
 `suremac` runs a nix-darwin launchd user agent named
 `dotfiles-suremac-self-update`. The agent performs a cheap check every five
@@ -228,8 +228,8 @@ again before an interactive activation. If the machine becomes loaded during a
 build, its completed out-link remains rooted and activation waits for the next
 headroom window.
 Transient fetch/build failures and busy deferrals retry on a later five-minute
-interval. A no-op or any activation attempt—including a cancelled password
-prompt or activation failure—counts as the daily attempt, so at most one
+interval. A no-op or any activation attempt, including a cancelled password
+prompt or activation failure, counts as the daily attempt, so at most one
 password dialog appears per day.
 
 Self-update and dev-cache GC share a PID-aware `shlock` lock at
@@ -310,7 +310,7 @@ These follow the host flake's `nixpkgs`; `slack` and `ctx` also follow
 `flakes/hosts/suremac` (and `ctx rdny` in `flakes/hosts/tater`), plus the
 matching nested nodes in the root `flake.lock`.
 
-## Sure Tools via `nix profile`
+## Sure tools via `nix profile`
 
 Private sureapp flakes (`surecraft-cli`, `suremise`) are installed
 imperatively with `nix profile` because they need GitHub auth at fetch time and
@@ -333,7 +333,7 @@ Connect with `ssh -p 2222 chris@<ip>`. Currently enabled TEMPORARILY on
 suremac for migration; disable by removing `dotfiles.customSshd.enable` from
 `configuration.nix` and rebuilding.
 
-## Non-Nix GUI Apps
+## Non-Nix GUI apps
 
 Some GUI apps are intentionally unmanaged. Company device management pushes or
 offers work software (security tooling, Zoom, Office, Chrome, etc.) via its
@@ -345,11 +345,11 @@ self-update:
 - superwhisper
 - OrbStack
 - Logi Options+
-- Xcode Command Line Tools (`xcode-select --install`) — recommended on every
+- Xcode Command Line Tools (`xcode-select --install`), recommended on every
   new suremac laptop so Rust links use Apple's fast ld-prime linker; see
   [dev-cache.md](/docs/dev-cache.md#installing-the-fast-apple-linker-recommended-on-new-macs)
 
-## Profile Size Notes
+## Profile size notes
 
 The suremac profile intentionally avoids several large or duplicate GUI/TUI
 tools that are not in active use:
@@ -395,7 +395,8 @@ leaves an extra Nix Swift runtime `LC_RPATH` in the binary. `suremac` installs a
 copied `dockutil` with that rpath removed; `dockutil --version` still resolves
 against system Swift libraries, while the large Swift/clang/Apple SDK closure is
 no longer retained.
-## Rust and Dev Cache Management
+
+## Rust and dev cache management
 
 `suremac` enables `dotfiles.devCache` for Rust-heavy development work. See
 [dev-cache.md](/docs/dev-cache.md) for the full module documentation

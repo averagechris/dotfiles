@@ -73,7 +73,7 @@ config file, then built-in fallbacks (`RDNY_CHROME`, `RDNY_FFMPEG`,
 
 ## Current upstream behavior
 
-The v0.3.0 rdny release substantially hardens managed sessions. `rdny start` now
+The v0.3.0 rdny release hardens managed sessions. `rdny start` now
 launches Chrome behind an authenticated, owner-only local broker using
 `--remote-debugging-pipe`; managed sessions no longer expose a DevTools TCP port.
 External `rdny connect` targets remain the explicit loopback HTTP/WebSocket path.

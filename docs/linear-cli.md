@@ -36,7 +36,7 @@ files under `~/.config/linear-cli` on macOS are ignored by the CLI.
 The activation merge intentionally preserves authentication/profile metadata in
 the existing CLI config file. Credentials remain in the OS keyring via
 `linear auth login`; the module only writes non-secret context and policy
-hints. Legacy plaintext token values are blanked rather than removed - the
+hints. Legacy plaintext token values are blanked rather than removed. The
 CLI's config parser requires `oauth.access_token` to exist.
 
 ## Hygiene rules

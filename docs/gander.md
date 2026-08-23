@@ -42,7 +42,7 @@ appended. The raw `settings` option uses Nixpkgs' TOML value type and is the
 forward-compatibility escape hatch for a newer upstream field. Null typed values
 are omitted, allowing Gander's own default to apply. Optional upstream values
 such as `artifact.output_dir`, `agent.name`, and `identity.email` therefore use
-`null` to mean “do not emit this typed value.”
+`null` to mean "do not emit this typed value."
 
 The shared layer enables soft wrapping, classifies standard lockfiles as
 generated, creates new comments as actionable todos, and installs the complete
@@ -242,7 +242,7 @@ These changes are atomic. In particular, moving only normal navigation to
 `n`/`e` would collide with unmodified popup, comment-center, draft, and zen
 actions. Gander's immutable `j`/`k` and arrow safety aliases still work.
 
-## Bundled Agent Skills
+## Bundled agent skills
 
 Gander embeds two skills in its package:
 
