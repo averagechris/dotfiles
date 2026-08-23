@@ -227,7 +227,7 @@
     g.p = "goto_implementation";
     g.r = "goto_reference";
 
-    # go "to" vim unimpared-ish syntax aware moves
+    # go "to" vim unimpaired-ish syntax aware moves
     # go "to" next
     g.t.n.c = "goto_next_comment";
     g.t.n.C = "goto_next_class";
@@ -553,7 +553,7 @@ in {
       "A-n" = "completion";
       "C-s" = "commit_undo_checkpoint";
       "C-p" = "insert_register";
-      # C-r for consistency with non-remapple parts of helix
+      # C-r for consistency with non-remappable parts of helix
       "C-r" = "insert_register";
       "C-e" = "move_line_up";
       "C-n" = "move_line_down";

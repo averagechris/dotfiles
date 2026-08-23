@@ -18,7 +18,8 @@ in {
       ]
       else [];
 
-    # by default rotate, on laptop display dont rotate to reduce battery impact
+    # The default section rotates every five minutes. The laptop panel
+    # (eDP-1) pins one static image instead, to reduce battery impact.
     xdg.configFile."wpaperd/wallpaper.toml".text = ''
       [default]
       path = "${../wallpapers}"

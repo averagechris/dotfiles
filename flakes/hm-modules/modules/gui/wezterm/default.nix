@@ -1,8 +1,7 @@
 # WezTerm Home Manager Module
 #
-# This module enables a modular configuration for the WezTerm terminal emulator.
-# It loads Lua modules from XDG_CONFIG_HOME rather than directly from the Nix store,
-# which enables better modularity and dynamic loading.
+# Configures WezTerm with Lua modules copied to XDG_CONFIG_HOME and
+# loaded from there rather than from the Nix store.
 #
 # Key features:
 # - Modal keybinding system (SHIFT+Space as leader key)
@@ -21,8 +20,6 @@
     programs.wezterm = {
       enable = true;
 
-      # Instead of loading files from the Nix store, we'll copy modules to XDG_CONFIG_HOME
-      # and load them from there, which gives us better modularity
       extraConfig = ''
         -- Configure module loading path to find our modules
         package.path = package.path .. ";" .. wezterm.home_dir .. "/.config/wezterm/?.lua"

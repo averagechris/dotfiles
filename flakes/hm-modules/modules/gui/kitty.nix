@@ -7,9 +7,8 @@
   inherit (pkgs.stdenv.hostPlatform) isDarwin isLinux;
   nested = prefix: bindings: with lib.attrsets; mapAttrs' (k: v: nameValuePair "${prefix}>${k}" v) bindings;
 
-  # all of the key bindings i have for my terminal emulator i put after a leader key chord of
-  # shift+space
-  # NOTE: strongly prefer memonic style key bindings
+  # All terminal keybindings sit behind a shift+space leader chord.
+  # Prefer mnemonic bindings where the key hints at the action.
   prefixed = nested "shift+space";
 
   # tab prefix nests tab commands under `shift+space` as leaders
@@ -20,9 +19,8 @@
   # then `w`, so to make a vertical split, i press `shift+space` then `w` then `v`
   windowp = nested "shift+space>w";
 
-  # Shell application for displaying kitty session information
-  # Shows current layout, windows, tabs, and serves as a keyboard shortcut reference
-  # Launched via ctrl+shift+/ to provide a comprehensive overlay with kitty status
+  # Shell application that shows kitty session info: current layout,
+  # windows, tabs, and a shortcut reference. Runs in an overlay window.
   kitty-info = pkgs.writeShellApplication {
     name = "kitty-info";
     runtimeInputs = with pkgs; [jq coreutils gnused];
@@ -171,7 +169,6 @@ in {
       })
       // (windowp {
         # Window management commands (shift+space w prefix)
-        # Primary controls for window manipulation, navigation, and layout
 
         # Window control actions
         d = "close_window_with_confirmation"; # Close current window (with prompt)
@@ -188,7 +185,6 @@ in {
         v = "launch --location=vsplit --cwd=current"; # Create vertical split (side by side)
 
         # Layout management submenu (shift+space w l prefix)
-        # Controls changing between different layout algorithms
         "l>s" = "goto_layout splits:split_axis=horizontal"; # Side-by-side splits layout
         "l>shift+s" = "goto_layout splits:split_axis=vertical"; # Stacked splits layout
         "l>t" = "goto_layout tall"; # Tall layout (full height on left)
@@ -198,14 +194,12 @@ in {
         "l>r" = "layout_action rotate"; # Rotate split orientation
 
         # Window movement commands with Colemak Mod-DH bindings (mnei)
-        # Allows repositioning the current window within the layout
         "shift+e" = "move_window up"; # Move window up
         "shift+n" = "move_window down"; # Move window down
         "shift+m" = "move_window left"; # Move window left
         "shift+i" = "move_window right"; # Move window right
 
-        # Edge movement commands - move window all the way to screen edges
-        # Using Colemak Mod-DH movement keys with ctrl+shift modifier
+        # Move the window to a screen edge with ctrl+shift plus movement keys
         "ctrl+shift+e" = "layout_action move_to_screen_edge top"; # Move to top edge
         "ctrl+shift+j" = "layout_action move_to_screen_edge bottom"; # Move to bottom edge (j instead of n due to conflict)
         "ctrl+shift+m" = "layout_action move_to_screen_edge left"; # Move to left edge
@@ -222,7 +216,6 @@ in {
       })
       // (tabp {
         # Tab management commands (shift+space t prefix)
-        # Controls for creating, navigating, and managing tabs
 
         # Tab navigation - using Colemak movement keys
         i = "next_tab"; # Go to next tab

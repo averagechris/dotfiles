@@ -75,12 +75,12 @@ in
 
       services.udiskie.enable = mkDefault isLinux;
 
-      # this doesn't install the program but makes it so the gui app
-      # is installed if the program is enabled
+      # Enabling this flag alone installs nothing; it adds the MegaSync
+      # GUI app when programs.meganz is enabled.
       programs.meganz.gui.enable = mkDefault cfg.enable;
 
-      # any of the programs that we're not creating config for we
-      # just add to home.packages
+      # Programs without dedicated modules get installed through
+      # home.packages when enabled.
       home.packages = with pkgs;
         (
           if config.programs.darktable.enable

@@ -104,7 +104,6 @@ in {
   };
 
   config = mkIf cfg.enable {
-    # Add the package to the user's packages
     home.packages = [
       cfg.package
     ];
@@ -147,9 +146,9 @@ in {
           c = [":write" ":pipe-to ${cfg.package}/bin/helix-terminal-tools send-to-claude-ai --wezterm-path ${cfg.wezterm}/bin/wezterm --claude-path ${cfg.claudePackage}/bin/claude-code --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --column=\"%{cursor_column}\" --content-type=\"selection\" --saved --header=\"ACTION REQUIRED: Please implement any TODO/FIXME comments in this code. If none are found, please suggest refactoring improvements:\""];
           # Same as above but without saving first
           C = [":pipe-to ${cfg.package}/bin/helix-terminal-tools send-to-claude-ai --wezterm-path ${cfg.wezterm}/bin/wezterm --claude-path ${cfg.claudePackage}/bin/claude-code --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --column=\"%{cursor_column}\" --content-type=\"selection\" --header=\"ACTION REQUIRED: Please implement any TODO/FIXME comments in this code. If none are found, please suggest refactoring improvements, noting that this buffer may be unsaved:\""];
-          # Send selection with metadata to claude, memnonic is "explain"
+          # Send selection with metadata to claude, mnemonic is "explain"
           e = [":write" ":pipe-to ${cfg.package}/bin/helix-terminal-tools send-to-claude-ai --wezterm-path ${cfg.wezterm}/bin/wezterm --claude-path ${cfg.claudePackage}/bin/claude-code --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --column=\"%{cursor_column}\" --content-type=\"selection\" --saved --header=\"Explain this selection from saved file:\""];
-          # Send without saving - useful when you can't save
+          # Send without saving first, useful when the buffer has unsaved changes
           E = ":pipe-to ${cfg.package}/bin/helix-terminal-tools send-to-claude-ai --wezterm-path ${cfg.wezterm}/bin/wezterm --claude-path ${cfg.claudePackage}/bin/claude-code --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --column=\"%{cursor_column}\" --content-type=\"selection\" --header=\"Explain this selection from unsaved editor buffer:\"";
           # Send current function to Claude
           f = ["goto_next_function" "select_textobject_inner" ":pipe-to ${cfg.package}/bin/helix-terminal-tools send-to-claude-ai --wezterm-path ${cfg.wezterm}/bin/wezterm --claude-path ${cfg.claudePackage}/bin/claude-code --file=\"%{buffer_name}\" --line=\"%{cursor_line}\" --content-type=\"function\" --header=\"Function from my editor:\""];
@@ -168,11 +167,9 @@ in {
     ];
 
     # Create a custom Yazi configuration directory for the integration
-    # This allows us to customize Yazi's behavior when launched from Helix
     xdg.configFile = mkIf cfg.yazi.enable {
-      # Main Yazi config - inherits from the standard Yazi config and adds our custom opener
+      # Main Yazi config: standard settings plus our custom opener
       "helix-terminal-tools/yazi/yazi.toml" = mkIf config.programs.yazi.enable {
-        # Copy the entire settings from the main Yazi config and then add our custom opener
         source = toTOML (recursiveUpdate config.programs.yazi.settings {
           opener = {
             edit = [
@@ -182,7 +179,7 @@ in {
         });
       };
 
-      # Keymap file - inherit all keybindings from main config and add our custom quit behavior
+      # Keymap file: all main keybindings plus our custom quit behavior
       "helix-terminal-tools/yazi/keymap.toml" = mkIf config.programs.yazi.enable {
         source = let
           # Start with the base keymap configuration

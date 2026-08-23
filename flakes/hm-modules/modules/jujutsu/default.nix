@@ -157,7 +157,7 @@ in {
                   # Get the only bookmark name
                   only="$(jj bookmark list -T 'self.name()')"
 
-                  # If current change (@) is an descendant of that bookmark, do nothing
+                  # If current change (@) is a descendant of that bookmark, do nothing
                   if jj log --no-graph -r "descendants(bookmarks(\"''${only}\")) & @" -n 1 | grep -q .; then
                     # No-op
                     exit 0
@@ -250,7 +250,7 @@ in {
           # Sync with upstream: fetch, then rebase onto the integration bookmark
           sync = ["util" "exec" "--" "${jjWorkflow}/bin/jj-workflow" "sync"];
 
-          # Ergonomic Jujutsu workspace management.
+          # Jujutsu workspace management.
           ws = ["util" "exec" "--" "${jjWorkflow}/bin/jj-workflow" "ws"];
 
           # Push with pre-push lints (configurable per-repo)

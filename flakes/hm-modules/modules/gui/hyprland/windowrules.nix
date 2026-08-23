@@ -49,7 +49,7 @@
 in {
   config = lib.mkIf cfg.enable {
     # https://wiki.hyprland.org/Configuring/Window-Rules/#rules
-    # these end up
+    # The expressions below flatten into Hyprland windowrule entries.
     wayland.windowManager.hyprland.settings.windowrule = lib.lists.flatten [
       (floatWindows {
         # these won't auto-float unless it's the initial class

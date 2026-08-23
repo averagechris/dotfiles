@@ -52,7 +52,6 @@ in
       mkMerge [
         {
           # Set GPG_TTY for proper pinentry functionality
-          # This ensures GPG pinentry prompts appear in the correct terminal
           home.sessionVariables.GPG_TTY = "$(tty)";
 
           # Ensure GPG agent is started and accessible

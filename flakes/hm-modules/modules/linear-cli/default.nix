@@ -227,7 +227,7 @@ in {
         # (confirm actual Linear label-group names before adding
         # missing_group rules), and issue->project->initiative traceability
         # (needs cross-entity joins). Stale GitHub PRs are out of scope for
-        # this engine (GitHub PRs are not a hygiene entity) - use gh/jj pr
+        # this engine (GitHub PRs are not a hygiene entity); use gh/jj pr
         # sweeps for that.
         rules = [
           {
@@ -422,7 +422,7 @@ in {
             };
           }
           # SDLC: dates are "encouraged" only; exploratory spikes are exempt
-          # from target dates - hence low severity. Planned projects are also
+          # from target dates, hence low severity. Planned projects are also
           # expected to carry dates, and anything past planning needs a start
           # date.
           {

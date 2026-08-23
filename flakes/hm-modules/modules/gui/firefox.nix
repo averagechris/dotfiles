@@ -32,9 +32,9 @@ in {
         else
           {}
           // {
-            # allows firefox to see userChrome.css etc
-            # NOTE: I always still have to _manually_ toggle this one once :(
-            # by going to about:config, copy-pasting this, then toggling it to true
+            # Lets Firefox see userChrome.css etc.
+            # NOTE: I still have to toggle this one manually once, in
+            # about:config, before it takes effect.
             "toolkit.legacyUserProfileCustomizations.stylesheets" = true;
 
             "browser.startup.homepage" = "https://kagi.com";
@@ -64,7 +64,7 @@ in {
     };
   };
 
-  # this makes it so firefox uses wayland instead of xwayland
+  # Export MOZ_ENABLE_WAYLAND so Firefox runs on Wayland instead of XWayland
   wayland.windowManager.sway = lib.mkIf config.wayland.windowManager.sway.enable {
     extraSessionCommands = ''
       export MOZ_ENABLE_WAYLAND=1

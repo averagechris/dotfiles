@@ -1,8 +1,5 @@
 # Helix-Yazi Integration Module
 #
-# This module creates a seamless integration between Helix editor and Yazi file manager
-# within WezTerm terminal, allowing for a more IDE-like file browsing experience.
-#
 # Key features:
 # - Toggle a Yazi file picker pane from Helix with space.t.f
 # - Inherit all Yazi config/keybindings while adding custom opener behavior
@@ -95,22 +92,19 @@ in {
   };
 
   config = mkIf cfg.enable {
-    # Add the package to the user's packages
     home.packages = [
       cfg.package
     ];
 
-    # Configure integration with helix - with hardcoded keys for space.t.f
+    # Bind space.t.f to the picker command (the keybinding is hardcoded)
     programs.helix.settings = mkIf config.programs.helix.enable {
       keys.normal.space.t.f = ":pipe-to ${cfg.package}/bin/helix-yazi-integration open-picker --wezterm-path ${cfg.wezterm}/bin/wezterm --yazi-path ${cfg.yazi}/bin/yazi --yazi-config-dir ${config.home.homeDirectory}/.config/helix-yazi-integration --width ${toString cfg.pickerWidth} --side ${cfg.pickerSide}";
     };
 
     # Create a custom Yazi configuration directory for the integration
-    # This allows us to customize Yazi's behavior when launched from Helix
     xdg.configFile = {
-      # Main Yazi config - inherits from the standard Yazi config and adds our custom opener
+      # Main Yazi config: standard settings plus our custom opener
       "helix-yazi-integration/yazi.toml" = mkIf config.programs.yazi.enable {
-        # Copy the entire settings from the main Yazi config and then add our custom opener
         source = toTOML (recursiveUpdate config.programs.yazi.settings {
           opener = {
             edit = [
@@ -120,7 +114,7 @@ in {
         });
       };
 
-      # Keymap file - inherit all keybindings from main config and add our custom quit behavior
+      # Keymap file: all main keybindings plus our custom quit behavior
       "helix-yazi-integration/keymap.toml" = mkIf config.programs.yazi.enable {
         source = let
           # Start with the base keymap configuration

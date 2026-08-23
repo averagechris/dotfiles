@@ -43,7 +43,6 @@ in {
         };
       };
 
-      # Key binding configuration
       # Key binding summary:
       # - Navigation: Colemak MNEI instead of HJKL (n=down, e=up, m=left/back, i=right/enter)
       # - File selection: <Space>=toggle and move down, u=unselect current item
@@ -53,7 +52,7 @@ in {
       # - Create/Rename: c=create file, r=rename file
       # - Sort: s prefixed keys (sn=natural, ss=size, sm=time, se=extension)
       # - Advanced: ~=help, H=toggle hidden files, Z=fuzzy find with fzf
-      # - Theme: Custom Rose Pine Moon theme for a cohesive visual experience
+      # - Theme: Custom Rose Pine Moon
       keymap = {
         # Main file manager keybindings
         mgr = {

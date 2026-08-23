@@ -21,7 +21,6 @@
           init.defaultBranch = "main";
         };
         ignores = [".DS_Store"];
-        # signing configuration is managed by the gpg module when enabled
       };
     }
 
