@@ -552,6 +552,12 @@ in {
     inputs.nixos-hardware.nixosModules.common-pc-ssd
   ];
 
+  # nixpkgs now ships its own stock hister module whose option declarations
+  # collide with inputs.hister.nixosModules.hister above. Disable the stock
+  # module so thorny keeps using the flake module. Drop this once upstream
+  # resolves https://todo.sr.ht/~averagechris/projects/323.
+  disabledModules = ["services/web-apps/hister.nix"];
+
   dotfiles.hyprland-desktop.enable = true;
   programs.hyprland.package = hyprlandPackage;
   xdg.portal.extraPortals = lib.mkForce [
