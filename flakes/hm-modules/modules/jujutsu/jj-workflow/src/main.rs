@@ -3914,7 +3914,10 @@ struct WsConfig {
     docker_cleanup: String,
     docker_remove_volumes: bool,
     fetch_remote: Option<String>,
+    clone_artifacts: Vec<String>,
 }
+
+const DEFAULT_CLONE_ARTIFACTS: &[&str] = &[".direnv", "target", "node_modules", ".venv"];
 
 #[derive(Debug, Clone)]
 struct WorkspaceContext {
@@ -3952,7 +3955,7 @@ fn print_ws_usage() {
 }
 
 fn print_ws_add_usage() {
-    eprintln!("Usage:\n  jj ws add <name> [-r <revset>] [--project-group <path>] [--venv=<copy|link|none>] [--no-envrc] [--no-venv] [--no-direnv] [-q]\n\nCreates <project-group>/<workspace-dir>/<repo>/<name>.\nDefault base: main checkout -> inferred remote bookmark; workspace -> @.\n\nExamples:\n  jj ws add feature-x -q\n  jj ws add followup -r @\n  jj ws add hotfix --revision main@origin");
+    eprintln!("Usage:\n  jj ws add <name> [-r <revset>] [--project-group <path>] [--venv=<copy|link|none>] [--no-envrc] [--no-venv] [--no-clone-artifacts] [--no-direnv] [-q]\n\nCreates <project-group>/<workspace-dir>/<repo>/<name>.\nDefault base: main checkout -> inferred remote bookmark; workspace -> @.\nClones configured build artifacts (dotfiles.workspaces.clone-artifacts) from the source checkout; --no-clone-artifacts skips them.\n\nExamples:\n  jj ws add feature-x -q\n  jj ws add followup -r @\n  jj ws add hotfix --revision main@origin");
 }
 
 fn print_ws_list_usage() {
@@ -3992,6 +3995,13 @@ fn ws_config() -> Result<WsConfig> {
     let docker_remove_volumes =
         jj_config_bool("dotfiles.workspaces.docker-remove-volumes")?.unwrap_or(true);
     let fetch_remote = jj_config_string("dotfiles.workspaces.fetch-remote")?;
+    let clone_artifacts = match jj_config_string("dotfiles.workspaces.clone-artifacts")? {
+        Some(raw) => parse_toml_string_array(&raw),
+        None => DEFAULT_CLONE_ARTIFACTS
+            .iter()
+            .map(std::string::ToString::to_string)
+            .collect(),
+    };
     let groups = jj_config_project_groups()?;
     Ok(WsConfig {
         project_groups: groups,
@@ -4001,6 +4011,7 @@ fn ws_config() -> Result<WsConfig> {
         docker_cleanup,
         docker_remove_volumes,
         fetch_remote,
+        clone_artifacts,
     })
 }
 
@@ -4144,6 +4155,7 @@ struct WsAddArgs {
     no_envrc: bool,
     venv_mode: Option<String>,
     no_venv: bool,
+    no_clone_artifacts: bool,
     no_direnv: bool,
     help: bool,
 }
@@ -4181,6 +4193,8 @@ fn parse_ws_add_args(args: Vec<OsString>) -> Result<WsAddArgs> {
             parsed.venv_mode = Some(value);
         } else if arg == OsStr::new("--no-venv") {
             parsed.no_venv = true;
+        } else if arg == OsStr::new("--no-clone-artifacts") {
+            parsed.no_clone_artifacts = true;
         } else if arg == OsStr::new("--no-direnv") {
             parsed.no_direnv = true;
         } else if arg == OsStr::new("-h") || arg == OsStr::new("--help") {
@@ -4247,8 +4261,28 @@ fn ws_add(args: Vec<OsString>) -> Result<()> {
     if !parsed.no_envrc && config.copy_envrc != "never" {
         copied_envrc = copy_envrc_if_needed(&ctx.repo_root, &dest, &config.copy_envrc)?;
     }
-    if !parsed.no_venv {
-        let venv_mode = parsed.venv_mode.as_deref().unwrap_or(&config.venv_mode);
+    let venv_mode = parsed.venv_mode.as_deref().unwrap_or(&config.venv_mode);
+    // Single source of truth for `.venv` handling: both the artifact walker's
+    // list and the venv setup step derive from this one decision.
+    let venv_tracked = file_is_tracked(&ctx.repo_root, ".venv")?;
+    let venv_plan = effective_venv_plan(
+        &config.clone_artifacts,
+        venv_mode,
+        parsed.no_venv,
+        parsed.no_clone_artifacts,
+        venv_tracked,
+        &ctx.repo_root,
+    );
+    let mut artifacts = effective_clone_artifacts(&config.clone_artifacts, venv_plan);
+    if parsed.no_clone_artifacts {
+        artifacts.clear();
+    }
+    let cloned_artifacts = if artifacts.is_empty() {
+        0
+    } else {
+        clone_artifact_dirs(&ctx.repo_root, &dest, &artifacts)
+    };
+    if venv_plan.setup {
         venv_action = setup_venv_if_needed(&ctx.repo_root, &dest, venv_mode)?;
     }
     if !parsed.no_direnv
@@ -4275,6 +4309,9 @@ fn ws_add(args: Vec<OsString>) -> Result<()> {
         }
         if let Some(action) = venv_action {
             println!("{} untracked .venv", action.past_tense());
+        }
+        if cloned_artifacts > 0 {
+            println!("cloned {cloned_artifacts} build artifact(s)");
         }
         if direnv_allowed {
             println!("direnv allowed");
@@ -4407,16 +4444,16 @@ impl VenvAction {
 fn setup_venv_if_needed(src: &Path, dest: &Path, mode: &str) -> Result<Option<VenvAction>> {
     let src_venv = src.join(".venv");
     let dest_venv = dest.join(".venv");
-    if !src_venv.exists()
-        || dest_venv.exists()
-        || file_is_tracked(src, ".venv")?
-        || !source_venv_python_usable(&src_venv)
-    {
-        return Ok(None);
-    }
     match mode {
         "none" => Ok(None),
         "link" => {
+            if !src_venv.exists()
+                || dest_venv.exists()
+                || file_is_tracked(src, ".venv")?
+                || !source_venv_python_usable(&src_venv)
+            {
+                return Ok(None);
+            }
             symlink_path(&src_venv, &dest_venv).with_context(|| {
                 format!(
                     "failed to symlink {} to {}",
@@ -4427,7 +4464,17 @@ fn setup_venv_if_needed(src: &Path, dest: &Path, mode: &str) -> Result<Option<Ve
             Ok(Some(VenvAction::Linked))
         }
         "copy" => {
-            clone_or_copy_dir(&src_venv, &dest_venv)?;
+            if !src_venv.exists()
+                || file_is_tracked(src, ".venv")?
+                || !source_venv_python_usable(&src_venv)
+            {
+                return Ok(None);
+            }
+            // The generic artifact step usually cloned `.venv` already; only
+            // clone here when it is missing from the configured artifact list.
+            if !dest_venv.exists() {
+                clone_dir_strict(&src_venv, &dest_venv);
+            }
             repair_venv_paths(&src_venv, &dest_venv)?;
             Ok(Some(VenvAction::Copied))
         }
@@ -4435,29 +4482,164 @@ fn setup_venv_if_needed(src: &Path, dest: &Path, mode: &str) -> Result<Option<Ve
     }
 }
 
-fn source_venv_python_usable(src_venv: &Path) -> bool {
-    src_venv.join("bin/python").exists()
+/// One unified decision for how `.venv` should be handled for a new
+/// workspace. Both the artifact walker's clone list and the venv setup step
+/// derive from this, so flags and config cannot disagree between the two
+/// sites.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct VenvPlan {
+    /// Include `.venv` in the generic artifact clone walk.
+    clone_into_dest: bool,
+    /// Run the venv setup step (link symlink, or copy fallback + repair).
+    setup: bool,
 }
 
-fn clone_or_copy_dir(src: &Path, dest: &Path) -> Result<()> {
+fn effective_venv_plan(
+    configured: &[String],
+    venv_mode: &str,
+    no_venv: bool,
+    no_clone_artifacts: bool,
+    venv_tracked: bool,
+    src: &Path,
+) -> VenvPlan {
+    // `none` mode and `--no-venv` mean no venv anywhere in the destination.
+    if no_venv || venv_mode == "none" {
+        return VenvPlan {
+            clone_into_dest: false,
+            setup: false,
+        };
+    }
+    let src_venv = src.join(".venv");
+    let usable = source_venv_python_usable(&src_venv);
+    match venv_mode {
+        // Link mode symlinks regardless of the artifact list.
+        "link" => VenvPlan {
+            clone_into_dest: false,
+            setup: src_venv.exists() && !venv_tracked && usable,
+        },
+        // Copy mode always yields a REPAIRED venv whenever one exists in the
+        // destination by any path, but `--no-clone-artifacts` suppresses every
+        // clone, including the copy fallback here.
+        "copy" => {
+            let eligible = src_venv.exists() && !venv_tracked && usable;
+            VenvPlan {
+                clone_into_dest: eligible
+                    && !no_clone_artifacts
+                    && configured.iter().any(|name| name == ".venv"),
+                setup: eligible && !no_clone_artifacts,
+            }
+        }
+        _ => VenvPlan {
+            clone_into_dest: false,
+            setup: false,
+        },
+    }
+}
+
+fn effective_clone_artifacts(configured: &[String], plan: VenvPlan) -> Vec<String> {
+    configured
+        .iter()
+        .filter(|name| name.as_str() != ".venv" || plan.clone_into_dest)
+        .cloned()
+        .collect()
+}
+
+fn clone_artifact_dirs(src: &Path, dest: &Path, names: &[String]) -> usize {
+    if names.is_empty() {
+        return 0;
+    }
+    let mut cloned = 0;
+    walk_artifact_dirs(src, src, dest, names, &mut cloned);
+    cloned
+}
+
+fn walk_artifact_dirs(
+    src_root: &Path,
+    dir: &Path,
+    dest_root: &Path,
+    names: &[String],
+    cloned: &mut usize,
+) {
+    let entries = match fs::read_dir(dir) {
+        Ok(entries) => entries,
+        Err(err) => {
+            eprintln!(
+                "Warning: cannot read directory {}: {err}; skipping it.",
+                dir.display()
+            );
+            return;
+        }
+    };
+    for entry in entries {
+        let entry = match entry {
+            Ok(entry) => entry,
+            Err(err) => {
+                eprintln!(
+                    "Warning: cannot read an entry in {}: {err}; skipping it.",
+                    dir.display()
+                );
+                continue;
+            }
+        };
+        // Never follow symlinks during traversal: symlinked directories are
+        // skipped entirely (even when their basename matches a configured
+        // artifact) so cycles cannot cause infinite recursion and unrelated
+        // trees are not pulled into the walk.
+        let Ok(file_type) = entry.file_type() else {
+            continue;
+        };
+        if !file_type.is_dir() {
+            continue;
+        }
+        let path = entry.path();
+        let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
+            continue;
+        };
+        if name == ".jj" || name == ".git" {
+            continue;
+        }
+        if names.iter().any(|candidate| candidate == name) {
+            let Ok(rel) = path.strip_prefix(src_root) else {
+                continue;
+            };
+            let target = dest_root.join(rel);
+            if !target.exists() {
+                if let Some(parent) = target.parent() {
+                    let _ = fs::create_dir_all(parent);
+                }
+                if clone_dir_strict(&path, &target) {
+                    *cloned += 1;
+                }
+            }
+            // Do not descend into a selected artifact directory.
+            continue;
+        }
+        walk_artifact_dirs(src_root, &path, dest_root, names, cloned);
+    }
+}
+
+/// Strict CoW clone: no full-copy fallback. On failure the partial
+/// destination is removed, a warning is printed, and `false` is returned.
+fn clone_dir_strict(src: &Path, dest: &Path) -> bool {
     let clone_args: Vec<&str> = if cfg!(target_os = "macos") {
         vec!["-cR"]
     } else {
-        vec!["-a", "--reflink=auto"]
+        vec!["-a", "--reflink=always"]
     };
-    if run_cp(&clone_args, src, dest)? {
-        return Ok(());
+    if run_cp(&clone_args, src, dest).unwrap_or(false) {
+        return true;
     }
     let _ = fs::remove_dir_all(dest);
-    let copy_args: Vec<&str> = if cfg!(target_os = "macos") {
-        vec!["-pR"]
-    } else {
-        vec!["-a"]
-    };
-    if run_cp(&copy_args, src, dest)? {
-        return Ok(());
-    }
-    bail!("failed to copy {} to {}", src.display(), dest.display())
+    eprintln!(
+        "Warning: failed to clone {} to {}; continuing without it.",
+        src.display(),
+        dest.display()
+    );
+    false
+}
+
+fn source_venv_python_usable(src_venv: &Path) -> bool {
+    src_venv.join("bin/python").exists()
 }
 
 fn run_cp(args: &[&str], src: &Path, dest: &Path) -> Result<bool> {
@@ -7305,7 +7487,8 @@ struct JjOutput {
 #[cfg(test)]
 mod tests {
     use super::{
-        choose_ship_bookmark, choose_sync_base, configured_lints, fetch_remote_choice,
+        choose_ship_bookmark, choose_sync_base, clone_artifact_dirs, clone_dir_strict,
+        configured_lints, effective_clone_artifacts, effective_venv_plan, fetch_remote_choice,
         first_unsupported_pr_flag, infer_lint_name, infer_remote_integration_bookmark_from,
         is_check_only_format_script, is_integration_bookmark, is_safe_package_check_script,
         is_validation_name, lint_config_toml, lint_display_name, lint_onboard_json,
@@ -7323,7 +7506,8 @@ mod tests {
         workspace_context_for_repo, workspace_has_unpublished_work, write_tracked_lint_config, Cli,
         CliCommand, FetchChoice, LintCommand, LintOnboardReport, LintSuggestion, ParsedArgs,
         PrArgs, ProjectGroup, Reviewer, ReviewerConfig, ShipPlan, TagCommand, TagPushArgs,
-        TagSigning, WsAddArgs, WsConfig, WsForgetArgs, WsPathArgs, WsPruneArgs,
+        TagSigning, VenvPlan, WsAddArgs, WsConfig, WsForgetArgs, WsPathArgs, WsPruneArgs,
+        DEFAULT_CLONE_ARTIFACTS,
     };
     use clap::Parser;
     use std::env;
@@ -7819,6 +8003,10 @@ aliases = ["sammy", "Sam Smith"]
             docker_cleanup: "auto".to_string(),
             docker_remove_volumes: true,
             fetch_remote: None,
+            clone_artifacts: DEFAULT_CLONE_ARTIFACTS
+                .iter()
+                .map(std::string::ToString::to_string)
+                .collect(),
         }
     }
 
@@ -8116,6 +8304,7 @@ aliases = ["sammy", "Sam Smith"]
                 "--venv=link".into(),
                 "--no-envrc".into(),
                 "--no-venv".into(),
+                "--no-clone-artifacts".into(),
                 "--no-direnv".into(),
                 "-q".into(),
             ])
@@ -8128,10 +8317,198 @@ aliases = ["sammy", "Sam Smith"]
                 venv_mode: Some("link".to_string()),
                 no_envrc: true,
                 no_venv: true,
+                no_clone_artifacts: true,
                 no_direnv: true,
                 help: false,
             }
         );
+    }
+
+    #[test]
+    fn clone_artifact_walker_matches_basenames_and_skips_selected_subtrees() {
+        let root = named_tempdir("artifact-walk");
+        let src = root.join("src");
+        let dest = root.join("dest");
+        for dir in [
+            "target",
+            "packages/a/node_modules/dep",
+            "packages/a/node_modules",
+            "unrelated/target",
+            "target/nested",
+        ] {
+            fs::create_dir_all(src.join(dir)).unwrap();
+        }
+        fs::write(src.join("target/marker.txt"), "root\n").unwrap();
+        fs::write(src.join("packages/a/node_modules/index.js"), "x\n").unwrap();
+        // A nested `target` inside a selected artifact dir must not be cloned.
+        fs::write(src.join("target/nested/deep.txt"), "deep\n").unwrap();
+        fs::create_dir_all(dest.join("target")).unwrap();
+        fs::write(dest.join("target/existing.txt"), "keep\n").unwrap();
+
+        let cloned =
+            clone_artifact_dirs(&src, &dest, &strings(&["target", "node_modules", ".venv"]));
+
+        assert_eq!(cloned, 2, "root target skipped (exists), two dirs cloned");
+        assert_eq!(
+            fs::read_to_string(dest.join("target/existing.txt")).unwrap(),
+            "keep\n",
+            "existing destination must be left untouched"
+        );
+        assert!(!dest.join("target/marker.txt").exists());
+        assert!(dest.join("packages/a/node_modules/index.js").exists());
+        assert!(
+            dest.join("unrelated/target").exists(),
+            "nested basenames are matched while walking"
+        );
+        assert!(!dest.join("target/nested").exists());
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn clone_artifact_walker_never_follows_symlinks() {
+        use std::os::unix::fs::symlink;
+        let root = named_tempdir("artifact-symlink");
+        let src = root.join("src");
+        let dest = root.join("dest");
+        let outside = root.join("outside");
+        fs::create_dir_all(src.join("real")).unwrap();
+        fs::create_dir_all(outside.join("target")).unwrap();
+        fs::write(outside.join("target/leak.txt"), "leak\n").unwrap();
+        // Symlinked directory whose basename matches a configured artifact:
+        // skipped entirely, never selected and never followed.
+        symlink(&outside.join("target"), src.join("target")).unwrap();
+        // Symlink cycle through a non-matching name must not recurse forever.
+        symlink(&src, src.join("loop")).unwrap();
+        // A real matching directory is still cloned.
+        fs::create_dir_all(src.join("nested/target")).unwrap();
+        fs::write(src.join("nested/target/marker.txt"), "real\n").unwrap();
+
+        let cloned = clone_artifact_dirs(&src, &dest, &strings(&["target"]));
+
+        assert_eq!(cloned, 1, "only the real nested target is cloned");
+        assert!(
+            !dest.join("target").exists(),
+            "symlinked artifact is skipped"
+        );
+        assert!(dest.join("nested/target/marker.txt").exists());
+        assert!(!dest.join("loop").exists(), "symlink cycle is not followed");
+        assert!(!dest.join("real").exists());
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn clone_artifact_failure_cleans_partial_destination() {
+        let root = named_tempdir("artifact-failure");
+        let src = root.join("missing-source");
+        let dest = root.join("dest");
+        fs::create_dir_all(&dest).unwrap();
+        fs::write(dest.join("partial.txt"), "partial\n").unwrap();
+
+        assert!(!clone_dir_strict(&src, &dest.join("target")));
+        assert!(
+            !dest.join("target").exists(),
+            "failed clone must remove any partial destination"
+        );
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn effective_venv_plan_and_artifacts_cover_flag_combinations() {
+        let root = named_tempdir("effective-artifacts");
+        let src = root.join("src");
+        fs::create_dir_all(src.join(".venv/bin")).unwrap();
+        fs::write(src.join(".venv/bin/python"), "#!/bin/sh\n").unwrap();
+        let configured = strings(&[".direnv", "target", "node_modules", ".venv"]);
+        let without_venv = strings(&[".direnv", "target", "node_modules"]);
+
+        // Default copy mode: venv is cloned and set up (repaired).
+        let plan = effective_venv_plan(&configured, "copy", false, false, false, &src);
+        assert_eq!(
+            plan,
+            VenvPlan {
+                clone_into_dest: true,
+                setup: true
+            }
+        );
+        assert_eq!(effective_clone_artifacts(&configured, plan), configured);
+
+        // Link mode: symlink regardless of artifact list; never cloned.
+        let plan = effective_venv_plan(&configured, "link", false, false, false, &src);
+        assert_eq!(
+            plan,
+            VenvPlan {
+                clone_into_dest: false,
+                setup: true
+            }
+        );
+        assert_eq!(effective_clone_artifacts(&configured, plan), without_venv);
+
+        // (a) --no-clone-artifacts with default config: no `.venv` anywhere.
+        let plan = effective_venv_plan(&configured, "copy", false, true, false, &src);
+        assert_eq!(
+            plan,
+            VenvPlan {
+                clone_into_dest: false,
+                setup: false
+            }
+        );
+
+        // (b) --no-venv with default config: no `.venv`, not even an
+        // unrepaired clone.
+        let plan = effective_venv_plan(&configured, "copy", true, false, false, &src);
+        assert_eq!(
+            plan,
+            VenvPlan {
+                clone_into_dest: false,
+                setup: false
+            }
+        );
+
+        // `--venv=none`: no venv anywhere.
+        let plan = effective_venv_plan(&configured, "none", false, false, false, &src);
+        assert_eq!(
+            plan,
+            VenvPlan {
+                clone_into_dest: false,
+                setup: false
+            }
+        );
+
+        // (c) Explicit user config omitting `.venv` + copy mode: the setup
+        // step still produces a working repaired venv via its fallback.
+        let plan = effective_venv_plan(&without_venv, "copy", false, false, false, &src);
+        assert_eq!(
+            plan,
+            VenvPlan {
+                clone_into_dest: false,
+                setup: true
+            }
+        );
+        assert_eq!(effective_clone_artifacts(&without_venv, plan), without_venv);
+
+        // Tracked `.venv` is never cloned or set up (mirrors old behavior).
+        let plan = effective_venv_plan(&configured, "copy", false, false, true, &src);
+        assert_eq!(
+            plan,
+            VenvPlan {
+                clone_into_dest: false,
+                setup: false
+            }
+        );
+
+        // Broken source python excludes the venv in copy mode.
+        std::fs::remove_file(src.join(".venv/bin/python")).unwrap();
+        let plan = effective_venv_plan(&configured, "copy", false, false, false, &src);
+        assert_eq!(
+            plan,
+            VenvPlan {
+                clone_into_dest: false,
+                setup: false
+            }
+        );
+        assert_eq!(effective_clone_artifacts(&configured, plan), without_venv);
+        let _ = fs::remove_dir_all(&root);
     }
 
     #[test]
@@ -8981,7 +9358,7 @@ tests = []
             "-q".into(),
         ])
         .unwrap();
-        env::set_current_dir(old).unwrap();
+        env::set_current_dir(&old).unwrap();
 
         assert!(group.join("ws/demo/feature-x/.jj").exists());
         let _ = fs::remove_dir_all(&root);
@@ -9068,7 +9445,7 @@ tests = []
             "-q".into(),
         ])
         .unwrap();
-        env::set_current_dir(old).unwrap();
+        env::set_current_dir(&old).unwrap();
 
         assert!(!ws.exists());
         let _ = fs::remove_dir_all(&root);
@@ -9118,9 +9495,100 @@ tests = []
             "-q".into(),
         ])
         .unwrap();
-        env::set_current_dir(old).unwrap();
+        env::set_current_dir(&old).unwrap();
 
         assert!(!ws.exists());
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn integration_clones_build_artifacts_and_respects_no_clone_flag() {
+        let _guard = INTEGRATION_LOCK.lock().unwrap();
+        let root = named_tempdir("clone-artifacts");
+        let group = root.join("projects");
+        let repo = group.join("demo");
+        fs::create_dir_all(&group).unwrap();
+        run(Command::new("jj").arg("git").arg("init").arg(&repo));
+        jj(
+            &repo,
+            &[
+                "config",
+                "set",
+                "--repo",
+                "dotfiles.workspaces.project-groups",
+                &format!("[\"{}:ws\"]", group.display()),
+            ],
+        );
+        jj(
+            &repo,
+            &[
+                "config",
+                "set",
+                "--repo",
+                "dotfiles.workspaces.direnv-allow",
+                "false",
+            ],
+        );
+        fs::write(repo.join(".gitignore"), "target/\nnode_modules/\n").unwrap();
+        fs::write(repo.join("tracked.txt"), "hello\n").unwrap();
+        fs::create_dir_all(repo.join("packages/a/node_modules")).unwrap();
+        fs::create_dir_all(repo.join("target")).unwrap();
+        fs::write(repo.join("target/marker.txt"), "source\n").unwrap();
+        fs::write(repo.join("packages/a/node_modules/index.js"), "module\n").unwrap();
+        jj(&repo, &["describe", "-m", "initial"]);
+
+        let old = env::current_dir().unwrap();
+        env::set_current_dir(&repo).unwrap();
+        run_ws(vec![
+            "add".into(),
+            "cow".into(),
+            "-r".into(),
+            "@".into(),
+            "-q".into(),
+        ])
+        .unwrap();
+        run_ws(vec![
+            "add".into(),
+            "cold".into(),
+            "-r".into(),
+            "@".into(),
+            "--no-clone-artifacts".into(),
+            "-q".into(),
+        ])
+        .unwrap();
+        env::set_current_dir(&old).unwrap();
+
+        let cow = group.join("ws/demo/cow");
+        assert_eq!(
+            fs::read_to_string(cow.join("target/marker.txt")).unwrap(),
+            "source\n"
+        );
+        assert_eq!(
+            fs::read_to_string(cow.join("packages/a/node_modules/index.js")).unwrap(),
+            "module\n"
+        );
+        // CoW semantics: editing the destination leaves the source untouched.
+        fs::write(cow.join("target/marker.txt"), "edited\n").unwrap();
+        assert_eq!(
+            fs::read_to_string(repo.join("target/marker.txt")).unwrap(),
+            "source\n"
+        );
+
+        let cold = group.join("ws/demo/cold");
+        assert!(!cold.join("target").exists());
+        assert!(!cold.join("packages/a/node_modules").exists());
+
+        env::set_current_dir(&repo).unwrap();
+        for name in ["cow", "cold"] {
+            run_ws(vec![
+                "forget".into(),
+                name.into(),
+                "--force".into(),
+                "-q".into(),
+            ])
+            .unwrap();
+        }
+        env::set_current_dir(&old).unwrap();
         let _ = fs::remove_dir_all(&root);
     }
 
@@ -9171,7 +9639,7 @@ tests = []
         env::set_current_dir(&work).unwrap();
         run_sync(parse_common_args(vec!["-q".into(), "--fail-on-conflicts".into()]).unwrap())
             .unwrap();
-        env::set_current_dir(old).unwrap();
+        env::set_current_dir(&old).unwrap();
 
         let parent_is_remote_main = jj_stdout(
             &work,
@@ -9246,7 +9714,7 @@ tests = []
             ..TagPushArgs::default()
         })
         .unwrap();
-        env::set_current_dir(old).unwrap();
+        env::set_current_dir(&old).unwrap();
 
         assert_remote_annotated_tag(&origin, "v0.2.1", &target_commit);
 
@@ -9321,7 +9789,7 @@ tests = []
             ..TagPushArgs::default()
         })
         .unwrap_err();
-        env::set_current_dir(old).unwrap();
+        env::set_current_dir(&old).unwrap();
 
         assert!(
             err.to_string().contains("is lightweight"),
@@ -9382,7 +9850,7 @@ tests = []
             .unwrap(),
         )
         .unwrap();
-        env::set_current_dir(old).unwrap();
+        env::set_current_dir(&old).unwrap();
 
         assert_remote_annotated_tag(&origin, "v0.2.2", &shipped_commit);
 
@@ -9410,7 +9878,7 @@ tests = []
             strings(&["npm run lint", "npm test"])
         );
         run_lint(Vec::new()).unwrap();
-        env::set_current_dir(old).unwrap();
+        env::set_current_dir(&old).unwrap();
 
         let _ = fs::remove_dir_all(&root);
     }
@@ -9429,7 +9897,7 @@ tests = []
         let old = env::current_dir().unwrap();
         env::set_current_dir(&root).unwrap();
         run_lint_onboard(vec!["--preview".into(), "--select=1,3".into()]).unwrap();
-        env::set_current_dir(old).unwrap();
+        env::set_current_dir(&old).unwrap();
 
         assert!(!root.join(".jj-lint.toml").exists());
         assert!(configured_lints(&root).unwrap().is_empty());
@@ -9455,7 +9923,7 @@ tests = []
             lint_commands(&configured_lints(&root).unwrap()),
             strings(&["npm run typecheck"])
         );
-        env::set_current_dir(old).unwrap();
+        env::set_current_dir(&old).unwrap();
         assert!(!root.join(".jj-lint.toml").exists());
 
         let _ = fs::remove_dir_all(&root);

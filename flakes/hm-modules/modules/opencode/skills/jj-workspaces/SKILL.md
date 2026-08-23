@@ -63,8 +63,9 @@ Ask only if repo or workspace name cannot be inferred safely.
 
 - `.jj-lint.toml` is copied from the source checkout when absent in the new workspace, including ignored/untracked local lint configs.
 - Untracked `.envrc` is copied by default and `direnv allow` runs by default.
-- Untracked `.venv` is copied by default when `.venv/bin/python` is usable: APFS/reflink clone attempts first, then common virtualenv path references are repaired so dependency updates stay isolated to the workspace. Broken source virtualenvs are skipped instead of copied.
-- `--venv=link` shares the source checkout's `.venv`; `--no-venv` / `--venv=none` skip virtualenv setup.
+- Untracked `.venv` is copied by default when `.venv/bin/python` is usable: the copy is a strict CoW clone (APFS/reflink, no full-copy fallback), then common virtualenv path references are repaired so dependency updates stay isolated to the workspace. Broken source virtualenvs are skipped instead of copied.
+- Build artifact directories (`dotfiles.workspaces.clone-artifacts`, default `.direnv`, `target`, `node_modules`, `.venv`) are CoW-cloned from the source checkout into matching relative paths, including nested monorepo paths. Existing destinations are untouched; failures warn and continue.
+- `--venv=link` shares the source checkout's `.venv`; `--no-venv` / `--venv=none` skip virtualenv setup; `--no-clone-artifacts` skips all artifact cloning including `.venv`.
 - `--no-envrc` or `--no-direnv` skips copying/allowing the local environment.
 
 ## Cleanup safety

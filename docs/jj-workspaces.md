@@ -19,7 +19,7 @@ The workflow should be safe and agent-friendly:
 Commands:
 
 ```bash
-jj ws add <name> [-r <revset>] [--venv=<copy|link|none>] [--no-envrc] [--no-venv] [--no-direnv]
+jj ws add <name> [-r <revset>] [--venv=<copy|link|none>] [--no-envrc] [--no-venv] [--no-clone-artifacts] [--no-direnv]
 jj ws list [--pick]
 jj ws path <name>
 jj ws path --pick
@@ -136,6 +136,7 @@ direnv-allow = true
 docker-cleanup = "auto"
 docker-remove-volumes = true
 picker = "fzf"
+clone-artifacts = [".direnv", "target", "node_modules", ".venv"]
 # Optional when multiple remotes exist:
 # fetch-remote = "origin"
 project-groups = ["~/projects:ws", "~/sureapp:ws"]
@@ -229,20 +230,37 @@ configuration ignored but still want new managed workspaces to run the same
 
 Tracked `.envrc` files should naturally appear in the workspace and should not be manually copied.
 
+After the lint/`.envrc` step, `jj ws add` clones configured build artifact
+directories from the source checkout into matching relative paths in the new
+workspace. The configured names (`dotfiles.workspaces.clone-artifacts`,
+defaulting to `[".direnv", "target", "node_modules", ".venv"]`) are matched as
+directory basenames anywhere under the source checkout, including nested
+monorepo paths; the walker does not descend into a directory once it has been
+selected. Existing destination paths are left untouched. Cloning is strict
+copy-on-write (APFS `cp -cR` on macOS, `cp -a --reflink=always` on Linux) with
+no full-copy fallback: a failed item prints a warning with source and
+destination, removes any partial destination, and workspace creation continues.
+The walker never follows symlinks: symlinked directories are skipped entirely
+(even when their basename matches a configured artifact) so cycles cannot cause
+infinite recursion. Unreadable directories print a warning and are skipped.
+`--no-clone-artifacts` skips every artifact, including `.venv`; an explicit
+empty `clone-artifacts = []` disables cloning entirely.
+
 If the source checkout has an untracked `.venv` with a usable `.venv/bin/python`,
-`jj ws add` copies it into the workspace by default. On macOS, the copy path
-first tries APFS clone/copy-on-write so this is usually fast and space-efficient;
-other platforms try reflink support before falling back to a normal copy. After
-copying, the helper repairs common virtualenv path references from the source
-checkout to the workspace, including `pyvenv.cfg` and text files under
-`.venv/bin/` such as console-script shebangs and activation scripts. This keeps
-dependency updates made inside a workspace isolated to that workspace. If the
-source `.venv/bin/python` is missing or points to a missing interpreter, skip
-virtualenv setup rather than copying a known-broken environment.
+`jj ws add` copies it into the workspace by default through the same artifact
+clone mechanism. After copying, the helper repairs common virtualenv path
+references from the source checkout to the workspace, including `pyvenv.cfg`
+and text files under `.venv/bin/` such as console-script shebangs and
+activation scripts. This keeps dependency updates made inside a workspace
+isolated to that workspace. If the source `.venv/bin/python` is missing or
+points to a missing interpreter, skip virtualenv setup rather than copying a
+known-broken environment.
 
 For scratch work where sharing the source checkout's environment is desired,
 use `--venv=link`. To skip virtualenv setup entirely, use `--venv=none` or
-`--no-venv`.
+`--no-venv`; both leave no `.venv` in the destination at all — not even an
+unrepaired clone. A tracked `.venv` is never cloned or set up; it should
+appear through Jujutsu like any other tracked file.
 
 CLI overrides:
 
@@ -250,6 +268,7 @@ CLI overrides:
 --no-envrc
 --venv=<copy|link|none>
 --no-venv
+--no-clone-artifacts
 --no-direnv
 ```
 

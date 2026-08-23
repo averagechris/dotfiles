@@ -89,6 +89,20 @@ in {
       default = null;
       description = "Remote to fetch for jj ws add when multiple remotes exist.";
     };
+
+    cloneArtifacts = mkOption {
+      type = types.listOf types.str;
+      default = [
+        ".direnv"
+        "target"
+        "node_modules"
+        ".venv"
+      ];
+      description = ''
+        Directory basenames that jj ws add CoW-clones from the source checkout
+        into new workspaces. An empty list disables artifact cloning.
+      '';
+    };
   };
 
   options.dotfiles.jujutsu.prWorkflow = with lib; {
@@ -295,6 +309,7 @@ in {
           docker-cleanup = "auto";
           docker-remove-volumes = true;
           picker = "fzf";
+          clone-artifacts = dotCfg.workspaces.cloneArtifacts;
           project-groups = map (group: "${group.path}:${group.workspaceDir}") dotCfg.workspaces.projectGroups;
         }
         // lib.optionalAttrs (dotCfg.workspaces.fetchRemote != null) {
