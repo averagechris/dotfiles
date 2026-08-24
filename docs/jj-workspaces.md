@@ -19,11 +19,11 @@ The workflow should be safe and agent-friendly:
 Commands:
 
 ```bash
-jj ws add <name> [-r <revset>] [--venv=<copy|link|none>] [--no-envrc] [--no-venv] [--no-clone-artifacts] [--no-direnv]
+jj ws add <name> [-r <revset>] [--venv=<copy|link|none>] [--no-envrc] [--no-venv] [--no-clone-artifacts] [--no-direnv] [--no-hooks]
 jj ws list [--pick]
 jj ws path <name>
 jj ws path --pick
-jj ws forget <name> [--force] [--purge|--keep-dir] [--no-docker] [--docker-volumes|--keep-docker-volumes] [--dry-run]
+jj ws forget <name> [--force] [--purge|--keep-dir] [--no-docker] [--docker-volumes|--keep-docker-volumes] [--no-hooks] [--dry-run]
 jj ws forget --pick [options]
 jj ws prune [--dry-run] [--delete] [--pick] [--yes]
 jj ws du
@@ -353,7 +353,7 @@ No cache is planned for v1. Listing should be cheap when scoped to the current r
 2. refuse to forget the current workspace
 3. check whether the workspace has unpublished work
 4. refuse unless `--force` if any non-empty commit in the workspace stack is not reachable from remote bookmarks or remote tags
-5. run Docker Compose cleanup if applicable and enabled
+5. run `preforget` hooks from `.jj-workspace.toml` when present; otherwise run Docker Compose cleanup if applicable and enabled (see below)
 6. run `jj workspace forget <name>`
 7. move the workspace directory into `<workspace-root>/.trash/<unix-seconds>-<name>` unless `--keep-dir` is set; `--purge` deletes it immediately instead of trashing
 8. remove empty canonical parent directories
@@ -370,6 +370,7 @@ Supported options:
 --purge
 --keep-dir
 --no-docker
+--no-hooks
 --docker-volumes
 --keep-docker-volumes
 --dry-run
@@ -394,7 +395,7 @@ jj ws forget feature-x
 
 ## Docker Compose cleanup
 
-On forget, detect Compose files in the workspace root:
+On forget, if the workspace has no `preforget` hook in `.jj-workspace.toml`, detect Compose files in the workspace root:
 
 ```text
 compose.yaml
@@ -420,6 +421,53 @@ databases do not leak after `jj ws forget --force`. Pass `--keep-docker-volumes`
 when the workspace intentionally owns long-lived local data. `--docker-volumes`
 is still accepted as an explicit opt-in for repos that override the config to
 keep volumes by default.
+
+## Repo lifecycle hooks (`.jj-workspace.toml`)
+
+A repo can declare small setup and teardown steps in an optional
+`.jj-workspace.toml` at its root:
+
+```toml
+version = 1
+
+[hooks]
+postcreate = ["uv sync --frozen", "pnpm install --prefer-offline"]
+preforget = ["docker compose down --remove-orphans --volumes"]
+```
+
+Rules:
+
+- only `postcreate` and `preforget` hook groups are supported; unknown keys,
+  unsupported versions, empty commands, and malformed TOML are rejected before
+  any hook runs
+- commands run in order through `sh -c` with inherited stdio in the target
+  workspace directory, with these environment variables set:
+  - `JJ_WS_SOURCE`: for `postcreate`, the checkout `add` ran from; for
+    `preforget`, the target workspace
+  - `JJ_WS_DEST`: for `postcreate`, the new workspace; for `preforget`, the
+    target workspace
+  - `JJ_WS_NAME`: the workspace name
+  - `JJ_WS_REPO_ROOT`: for `postcreate`, the source checkout's repo root; for
+    `preforget`, the target workspace's jj root
+- `postcreate` runs in the new workspace after artifact/envrc/venv setup and
+  `direnv allow`; a failing command warns with the command and exit status but
+  `jj ws add` still succeeds and leaves the workspace intact
+- `preforget` runs during `forget` after safety checks but before
+  `jj workspace forget` and before any trash/purge; a failing command names the
+  command and aborts, leaving the workspace registered and on disk
+- an ignored/untracked `.jj-workspace.toml` is copied into new workspaces like
+  `.jj-lint.toml`; a tracked file is already materialized by jj and is never
+  overwritten
+- a present `preforget` array — including an empty one — replaces the builtin
+  Docker Compose cleanup; when `preforget` is absent, the Docker default above
+  applies
+
+`--no-hooks` on `add` or `forget` skips repo hooks; on `forget` it also skips
+the builtin Docker cleanup. `--no-docker` continues to skip only Docker.
+
+Out of scope for now: precreate/postforget hooks, parallel hooks, a general
+plugin API, Windows shells, and loading this config outside configured project
+groups.
 
 ## Prune behavior
 

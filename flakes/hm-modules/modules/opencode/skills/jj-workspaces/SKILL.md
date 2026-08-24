@@ -71,6 +71,26 @@ Ask only if repo or workspace name cannot be inferred safely.
 - Build artifact directories (`dotfiles.workspaces.clone-artifacts`, default `.direnv`, `target`, `node_modules`, `.venv`) are CoW-cloned from the source checkout into matching relative paths, including nested monorepo paths. Existing destinations are untouched; failures warn and continue.
 - `--venv=link` shares the source checkout's `.venv`; `--no-venv` / `--venv=none` skip virtualenv setup; `--no-clone-artifacts` skips all artifact cloning including `.venv`.
 - `--no-envrc` or `--no-direnv` skips copying/allowing the local environment.
+- `--no-hooks` skips `.jj-workspace.toml` hooks (on `forget` it also skips the default Docker cleanup).
+
+## Repo lifecycle hooks
+
+Repos can declare setup/teardown steps in an optional `.jj-workspace.toml` at the repo root:
+
+```toml
+version = 1
+
+[hooks]
+postcreate = ["uv sync --frozen", "pnpm install --prefer-offline"]
+preforget = ["docker compose down --remove-orphans --volumes"]
+```
+
+- Unknown keys, unsupported versions, empty commands, and malformed TOML are rejected before any hook runs.
+- Commands run in order via `sh -c` with inherited stdio in the target workspace, with `JJ_WS_SOURCE`, `JJ_WS_DEST`, `JJ_WS_NAME`, and `JJ_WS_REPO_ROOT` set.
+- `postcreate` runs after workspace creation; a failure warns but leaves the workspace intact.
+- `preforget` runs during `forget` after safety checks; a failure aborts before forgetting or trashing.
+- An ignored/untracked `.jj-workspace.toml` is copied into new workspaces like `.jj-lint.toml`; a tracked one is already materialized and never overwritten.
+- A present `preforget` array (even empty) replaces the builtin Docker Compose cleanup; when absent, the Docker default applies.
 
 ## Cleanup safety
 
@@ -88,4 +108,4 @@ jj ws gc --dry-run
 - `prune --delete` moves stale dirs into `.trash`; `.trash` itself never appears in prune or pickers.
 - Safety checks the whole non-empty stack ending at the workspace's `@`, not just `@`: an empty `@` is safe only when its non-empty ancestors are already reachable from remote bookmarks or remote tags. This avoids false positives after agents push a PR directly from the working-copy commit while still catching unpublished work left in `@-`.
 - If a just-merged workspace still looks unpublished, run `jj --repository "$(jj ws path <name>)" git fetch` and retry before using `--force`.
-- When Compose files are detected, `forget` runs Docker Compose cleanup and removes Compose volumes by default so smoke-test databases/queues do not leak after deletion. Use `--keep-docker-volumes` to preserve local Compose data intentionally; `--docker-volumes` remains an explicit opt-in for repos that override the default config.
+- When Compose files are detected and the repo has no `preforget` hook, `forget` runs Docker Compose cleanup and removes Compose volumes by default so smoke-test databases/queues do not leak after deletion. Use `--keep-docker-volumes` to preserve local Compose data intentionally; `--docker-volumes` remains an explicit opt-in for repos that override the default config.

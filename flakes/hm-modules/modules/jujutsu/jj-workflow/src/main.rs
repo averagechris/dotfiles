@@ -3930,6 +3930,13 @@ struct WorkspaceContext {
 }
 
 fn run_ws(args: Vec<OsString>) -> Result<()> {
+    run_ws_with_warning(args, |message| eprintln!("{message}"))
+}
+
+fn run_ws_with_warning<F>(args: Vec<OsString>, mut warn: F) -> Result<()>
+where
+    F: FnMut(&str),
+{
     let mut iter = args.into_iter();
     let Some(sub) = iter.next() else {
         print_ws_usage();
@@ -3937,7 +3944,7 @@ fn run_ws(args: Vec<OsString>) -> Result<()> {
     };
     let rest: Vec<_> = iter.collect();
     match sub.to_string_lossy().as_ref() {
-        "add" => ws_add(rest),
+        "add" => ws_add(rest, &mut warn),
         "list" => ws_list(rest),
         "path" => ws_path(rest),
         "forget" | "rm" => ws_forget(rest),
@@ -3961,7 +3968,7 @@ fn print_ws_usage() {
 }
 
 fn print_ws_add_usage() {
-    eprintln!("Usage:\n  jj ws add <name> [-r <revset>] [--project-group <path>] [--venv=<copy|link|none>] [--no-envrc] [--no-venv] [--no-clone-artifacts] [--no-direnv] [-q]\n\nCreates <project-group>/<workspace-dir>/<repo>/<name>.\nDefault base: main checkout -> inferred remote bookmark; workspace -> @.\nClones configured build artifacts (dotfiles.workspaces.clone-artifacts) from the source checkout; --no-clone-artifacts skips them.\n\nExamples:\n  jj ws add feature-x -q\n  jj ws add followup -r @\n  jj ws add hotfix --revision main@origin");
+    eprintln!("Usage:\n  jj ws add <name> [-r <revset>] [--project-group <path>] [--venv=<copy|link|none>] [--no-envrc] [--no-venv] [--no-clone-artifacts] [--no-direnv] [--no-hooks] [-q]\n\nCreates <project-group>/<workspace-dir>/<repo>/<name>.\nDefault base: main checkout -> inferred remote bookmark; workspace -> @.\nClones configured build artifacts (dotfiles.workspaces.clone-artifacts) from the source checkout; --no-clone-artifacts skips them.\n--no-hooks skips .jj-workspace.toml postcreate hooks.\n\nExamples:\n  jj ws add feature-x -q\n  jj ws add followup -r @\n  jj ws add hotfix --revision main@origin");
 }
 
 fn print_ws_list_usage() {
@@ -3973,7 +3980,7 @@ fn print_ws_path_usage() {
 }
 
 fn print_ws_forget_usage() {
-    eprintln!("Usage:\n  jj ws forget <name> [--force] [--purge|--keep-dir] [--no-docker] [--docker-volumes|--keep-docker-volumes] [--dry-run] [-q]\n  jj ws forget --pick [options]\n\nForgets a workspace and moves its directory into <workspace-root>/.trash so\nuntracked files stay recoverable; `jj ws gc` deletes trash later.\n--purge deletes immediately instead of trashing. --keep-dir leaves the\ndirectory in place after forgetting. Refuses current/non-empty work unless --force.\nDocker Compose cleanup removes volumes by default; use --keep-docker-volumes to keep them.\n\nExamples:\n  jj ws forget feature-x --dry-run\n  jj ws forget feature-x\n  jj ws forget scratch --force --purge -q");
+    eprintln!("Usage:\n  jj ws forget <name> [--force] [--purge|--keep-dir] [--no-docker] [--docker-volumes|--keep-docker-volumes] [--no-hooks] [--dry-run] [-q]\n  jj ws forget --pick [options]\n\nForgets a workspace and moves its directory into <workspace-root>/.trash so\nuntracked files stay recoverable; `jj ws gc` deletes trash later.\n--purge deletes immediately instead of trashing. --keep-dir leaves the\ndirectory in place after forgetting. Refuses current/non-empty work unless --force.\nDocker Compose cleanup removes volumes by default; use --keep-docker-volumes to keep them.\n--no-hooks skips .jj-workspace.toml preforget hooks and the default Docker cleanup.\n\nExamples:\n  jj ws forget feature-x --dry-run\n  jj ws forget feature-x\n  jj ws forget scratch --force --purge -q");
 }
 
 fn print_ws_prune_usage() {
@@ -4178,6 +4185,7 @@ struct WsAddArgs {
     no_venv: bool,
     no_clone_artifacts: bool,
     no_direnv: bool,
+    no_hooks: bool,
     help: bool,
 }
 
@@ -4218,6 +4226,8 @@ fn parse_ws_add_args(args: Vec<OsString>) -> Result<WsAddArgs> {
             parsed.no_clone_artifacts = true;
         } else if arg == OsStr::new("--no-direnv") {
             parsed.no_direnv = true;
+        } else if arg == OsStr::new("--no-hooks") {
+            parsed.no_hooks = true;
         } else if arg == OsStr::new("-h") || arg == OsStr::new("--help") {
             parsed.help = true;
         } else if arg.to_string_lossy().starts_with('-') {
@@ -4237,7 +4247,10 @@ fn parse_ws_add_args(args: Vec<OsString>) -> Result<WsAddArgs> {
     Ok(parsed)
 }
 
-fn ws_add(args: Vec<OsString>) -> Result<()> {
+fn ws_add<F>(args: Vec<OsString>, warn: &mut F) -> Result<()>
+where
+    F: FnMut(&str),
+{
     let parsed = parse_ws_add_args(args)?;
     if parsed.help {
         print_ws_add_usage();
@@ -4317,6 +4330,37 @@ fn ws_add(args: Vec<OsString>) -> Result<()> {
         )?;
         direnv_allowed = true;
     }
+    let copied_ws_config = copy_jj_workspace_config_if_needed(&ctx.repo_root, &dest)?;
+    if !parsed.no_hooks {
+        match load_workspace_repo_config(&dest.join(WORKSPACE_REPO_CONFIG_FILE)) {
+            Ok(Some(repo_config)) if !repo_config.hooks.postcreate.is_empty() => {
+                let hook_env = HookEnv {
+                    source: &ctx.repo_root,
+                    dest: &dest,
+                    name: &name,
+                    repo_root: &ctx.repo_root,
+                };
+                if let Err(err) = run_workspace_hooks(
+                    &repo_config.hooks.postcreate,
+                    "postcreate",
+                    &dest,
+                    hook_env,
+                ) {
+                    warn(&format!(
+                        "Warning: {err:#}; leaving workspace intact at {}",
+                        dest.display()
+                    ));
+                }
+            }
+            Ok(_) => {}
+            Err(err) => {
+                warn(&format!("Warning: {err:#}; skipping postcreate hooks"));
+            }
+        }
+    }
+    if copied_ws_config && !parsed.quiet {
+        println!("copied .jj-workspace.toml");
+    }
     if parsed.quiet {
         println!("{}", dest.display());
     } else {
@@ -4350,6 +4394,105 @@ fn copy_jj_lint_config_if_needed(src: &Path, dest: &Path) -> Result<bool> {
     fs::copy(&src_lint_config, &dest_lint_config)
         .with_context(|| format!("failed to copy {}", src_lint_config.display()))?;
     Ok(true)
+}
+
+const WORKSPACE_REPO_CONFIG_FILE: &str = ".jj-workspace.toml";
+const WORKSPACE_REPO_CONFIG_VERSION: u32 = 1;
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct WorkspaceRepoConfig {
+    version: u32,
+    #[serde(default)]
+    hooks: WorkspaceHooks,
+}
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct WorkspaceHooks {
+    #[serde(default)]
+    postcreate: Vec<String>,
+    #[serde(default)]
+    preforget: Option<Vec<String>>,
+}
+
+impl WorkspaceRepoConfig {
+    fn preforget(&self) -> Option<&Vec<String>> {
+        self.hooks.preforget.as_ref()
+    }
+}
+
+fn load_workspace_repo_config(path: &Path) -> Result<Option<WorkspaceRepoConfig>> {
+    let text = match fs::read_to_string(path) {
+        Ok(text) => text,
+        Err(err) if err.kind() == io::ErrorKind::NotFound => return Ok(None),
+        Err(err) => {
+            return Err(err).with_context(|| format!("failed to read {}", path.display()));
+        }
+    };
+    let config: WorkspaceRepoConfig = toml::from_str(&text)
+        .with_context(|| format!("invalid workspace config {}", path.display()))?;
+    if config.version != WORKSPACE_REPO_CONFIG_VERSION {
+        bail!(
+            "unsupported version {} in {}; expected {}",
+            config.version,
+            path.display(),
+            WORKSPACE_REPO_CONFIG_VERSION
+        );
+    }
+    for (phase, commands) in [
+        ("postcreate", &config.hooks.postcreate),
+        ("preforget", config.preforget().unwrap_or(&Vec::new())),
+    ] {
+        for command in commands {
+            if command.trim().is_empty() {
+                bail!("empty {phase} hook command in {}", path.display());
+            }
+        }
+    }
+    Ok(Some(config))
+}
+
+fn copy_jj_workspace_config_if_needed(src: &Path, dest: &Path) -> Result<bool> {
+    let src_config = src.join(WORKSPACE_REPO_CONFIG_FILE);
+    let dest_config = dest.join(WORKSPACE_REPO_CONFIG_FILE);
+    if !src_config.exists() || dest_config.exists() {
+        return Ok(false);
+    }
+    fs::copy(&src_config, &dest_config)
+        .with_context(|| format!("failed to copy {}", src_config.display()))?;
+    Ok(true)
+}
+
+#[derive(Debug, Clone, Copy)]
+struct HookEnv<'a> {
+    source: &'a Path,
+    dest: &'a Path,
+    name: &'a str,
+    repo_root: &'a Path,
+}
+
+fn run_workspace_hooks(
+    commands: &[String],
+    phase: &str,
+    cwd: &Path,
+    env: HookEnv<'_>,
+) -> Result<()> {
+    for command in commands {
+        let mut cmd = Command::new("sh");
+        cmd.args(["-c", command]).current_dir(cwd);
+        cmd.env("JJ_WS_SOURCE", env.source);
+        cmd.env("JJ_WS_DEST", env.dest);
+        cmd.env("JJ_WS_NAME", env.name);
+        cmd.env("JJ_WS_REPO_ROOT", env.repo_root);
+        let status = cmd
+            .status()
+            .with_context(|| format!("failed to execute {phase} hook: {command}"))?;
+        if !status.success() {
+            bail!("{phase} hook failed: {command} ({status})");
+        }
+    }
+    Ok(())
 }
 
 fn fetch_for_workspace(config: &WsConfig) -> Result<()> {
@@ -4867,6 +5010,7 @@ struct WsForgetArgs {
     keep_dir: bool,
     purge: bool,
     no_docker: bool,
+    no_hooks: bool,
     docker_volumes: bool,
     keep_docker_volumes: bool,
     dry_run: bool,
@@ -4882,6 +5026,7 @@ fn parse_ws_forget_args(args: Vec<OsString>) -> Result<WsForgetArgs> {
             "--keep-dir" => parsed.keep_dir = true,
             "--purge" => parsed.purge = true,
             "--no-docker" => parsed.no_docker = true,
+            "--no-hooks" => parsed.no_hooks = true,
             "--docker-volumes" => parsed.docker_volumes = true,
             "--keep-docker-volumes" => parsed.keep_docker_volumes = true,
             "--dry-run" => parsed.dry_run = true,
@@ -4944,9 +5089,23 @@ fn ws_forget(args: Vec<OsString>) -> Result<()> {
     }
     let config = ws_config()?;
     let ctx = current_context(&config, None)?;
+    let repo_config =
+        load_workspace_repo_config(&path.join(WORKSPACE_REPO_CONFIG_FILE)).map_err(|err| {
+            anyhow!(
+                "{err:#}\n\nRefusing to forget workspace {name}; fix {} first.",
+                path.join(WORKSPACE_REPO_CONFIG_FILE).display()
+            )
+        })?;
+    let repo_preforget = if parsed.no_hooks {
+        None
+    } else {
+        repo_config.as_ref().and_then(|c| c.preforget())
+    };
     let has_compose = has_compose_file(&path);
     let remove_docker_volumes =
         parsed.docker_volumes || (config.docker_remove_volumes && !parsed.keep_docker_volumes);
+    let builtin_docker_cleanup =
+        !parsed.no_hooks && !parsed.no_docker && config.docker_cleanup == "auto" && has_compose;
     if parsed.dry_run {
         println!("would forget {name} at {}", path.display());
         if !parsed.keep_dir {
@@ -4960,7 +5119,11 @@ fn ws_forget(args: Vec<OsString>) -> Result<()> {
                 );
             }
         }
-        if !parsed.no_docker && config.docker_cleanup == "auto" && has_compose {
+        if let Some(preforget) = repo_preforget {
+            for command in preforget {
+                println!("would run: sh -c {command}");
+            }
+        } else if builtin_docker_cleanup {
             if remove_docker_volumes {
                 println!("would run: docker compose down --remove-orphans --volumes");
             } else {
@@ -4969,7 +5132,20 @@ fn ws_forget(args: Vec<OsString>) -> Result<()> {
         }
         return Ok(());
     }
-    if !parsed.no_docker && config.docker_cleanup == "auto" && has_compose {
+    if let Some(preforget) = repo_preforget {
+        let target_root = fs::canonicalize(&path).unwrap_or_else(|_| path.clone());
+        run_workspace_hooks(
+            preforget,
+            "preforget",
+            &path,
+            HookEnv {
+                source: &target_root,
+                dest: &target_root,
+                name: &name,
+                repo_root: &target_root,
+            },
+        )?;
+    } else if builtin_docker_cleanup {
         let mut cmd = Command::new("docker");
         cmd.arg("compose")
             .arg("down")
@@ -8109,16 +8285,17 @@ mod tests {
         infer_remote_integration_bookmark_from, is_check_only_format_script,
         is_integration_bookmark, is_safe_package_check_script, is_validation_name,
         lint_config_toml, lint_display_name, lint_onboard_json, lint_onboard_report,
-        load_reviewer_config_from, makefile_targets, managed_workspace_candidates, measure_tree,
-        move_to_trash, parse_checks_json, parse_common_args, parse_config_string_array,
-        parse_duration_arg, parse_github_remote_url, parse_idle_duration, parse_lint_selection,
-        parse_lints_toml, parse_pr_args, parse_pr_hygiene_args, parse_pr_hygiene_graphql,
-        parse_retention_seconds, parse_review_state_json, parse_tag_push_args,
-        parse_toml_string_array, parse_trash_entry_timestamp, parse_ws_add_args,
-        parse_ws_forget_args, parse_ws_path_args, parse_ws_prune_args, parse_ws_sweep_args,
-        path_is_contained, python_runner, render_bookmark_template, resolve_pr_base,
-        resolve_reviewer_values, resolve_reviewers_from_path, review_effort, run_lint,
-        run_lint_onboard, run_ship, run_sync, run_ws, scan_workspace, selected_lints, ship_plan,
+        load_reviewer_config_from, load_workspace_repo_config, makefile_targets,
+        managed_workspace_candidates, measure_tree, move_to_trash, parse_checks_json,
+        parse_common_args, parse_config_string_array, parse_duration_arg, parse_github_remote_url,
+        parse_idle_duration, parse_lint_selection, parse_lints_toml, parse_pr_args,
+        parse_pr_hygiene_args, parse_pr_hygiene_graphql, parse_retention_seconds,
+        parse_review_state_json, parse_tag_push_args, parse_toml_string_array,
+        parse_trash_entry_timestamp, parse_ws_add_args, parse_ws_forget_args, parse_ws_path_args,
+        parse_ws_prune_args, parse_ws_sweep_args, path_is_contained, python_runner,
+        render_bookmark_template, resolve_pr_base, resolve_reviewer_values,
+        resolve_reviewers_from_path, review_effort, run_lint, run_lint_onboard, run_ship, run_sync,
+        run_ws, run_ws_with_warning, scan_workspace, selected_lints, ship_plan,
         short_description_from_title, source_venv_python_usable, stale_workspace_dirs, sweepable,
         sync_base_candidates, tag_push, top_level_artifact_paths, trash_entry_is_expired,
         valid_github_handle, validate_body_source, validate_pr_watch_args, validate_release_tag,
@@ -8966,6 +9143,7 @@ aliases = ["sammy", "Sam Smith"]
                 "--no-venv".into(),
                 "--no-clone-artifacts".into(),
                 "--no-direnv".into(),
+                "--no-hooks".into(),
                 "-q".into(),
             ])
             .unwrap(),
@@ -8979,6 +9157,7 @@ aliases = ["sammy", "Sam Smith"]
                 no_venv: true,
                 no_clone_artifacts: true,
                 no_direnv: true,
+                no_hooks: true,
                 help: false,
             }
         );
@@ -9206,6 +9385,7 @@ aliases = ["sammy", "Sam Smith"]
                 "--force".into(),
                 "--keep-dir".into(),
                 "--no-docker".into(),
+                "--no-hooks".into(),
                 "--docker-volumes".into(),
                 "--dry-run".into(),
                 "--quiet".into(),
@@ -9218,6 +9398,7 @@ aliases = ["sammy", "Sam Smith"]
                 keep_dir: true,
                 purge: false,
                 no_docker: true,
+                no_hooks: true,
                 docker_volumes: true,
                 keep_docker_volumes: false,
                 dry_run: true,
@@ -9239,6 +9420,243 @@ aliases = ["sammy", "Sam Smith"]
             "--keep-dir".into(),
         ])
         .is_err());
+    }
+
+    #[test]
+    fn workspace_repo_config_parses_strictly() {
+        let dir = named_tempdir("ws-config");
+        let path = dir.join(".jj-workspace.toml");
+
+        fs::write(
+            &path,
+            "version = 1\n\n[hooks]\npreforget = [\"docker compose down\"]\n",
+        )
+        .unwrap();
+        let config = load_workspace_repo_config(&path).unwrap().unwrap();
+        assert_eq!(config.hooks.postcreate.len(), 0);
+        assert_eq!(
+            config.preforget().unwrap(),
+            &vec!["docker compose down".to_string()]
+        );
+
+        fs::write(
+            &path,
+            "version = 1\n\n[hooks]\npostcreate = [\"uv sync --frozen\", \"pnpm install\"]\n",
+        )
+        .unwrap();
+        let config = load_workspace_repo_config(&path).unwrap().unwrap();
+        assert_eq!(config.hooks.postcreate.len(), 2);
+        assert!(config.preforget().is_none());
+
+        // Missing file is not an error.
+        assert!(load_workspace_repo_config(&dir.join("missing.toml"))
+            .unwrap()
+            .is_none());
+
+        // Unknown keys are rejected.
+        fs::write(&path, "version = 1\nunknown = true\n").unwrap();
+        assert!(load_workspace_repo_config(&path).is_err());
+        fs::write(&path, "version = 1\n\n[hooks]\npostforget = [\"true\"]\n").unwrap();
+        assert!(load_workspace_repo_config(&path).is_err());
+
+        // Unsupported versions are rejected.
+        fs::write(&path, "version = 2\n").unwrap();
+        assert!(load_workspace_repo_config(&path).is_err());
+
+        // Empty commands are rejected.
+        fs::write(&path, "version = 1\n\n[hooks]\npostcreate = [\" \"]\n").unwrap();
+        assert!(load_workspace_repo_config(&path).is_err());
+
+        // Malformed TOML is rejected.
+        fs::write(&path, "version = ").unwrap();
+        assert!(load_workspace_repo_config(&path).is_err());
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn integration_runs_postcreate_and_preforget_hooks() {
+        let _guard = INTEGRATION_LOCK.lock().unwrap();
+        let root = named_tempdir("ws-hooks");
+        let group = root.join("projects");
+        let repo = group.join("demo");
+        fs::create_dir_all(&group).unwrap();
+        run(Command::new("jj").arg("git").arg("init").arg(&repo));
+        jj(
+            &repo,
+            &[
+                "config",
+                "set",
+                "--repo",
+                "dotfiles.workspaces.project-groups",
+                &format!("[\"{}:ws\"]", group.display()),
+            ],
+        );
+        jj(
+            &repo,
+            &[
+                "config",
+                "set",
+                "--repo",
+                "dotfiles.workspaces.direnv-allow",
+                "false",
+            ],
+        );
+        fs::write(repo.join(".gitignore"), ".jj-workspace.toml\n").unwrap();
+        fs::write(repo.join("tracked.txt"), "hello\n").unwrap();
+        jj(&repo, &["describe", "-m", "initial"]);
+
+        let old = env::current_dir().unwrap();
+        env::set_current_dir(&repo).unwrap();
+
+        // Ignored config is copied into the new workspace and postcreate runs there.
+        fs::write(
+            repo.join(".jj-workspace.toml"),
+            concat!(
+                "version = 1\n\n[hooks]\n",
+                "postcreate = [\"pwd >> out.txt\", \"echo $JJ_WS_SOURCE:$JJ_WS_DEST:$JJ_WS_NAME:$JJ_WS_REPO_ROOT >> env.txt\"]\n",
+                "preforget = [\"echo preforget > pf.txt\"]\n",
+            ),
+        )
+        .unwrap();
+        run_ws(vec![
+            "add".into(),
+            "hooked".into(),
+            "-r".into(),
+            "@".into(),
+            "-q".into(),
+        ])
+        .unwrap();
+        env::set_current_dir(&old).unwrap();
+        let ws = group.join("ws/demo/hooked");
+        let ws_canonical = fs::canonicalize(&ws).unwrap();
+        assert_eq!(
+            fs::read_to_string(ws.join(".jj-workspace.toml")).unwrap(),
+            fs::read_to_string(repo.join(".jj-workspace.toml")).unwrap()
+        );
+        assert_eq!(
+            fs::read_to_string(ws.join("out.txt")).unwrap(),
+            format!("{}\n", ws_canonical.display())
+        );
+        let repo_canonical = fs::canonicalize(&repo).unwrap();
+        assert_eq!(
+            fs::read_to_string(ws.join("env.txt")).unwrap(),
+            format!(
+                "{}:{}:hooked:{}\n",
+                repo_canonical.display(),
+                ws_canonical.display(),
+                repo_canonical.display()
+            )
+        );
+        assert!(!ws.join("pf.txt").exists());
+
+        // A failing postcreate warns but still succeeds and leaves the workspace intact.
+        fs::write(
+            repo.join(".jj-workspace.toml"),
+            "version = 1\n\n[hooks]\npostcreate = [\"exit 5\"]\n",
+        )
+        .unwrap();
+        let mut warnings = Vec::new();
+        env::set_current_dir(&repo).unwrap();
+        run_ws_with_warning(
+            vec![
+                "add".into(),
+                "failed".into(),
+                "-r".into(),
+                "@".into(),
+                "-q".into(),
+            ],
+            |warning| warnings.push(warning.to_string()),
+        )
+        .unwrap();
+        env::set_current_dir(&old).unwrap();
+        let failed = group.join("ws/demo/failed");
+        assert!(warnings
+            .iter()
+            .any(|warning| warning.contains("exit 5") && warning.contains("exit status")));
+        assert!(failed.exists());
+
+        // A failing preforget aborts before forget or trash.
+        fs::write(
+            ws.join(".jj-workspace.toml"),
+            "version = 1\n\n[hooks]\npreforget = [\"exit 3\"]\n",
+        )
+        .unwrap();
+        env::set_current_dir(&repo).unwrap();
+        assert!(run_ws(vec![
+            "forget".into(),
+            "hooked".into(),
+            "--force".into(),
+            "-q".into(),
+        ])
+        .is_err());
+        env::set_current_dir(&old).unwrap();
+        assert!(ws.exists());
+        assert!(!group.join("ws/demo/.trash").exists());
+        jj(&repo, &["workspace", "list"]);
+        let listed = String::from_utf8(
+            Command::new("jj")
+                .args(["workspace", "list", "--color=never"])
+                .current_dir(&repo)
+                .output()
+                .unwrap()
+                .stdout,
+        )
+        .unwrap();
+        assert!(listed.contains("hooked"));
+
+        // A passing preforget replaces the builtin Docker cleanup and forget proceeds.
+        fs::write(
+            ws.join(".jj-workspace.toml"),
+            "version = 1\n\n[hooks]\npreforget = []\n",
+        )
+        .unwrap();
+        env::set_current_dir(&repo).unwrap();
+        run_ws(vec![
+            "forget".into(),
+            "hooked".into(),
+            "--force".into(),
+            "-q".into(),
+        ])
+        .unwrap();
+        env::set_current_dir(&old).unwrap();
+        assert!(!ws.exists());
+        let trash = group.join("ws/demo/.trash");
+        assert_eq!(fs::read_dir(&trash).unwrap().count(), 1);
+
+        // --no-hooks skips both repo hooks and the builtin docker hook.
+        fs::write(repo.join("compose.yaml"), "services: {}\n").unwrap();
+        jj(&repo, &["describe", "-m", "compose"]);
+        env::set_current_dir(&repo).unwrap();
+        run_ws(vec![
+            "add".into(),
+            "plain".into(),
+            "-r".into(),
+            "@".into(),
+            "--no-hooks".into(),
+            "-q".into(),
+        ])
+        .unwrap();
+        env::set_current_dir(&old).unwrap();
+        let plain = group.join("ws/demo/plain");
+        assert!(!plain.join("out.txt").exists());
+        assert_eq!(
+            fs::read_to_string(plain.join(".jj-workspace.toml")).unwrap(),
+            fs::read_to_string(repo.join(".jj-workspace.toml")).unwrap()
+        );
+        env::set_current_dir(&repo).unwrap();
+        run_ws(vec![
+            "forget".into(),
+            "plain".into(),
+            "--force".into(),
+            "--no-hooks".into(),
+            "-q".into(),
+        ])
+        .unwrap();
+        env::set_current_dir(&old).unwrap();
+        assert!(!plain.exists());
+
+        let _ = fs::remove_dir_all(&root);
     }
 
     #[test]
@@ -10618,7 +11036,7 @@ tests = []
             fs::read_dir(&trash_dir).unwrap().count(),
             trash_count_before_prune
         );
-        env::set_current_dir(old).unwrap();
+        env::set_current_dir(&old).unwrap();
 
         let _ = fs::remove_dir_all(&root);
     }
