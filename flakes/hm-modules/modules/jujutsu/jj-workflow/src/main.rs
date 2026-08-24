@@ -4824,32 +4824,106 @@ fn run_cp(args: &[&str], src: &Path, dest: &Path) -> Result<bool> {
 }
 
 fn repair_venv_paths(src_venv: &Path, dest_venv: &Path) -> Result<()> {
-    let old = fs::canonicalize(src_venv).unwrap_or_else(|_| src_venv.to_path_buf());
-    let new = fs::canonicalize(dest_venv).unwrap_or_else(|_| dest_venv.to_path_buf());
-    let old = old.to_string_lossy();
-    let new = new.to_string_lossy();
-    replace_path_in_text_file(&dest_venv.join("pyvenv.cfg"), &old, &new)?;
+    let canon_src = fs::canonicalize(src_venv).unwrap_or_else(|_| src_venv.to_path_buf());
+    let canon_dest = fs::canonicalize(dest_venv).unwrap_or_else(|_| dest_venv.to_path_buf());
+    // venv files record whatever literal path was current when the venv was
+    // created. On macOS, canonicalization resolves `/var` to `/private/var`
+    // (and similar symlinked prefixes), so the spelling in pyvenv.cfg and bin
+    // scripts can differ from BOTH the raw and the canonicalized argument
+    // paths. Collect every old->new pair we can justify:
+    //   1. raw arguments as passed,
+    //   2. canonicalized arguments,
+    //   3. the source path AS SPELLED in the copied files (discovered by
+    //      scanning for absolute paths that canonicalize to the source venv),
+    //      rewritten to the destination under the same prefix spelling.
+    let mut pairs: Vec<(String, String)> = Vec::new();
+    let mut push_pair = |old: PathBuf, new: PathBuf| {
+        let pair = (
+            old.to_string_lossy().into_owned(),
+            new.to_string_lossy().into_owned(),
+        );
+        if pair.0 != pair.1 && !pairs.contains(&pair) {
+            pairs.push(pair);
+        }
+    };
+    push_pair(src_venv.to_path_buf(), dest_venv.to_path_buf());
+    push_pair(canon_src.clone(), canon_dest.clone());
+    for spelled in discover_spelled_source_paths(&dest_venv, &canon_src) {
+        if let (Some(spelled_base), Some(_)) = (spelled.parent(), canon_src.parent()) {
+            if let Some(dest_name) = canon_dest.file_name() {
+                push_pair(spelled.clone(), spelled_base.join(dest_name));
+            }
+        }
+        push_pair(spelled, canon_dest.clone());
+    }
+    replace_paths_in_text_file(&dest_venv.join("pyvenv.cfg"), &pairs)?;
     let bin = dest_venv.join("bin");
     if bin.exists() {
         for entry in fs::read_dir(bin)? {
             let path = entry?.path();
             if path.is_file() {
-                replace_path_in_text_file(&path, &old, &new)?;
+                replace_paths_in_text_file(&path, &pairs)?;
             }
         }
     }
     Ok(())
 }
 
-fn replace_path_in_text_file(path: &Path, old: &str, new: &str) -> Result<()> {
+/// Find spellings of `canon_src` actually written in the copied venv files:
+/// any whitespace-delimited token that looks like an absolute path and whose
+/// canonical form equals `canon_src`.
+fn discover_spelled_source_paths(dest_venv: &Path, canon_src: &Path) -> Vec<PathBuf> {
+    let mut files = vec![dest_venv.join("pyvenv.cfg")];
+    let bin = dest_venv.join("bin");
+    if bin.exists() {
+        if let Ok(entries) = fs::read_dir(bin) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_file() {
+                    files.push(path);
+                }
+            }
+        }
+    }
+    let mut found: Vec<PathBuf> = Vec::new();
+    for file in files {
+        let Ok(bytes) = fs::read(&file) else {
+            continue;
+        };
+        let Ok(text) = String::from_utf8(bytes) else {
+            continue;
+        };
+        for token in text.split_whitespace() {
+            let token = token.trim_start_matches('#');
+            let token = token.trim_end_matches(|c: char| !c.is_ascii_graphic() || c == ':');
+            if !token.starts_with('/') {
+                continue;
+            }
+            let candidate = PathBuf::from(token);
+            if fs::canonicalize(&candidate).is_ok_and(|p| p == canon_src)
+                && !found.contains(&candidate)
+            {
+                found.push(candidate);
+            }
+        }
+    }
+    found
+}
+
+fn replace_paths_in_text_file(path: &Path, pairs: &[(String, String)]) -> Result<()> {
     let Ok(bytes) = fs::read(path) else {
         return Ok(());
     };
-    let Ok(text) = String::from_utf8(bytes) else {
+    let Ok(mut text) = String::from_utf8(bytes) else {
         return Ok(());
     };
-    if text.contains(old) {
-        fs::write(path, text.replace(old, new))?;
+    for (old, new) in pairs {
+        if text.contains(old.as_str()) {
+            text = text.replace(old.as_str(), new.as_str());
+        }
+    }
+    if !text.is_empty() {
+        fs::write(path, text)?;
     }
     Ok(())
 }
@@ -8293,13 +8367,13 @@ mod tests {
         parse_review_state_json, parse_tag_push_args, parse_toml_string_array,
         parse_trash_entry_timestamp, parse_ws_add_args, parse_ws_forget_args, parse_ws_path_args,
         parse_ws_prune_args, parse_ws_sweep_args, path_is_contained, python_runner,
-        render_bookmark_template, resolve_pr_base, resolve_reviewer_values,
+        render_bookmark_template, repair_venv_paths, resolve_pr_base, resolve_reviewer_values,
         resolve_reviewers_from_path, review_effort, run_lint, run_lint_onboard, run_ship, run_sync,
         run_ws, run_ws_with_warning, scan_workspace, selected_lints, ship_plan,
         short_description_from_title, source_venv_python_usable, stale_workspace_dirs, sweepable,
         sync_base_candidates, tag_push, top_level_artifact_paths, trash_entry_is_expired,
-        valid_github_handle, validate_body_source, validate_pr_watch_args, validate_release_tag,
-        validate_ticket, validate_ws_name, workspace_context_for_repo,
+        unix_now_secs, valid_github_handle, validate_body_source, validate_pr_watch_args,
+        validate_release_tag, validate_ticket, validate_ws_name, workspace_context_for_repo,
         workspace_has_unpublished_work, write_tracked_lint_config, ws_config, Cli, CliCommand,
         FetchChoice, LintCommand, LintOnboardReport, LintSuggestion, ParsedArgs, PrArgs,
         ProjectGroup, Reviewer, ReviewerConfig, ShipPlan, TagCommand, TagPushArgs, TagSigning,
@@ -9733,6 +9807,118 @@ aliases = ["sammy", "Sam Smith"]
         let second_name = second.file_name().unwrap().to_string_lossy();
         assert!(second_name.ends_with("-scratch") || second_name.ends_with("-scratch-1"));
         assert!(parse_trash_entry_timestamp(&second_name).is_some());
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn repair_venv_paths_rewrites_literal_paths_not_just_canonical() {
+        let root = named_tempdir("venv-repair-literal");
+        let src = root.join("src");
+        let dest = root.join("dest");
+        let src_venv = src.join(".venv");
+        let dest_venv = dest.join(".venv");
+        fs::create_dir_all(src_venv.join("bin")).unwrap();
+        fs::create_dir_all(dest_venv.join("bin")).unwrap();
+
+        // Record the LITERAL source path, as a real venv would (e.g. a
+        // pyvenv.cfg written while cwd was `/var/folders/...`, which
+        // canonicalizes to `/private/var/folders/...` on macOS).
+        let cfg = format!("home = {}/.venv\nversion = 3.12.0\n", src.display());
+        let pip = format!("#!{}/.venv/bin/python\nimport sys\n", src.display());
+        fs::write(src_venv.join("pyvenv.cfg"), &cfg).unwrap();
+        fs::write(src_venv.join("bin").join("pip"), &pip).unwrap();
+        fs::write(dest_venv.join("pyvenv.cfg"), &cfg).unwrap();
+        fs::write(dest_venv.join("bin").join("pip"), &pip).unwrap();
+
+        repair_venv_paths(&src_venv, &dest_venv).unwrap();
+
+        let repaired_cfg = fs::read_to_string(dest_venv.join("pyvenv.cfg")).unwrap();
+        assert!(
+            repaired_cfg.contains(&format!("home = {}/.venv", dest.display())),
+            "pyvenv.cfg not repaired to destination path: {repaired_cfg}"
+        );
+        assert!(
+            !repaired_cfg.contains(&format!("home = {}/.venv", src.display())),
+            "pyvenv.cfg still references the source checkout"
+        );
+        let repaired_pip = fs::read_to_string(dest_venv.join("bin").join("pip")).unwrap();
+        assert!(
+            repaired_pip.starts_with(&format!("#!{}/.venv/bin/python", dest.display())),
+            "bin/pip shebang not repaired: {repaired_pip}"
+        );
+
+        // Also cover the end-to-end shape: ws_add passes CANONICALIZED paths
+        // (e.g. `/private/var/...` on macOS) while the copied files record the
+        // literal `/var/...` spelling of the same directories.
+        let src2 = root.join("src2");
+        let dest2 = root.join("dest2");
+        let src2_venv = src2.join(".venv");
+        let dest2_venv = dest2.join(".venv");
+        fs::create_dir_all(src2_venv.join("bin")).unwrap();
+        fs::create_dir_all(dest2_venv.join("bin")).unwrap();
+        let cfg2 = format!("home = {}/.venv\nversion = 3.12.0\n", src2.display());
+        let pip2 = format!("#!{}/.venv/bin/python\nimport sys\n", src2.display());
+        fs::write(src2_venv.join("pyvenv.cfg"), &cfg2).unwrap();
+        fs::write(src2_venv.join("bin").join("pip"), &pip2).unwrap();
+        fs::write(dest2_venv.join("pyvenv.cfg"), &cfg2).unwrap();
+        fs::write(dest2_venv.join("bin").join("pip"), &pip2).unwrap();
+
+        let canon_src2 = fs::canonicalize(&src2_venv).unwrap();
+        let canon_dest2 = fs::canonicalize(&dest2_venv).unwrap();
+        repair_venv_paths(&canon_src2, &canon_dest2).unwrap();
+
+        let repaired_cfg2 = fs::read_to_string(dest2_venv.join("pyvenv.cfg")).unwrap();
+        assert!(
+            !repaired_cfg2.contains(&format!("home = {}/.venv", src2.display())),
+            "pyvenv.cfg still references the source checkout when repair was \
+             given canonicalized arguments: {repaired_cfg2}"
+        );
+        assert!(
+            repaired_cfg2.contains(&format!("home = {}", dest2_venv.display()))
+                || repaired_cfg2.contains(&format!(
+                    "home = {}",
+                    fs::canonicalize(&dest2_venv).unwrap().display()
+                )),
+            "pyvenv.cfg not repaired to destination path: {repaired_cfg2}"
+        );
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn move_to_trash_preserves_existing_same_second_entry() {
+        let root = named_tempdir("trash-sentinel");
+        let workspace_root = root.join("ws/demo");
+        let trash = workspace_root.join(".trash");
+        let now = unix_now_secs();
+        // A pre-existing trash entry from the same second, with a sentinel
+        // file that must survive the new trashing untouched.
+        let existing = trash.join(format!("{now}-victim"));
+        fs::create_dir_all(&existing).unwrap();
+        fs::write(existing.join("f"), "sentinel\n").unwrap();
+
+        let dir = workspace_root.join("victim");
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(dir.join("untracked.txt"), "keep me\n").unwrap();
+
+        let trashed = move_to_trash(&dir, "victim", &workspace_root).unwrap();
+
+        // The pre-existing entry must be intact.
+        assert_eq!(
+            fs::read_to_string(existing.join("f")).unwrap(),
+            "sentinel\n",
+            "pre-existing same-second trash entry was destroyed"
+        );
+        // The new entry must be a suffixed sibling, never the same path.
+        let trashed_name = trashed.file_name().unwrap().to_string_lossy().into_owned();
+        assert_ne!(
+            trashed_name,
+            format!("{now}-victim"),
+            "new trash entry reused the occupied name"
+        );
+        assert!(trashed_name.starts_with(&format!("{now}-victim-")));
+        assert!(trashed.join("untracked.txt").exists());
 
         let _ = fs::remove_dir_all(&root);
     }
