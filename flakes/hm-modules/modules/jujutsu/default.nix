@@ -103,6 +103,15 @@ in {
         into new workspaces. An empty list disables artifact cloning.
       '';
     };
+
+    sweepIdle = mkOption {
+      type = types.str;
+      default = "14d";
+      description = ''
+        Idle duration (h/d/w units) after which jj ws sweep may remove
+        configured artifact directories from managed workspaces.
+      '';
+    };
   };
 
   options.dotfiles.jujutsu.prWorkflow = with lib; {
@@ -310,6 +319,7 @@ in {
           docker-remove-volumes = true;
           picker = "fzf";
           clone-artifacts = dotCfg.workspaces.cloneArtifacts;
+          sweep-idle = dotCfg.workspaces.sweepIdle;
           project-groups = map (group: "${group.path}:${group.workspaceDir}") dotCfg.workspaces.projectGroups;
         }
         // lib.optionalAttrs (dotCfg.workspaces.fetchRemote != null) {

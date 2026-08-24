@@ -23,6 +23,9 @@ jj ws list                       # inspect registered workspaces
 jj ws forget <name> --dry-run    # preview cleanup/deletion
 jj ws forget <name>              # forget/delete when safe
 jj ws prune --dry-run            # find stale workspace dirs
+jj ws du                         # per-workspace apparent size breakdown (TSV)
+jj ws sweep --dry-run            # preview artifact cleanup for idle workspaces
+jj ws sweep                      # remove artifact dirs from idle workspaces
 ```
 
 Capture `jj ws add -q` output and treat it as the repo root for subsequent tools.
@@ -41,6 +44,7 @@ Capture `jj ws add -q` output and treat it as the repo root for subsequent tools
 - Use absolute paths under `<workspace-path>` for file reads/edits/searches.
 - Do not keep editing the source checkout after creating a workspace.
 - Do not clean up unless asked; preview with `--dry-run` first.
+- Disk hygiene: `jj ws du` shows apparent bytes per workspace (artifact columns + other). `jj ws sweep [--idle 14d]` removes only configured artifact directories from workspaces idle past the threshold; it never touches the current workspace, the main checkout, or source files. APFS CoW means reported sizes can overcount real usage.
 
 ## Ticket/Linear flow
 

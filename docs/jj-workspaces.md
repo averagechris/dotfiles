@@ -26,6 +26,8 @@ jj ws path --pick
 jj ws forget <name> [--force] [--keep-dir] [--no-docker] [--docker-volumes|--keep-docker-volumes] [--dry-run]
 jj ws forget --pick [options]
 jj ws prune [--dry-run] [--delete] [--pick] [--yes]
+jj ws du
+jj ws sweep [--idle <duration>] [--dry-run]
 jj ws root
 ```
 
@@ -137,6 +139,7 @@ docker-cleanup = "auto"
 docker-remove-volumes = true
 picker = "fzf"
 clone-artifacts = [".direnv", "target", "node_modules", ".venv"]
+sweep-idle = "14d"
 # Optional when multiple remotes exist:
 # fetch-remote = "origin"
 project-groups = ["~/projects:ws", "~/sureapp:ws"]
@@ -273,6 +276,29 @@ CLI overrides:
 ```
 
 More elaborate setup hooks can be deferred, but the config shape should leave room for repo-configurable setup behavior later.
+
+## Disk hygiene
+
+`jj ws du` reports apparent bytes for each registered managed workspace as
+stable TSV: `NAME`, `PATH`, `TOTAL_BYTES`, one column per configured artifact
+in `dotfiles.workspaces.clone-artifacts` order, `OTHER_BYTES`, `LAST_TOUCHED`
+(unix seconds), and `IDLE` (seconds). One Rust walk produces the breakdown,
+total, and last-touch data; symlinks are measured as links and never followed.
+
+`jj ws sweep [--idle <duration>] [--dry-run]` removes configured artifact
+directories from managed workspaces whose last-touch time is at least the idle
+threshold old. The default threshold is `dotfiles.workspaces.sweep-idle`
+(default `14d`); durations are positive integers with `h`, `d`, or `w`, and
+`0h` is allowed on the CLI for smoke tests. Last-touch is the newest mtime
+found while recursively walking non-artifact files and directories, excluding
+`.jj`; a workspace with no eligible entry uses its root mtime. Sweep never
+touches the current workspace, the main checkout, or paths outside the
+canonical workspace root, and it only removes directories whose basename is in
+the configured artifact set. Dry-run prints exactly what normal mode would
+remove, one path and apparent byte count per line.
+
+Note: on APFS, CoW-cloned artifacts share blocks with the source checkout, so
+apparent sizes can overcount real disk usage reclaimed by a sweep.
 
 ## Picker support
 

@@ -3915,7 +3915,10 @@ struct WsConfig {
     docker_remove_volumes: bool,
     fetch_remote: Option<String>,
     clone_artifacts: Vec<String>,
+    sweep_idle: String,
 }
+
+const DEFAULT_SWEEP_IDLE: &str = "14d";
 
 const DEFAULT_CLONE_ARTIFACTS: &[&str] = &[".direnv", "target", "node_modules", ".venv"];
 
@@ -3939,6 +3942,8 @@ fn run_ws(args: Vec<OsString>) -> Result<()> {
         "path" => ws_path(rest),
         "forget" | "rm" => ws_forget(rest),
         "prune" => ws_prune(rest),
+        "du" => ws_du(rest),
+        "sweep" => ws_sweep(rest),
         "root" => ws_root(rest),
         "-h" | "--help" | "help" => {
             print_ws_usage();
@@ -3951,7 +3956,7 @@ fn run_ws(args: Vec<OsString>) -> Result<()> {
 }
 
 fn print_ws_usage() {
-    eprintln!("Usage:\n  jj ws add <name> [-r <revset>] [-q]\n  jj ws list [--pick]\n  jj ws path <name>|--pick\n  jj ws forget <name>|--pick [--force] [--dry-run] [-q]\n  jj ws prune [--delete] [--pick]\n  jj ws root\n\nExamples:\n  jj ws add feature-x -q\n  cd \"$(jj ws path feature-x)\"\n  jj ws forget feature-x\n\nPath: <project-group>/<workspace-dir>/<repo>/<workspace>\nHelp: jj ws <command> --help");
+    eprintln!("Usage:\n  jj ws add <name> [-r <revset>] [-q]\n  jj ws list [--pick]\n  jj ws path <name>|--pick\n  jj ws forget <name>|--pick [--force] [--dry-run] [-q]\n  jj ws prune [--delete] [--pick]\n  jj ws du\n  jj ws sweep [--idle <duration>] [--dry-run]\n  jj ws root\n\nExamples:\n  jj ws add feature-x -q\n  cd \"$(jj ws path feature-x)\"\n  jj ws forget feature-x\n  jj ws sweep --idle 14d --dry-run\n\nPath: <project-group>/<workspace-dir>/<repo>/<workspace>\nHelp: jj ws <command> --help");
 }
 
 fn print_ws_add_usage() {
@@ -3972,6 +3977,14 @@ fn print_ws_forget_usage() {
 
 fn print_ws_prune_usage() {
     eprintln!("Usage:\n  jj ws prune [--dry-run] [--delete] [--pick] [--yes]\n\nPrints stale workspace dirs. Use --delete to remove them. --pick requires a terminal.");
+}
+
+fn print_ws_du_usage() {
+    eprintln!("Usage:\n  jj ws du\n\nReports apparent bytes per registered managed workspace: total, one column per configured artifact (dotfiles.workspaces.clone-artifacts), other, last-touched (unix seconds), and idle seconds.\nNote: on APFS, cloned artifacts share blocks with the source checkout, so apparent sizes can overcount real disk usage.");
+}
+
+fn print_ws_sweep_usage() {
+    eprintln!("Usage:\n  jj ws sweep [--idle <duration>] [--dry-run]\n\nRemoves configured artifact directories from managed workspaces idle for at least <duration> (default dotfiles.workspaces.sweep-idle, 14d). Durations: positive integers with h, d, or w; 0h is allowed for smoke tests. Never touches the current workspace, the main checkout, or paths outside the workspace root. Symlinks are never followed.\nNote: on APFS, cloned artifacts share blocks with the source checkout, so reported bytes can overcount real disk usage.\n\nExamples:\n  jj ws sweep --dry-run\n  jj ws sweep --idle 0h");
 }
 
 fn print_ws_root_usage() {
@@ -4002,6 +4015,8 @@ fn ws_config() -> Result<WsConfig> {
             .map(std::string::ToString::to_string)
             .collect(),
     };
+    let sweep_idle = jj_config_string("dotfiles.workspaces.sweep-idle")?
+        .unwrap_or_else(|| DEFAULT_SWEEP_IDLE.to_string());
     let groups = jj_config_project_groups()?;
     Ok(WsConfig {
         project_groups: groups,
@@ -4012,6 +4027,7 @@ fn ws_config() -> Result<WsConfig> {
         docker_remove_volumes,
         fetch_remote,
         clone_artifacts,
+        sweep_idle,
     })
 }
 
@@ -5065,6 +5081,369 @@ fn stale_workspace_dirs(children: &[PathBuf], registered: &[PathBuf]) -> Vec<Pat
         .filter(|p| !registered.contains(&fs::canonicalize(p).unwrap_or_else(|_| (*p).clone())))
         .cloned()
         .collect()
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+struct WsDuArgs {
+    help: bool,
+}
+
+fn parse_ws_du_args(args: Vec<OsString>) -> Result<WsDuArgs> {
+    let mut parsed = WsDuArgs::default();
+    for arg in args {
+        match arg.to_string_lossy().as_ref() {
+            "-h" | "--help" => parsed.help = true,
+            other => bail!("unknown option: {other}\n\nUsage: jj ws du"),
+        }
+    }
+    Ok(parsed)
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+struct WsSweepArgs {
+    idle: Option<String>,
+    dry_run: bool,
+    help: bool,
+}
+
+fn parse_ws_sweep_args(args: Vec<OsString>) -> Result<WsSweepArgs> {
+    let mut parsed = WsSweepArgs::default();
+    let mut iter = args.into_iter();
+    while let Some(arg) = iter.next() {
+        match arg.to_string_lossy().as_ref() {
+            "--idle" => {
+                parsed.idle = Some(os_to_string(
+                    iter.next()
+                        .ok_or_else(|| anyhow!("missing duration after --idle"))?,
+                )?)
+            }
+            "--dry-run" => parsed.dry_run = true,
+            "-h" | "--help" => parsed.help = true,
+            _ => {
+                if let Some(value) = take_value_after_prefix(&arg, "--idle=")? {
+                    parsed.idle = Some(value);
+                } else {
+                    bail!(
+                        "unknown option: {}\n\nUsage: jj ws sweep [--idle <duration>] [--dry-run]",
+                        arg.to_string_lossy()
+                    );
+                }
+            }
+        }
+    }
+    Ok(parsed)
+}
+
+/// Parses durations like `12h`, `14d`, `2w`. Zero is allowed for smoke tests.
+fn parse_idle_duration(raw: &str) -> Result<Duration> {
+    let raw = raw.trim();
+    let Some(split) = raw.char_indices().next_back() else {
+        bail!("empty idle duration");
+    };
+    let (num, unit) = raw.split_at(split.0);
+    if !num.starts_with(|c: char| c.is_ascii_digit()) {
+        bail!("invalid idle duration {raw:?}; use a positive integer followed by h, d, or w");
+    }
+    let unit_multiplier: u64 = match unit {
+        "h" => 3600,
+        "d" => 24 * 3600,
+        "w" => 7 * 24 * 3600,
+        _ => bail!("invalid idle duration {raw:?}; use a positive integer followed by h, d, or w"),
+    };
+    let value: u64 = num
+        .parse()
+        .with_context(|| format!("invalid idle duration {raw:?}; expected integer + h/d/w"))?;
+    let secs = value.checked_mul(unit_multiplier).with_context(|| {
+        format!("idle duration {raw:?} overflows; use a smaller value with h, d, or w")
+    })?;
+    Ok(Duration::from_secs(secs))
+}
+
+/// A workspace is sweepable once it has been idle for at least the threshold;
+/// exactly-at-threshold counts as idle.
+fn sweepable(idle: Duration, threshold: Duration) -> bool {
+    idle >= threshold
+}
+
+fn path_is_contained(path: &Path, root: &Path) -> bool {
+    path != root && path.starts_with(root)
+}
+
+#[derive(Debug, Default)]
+struct WorkspaceUsage {
+    total: u64,
+    other: u64,
+    class: HashMap<String, u64>,
+    last_touched: Option<SystemTime>,
+    artifact_paths: Vec<(PathBuf, u64)>,
+}
+
+impl WorkspaceUsage {
+    fn touch(&mut self, time: SystemTime) {
+        self.last_touched = Some(match self.last_touched {
+            Some(prev) if prev >= time => prev,
+            _ => time,
+        });
+    }
+}
+
+/// Recursively measures apparent bytes under `dir`, charging directories whose
+/// basename matches `artifacts` to their class and everything else to `other`.
+/// Returns `(total_apparent_bytes, classified_bytes)`; callers attribute the
+/// unclassified remainder so nested artifacts are never double-counted.
+/// Symlinks are measured as links and never followed; `.jj` is measured but
+/// excluded from last-touch tracking and artifact collection.
+fn measure_tree(
+    dir: &Path,
+    artifacts: &[String],
+    usage: &mut WorkspaceUsage,
+    track_time: bool,
+) -> (u64, u64) {
+    let mut total = 0u64;
+    let mut classified = 0u64;
+    let entries = match fs::read_dir(dir) {
+        Ok(entries) => entries,
+        Err(err) => {
+            eprintln!("warning: cannot read {}: {err}", dir.display());
+            return (0, 0);
+        }
+    };
+    for entry in entries {
+        let entry = match entry {
+            Ok(entry) => entry,
+            Err(err) => {
+                eprintln!("warning: skipping entry in {}: {err}", dir.display());
+                continue;
+            }
+        };
+        let path = entry.path();
+        let metadata = match fs::symlink_metadata(&path) {
+            Ok(metadata) => metadata,
+            Err(err) => {
+                eprintln!("warning: cannot stat {}: {err}", path.display());
+                continue;
+            }
+        };
+        if metadata.is_symlink() {
+            if track_time {
+                if let Ok(mtime) = metadata.modified() {
+                    usage.touch(mtime);
+                }
+            }
+            total += metadata.len();
+        } else if metadata.is_dir() {
+            let name = entry.file_name().to_string_lossy().to_string();
+            let in_jj = name == ".jj";
+            let child_track = track_time && !in_jj;
+            if !in_jj && artifacts.iter().any(|a| a == &name) {
+                // Artifact-internal mtimes never count toward last-touch;
+                // freshly built artifacts must not keep a workspace non-idle.
+                let (bytes, nested_classified) = measure_tree(&path, artifacts, usage, false);
+                *usage.class.entry(name.clone()).or_default() += bytes - nested_classified;
+                usage.artifact_paths.push((path.clone(), bytes));
+                total += bytes;
+                classified += bytes;
+            } else {
+                if child_track {
+                    if let Ok(mtime) = metadata.modified() {
+                        usage.touch(mtime);
+                    }
+                }
+                let (bytes, nested_classified) = measure_tree(&path, artifacts, usage, child_track);
+                total += bytes;
+                classified += nested_classified;
+            }
+        } else {
+            if track_time {
+                if let Ok(mtime) = metadata.modified() {
+                    usage.touch(mtime);
+                }
+            }
+            total += metadata.len();
+        }
+    }
+    (total, classified)
+}
+
+fn scan_workspace(
+    root: &Path,
+    artifacts: &[String],
+) -> Result<(WorkspaceUsage, Option<SystemTime>)> {
+    let mut usage = WorkspaceUsage::default();
+    let (total, classified) = measure_tree(root, artifacts, &mut usage, true);
+    usage.total = total;
+    usage.other = total - classified;
+    let fallback = fs::symlink_metadata(root)
+        .and_then(|meta| meta.modified())
+        .ok();
+    let last_touched = usage.last_touched.or(fallback);
+    Ok((usage, last_touched))
+}
+
+/// Registered managed workspaces as canonical paths under the workspace root,
+/// including the current workspace. Paths that escape the canonical workspace
+/// root are skipped with a warning.
+fn managed_workspace_candidates(ctx: &WorkspaceContext) -> Result<Vec<(String, PathBuf)>> {
+    let output = run_jj_capture([
+        "workspace",
+        "list",
+        "--color=never",
+        "-T",
+        "self.name() ++ \"\\n\"",
+    ])?;
+    let canon_root =
+        fs::canonicalize(&ctx.workspace_root).unwrap_or_else(|_| ctx.workspace_root.clone());
+    let mut candidates = Vec::new();
+    for name in output
+        .stdout
+        .lines()
+        .map(str::trim)
+        .filter(|n| !n.is_empty())
+    {
+        let raw = ctx.workspace_root.join(name);
+        let path = fs::canonicalize(&raw).unwrap_or(raw);
+        if !path_is_contained(&path, &canon_root) {
+            eprintln!(
+                "warning: skipping {name}: {} is outside workspace root {}",
+                path.display(),
+                canon_root.display()
+            );
+            continue;
+        }
+        candidates.push((name.to_string(), path));
+    }
+    Ok(candidates)
+}
+
+/// Name and canonical root of the workspace the command runs in.
+fn current_workspace_identity(ctx: &WorkspaceContext) -> Result<(String, PathBuf)> {
+    let name = jj_config_string("workspace.name")?.unwrap_or_else(|| "default".to_string());
+    let root = fs::canonicalize(run_jj_capture(["root", "--color=never"])?.stdout.trim())
+        .unwrap_or(ctx.repo_root.clone());
+    Ok((name, root))
+}
+
+fn unix_seconds(time: SystemTime) -> u64 {
+    time.duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0)
+}
+
+fn ws_du(args: Vec<OsString>) -> Result<()> {
+    let parsed = parse_ws_du_args(args)?;
+    if parsed.help {
+        print_ws_du_usage();
+        return Ok(());
+    }
+    let config = ws_config()?;
+    let ctx = current_context(&config, None)?;
+    let candidates = managed_workspace_candidates(&ctx)?;
+    let mut header = vec![
+        "NAME".to_string(),
+        "PATH".to_string(),
+        "TOTAL_BYTES".to_string(),
+    ];
+    header.extend(config.clone_artifacts.iter().cloned());
+    header.push("OTHER_BYTES".to_string());
+    header.push("LAST_TOUCHED".to_string());
+    header.push("IDLE".to_string());
+    println!("{}", header.join("\t"));
+    let now = SystemTime::now();
+    for (name, path) in candidates {
+        let (usage, last_touched) = scan_workspace(&path, &config.clone_artifacts)?;
+        let mut row = vec![name, path.display().to_string(), usage.total.to_string()];
+        for artifact in &config.clone_artifacts {
+            row.push(usage.class.get(artifact).copied().unwrap_or(0).to_string());
+        }
+        row.push(usage.other.to_string());
+        row.push(
+            last_touched
+                .map(unix_seconds)
+                .map(|s| s.to_string())
+                .unwrap_or_else(|| "-".to_string()),
+        );
+        row.push(
+            last_touched
+                .map(|t| now.duration_since(t).map(|d| d.as_secs()).unwrap_or(0))
+                .map(|s| s.to_string())
+                .unwrap_or_else(|| "-".to_string()),
+        );
+        println!("{}", row.join("\t"));
+    }
+    Ok(())
+}
+
+/// Keeps only artifact paths not contained in another candidate; removing an
+/// outer directory already removes anything nested inside it.
+fn top_level_artifact_paths(paths: Vec<(PathBuf, u64)>) -> Vec<(PathBuf, u64)> {
+    let mut kept: Vec<(PathBuf, u64)> = Vec::new();
+    for (path, bytes) in paths {
+        if kept
+            .iter()
+            .any(|(outer, _)| path_is_contained(&path, outer))
+        {
+            continue;
+        }
+        kept.retain(|(inner, _)| !path_is_contained(inner, &path));
+        kept.push((path, bytes));
+    }
+    kept
+}
+
+fn ws_sweep(args: Vec<OsString>) -> Result<()> {
+    let parsed = parse_ws_sweep_args(args)?;
+    if parsed.help {
+        print_ws_sweep_usage();
+        return Ok(());
+    }
+    let config = ws_config()?;
+    let threshold = match &parsed.idle {
+        Some(raw) => parse_idle_duration(raw)?,
+        None => parse_idle_duration(&config.sweep_idle)?,
+    };
+    let ctx = current_context(&config, None)?;
+    let (current_name, current_root) = current_workspace_identity(&ctx)?;
+    // Sweep never touches the workspace it runs in.
+    let candidates: Vec<_> = managed_workspace_candidates(&ctx)?
+        .into_iter()
+        .filter(|(name, path)| name != &current_name && path != &current_root)
+        .collect();
+    let now = SystemTime::now();
+    let mut total_bytes = 0u64;
+    let mut total_removed = 0usize;
+    for (_, path) in candidates {
+        let (usage, last_touched) = scan_workspace(&path, &config.clone_artifacts)?;
+        let Some(last_touched) = last_touched else {
+            continue;
+        };
+        let idle = now.duration_since(last_touched).unwrap_or(Duration::ZERO);
+        if !sweepable(idle, threshold) {
+            continue;
+        }
+        for (artifact_path, bytes) in top_level_artifact_paths(usage.artifact_paths) {
+            if parsed.dry_run {
+                println!("would remove {}\t{bytes}", artifact_path.display());
+            } else {
+                match fs::remove_dir_all(&artifact_path) {
+                    Ok(()) => {
+                        println!("removed {}\t{bytes}", artifact_path.display());
+                        total_bytes += bytes;
+                        total_removed += 1;
+                    }
+                    Err(err) => {
+                        eprintln!(
+                            "warning: failed to remove {}: {err}",
+                            artifact_path.display()
+                        );
+                    }
+                }
+            }
+        }
+    }
+    if !parsed.dry_run {
+        println!("swept {total_bytes} bytes from {total_removed} artifact directories");
+    }
+    Ok(())
 }
 
 fn pick_lines(prompt: &str, lines: &[String]) -> Result<Option<String>> {
@@ -7488,26 +7867,28 @@ struct JjOutput {
 mod tests {
     use super::{
         choose_ship_bookmark, choose_sync_base, clone_artifact_dirs, clone_dir_strict,
-        configured_lints, effective_clone_artifacts, effective_venv_plan, fetch_remote_choice,
-        first_unsupported_pr_flag, infer_lint_name, infer_remote_integration_bookmark_from,
-        is_check_only_format_script, is_integration_bookmark, is_safe_package_check_script,
-        is_validation_name, lint_config_toml, lint_display_name, lint_onboard_json,
-        lint_onboard_report, load_reviewer_config_from, makefile_targets, parse_checks_json,
-        parse_common_args, parse_config_string_array, parse_duration_arg, parse_github_remote_url,
-        parse_lint_selection, parse_lints_toml, parse_pr_args, parse_pr_hygiene_args,
-        parse_pr_hygiene_graphql, parse_review_state_json, parse_tag_push_args,
-        parse_toml_string_array, parse_ws_add_args, parse_ws_forget_args, parse_ws_path_args,
-        parse_ws_prune_args, python_runner, render_bookmark_template, resolve_pr_base,
-        resolve_reviewer_values, resolve_reviewers_from_path, review_effort, run_lint,
-        run_lint_onboard, run_ship, run_sync, run_ws, selected_lints, ship_plan,
-        short_description_from_title, source_venv_python_usable, stale_workspace_dirs,
-        sync_base_candidates, tag_push, valid_github_handle, validate_body_source,
+        configured_lints, current_context, effective_clone_artifacts, effective_venv_plan,
+        fetch_remote_choice, first_unsupported_pr_flag, infer_lint_name,
+        infer_remote_integration_bookmark_from, is_check_only_format_script,
+        is_integration_bookmark, is_safe_package_check_script, is_validation_name,
+        lint_config_toml, lint_display_name, lint_onboard_json, lint_onboard_report,
+        load_reviewer_config_from, makefile_targets, managed_workspace_candidates, measure_tree,
+        parse_checks_json, parse_common_args, parse_config_string_array, parse_duration_arg,
+        parse_github_remote_url, parse_idle_duration, parse_lint_selection, parse_lints_toml,
+        parse_pr_args, parse_pr_hygiene_args, parse_pr_hygiene_graphql, parse_review_state_json,
+        parse_tag_push_args, parse_toml_string_array, parse_ws_add_args, parse_ws_forget_args,
+        parse_ws_path_args, parse_ws_prune_args, parse_ws_sweep_args, path_is_contained,
+        python_runner, render_bookmark_template, resolve_pr_base, resolve_reviewer_values,
+        resolve_reviewers_from_path, review_effort, run_lint, run_lint_onboard, run_ship, run_sync,
+        run_ws, scan_workspace, selected_lints, ship_plan, short_description_from_title,
+        source_venv_python_usable, stale_workspace_dirs, sweepable, sync_base_candidates, tag_push,
+        top_level_artifact_paths, valid_github_handle, validate_body_source,
         validate_pr_watch_args, validate_release_tag, validate_ticket, validate_ws_name,
-        workspace_context_for_repo, workspace_has_unpublished_work, write_tracked_lint_config, Cli,
-        CliCommand, FetchChoice, LintCommand, LintOnboardReport, LintSuggestion, ParsedArgs,
-        PrArgs, ProjectGroup, Reviewer, ReviewerConfig, ShipPlan, TagCommand, TagPushArgs,
-        TagSigning, VenvPlan, WsAddArgs, WsConfig, WsForgetArgs, WsPathArgs, WsPruneArgs,
-        DEFAULT_CLONE_ARTIFACTS,
+        workspace_context_for_repo, workspace_has_unpublished_work, write_tracked_lint_config,
+        ws_config, Cli, CliCommand, FetchChoice, LintCommand, LintOnboardReport, LintSuggestion,
+        ParsedArgs, PrArgs, ProjectGroup, Reviewer, ReviewerConfig, ShipPlan, TagCommand,
+        TagPushArgs, TagSigning, VenvPlan, WorkspaceUsage, WsAddArgs, WsConfig, WsForgetArgs,
+        WsPathArgs, WsPruneArgs, WsSweepArgs, DEFAULT_CLONE_ARTIFACTS, DEFAULT_SWEEP_IDLE,
     };
     use clap::Parser;
     use std::env;
@@ -7519,6 +7900,7 @@ mod tests {
     use std::process::Command;
     use std::sync::Mutex;
     use std::time::Duration;
+    use std::time::{SystemTime, UNIX_EPOCH};
 
     static INTEGRATION_LOCK: Mutex<()> = Mutex::new(());
 
@@ -8007,6 +8389,7 @@ aliases = ["sammy", "Sam Smith"]
                 .iter()
                 .map(std::string::ToString::to_string)
                 .collect(),
+            sweep_idle: DEFAULT_SWEEP_IDLE.to_string(),
         }
     }
 
@@ -8015,6 +8398,44 @@ aliases = ["sammy", "Sam Smith"]
         let _ = fs::remove_dir_all(&path);
         fs::create_dir_all(&path).unwrap();
         path
+    }
+
+    fn filetime_from_unix(secs: u64) -> SystemTime {
+        UNIX_EPOCH + Duration::from_secs(secs)
+    }
+
+    fn set_file_mtime(path: &Path, time: SystemTime) {
+        let secs = time.duration_since(UNIX_EPOCH).unwrap().as_secs();
+        let (year, month, day) = civil_from_days((secs / 86400) as i64);
+        let rem = secs % 86400;
+        let stamp = format!(
+            "{:04}{:02}{:02}{:02}{:02}.{:02}",
+            year,
+            month,
+            day,
+            rem / 3600,
+            (rem % 3600) / 60,
+            rem % 60
+        );
+        run(Command::new("touch")
+            .env("TZ", "UTC")
+            .arg("-t")
+            .arg(stamp)
+            .arg(path));
+    }
+
+    /// Days-since-epoch to (year, month, day); Howard Hinnant's algorithm.
+    fn civil_from_days(days: i64) -> (i64, u32, u32) {
+        let z = days + 719_468;
+        let era = if z >= 0 { z } else { z - 146_096 } / 146_097;
+        let doe = (z - era * 146_097) as u64;
+        let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
+        let year = yoe as i64 + era * 400;
+        let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+        let mp = (5 * doy + 2) / 153;
+        let day = (doy - (153 * mp + 2) / 5 + 1) as u32;
+        let month = if mp < 10 { mp + 3 } else { mp - 9 } as u32;
+        (if month <= 2 { year + 1 } else { year }, month, day)
     }
 
     fn run(command: &mut Command) {
@@ -8632,6 +9053,206 @@ aliases = ["sammy", "Sam Smith"]
             }
         );
         assert!(parse_ws_prune_args(vec!["stale".into()]).is_err());
+    }
+
+    #[test]
+    fn parses_idle_durations() {
+        assert_eq!(parse_idle_duration("0h").unwrap(), Duration::from_secs(0));
+        assert_eq!(
+            parse_idle_duration("12h").unwrap(),
+            Duration::from_secs(12 * 3600)
+        );
+        assert_eq!(
+            parse_idle_duration("14d").unwrap(),
+            Duration::from_secs(14 * 24 * 3600)
+        );
+        assert_eq!(
+            parse_idle_duration("2w").unwrap(),
+            Duration::from_secs(2 * 7 * 24 * 3600)
+        );
+        assert!(parse_idle_duration("").is_err());
+        assert!(parse_idle_duration("14").is_err());
+        assert!(parse_idle_duration("-1d").is_err());
+        assert!(parse_idle_duration("+5h").is_err());
+        assert!(parse_idle_duration("1x").is_err());
+        assert!(parse_idle_duration("soon").is_err());
+        assert!(parse_idle_duration("99999999999999999w").is_err());
+    }
+
+    #[test]
+    fn ws_sweep_parser_accepts_flags() {
+        assert_eq!(
+            parse_ws_sweep_args(vec!["--idle".into(), "0h".into(), "--dry-run".into(),]).unwrap(),
+            WsSweepArgs {
+                idle: Some("0h".to_string()),
+                dry_run: true,
+                help: false,
+            }
+        );
+        assert_eq!(
+            parse_ws_sweep_args(vec!["--idle=3w".into()]).unwrap(),
+            WsSweepArgs {
+                idle: Some("3w".to_string()),
+                dry_run: false,
+                help: false,
+            }
+        );
+        assert!(parse_ws_sweep_args(vec!["--idle".into()]).is_err());
+        assert!(parse_ws_sweep_args(vec!["extra".into()]).is_err());
+    }
+
+    #[test]
+    fn containment_requires_proper_prefix() {
+        let root = Path::new("/tmp/ws/repo");
+        assert!(path_is_contained(&root.join("feature"), root));
+        assert!(!path_is_contained(root, root));
+        assert!(!path_is_contained(Path::new("/tmp/ws/repo-evil"), root));
+        assert!(!path_is_contained(Path::new("/etc"), root));
+    }
+
+    #[test]
+    fn measure_tree_classifies_and_avoids_double_counting() {
+        let root = named_tempdir("du-classify");
+        fs::create_dir_all(root.join("target/debug")).unwrap();
+        fs::create_dir_all(root.join("target/node_modules/left")).unwrap();
+        fs::create_dir_all(root.join("crates/app")).unwrap();
+        fs::write(root.join("src.txt"), "12345").unwrap();
+        fs::write(root.join("target/debug/bin"), "1234567890").unwrap();
+        fs::write(root.join("target/node_modules/left/index.js"), "123").unwrap();
+        fs::write(root.join("crates/app/main.rs"), "1234567").unwrap();
+        let artifacts = strings(&["target", "node_modules"]);
+        let (usage, _) = scan_workspace(&root, &artifacts).unwrap();
+        // target holds only its own 10 bytes; the nested node_modules' 3
+        // bytes are charged to node_modules, not double-counted into target.
+        assert_eq!(usage.class.get("target"), Some(&10));
+        assert_eq!(usage.class.get("node_modules"), Some(&3));
+        assert_eq!(usage.other, 5 + 7);
+        assert_eq!(usage.total, usage.other + 10 + 3);
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn measure_tree_collects_nested_artifact_paths() {
+        let root = named_tempdir("du-nested");
+        fs::create_dir_all(root.join("services/api/node_modules/pkg")).unwrap();
+        fs::write(root.join("services/api/node_modules/pkg/i.js"), "1").unwrap();
+        let artifacts = strings(&["node_modules"]);
+        let mut usage = WorkspaceUsage::default();
+        measure_tree(&root, &artifacts, &mut usage, true);
+        assert_eq!(usage.artifact_paths.len(), 1);
+        assert_eq!(
+            usage.artifact_paths[0].0,
+            root.join("services/api/node_modules")
+        );
+        assert_eq!(
+            top_level_artifact_paths(usage.artifact_paths.clone()).len(),
+            1
+        );
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn top_level_artifact_paths_drops_contained_candidates() {
+        let outer = PathBuf::from("/w/target");
+        let inner = PathBuf::from("/w/target/node_modules");
+        let sibling = PathBuf::from("/w/.venv");
+        let kept = top_level_artifact_paths(vec![
+            (inner.clone(), 1),
+            (outer.clone(), 10),
+            (sibling.clone(), 2),
+        ]);
+        assert_eq!(kept, vec![(outer, 10), (sibling, 2)]);
+    }
+
+    #[test]
+    fn measure_tree_excludes_jj_and_artifacts_from_last_touch() {
+        let root = named_tempdir("du-lasttouch");
+        fs::create_dir_all(root.join(".jj/repo")).unwrap();
+        fs::create_dir_all(root.join("target")).unwrap();
+        fs::write(root.join("keep.txt"), "x").unwrap();
+        fs::write(root.join(".jj/repo/index"), "x").unwrap();
+        fs::write(root.join("target/blob"), "x").unwrap();
+        // Backdate everything, then make only the non-artifact file recent.
+        let old = filetime_from_unix(1_000_000_000);
+        for p in [
+            root.join(".jj"),
+            root.join(".jj/repo"),
+            root.join(".jj/repo/index"),
+            root.join("target"),
+            root.join("target/blob"),
+            root.join("keep.txt"),
+        ] {
+            set_file_mtime(&p, old);
+        }
+        let recent = filetime_from_unix(2_000_000_000);
+        set_file_mtime(&root.join("keep.txt"), recent);
+        let artifacts = strings(&["target"]);
+        let (usage, _) = scan_workspace(&root, &artifacts).unwrap();
+        let touched = usage.last_touched.unwrap();
+        let secs = touched.duration_since(UNIX_EPOCH).unwrap().as_secs();
+        assert_eq!(secs, 2_000_000_000);
+
+        // With no eligible entry at all, the workspace root mtime is used.
+        let empty = named_tempdir("du-lasttouch-empty");
+        set_file_mtime(&empty, old);
+        let (_, last) = scan_workspace(&empty, &artifacts).unwrap();
+        let secs = last.unwrap().duration_since(UNIX_EPOCH).unwrap().as_secs();
+        assert_eq!(secs, 1_000_000_000);
+        let _ = fs::remove_dir_all(&root);
+        let _ = fs::remove_dir_all(&empty);
+    }
+
+    #[test]
+    fn measure_tree_never_follows_symlinks() {
+        let root = named_tempdir("du-symlink");
+        let outside = named_tempdir("du-symlink-outside");
+        fs::create_dir_all(outside.join("deep/node_modules")).unwrap();
+        fs::write(outside.join("deep/node_modules/x.js"), "12345").unwrap();
+        #[cfg(unix)]
+        std::os::unix::fs::symlink(outside.join("deep"), root.join("link")).unwrap();
+        #[cfg(unix)]
+        std::os::unix::fs::symlink(outside.join("missing"), root.join("broken")).unwrap();
+        let artifacts = strings(&["node_modules"]);
+        let mut usage = WorkspaceUsage::default();
+        measure_tree(&root, &artifacts, &mut usage, true);
+        // The link is measured as a link; nothing inside is traversed.
+        assert!(usage.class.is_empty());
+        assert_eq!(usage.total, usage.other);
+        let _ = fs::remove_dir_all(&root);
+        let _ = fs::remove_dir_all(&outside);
+    }
+
+    #[test]
+    fn measure_tree_ignores_artifact_internal_mtime_for_last_touch() {
+        let root = named_tempdir("du-artifact-mtime");
+        fs::create_dir_all(root.join("target")).unwrap();
+        fs::write(root.join("src.txt"), "x").unwrap();
+        fs::write(root.join("target/blob"), "x").unwrap();
+        let old = filetime_from_unix(1_000_000_000);
+        for p in [
+            root.join("src.txt"),
+            root.join("target"),
+            root.join("target/blob"),
+        ] {
+            set_file_mtime(&p, old);
+        }
+        // Only the artifact-internal file is recent (a fresh build).
+        set_file_mtime(&root.join("target/blob"), filetime_from_unix(2_000_000_000));
+        let artifacts = strings(&["target"]);
+        let (usage, last) = scan_workspace(&root, &artifacts).unwrap();
+        let secs = last.unwrap().duration_since(UNIX_EPOCH).unwrap().as_secs();
+        assert_eq!(secs, 1_000_000_000);
+        assert!(usage.artifact_paths.len() == 1);
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn sweepable_at_and_around_threshold() {
+        let threshold = Duration::from_secs(14 * 24 * 3600);
+        assert!(!sweepable(threshold - Duration::from_secs(1), threshold));
+        assert!(sweepable(threshold, threshold));
+        assert!(sweepable(threshold + Duration::from_secs(1), threshold));
+        assert!(sweepable(Duration::ZERO, Duration::ZERO));
     }
 
     #[test]
@@ -9361,6 +9982,87 @@ tests = []
         env::set_current_dir(&old).unwrap();
 
         assert!(group.join("ws/demo/feature-x/.jj").exists());
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn integration_sweep_dry_run_is_inert_and_du_lists_current_workspace() {
+        let _guard = INTEGRATION_LOCK.lock().unwrap();
+        let root = named_tempdir("sweep-du");
+        let group = root.join("projects");
+        let repo = group.join("demo");
+        fs::create_dir_all(&group).unwrap();
+        run(Command::new("jj").arg("git").arg("init").arg(&repo));
+        jj(
+            &repo,
+            &[
+                "config",
+                "set",
+                "--repo",
+                "dotfiles.workspaces.project-groups",
+                &format!("[\"{}:ws\"]", group.display()),
+            ],
+        );
+        jj(
+            &repo,
+            &[
+                "config",
+                "set",
+                "--repo",
+                "dotfiles.workspaces.clone-artifacts",
+                "[\"target\"]",
+            ],
+        );
+        jj(
+            &repo,
+            &[
+                "config",
+                "set",
+                "--repo",
+                "dotfiles.workspaces.direnv-allow",
+                "false",
+            ],
+        );
+        fs::write(repo.join("file.txt"), "hello\n").unwrap();
+        jj(&repo, &["describe", "-m", "initial"]);
+
+        let old = env::current_dir().unwrap();
+        env::set_current_dir(&repo).unwrap();
+        run_ws(vec![
+            "add".into(),
+            "feature-x".into(),
+            "-r".into(),
+            "@".into(),
+            "-q".into(),
+        ])
+        .unwrap();
+
+        // du's candidate list includes every registered workspace, including
+        // the current one.
+        let ctx = current_context(&ws_config().unwrap(), None).unwrap();
+        let mut names: Vec<String> = managed_workspace_candidates(&ctx)
+            .unwrap()
+            .into_iter()
+            .map(|(name, _)| name)
+            .collect();
+        names.sort();
+        assert_eq!(names, vec!["default".to_string(), "feature-x".to_string()]);
+
+        // Dry-run reports but does not delete; a real sweep then removes.
+        let ws = group.join("ws/demo/feature-x");
+        fs::create_dir_all(ws.join("target/pkg")).unwrap();
+        fs::write(ws.join("target/pkg/blob"), "12345").unwrap();
+        run_ws(vec![
+            "sweep".into(),
+            "--idle".into(),
+            "0h".into(),
+            "--dry-run".into(),
+        ])
+        .unwrap();
+        assert!(ws.join("target/pkg/blob").exists());
+        run_ws(vec!["sweep".into(), "--idle".into(), "0h".into()]).unwrap();
+        assert!(!ws.join("target").exists());
+        env::set_current_dir(&old).unwrap();
         let _ = fs::remove_dir_all(&root);
     }
 
