@@ -246,7 +246,7 @@ more reasoning. Minion uses GPT-5.6 Sol at `low` and is the default implementati
 tier: the orchestrator decomposes work and supplies clear implementation packets
 so Minion performs the bulk of coding. Build is reserved for ambiguity, breadth,
 investigation, or coordination that planning cannot reasonably remove. The
-higher-capability `wise` agent uses `openrouter/anthropic/claude-fable-5` with
+higher-capability `wise` agent uses `openrouter/anthropic/claude-fable-5.1` with
 `variant = "high"`. All coding agents share one generated bash permission
 policy so safety-rule changes stay consistent across tiers. Their concise
 descriptions summarize the intended delegation tradeoff so primary agents can

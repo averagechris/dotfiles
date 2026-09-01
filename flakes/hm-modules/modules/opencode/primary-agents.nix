@@ -349,7 +349,7 @@ in {
     ---
     description: Highest-capability delegate for difficult, high-stakes work; expensive.
     mode: subagent
-    model: openrouter/anthropic/claude-fable-5
+    model: openrouter/anthropic/claude-fable-5.1
     variant: high
     temperature: 0.0
     steps: 9999
