@@ -11,4 +11,5 @@ Common issues and their solutions for this NixOS/Darwin dotfiles repository.
 - [Home Manager package path collisions](./home-manager-package-collisions.md) - When two packages in `home.packages` provide the same path
 - [Hyprland invalid source path during flake evaluation](./hyprland-invalid-source-path.md) - When `nix flake check --no-build` fails on Hyprland hosts
 - [Hyprland build fails fetching glaze with FetchContent](./hyprland-glaze-fetchcontent.md) - When the pinned Hyprland build cannot find glaze 7.x in nixpkgs
+- [Activation fails on an unmaterialized `…-source/` path](./lazy-trees-unmaterialized-source-path.md) - When a stringified `./file` path does not exist at activation under lazy-trees
 - [MT7925e Wi-Fi instability on tater](./mt7925e-network-instability.md) - When tater's Wi-Fi disconnects or stops passing traffic

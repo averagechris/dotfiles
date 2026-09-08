@@ -167,6 +167,13 @@ in {
       owner = "chris";
       mode = "0400";
     };
+
+    # kubectl reads this decrypted path directly via KUBECONFIG (see aws.nix).
+    suremac-kubeconfig-eks = {
+      file = ../../../secrets/suremac-kubeconfig-eks.age;
+      owner = "chris";
+      mode = "0400";
+    };
   };
 
   nixpkgs.config.allowUnfree = true;

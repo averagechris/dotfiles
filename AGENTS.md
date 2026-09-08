@@ -13,8 +13,6 @@ Keep this file minimal. Put durable topic guidance in `docs/`.
 
 ## Non-negotiable rules
 
-- Never read `secrets/`, decrypted secret material, or files ending in `.age`
-  without explicit permission.
 - Keep documentation in sync with code. Any behavior, module, package, host,
   keybinding, command, or workflow change should update the corresponding doc and
   `docs/README.md` when the doc set changes.
@@ -29,7 +27,7 @@ flakes/hm-modules/                reusable Home Manager modules and OpenCode ski
 flakes/darwin-modules/            reusable nix-darwin modules
 flakes/hosts/<hostname>/          individual host flakes and configs
 docs/                             canonical project documentation
-secrets/                          encrypted agenix material; do not read casually
+secrets/                          encrypted agenix material (secrets.nix lists recipients)
 ```
 
 ## Common checks

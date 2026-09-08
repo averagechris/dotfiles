@@ -188,6 +188,47 @@ module options and common commands. Explicit requests for a visible browser use
 the `rdny-helium` wrapper, which starts or reconnects to a dedicated graphical
 Helium profile rather than exposing the ordinary Helium profile to CDP.
 
+## AWS profiles and Kubernetes contexts
+
+`flakes/hosts/suremac/aws.nix` generates `~/.aws/config` with SSO profiles that
+share one start URL:
+
+| Profile                         | Purpose                                      |
+| ------------------------------- | -------------------------------------------- |
+| `qa`, `sandbox`                 | Surecraft non-production backend access      |
+| `connect-qa`, `connect-sandbox` | Sure Connect non-production backend access   |
+| `registries-read`               | CodeArtifact / ECR read access               |
+
+Account IDs and role names live only in `aws.nix`. `AWS_PROFILE` defaults to
+`qa`. Log in with `aws sso login --profile <name>`; one login covers every
+profile that shares the start URL.
+
+Kubernetes contexts are split across two files merged by `KUBECONFIG`
+(set in `aws.nix`):
+
+- `~/.kube/config` stays a plain writable file because StrongDM
+  (`sdm kubernetes update-config`) writes production clusters into it.
+- `/run/agenix/suremac-kubeconfig-eks` is the agenix-decrypted source for the
+  user-owned `~/.kube/suremac-kubeconfig-eks` copy: endpoints, CA data, and
+  `aws eks get-token` exec users for the non-production EKS clusters whose
+  `aws-auth` maps the SSO role directly. Home Manager refreshes the copy during
+  activation. It must be writable because `kubectl config use-context` creates
+  a sibling lock file while updating `current-context`. Each exec entry pins
+  its `--profile`, so contexts work after `aws sso login` with no extra
+  environment.
+
+The cluster list is the `eksClusters` attribute in `aws.nix`. To add or refresh
+one, edit that list, then:
+
+```bash
+render-eks-kubeconfig | agenix -e secrets/suremac-kubeconfig-eks.age
+nh darwin switch . --hostname suremac
+```
+
+`render-eks-kubeconfig` needs a live SSO session for every profile in the list;
+`agenix -e` reads stdin when it is not a TTY. First file wins on context-name
+collisions, so stale hand-made entries in `~/.kube/config` can simply be deleted.
+
 ## KeePassXC Qt5 linker workaround
 
 The shared package overlay links KeePassXC and a private `qtmacextras` build with

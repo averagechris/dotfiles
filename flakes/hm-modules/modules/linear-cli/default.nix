@@ -45,7 +45,10 @@
     ${lib.getExe cfg.package} completions static fish > $out/share/fish/vendor_completions.d/linear.fish
     ${lib.getExe cfg.package} completions static zsh > $out/share/zsh/site-functions/_linear
   '';
-  mergeContextScript = ./merge-context.py;
+  # Interpolate so the file is copied into the store with string context. A bare
+  # path through toString/escapeShellArg keeps only the virtual source path,
+  # which is never materialized under lazy-trees and fails at activation.
+  mergeContextScript = "${./merge-context.py}";
   # The CLI resolves its user-level config dir with `dirs::config_dir()`:
   # ~/Library/Application Support/linear-cli on Darwin and
   # $XDG_CONFIG_HOME/linear-cli on Linux. Writing to ~/.config on Darwin

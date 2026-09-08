@@ -33,6 +33,12 @@ in {
   "granola-token.age".publicKeys = [suremac-key];
   "opencode-sure-stack-context.age".publicKeys = [suremac-key];
 
+  # Kubeconfig fragment for the Sure EKS clusters reachable directly via AWS SSO
+  # (endpoints, CA data, aws eks get-token exec users). Merged into KUBECONFIG
+  # after ~/.kube/config, which StrongDM keeps writing for production.
+  # Regenerate with `render-eks-kubeconfig` and paste into `agenix -e`.
+  "suremac-kubeconfig-eks.age".publicKeys = [suremac-key];
+
   # Thorny secrets (fleet-cache-warmer)
   # Cachix auth token with write access to the averagechris-dotfiles cache.
   # Ships as the literal placeholder REPLACE_ME until provisioned; the warmer
