@@ -118,30 +118,7 @@
             inherit (prev.stdenv.hostPlatform) system;
             opencodeInput = inputs.opencode;
             rev = opencodeInput.shortRev or opencodeInput.dirtyShortRev or "dirty";
-            upstreamHashes = builtins.fromJSON (builtins.readFile "${opencodeInput}/nix/hashes.json");
-            nodeModulesOverrides = {
-              "3b7a5e783d59e8986dca6e5df48663613fa80722" = {
-                hash.aarch64-darwin = "sha256-81IAmdjiYZz8IgMJt0+VxzdOS80gTHc5SendwEW/vD4=";
-              };
-              "0f272d931d806681a0f7f19538e2f3f1d52d1832" = {
-                hash.aarch64-darwin = "sha256-+lx7mv1QM+nl3UPY9GxPcbWlhK4TKYp96rvJd51Exig=";
-                postPatch = ''
-                  substituteInPlace bun.lock \
-                    --replace-fail '"ghostty-web": ["ghostty-web@github:anomalyco/ghostty-web#20bd361", {}, "anomalyco-ghostty-web-20bd361", "sha512-dW0nwaiBBcun9y5WJSvm3HxDLe5o9V0xLCndQvWonRVubU8CS1PHxZpLffyPt1YujPWC13ez03aWxcuKBPYYGQ=="]' \
-                                   '"ghostty-web": ["ghostty-web@github:anomalyco/ghostty-web#513463a", {}, "anomalyco-ghostty-web-513463a", "sha512-GZR8LSmgGzViWnBJrqRI8MpAZRCJxhcr1Hi9Tyeh7YRooHZQjK9J97FQRD3tbBaM2wjq05gzGY2UEsG+JtZeBw=="]'
-                '';
-              };
-            };
-            override = nodeModulesOverrides.${opencodeInput.rev or ""} or {};
-            hasSystemOverride = builtins.hasAttr system (override.hash or {});
-            node_modules =
-              (final.callPackage "${opencodeInput}/nix/node_modules.nix" {
-                inherit rev;
-                hash =
-                  (override.hash or {}).${system} or upstreamHashes.nodeModules.${system};
-              }).overrideAttrs (old: {
-                postPatch = (old.postPatch or "") + (final.lib.optionalString hasSystemOverride (override.postPatch or ""));
-              });
+            node_modules = final.callPackage "${opencodeInput}/nix/node_modules.nix" {inherit rev;};
           in {
             titlecase = base-lib.inputs.titlecase.packages.${system}.default;
             pi-coding-agent = final.callPackage ../base-lib/packages/pi-coding-agent.nix {};
@@ -389,8 +366,6 @@
           taskPermissions = blockAfter "  task:\n" "\n---";
           bashPermissions = blockAfter "  bash:\n" "\n  skill:";
           buildBashPermissions = bashPermissions buildPrompt;
-          ruleOffset = rule:
-            builtins.stringLength (builtins.head (lib.splitString rule buildBashPermissions));
           permissionRules = lib.filter (rule: rule != null) (
             map (line: let
               matched = builtins.match ''[ ]*"([^"]+)": "(allow|ask|deny)"'' line;
@@ -416,122 +391,29 @@
             null
             permissionRules;
           deletionCases = [
-            {
-              command = "rm -rf build";
-              expected = "allow";
-            }
-            {
-              command = "rm -rf .*";
-              expected = "allow";
-            }
-            {
-              command = "rm -rf .venv";
-              expected = "allow";
-            }
-            {
-              command = "rm -rf .";
-              expected = "ask";
-            }
-            {
-              command = "rm -rf ..";
-              expected = "ask";
-            }
-            {
-              command = "rm -rf ../child";
-              expected = "ask";
-            }
-            {
-              command = "rm -rf /*";
-              expected = "ask";
-            }
-            {
-              command = "rm -rf /tmp";
-              expected = "ask";
-            }
-            {
-              command = "rm -rf /tmp/";
-              expected = "ask";
-            }
-            {
-              command = "rm -rf /tmp//";
-              expected = "ask";
-            }
-            {
-              command = "rm -rf /tmp/cache";
-              expected = "allow";
-            }
-            {
-              command = "rm -rf /tmp/.venv";
-              expected = "allow";
-            }
-            {
-              command = "rm -rf /private/tmp//";
-              expected = "ask";
-            }
-            {
-              command = "rm -rf /private/tmp/cache";
-              expected = "allow";
-            }
-            {
-              command = "rm -rf /tmp/.";
-              expected = "ask";
-            }
-            {
-              command = "rm -rf /tmp/..";
-              expected = "ask";
-            }
-            {
-              command = "rm -rf /tmp/../Users";
-              expected = "ask";
-            }
-            {
-              command = "rm -rf /tmp/./..";
-              expected = "ask";
-            }
-            {
-              command = "rm -rf /tmp/./../child";
-              expected = "ask";
-            }
-            {
-              command = "rm -rf /tmp/a/b/../child";
-              expected = "ask";
-            }
-            {
-              command = "rm -rf /var/folders/2r/session/T/opencode";
-              expected = "ask";
-            }
-            {
-              command = "rm -rf /var/folders/2r/session/T/opencode//";
-              expected = "ask";
-            }
-            {
-              command = "rm -rf /var/folders/2r/session/T/opencode/cache";
-              expected = "allow";
-            }
-            {
-              command = "rm -rf /private/var/folders/2r/session/T/opencode//";
-              expected = "ask";
-            }
-            {
-              command = "rm -rf /private/var/folders/2r/session/T/opencode/cache";
-              expected = "allow";
-            }
-            {
-              command = "rm -rf cache /tmp//";
-              expected = "ask";
-            }
-            {
-              command = "rm -rf cache /etc";
-              expected = "ask";
-            }
-            {
-              command = "rm -rf cache ../child";
-              expected = "ask";
-            }
-            {
-              command = "rm -rf /tmp/cache secrets/key";
-              expected = "ask";
-            }
+            {command = "rm -rf build"; expected = "allow";}
+            {command = "rm -rf /tmp/cache"; expected = "allow";}
+            {command = "rm -rf /var/log/example"; expected = "allow";}
+            {command = "rm -rf ."; expected = "deny";}
+            {command = "rm -rf ../child"; expected = "deny";}
+            {command = "rm -rf /"; expected = "deny";}
+            {command = "rm -rf //"; expected = "deny";}
+            {command = "rm -rf ///"; expected = "deny";}
+            {command = "rm -rf .//"; expected = "deny";}
+            {command = "rm -rf ~"; expected = "deny";}
+            {command = "rm -rf ~/cache"; expected = "deny";}
+            {command = "rm -rf $HOME/Library"; expected = "deny";}
+            {command = "rm -rf /Users/chris/Downloads"; expected = "deny";}
+            {command = "rm -rf /home/chris/Downloads"; expected = "deny";}
+            {command = "rm -rf cache /Users/chris"; expected = "deny";}
+            {command = "rm -rf cache ///"; expected = "deny";}
+            {command = "rm -rf cache .//"; expected = "deny";}
+            {command = "rm -fr cache $HOME/.cache"; expected = "deny";}
+            {command = "rm -r cache /home/chris/"; expected = "deny";}
+            {command = "ssh example.invalid"; expected = "allow";}
+            {command = "chmod 600 file"; expected = "allow";}
+            {command = "kubectl delete pod example"; expected = "allow";}
+            {command = "jj push"; expected = "allow";}
           ];
           nestedDelegationPolicy = blockAfter "## Nested delegation\n\n" "\n## Review routing" agentSelectionPolicy;
           expectedMinionTaskPermissions = lib.concatStringsSep "\n" [
@@ -541,7 +423,7 @@
           ];
         in
           assert settings.default_agent == "orchestrator";
-          assert settings.subagent_depth == 2;
+          assert settings.experimental.subagent_depth == 2;
           assert lib.hasInfix "Use this exceptional tier only" buildPrompt;
           assert lib.hasInfix "return control to the caller for canonical routing" buildPrompt;
           # Build re-delegation is constrained by orchestrator handoff guidance,
@@ -562,24 +444,11 @@
           # discouraging it is solely handoff guidance in the policy above.
           assert lib.all (prompt: bashPermissions prompt == buildBashPermissions) codingPrompts;
           assert lib.hasInfix ''"*": "allow"'' buildBashPermissions;
+          assert !(lib.hasInfix ''": "ask"'' buildBashPermissions);
           assert !(lib.hasInfix ''"opencode run'' buildBashPermissions);
-          # Relative hidden children use the broad allow. Current-directory and
-          # upward traversal forms remain explicit asks.
-          assert !(lib.hasInfix ''"rm -rf .*": "ask"'' buildBashPermissions);
-          assert lib.hasInfix ''"rm -rf .": "ask"'' buildBashPermissions;
-          assert lib.hasInfix ''"rm -rf ..": "ask"'' buildBashPermissions;
-          assert lib.hasInfix ''"rm -rf ../*": "ask"'' buildBashPermissions;
-          # Recursive absolute deletion prompts, including the shell wildcard
-          # form. Narrow non-root temp descendants override it later.
-          assert lib.hasInfix ''"rm -rf /*": "ask"'' buildBashPermissions;
-          assert lib.hasInfix ''"rm -rf /tmp/?*": "allow"'' buildBashPermissions;
-          assert lib.hasInfix ''"rm -rf /private/tmp/?*": "allow"'' buildBashPermissions;
-          assert lib.hasInfix ''"rm -rf /var/folders/*/T/opencode/?*": "allow"'' buildBashPermissions;
-          assert lib.hasInfix ''"rm -rf /private/var/folders/*/T/opencode/?*": "allow"'' buildBashPermissions;
-          assert ruleOffset ''"rm -rf /*": "ask"'' < ruleOffset ''"rm -rf /tmp/?*": "allow"'';
-          assert ruleOffset ''"rm -rf /*": "ask"'' < ruleOffset ''"rm -rf /private/tmp/?*": "allow"'';
-          assert ruleOffset ''"rm -rf /*": "ask"'' < ruleOffset ''"rm -rf /var/folders/*/T/opencode/?*": "allow"'';
-          assert ruleOffset ''"rm -rf /*": "ask"'' < ruleOffset ''"rm -rf /private/var/folders/*/T/opencode/?*": "allow"'';
+          assert lib.hasInfix ''"rm -rf /": "deny"'' buildBashPermissions;
+          assert lib.hasInfix ''"rm -rf /Users/chris/*": "deny"'' buildBashPermissions;
+          assert lib.hasInfix ''"rm -rf /home/chris/*": "deny"'' buildBashPermissions;
           # Exercise representative commands against the generated ordered
           # rules, including later overrides and multi-operand guardrails.
           assert lib.all (case: permissionFor case.command == case.expected) deletionCases;
@@ -587,6 +456,26 @@
               mkdir -p $out
               touch $out/success
             '';
+
+        opencode-v2-plugin-contract =
+          pkgs.runCommand "opencode-v2-plugin-contract" {
+            nativeBuildInputs = [pkgs.nodejs];
+          } ''
+            node ${./modules/opencode/tests/plugin-v2-contract.mjs} \
+              ${./modules/opencode/plugins/dotfiles-direnv.js} \
+              ${./modules/opencode/plugins/dotfiles-rust-cache.js}
+            mkdir -p "$out"
+          '';
+
+        opencode-session-cleanup-contract =
+          pkgs.runCommand "opencode-session-cleanup-contract" {
+            nativeBuildInputs = [pkgs.python3];
+          } ''
+            SESSION_CLEANUP_MODULE=${./modules/opencode/session-cleanup.nix} \
+              SESSION_CLEANUP_GUARD=${./modules/opencode/service-guard.sh} \
+              python3 ${./modules/opencode/test-session-cleanup.py}
+            mkdir -p "$out"
+          '';
 
         nitter-link-stable-path = let
           fakeExtensionV1 = pkgs.runCommand "fake-nitter-link-package-v1" {} ''

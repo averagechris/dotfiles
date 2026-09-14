@@ -39,6 +39,9 @@
     }
   ];
   cfg = config.dotfiles.opencode;
+  # V2's fixed-output derivation still copies every node_modules tree after the
+  # build. Remove this override when upstream installs directly into $out or an
+  # output-equivalence check proves its replacement preserves the same tree.
   optimizedNodeModules = pkgs.opencode.node_modules.overrideAttrs (old: let
     buildSetupMarker = "export BUN_INSTALL_CACHE_DIR=$(mktemp -d)";
     markerParts = lib.splitString buildSetupMarker old.buildPhase;
@@ -66,7 +69,7 @@
       '';
     });
   # Patches applied on top of the upstream opencode source (built from the
-  # `github:anomalyco/opencode` flake input). Each patch targets a specific
+  # `github:anomalyco/opencode/v2` flake input). Each patch targets a specific
   # upstream gap; when upstream incorporates the fix, the patch becomes a
   # no-op and should be removed. Detect stale/broken patches with:
   #   scripts/check-opencode-patches.sh
@@ -76,10 +79,7 @@
     patches =
       (old.patches or [])
       ++ [
-        ./patches/opencode-allow-nix-bun-1-3-13.patch
         ./patches/opencode-strip-env-assignments.patch
-        ./patches/opencode-fix-old-drizzle-migration-journal.patch
-        ./patches/opencode-route-nested-prompts.patch
       ];
   });
   opencodePackage =
@@ -113,7 +113,7 @@
   # Print shell exports that override opencode models for the current shell
   # session via OPENCODE_CONFIG_CONTENT (merged last, so it beats the managed
   # config) without touching any persistent configuration. The `oconf` shell
-  # function evals this output so `oconf && opencode` works. Models come live
+  # function evals this output for `oconf && opencode --standalone`. Models come live
   # from `opencode models` and agents are discovered from the deployed config;
   # see docs/opencode.md.
   ocTrial = pkgs.writeShellApplication {
@@ -193,7 +193,7 @@ in {
       defaultText = lib.literalExpression "config.programs.direnv.enable";
       description = ''
         Install an OpenCode plugin that resolves the direnv environment for
-        each bash tool invocation's working directory and merges it into the
+        each shell invocation's working directory and merges it into the
         command environment. This gives agents (including subagents working in
         other repos) project dev-shell tooling without `nix develop --command`
         or `direnv exec` wrappers. Only direnv-allowed `.envrc` files load.
@@ -242,6 +242,11 @@ in {
         # SETTINGS - OpenCode configuration (written to config.json)
         # ============================================================================
 
+        # TODO(hm-upstream): Home Manager's tui settings still emit V1
+        # tui.json. When Home Manager offers a V2 option, use it for future
+        # managed CLI preferences and remove this note. Do not invent local
+        # option machinery or point V2 at writable config in the Nix store.
+
         settings = import ./settings.nix {inherit lib pkgs managedJjWorkspaceExternalDirectories;};
       };
 
@@ -257,7 +262,7 @@ in {
         ++ [ocTrial];
 
       # The oconf helper prints export lines; eval them in the current shell
-      # so `oconf && opencode` launches with the overrides applied.
+      # so `oconf && opencode --standalone` starts a server with the overrides.
       programs.zsh.initContent = ''
         # Apply oconf model-trial exports in the current shell.
         oconf() {

@@ -32,7 +32,7 @@
       inputs.flake-utils.follows = "flake-utils";
     };
     opencode = {
-      url = "github:anomalyco/opencode";
+      url = "github:anomalyco/opencode/v2";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };

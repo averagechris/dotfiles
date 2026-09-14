@@ -1,13 +1,18 @@
 # OpenCode
 
-This repository manages OpenCode through the home-manager module at `flakes/hm-modules/modules/opencode/`.
+This repository manages OpenCode through the Home Manager module at
+`flakes/hm-modules/modules/opencode/`.
 
-OpenCode itself comes from the upstream `github:anomalyco/opencode` flake input,
-not from nixpkgs. `flakes/base-lib/` exposes that package through the shared
-overlay as `pkgs.opencode`, and `flakes/hm-modules/` mirrors the same overlay for
-standalone module evaluation checks. This keeps OpenCode closer to upstream's
-frequent releases while preserving the normal `pkgs.opencode` and home-manager
-`programs.opencode.package` integration points.
+OpenCode itself comes from the upstream `github:anomalyco/opencode/v2` flake
+input, not from nixpkgs. The current pin reports version `2.0.3`; the exact
+revision and package lifecycle live in [OpenCode patch lifecycle](opencode-patches.md).
+The upstream flake builds its `packages/cli` package. `flakes/base-lib/` exposes
+that package through the shared overlay as `pkgs.opencode`, and
+`flakes/hm-modules/` mirrors the same overlay for standalone module evaluation
+checks. All fourteen lock graphs carry the same OpenCode revision.
+
+This keeps OpenCode close to upstream releases while preserving the normal
+`pkgs.opencode` and Home Manager `programs.opencode.package` integration points.
 
 ## What it configures
 
@@ -20,11 +25,49 @@ frequent releases while preserving the normal `pkgs.opencode` and home-manager
 - optional `CIRCLECI_TOKEN` shell export via `dotfiles.opencode.circleciTokenFile`
 - agent-specific runtime packages and prompt metadata exposed via `dotfiles.opencode.agentTools`
 - host-specific private skill appendices materialized during Home Manager activation
-- on hosts with `dotfiles.devCache`, an automatically loaded `shell.env` plugin
-  sets `CARGO_INCREMENTAL=0` only inside OpenCode so parallel isolated Rust
-  workspaces favor the shared sccache without changing interactive shells
-- on hosts with direnv enabled, a `dotfiles-direnv` plugin loads each working
-  directory's direnv-allowed dev shell environment into agent shell commands
+- on hosts with `dotfiles.devCache`, an automatically loaded
+  `shell.create.before` plugin hook sets `CARGO_INCREMENTAL=0` for each
+  OpenCode shell invocation so parallel isolated Rust workspaces favor the
+  shared sccache without changing interactive shells
+- on hosts with direnv enabled, a `dotfiles-direnv` plugin uses the same
+  per-invocation hook, including the invocation's cwd and mutable environment,
+  to load each working directory's direnv-allowed dev shell environment
+
+## V2 trial and migration
+
+The Nix package and generated configuration are immutable. Do not install a
+second OpenCode with `curl` or `npm` while trying V2, because it can collide
+with the Nix-managed package. On Darwin, run the host's `nh darwin build`
+first, then switch only when you are ready to activate the result.
+
+Before the first V2 use, stop relevant OpenCode servers, then separately copy
+the data directory (`~/.local/share/opencode`, including its SQLite database and
+WAL files) and readable configuration (`~/.config/opencode`) to a backup. Stop
+servers before any filesystem copy so SQLite and its WAL stay consistent. Do
+not roll back to V1 after V2 has migrated the data unless you first stop the
+servers and restore the data backup; restore configuration separately if
+needed. V2 owns migration of global writable CLI preferences.
+
+As an optional read-only preflight, inspect the copied V1 database (with its WAL
+beside it), never the live database:
+
+```sh
+sqlite3 -readonly "$HOME/.local/share/opencode-v1-backup/opencode.db" \
+  'SELECT count(*) AS completed_migrations FROM "migration";'
+```
+
+For the pinned 1.18.29 V1 state, expect at least 38 completed migrations before
+proceeding. Replace the example path with the database in your backup, not the
+live `~/.local/share/opencode` path.
+
+This repository does not manage a V2 CLI preferences file. There are no existing
+managed TUI settings to carry over, and Home Manager currently exposes only its
+V1 `tui.json` option. Remove this exception when Home Manager adds a V2 CLI
+option. Do not add speculative CLI option machinery locally.
+
+After activation, exit and restart any shared OpenCode server before using the
+new package. A server that survived activation can continue serving the old
+code or configuration to new clients.
 
 ## Session cleanup on suremac
 
@@ -32,18 +75,28 @@ frequent releases while preserving the normal `pkgs.opencode` and home-manager
 macOS user launchd agent on `suremac`. The agent checks at the top of every hour
 on weekdays, but uses a date stamp so it performs deletion at most once per
 calendar day. It defers when the one-minute CPU load is at or above 60% of
-logical CPU capacity, or when an OpenCode or `ctx` process is running; launchd
-tries again at the next hourly check.
+logical CPU capacity, or when `ctx` is reading session storage; launchd tries
+again at the next hourly check.
 
-The cleanup reads the active database read-only, selects sessions whose
-`time_updated` is more than 45 days old, and deletes them through OpenCode's
-supported `opencode session delete` command. It always preserves at least the
-25 newest sessions, including when every session is older than the retention
-window. Failed deletions do not advance the daily stamp, allowing a later check
-to retry. The database path defaults to
-`~/.local/share/opencode/opencode.db`. The script intentionally does not offer
-an alternate database override: session selection and the subsequent
-`opencode session delete` command must target the same database.
+The V2 cleanup first checks the managed service with the read-only
+`opencode service status` discovery command. If the service is stopped or its
+status cannot be read, cleanup defers without starting one. It then checks
+active sessions through the running managed OpenCode service. An
+active session defers cleanup, while an OpenCode process by itself does not,
+because the V2 background service normally remains running. Session listing
+also goes through that service, and deletion uses OpenCode's supported
+`opencode session delete` command, so selection and mutation use the same
+service state.
+
+The selector considers sessions whose `time_updated` is more than 45 days old
+and protects at least the 25 newest sessions, including when every session is
+older than the retention window. Deletion cascades to child sessions, so it
+selects only maximal subtrees in which every session is eligible and outside the
+protected newest set. The cleanup follows every cursor page, then rechecks
+activity and recomputes the safe subtrees before each delete. A session can still
+change in the small interval between the final check and the delete, so this is
+not an atomic guarantee. Failed deletions do not advance the daily stamp,
+allowing a later check to retry.
 
 The launchd log is `~/Library/Logs/opencode-session-cleanup.log`; the daily
 stamp is `~/.local/state/opencode-session-cleanup/last-run`. launchd does not
@@ -54,9 +107,11 @@ check.
 
 The module installs an `oconf` helper for trialing new models without
 touching any persistent configuration. It emits shell exports that set the
-`OPENCODE_CONFIG_CONTENT` environment variable, which OpenCode merges last,
-so the overrides beat the managed config for every opencode launched from
-that shell until cleared.
+`OPENCODE_CONFIG_CONTENT` environment variable, which OpenCode merges last
+when its server starts. Use `opencode --standalone` for trials. A V2 client
+connected to an existing background server does not replace that server's
+configuration with the client's environment. Do not restart a shared server
+just to try a model.
 
 A matching `oconf` shell function (installed for zsh and bash) evals the
 helper's output in the current shell:
@@ -64,17 +119,17 @@ helper's output in the current shell:
 ```zsh
 # Interactive picker: choose a session/general model plus optional per-agent
 # overrides, then launch.
-oconf && opencode
+oconf && opencode --standalone
 
 # Direct: trial a model for every role (session model plus every agent that
 # has a pinned model in the deployed config).
-oconf openrouter/x-ai/grok-4.5 && opencode
+oconf openrouter/x-ai/grok-4.5 && opencode --standalone
 
 # Keep the normal orchestrator model, trial a coding model on specific agents.
-oconf openrouter/x-ai/grok-code minion build && opencode
+oconf openrouter/x-ai/grok-code minion build && opencode --standalone
 
 # Optionally set a reasoning variant on the targeted agents.
-oconf -v high openrouter/some-new-model && opencode
+oconf -v high openrouter/some-new-model && opencode --standalone
 
 # Clear overrides for the current shell.
 oconf -u
@@ -108,13 +163,13 @@ Direct mode stays non-interactive for scripted use:
 ```zsh
 # Trial a model for every role (session model plus every agent that has a
 # pinned model in the deployed config).
-oconf openrouter/x-ai/grok-4.5 && opencode
+oconf openrouter/x-ai/grok-4.5 && opencode --standalone
 
 # Keep the normal orchestrator model, trial a coding model on specific agents.
-oconf openrouter/x-ai/grok-code minion build && opencode
+oconf openrouter/x-ai/grok-code minion build && opencode --standalone
 
 # Optionally set a reasoning variant on the targeted agents.
-oconf -v high openrouter/some-new-model && opencode
+oconf -v high openrouter/some-new-model && opencode --standalone
 
 # Clear overrides for the current shell.
 oconf -u
@@ -126,6 +181,56 @@ shell until `oconf -u`. Agent discovery reads `$OPENCODE_CONFIG_DIR` (default
 `~/.config/opencode`), so tests can point it at a fixture directory. For
 scripted plan use, set `OCONF_PLAN_FILE` to a file of
 `<agent> = <model> [variant=<v>]` lines to skip the pickers and editor.
+
+V2 can return an empty model list while a new location activates its plugins.
+The helper makes up to five calls when responses are empty, with 250 ms
+between calls. CLI failures are not retried. If the list remains empty, wait for
+the server to finish loading and check `opencode models` before retrying.
+
+### Verifying the V2 integration without activation
+
+Run the opt-in runtime check with the built binary and the emitted Home Manager
+`opencode` directory, containing `opencode.json`, agents, skills, commands, and
+both local plugins:
+
+```sh
+python3 flakes/hm-modules/modules/opencode/tests/runtime-v2.py \
+  /nix/store/<built-package>/bin/opencode \
+  /nix/store/<emitted-artifacts>/opencode
+```
+
+The check requires Bash, jq, and direnv on `PATH`, and disabled MCP servers in
+the emitted config. It creates an isolated HOME and XDG tree under `TMPDIR`,
+starts authenticated localhost servers on a temporary port, and stops them on
+exit. It retains request/response records and process logs at the printed path.
+It uses a local provider catalog fixture, makes no model completion calls, and
+does not read live credentials or activate Home Manager.
+
+The check waits until both repo-managed plugins report an active state, then
+covers generated resource discovery, normalized permissions and
+Minion's subagent resource policy, effective shell cwd, real direnv allow/block
+behavior, the Rust environment override, cold `oconf` enumeration, and config
+overrides on a fresh server. It checks the configured depth limit, not actual
+model-driven nested delegation. Raw `shell.create` exercises shell hooks but
+does not run the shell tool's permission scanner; permission evaluation is
+tested separately through the session permission API.
+
+The normal module checks also run source-level plugin and cleanup contracts. The
+session cleanup test gains a real-runtime portion only when `OPENCODE_V2_BIN`
+points at a built binary. These checks use fixtures for model catalogs and
+session ages, but they do not replace OpenCode or direnv with mocks. They do not
+make a paid model request, so provider authentication and model completion stay
+outside this migration's automated coverage.
+
+For manual API checks, V2 initializes location plugins asynchronously. An empty
+first `agent.list`, `skill.list`, `command.list`, or `plugin.list` response is
+not proof of missing config. Keep the server alive and wait for activation.
+Use `location[directory]` or `x-opencode-directory`, and canonicalize macOS
+paths so `/var` and `/private/var` do not initialize separate locations. The
+pinned Nix package uses channel `prod`, so its managed service configuration is
+`service-prod.json`, not `service.json`. An explicit `--server` client needs the
+matching `OPENCODE_PASSWORD`; setting that variable does not change the password
+of an existing managed service.
 
 ## Repo-managed slash commands
 
@@ -238,7 +343,7 @@ profile.
 
 The `orchestrator` is the generated OpenCode default agent, making decomposition
 and Minion-first routing the normal entry point. It uses the same open-by-default
-bash safety posture as Build, is tuned for ambitious projects, and can delegate
+shell safety posture as Build, is tuned for ambitious projects, and can delegate
 work across five coding tiers: `tiny`, `luna`, `minion`,
 `build`, and `wise`. Tiny uses GPT-5.6 Luna at `low` for mechanical work, while
 the distinct Luna tier uses the same model at `high` for bounded work requiring
@@ -247,10 +352,10 @@ tier: the orchestrator decomposes work and supplies clear implementation packets
 so Minion performs the bulk of coding. Build is reserved for ambiguity, breadth,
 investigation, or coordination that planning cannot reasonably remove. The
 higher-capability `wise` agent uses `openrouter/anthropic/claude-fable-5.1` with
-`variant = "high"`. All coding agents share one generated bash permission
+`variant = "high"`. All coding agents share one generated shell permission
 policy so safety-rule changes stay consistent across tiers. Their concise
 descriptions summarize the intended delegation tradeoff so primary agents can
-choose effectively from the task tool.
+choose effectively from the subagent tool.
 Wise also carries a stable judgment stance for high-consequence work: keep
 decisions falsifiable, treat implementation as design evidence, and make
 disagreement explicit.
@@ -262,18 +367,25 @@ reviewer decides which changed tests deserve permanent retention; an implementat
 handoff may then remove low-value tests and run focused checks. Non-code work and
 changes without test changes do not carry this guidance.
 
-OpenCode's `subagent_depth` is set to `2`. Upstream counts a direct subagent at
-depth one, so this permits one nested handoff while still preventing longer
-delegation chains. The orchestrator policy requires every handoff prompt to say
-whether sub-delegation is appropriate rather than adding situational guidance to
-all delegated-agent prompts. Handoffs normally tell agents to complete their
-packets directly; they may explicitly allow a sparse, separable handoff when it
-is useful. Build may re-delegate sparingly when unresolved complexity warrants
-it. Minion is more tightly scoped: its task permissions allow only Explore for
-focused research and Tiny for mechanical support, not coding agents for
-implementation or build work. Handoff prompts steer justified nested work
-through the task tool and say not to use `opencode run` as a routine delegation
-escape hatch. That command remains permission-allowed rather than banned.
+V2 stores the delegation limit at `experimental.subagent_depth = 2`.
+Upstream counts a direct subagent at depth one, so this permits one nested
+handoff while still preventing longer delegation chains. The orchestrator
+policy requires every handoff prompt to say whether sub-delegation is
+appropriate rather than adding situational guidance to all delegated-agent
+prompts. Handoffs normally tell agents to complete their packets directly; they
+may explicitly allow a sparse, separable handoff when it is useful. Build may
+re-delegate sparingly when unresolved complexity warrants it. Minion is more
+tightly scoped: its delegation permissions allow only Explore for focused
+research and Tiny for mechanical support, not coding agents for implementation
+or build work. Handoff prompts steer justified nested work through the
+subagent tool and say not to use `opencode run` as a routine delegation escape
+hatch. That command remains permission-allowed rather than banned.
+
+The managed agent catalog and existing permission fields remain intentionally
+compatible with the supported Home Manager/OpenCode configuration surface.
+Those fields retain the legacy `bash` and `task` names where required; the V2
+concepts are shell execution and subagents, so generated guidance uses those
+terms instead of treating the field names as user-facing concepts.
 
 The repo-managed `subagent-selection` skill and orchestrator both render the
 canonical routing policy from `agent-selection-policy.md` and the relative
@@ -365,67 +477,44 @@ them a practical write path. Both temporary-path spellings are present because
 macOS canonicalizes `/tmp` and `/var` through `/private`; unrelated external
 directories continue to prompt.
 
-For Build, `orchestrator`, `minion`, `luna`, `tiny`, and `wise`, the catch-all rule is
-`"*": "allow"`, and narrower later rules prompt or deny known sharp edges. OpenCode
-evaluates the last matching permission rule, so keep the broad allow at the top
-and add riskier overrides below it. This reduces approval fatigue for normal
-build/test/exploration work while keeping rare high-impact decisions visible.
+For Build, `orchestrator`, `minion`, `luna`, `tiny`, and `wise`, shell execution
+never asks for approval. Their shared policy starts with `"*": "allow"`; later
+rules only hard-deny commands that must not run. Direct reads of encrypted secret
+material with common text/search commands, privilege escalation (`sudo`, `doas`,
+`su`), and `mkfs*` remain denied. The separate read-only Plan agent policy is
+unchanged.
 
-Prompt-gated Build-agent command families include:
+Everything else inherits the catch-all allow, including `.env`/agenix/sops
+workflows, SSH and remote copies, deploys and switches, ownership and mode
+changes, `diskutil`/`dd`, process and service control, Git/jj/GitHub operations,
+and kubectl reads or mutations. This intentionally favors uninterrupted coding
+agent execution over approval prompts.
 
-- reads of encrypted secret material via common text/search commands, plus
-  `.env*`, `agenix`, and `sops`; creating or updating encrypted secret files is
-  still allowed so agents can run normal secret-editing workflows
-- remote copy/login, deployment, and system switches (`ssh`, `scp`, `rsync`,
-  `nix run .#deploy*`,
-  `nixos-rebuild switch`, `darwin-rebuild switch`, `nh * switch`)
-- privilege escalation (`sudo`, `doas`, `su`) is denied because it is not useful
-  non-interactively and would require a human password anyway
-- recursive deletion of absolute paths, the Bash tool's current work directory,
-  upward traversal targets, home-directory targets, and secret paths. Ordinary
-  relative cleanup beneath the Bash tool's `workdir` is allowed, including hidden
-  children such as `.venv`. Absolute non-root descendants beneath `/tmp`,
-  `/private/tmp`, and OpenCode session-temp trees under
-  `/var/folders/**/T/opencode` and `/private/var/folders/**/T/opencode` are later
-  allow-rule exceptions; deleting those temp roots themselves still prompts.
-  The shared deletion-rule template can enable or omit those absolute temp
-  exceptions independently for each agent.
-- destructive ownership/permission/disk commands (`chmod`, `chown`, `chgrp`,
-  `dd`, `diskutil`; `mkfs*` is denied)
-- process/service control (`kill`, `killall`, `pkill`, `systemctl`,
-  `launchctl`); Docker Compose teardown/prune commands remain allowed
-- VCS history or publication operations (`git`, selected mutating `jj`
-  subcommands, `jj push`, `jj ship`, `jj tag-push`)
-- GitHub org/repo/auth/issue administration (`gh auth*`, `gh org*`,
-  `gh repo*`, `gh issue*`)
+Catastrophic recursive deletion is denied rather than prompted. The generated
+simple-glob rules cover `rm -rf`, `rm -fr`, and `rm -r` forms targeting `/`, the
+current or parent directory, `~`, `$HOME`, `/Users/chris`, or `/home/chris`, plus
+straightforward trailing-slash, descendant, and later-operand variants. Normal
+absolute cleanup such as `/tmp/cache` remains allowed; there is deliberately no
+blanket block on absolute deletion.
 
-For recursive cleanup, prefer a relative target with the Bash tool's `workdir`
-set to the intended parent directory. This policy is a relative-to-tool-workdir
-guardrail, not CWD sandboxing: OpenCode's simple command globs do not parse every
-operand or prove that every relative path remains beneath the session's original
-CWD, and the Bash tool's explicit `workdir` may differ from that CWD. The
-absolute temp exceptions cover common generated commands, while the
-external-directory allowlist remains a second boundary for additional absolute
-operands. In particular, `rm -rf /*` prompts rather than being silently denied;
-the later temp-descendant patterns are the narrow allowed exceptions. Secret-path
-deletion rules remain later still and therefore continue to prompt. Later
-current/parent-segment and common multi-operand rules keep forms such as
-`/tmp/..`, `/tmp/./../child`, redundant-slash root aliases such as `/tmp//`,
-`cache /etc`, and `cache ../child` prompt-gated. This is deliberately
-conservative but still cannot prove arbitrary shell syntax: quoting, variable
-and wildcard expansion, command substitution, unusual option placement, and
-symlink resolution remain outside what static command globs can establish.
+These rules are guardrails, not an argument-aware shell sandbox. OpenCode's
+permission wildcards only support simple anchored `*` and `?` matching, so they
+cannot prove behavior involving quoting, expansions, command substitution,
+unusual option placement, symlinks, or every possible multi-operand spelling.
+In particular, a pattern that tried to recognize the literal shell source `/*`
+would also match every absolute path, so the policy does not add that broad deny.
+
+The old repeated prompts came from last-match-wins evaluation: narrower `ask`
+rules after the catch-all allow overrode it. OpenCode also scans compound shell
+commands component by component, so one asked component in an `&&` or `;`
+operation asked for the whole operation. Removing every coding-agent shell
+`ask` rule eliminates both prompt paths.
 
 Host-exposed browser automation follows the open default: `rdny` commands are
 allowed for Build agents unless they hit a later risky pattern.
 
-Host-specific investigation CLIs follow the same prompt-reduction model. The
-Build agent allows `pup`, `sentry`, and read-oriented `kubectl` investigation by
-default. Kubernetes secret reads/describes and mutating/session-like subcommands
-such as `apply`, `delete`, `edit`, `exec`, `patch`, `port-forward`, and
-`rollout` are prompt-gated by explicit overrides. Prefer subcommand-first
-kubectl invocations such as `kubectl get pods -n namespace` so the narrow
-override rules can still catch risky subcommands.
+Host-specific investigation CLIs such as `pup`, `sentry`, and `kubectl` follow
+the same open coding-agent default.
 
 When adding command allow rules, prefer an exact command plus a command-space
 wildcard, for example `tool` and `tool *`. Avoid bare prefix allow patterns such
@@ -435,9 +524,9 @@ the intent is to interrupt anything in that command family.
 
 ### Env-prefixed runner commands
 
-OpenCode currently evaluates bash permission rules against the command source it
-extracts from the shell AST. For inline environment assignments, that source can
-include the assignments, so a command such as:
+OpenCode V2's legacy shell scanner evaluates shell permission rules against the
+command source it extracts from the shell AST. For inline environment
+assignments, that source can include the assignments, so a command such as:
 
 ```bash
 SERVICE_REDIS_PORT=51820 SERVICE_POSTGRES_PORT=51821 just test ...
@@ -452,14 +541,11 @@ This module patches `pkgs.opencode`, which is supplied by the upstream OpenCode
 flake overlay, with module-local patches under
 `flakes/hm-modules/modules/opencode/patches/`.
 
-The root TUI is patched to gather pending permission and question requests from
-the complete descendant session tree. Upstream 1.18.18 only gathers the root and
-direct children, which leaves grandchild prompts invisible and stalls nested
-agent chains. See [OpenCode patch lifecycle](opencode-patches.md) for the active
-patch inventory, validation workflow, upstream references, and explicit removal
-criteria (including the separate verified OpenCode v2 migration condition).
+The v1 nested-prompt, Bun, and old-Drizzle patches are retired in V2. See
+[OpenCode patch lifecycle](opencode-patches.md) for the active patch inventory,
+validation workflow, and removal criteria.
 
-`opencode-strip-env-assignments.patch` normalizes bash permission patterns by
+`opencode-strip-env-assignments.patch` normalizes shell permission patterns by
 stripping safe leading inline environment assignments before permission
 matching. With the example above, OpenCode authorizes `just test ...`, so the
 existing `just` and `just *` allow rules work across projects no matter what
@@ -467,41 +553,23 @@ service-specific environment prefix they use.
 
 The patch deliberately does not strip assignments containing command
 substitution, such as `FOO=$(curl example.com) just test` or backticks. Those
-assignments can execute code before `just` starts and should fall through to the
-normal catch-all prompt.
+assignments can execute code before `just` starts and therefore are not rewritten
+for command-specific matching; the coding-agent catch-all still allows them.
 
-The upstream OpenCode flake builds a fixed-output `opencode-node_modules`
-derivation from `nix/hashes.json`. Because the `dev` branch moves quickly, the
-source, `bun.lock`, and node-modules hashes can temporarily drift from each
-other. The base-lib overlay carries any required per-revision node-modules
-overrides next to the upstream package selection, including narrow lockfile
-patches when needed. Overrides are scoped by full upstream revision and system so
-future upstream fixes are used automatically.
-
-The module locally overrides the already-evaluated node-modules derivation to
-avoid recursively copying the completed dependency tree. Patching
-`nix/node_modules.nix` through `patchedOpencode` cannot affect it because that
-file is excluded from the package source fileset. The override injects setup
-that copies the much smaller source tree to `$out` and runs the inherited
-upstream build phase there; a unique-marker assertion makes upstream phase drift
-fail evaluation instead of duplicating and potentially missing changed Bun flags
-or canonicalization steps. The cleanup install phase removes non-module source
-files while preserving workspace parent directories, dependency symlinks,
-executable modes, and the fixed-output hash. Bake and benchmark this local
-override before translating it into an upstream source change, and remove it
-once an equivalent output-verified implementation is pinned. See the patch
-lifecycle document for the fixture and exact removal criterion.
+The upstream V2 flake builds a fixed-output `opencode-node_modules`
+derivation for `packages/cli`. Its install phase still recursively copies the
+completed dependency tree, so the module retains a local override that copies
+the source tree directly to `$out`, runs the inherited build, and removes
+non-module files. A marker assertion makes upstream phase drift fail evaluation
+instead of silently dropping changed build steps. Remove this temporary
+workaround once upstream installs directly into the output, or an equivalent
+replacement passes the output-equivalence check. See [OpenCode patch
+lifecycle](opencode-patches.md) for the fixture and exact removal criterion.
 
 Prefer this normalization patch over broad config patterns such as `*=* just *`.
 OpenCode permission wildcards are anchored but simple (`*` and `?` only), so a
 broad assignment-style pattern can accidentally match unrelated commands that
 merely contain `=... just ...` in their arguments.
-
-`opencode-allow-nix-bun-1-3-13.patch` keeps the upstream build working while
-nixpkgs' packaged Bun briefly lags the Bun patch version declared in OpenCode's
-root `package.json`. It broadens the build script's version guard to accept the
-same Bun 1.3 minor series provided by the Nix toolchain; remove it once nixpkgs
-and upstream agree on the same Bun patch release.
 
 Agent-exposed tools and MCPs are configured separately:
 
@@ -617,16 +685,17 @@ hood but that the agent does not need to call directly.
 
 `dotfiles.opencode.direnv.enable` (default: `programs.direnv.enable`) installs
 the `dotfiles-direnv` OpenCode plugin at
-`~/.config/opencode/plugins/dotfiles-direnv.js`. OpenCode triggers the
-`shell.env` plugin hook with the working directory of every bash tool
-invocation, and the plugin merges the output of `direnv export json` for that
-directory into the command environment.
+`~/.config/opencode/plugins/dotfiles-direnv.js`. OpenCode V2 triggers the
+`shell.create.before` plugin hook for every shell invocation in the server
+process, with the
+invocation's effective cwd and mutable environment. The plugin merges the
+output of `direnv export json` for that directory into the command environment.
 
 This means agents get project dev-shell tooling (via nix-direnv) transparently,
 including subagents dispatched across repos with `workdir` outside the session
 root. They should run project commands directly (`just test`, `cargo build`)
 rather than wrapping them in `nix develop --command` or `direnv exec`; the
-wrappers are slower and also defeat bash permission matching on the underlying
+wrappers are slower and also defeat shell permission matching on the underlying
 command. The runtime note tells agents this when the plugin is enabled.
 
 Behavior details:
@@ -640,11 +709,11 @@ Behavior details:
   Warm nix-direnv evaluations take tens of milliseconds; the first load of a
   cold dev shell pays full flake evaluation (bounded by a ten-minute timeout),
   so warming big shells interactively first helps.
-- If OpenCode itself was launched inside a direnv environment, commands running
+- If the OpenCode server was launched inside a direnv environment, commands running
   in directories without an `.envrc` receive the unload diff so the launch
   repo's dev shell does not leak into other projects.
-- direnv reports unset variables as nulls; the hook can only merge over
-  OpenCode's process environment, so those become empty strings.
+- direnv reports unset variables as nulls; the hook can only merge over the
+  OpenCode server process environment, so those become empty strings.
 
 The plugin substitutes the host's `programs.direnv.package` binary path at
 build time and shares the user's direnv allow database and nix-direnv cache

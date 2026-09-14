@@ -1,8 +1,8 @@
 // Deployed by the dotfiles Home Manager OpenCode module. @direnv@ is
 // substituted with the host's direnv binary at build time.
 //
-// On every bash tool invocation, OpenCode triggers the `shell.env` hook with
-// the command's cwd (the tool's `workdir`). This plugin resolves the direnv
+// On every shell invocation, OpenCode V2 triggers `shell.create.before` with
+// the invocation's effective cwd. This plugin resolves the direnv
 // environment for that directory with `direnv export json` and merges it into
 // the command's environment. Subagents dispatched across repos therefore get
 // each project's dev shell (via nix-direnv) transparently, without
@@ -12,8 +12,9 @@
 // Behavior notes:
 // - Only direnv-allowed .envrc files load; blocked or failing ones are
 //   negative-cached briefly and skipped silently.
-// - `direnv export json` diffs against OpenCode's own process env, which is
-//   static for the process lifetime, so results are cacheable per .envrc
+// - `direnv export json` diffs against the OpenCode server process environment,
+//   not a connecting client's environment. It is static for the server process
+//   lifetime, so results are cacheable per .envrc
 //   root. A file fingerprint (.envrc, flake.nix, flake.lock, ...) plus a TTL
 //   approximates direnv's own watch list.
 // - If OpenCode was launched inside a direnv environment, commands running in
@@ -107,32 +108,35 @@ function resolveEnv(key, cwd, print) {
   return pending
 }
 
-export const DotfilesDirenv = async () => ({
-  "shell.env": async (input, output) => {
-    const cwd = input?.cwd
-    if (!cwd) return
-    let root
-    try {
-      root = findEnvrcRoot(cwd)
-    } catch {
-      return
-    }
-    let key
-    let print
-    if (root) {
-      key = root
-      print = fingerprint(root)
-    } else if (process.env.DIRENV_DIR) {
-      // No .envrc for this cwd, but OpenCode itself launched inside a direnv
-      // environment: apply the unload diff so the launch repo's dev shell
-      // does not leak into other projects. The diff is identical for every
-      // envrc-less directory, so cache it once.
-      key = UNLOAD_KEY
-      print = "static"
-    } else {
-      return
-    }
-    const env = await resolveEnv(key, root ?? path.resolve(cwd), print)
-    if (env) Object.assign(output.env, env)
+export default {
+  id: "dotfiles-direnv",
+  async setup(ctx) {
+    await ctx.shell.hook("create.before", async (event) => {
+      const cwd = event?.cwd
+      if (!cwd) return
+      let root
+      try {
+        root = findEnvrcRoot(cwd)
+      } catch {
+        return
+      }
+      let key
+      let print
+      if (root) {
+        key = root
+        print = fingerprint(root)
+      } else if (process.env.DIRENV_DIR) {
+        // No .envrc for this cwd, but OpenCode itself launched inside a direnv
+        // environment: apply the unload diff so the launch repo's dev shell
+        // does not leak into other projects. The diff is identical for every
+        // envrc-less directory, so cache it once.
+        key = UNLOAD_KEY
+        print = "static"
+      } else {
+        return
+      }
+      const env = await resolveEnv(key, root ?? path.resolve(cwd), print)
+      if (env) Object.assign(event.env, env)
+    })
   },
-})
+}

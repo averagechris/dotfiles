@@ -50,10 +50,10 @@ when unresolved complexity justifies it.
 
 For Minion, say that it owns the implementation and may use Explore for focused
 research or Tiny for mechanical support where useful, but must not pass
-implementation or build work to another coding agent. Its task permissions
+implementation or build work to another coding agent. Its subagent permissions
 enforce that boundary.
 
-Tell delegates to use the task tool for justified handoffs so work remains
+Tell delegates to use the subagent tool for justified handoffs so work remains
 visible in the parent session. Also tell them not to use `opencode run` as a
 routine delegation escape hatch because it hides work from the session tree and
 bypasses the intended routing context. This is guidance, not a permission ban.

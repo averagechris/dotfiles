@@ -3,64 +3,49 @@
   agentSelectionTable,
   runtimeNote,
 }: let
-  deletionBashPermissions = {allowAbsoluteTempCleanup ? false}:
+  deletionBashPermissions = let
+    commands = ["rm -rf" "rm -fr" "rm -r"];
+    protectedTargets = ["~" "$HOME" "/Users/chris" "/home/chris"];
+    rulesFor = command:
+      [
+        ''"${command} /": "deny"''
+        ''"${command} //": "deny"''
+        ''"${command} ///*": "deny"''
+        ''"${command} .": "deny"''
+        ''"${command} ./": "deny"''
+        ''"${command} .//*": "deny"''
+        ''"${command} ..": "deny"''
+        ''"${command} ../*": "deny"''
+        ''"${command} */.": "deny"''
+        ''"${command} */..": "deny"''
+        ''"${command} */../*": "deny"''
+        ''"${command} * /": "deny"''
+        ''"${command} * //": "deny"''
+        ''"${command} * ///*": "deny"''
+        ''"${command} * .": "deny"''
+        ''"${command} * ./": "deny"''
+        ''"${command} * .//*": "deny"''
+        ''"${command} * ..": "deny"''
+        ''"${command} * ../*": "deny"''
+      ]
+      ++ builtins.concatMap (target: [
+        ''"${command} ${target}": "deny"''
+        ''"${command} ${target}/*": "deny"''
+        ''"${command} * ${target}": "deny"''
+        ''"${command} * ${target}/*": "deny"''
+      ]) protectedTargets;
+  in
     builtins.concatStringsSep "\n" (
       [
-        "# Normal relative cleanup beneath the Bash tool workdir is allowed."
-        "# Absolute, current-directory, upward, and sensitive targets prompt."
+        "# Deny straightforward catastrophic recursive deletion forms outright."
         "# Simple command globs are guardrails, not an argument-aware sandbox."
-        ''"rm -rf /": "ask"''
-        ''"rm -rf /*": "ask"''
-        ''"rm -rf .": "ask"''
-        ''"rm -rf ./": "ask"''
-        ''"rm -rf ..": "ask"''
-        ''"rm -rf ../*": "ask"''
       ]
-      ++ (
-        if allowAbsoluteTempCleanup
-        then [
-          "# Permit non-empty descendant paths in trusted temp namespaces. The"
-          "# ? keeps the namespace roots themselves behind the absolute-path ask."
-          ''"rm -rf /tmp/?*": "allow"''
-          ''"rm -rf /private/tmp/?*": "allow"''
-          ''"rm -rf /var/folders/*/T/opencode/?*": "allow"''
-          ''"rm -rf /private/var/folders/*/T/opencode/?*": "allow"''
-        ]
-        else []
-      )
-      ++ [
-        # Temp descendant allows must not turn path aliases or traversal back
-        # into allows. These generic suffixes also cover ./.. and deeper /../.
-        ''"rm -rf */.": "ask"''
-        ''"rm -rf */..": "ask"''
-        ''"rm -rf */../*": "ask"''
-        # Redundant slashes can make apparent temp descendants resolve to their
-        # namespace roots. This also catches them as later operands.
-        ''"rm -rf *//*": "ask"''
-        # Conservatively catch dangerous later operands. Simple command globs
-        # cannot identify shell operands in general, but these cover common
-        # unquoted multi-target forms after an initially harmless target.
-        ''"rm -rf * /": "ask"''
-        ''"rm -rf * /*": "ask"''
-        ''"rm -rf * .": "ask"''
-        ''"rm -rf * ./": "ask"''
-        ''"rm -rf * ..": "ask"''
-        ''"rm -rf * ../*": "ask"''
-        ''"rm -rf ~*": "ask"''
-        ''"rm -rf * ~*": "ask"''
-        ''"rm -rf $HOME*": "ask"''
-        ''"rm -rf * $HOME*": "ask"''
-        ''"rm -rf /Users*": "ask"''
-        ''"rm -rf * /Users*": "ask"''
-        ''"rm -rf *secrets*": "ask"''
-        ''"rm -r *secrets*": "ask"''
-        ''"rm *secrets*": "ask"''
-      ]
+      ++ builtins.concatMap rulesFor commands
     );
   sharedBashPermissions = ''
     # Rules are evaluated in insertion order with the last match winning.
-    # Default coding agents to open execution, then put sharp edges behind an
-    # approval prompt so rare denies are easier to notice.
+    # Coding agents never prompt for shell execution. The catch-all allows
+    # normal work; only commands that must never run are denied below.
     "*": "allow"
     # Never let agents directly inspect encrypted secret material, but allow
     # workflows that create/update encrypted secret files through normal
@@ -81,10 +66,6 @@
     "less *secrets/**/*": "deny"
     "more *secrets/*.age*": "deny"
     "more *secrets/**/*": "deny"
-    "*.env*": "ask"
-    "* .env*": "ask"
-    "agenix*": "ask"
-    "sops*": "ask"
     # Privilege escalation is not useful non-interactively and would need a
     # human password anyway.
     "sudo": "deny"
@@ -93,71 +74,8 @@
     "doas *": "deny"
     "su": "deny"
     "su *": "deny"
-    # Remote login/copy plus deploy/switch commands should stay explicit.
-    "ssh *": "ask"
-    "scp *": "ask"
-    "rsync *": "ask"
-    "nix run .#deploy*": "ask"
-    "nix run *#deploy*": "ask"
-    "nixos-rebuild switch*": "ask"
-    "darwin-rebuild switch*": "ask"
-    "nh os switch*": "ask"
-    "nh darwin switch*": "ask"
-    ${deletionBashPermissions {allowAbsoluteTempCleanup = true;}}
-    "chmod *": "ask"
-    "chown *": "ask"
-    "chgrp *": "ask"
+    ${deletionBashPermissions}
     "mkfs*": "deny"
-    "diskutil *": "ask"
-    "dd *": "ask"
-    # Process/service control can break the running desktop or agents.
-    "kill *": "ask"
-    "killall *": "ask"
-    "pkill *": "ask"
-    "systemctl *": "ask"
-    "launchctl *": "ask"
-    # Keep VCS history/publication operations explicit. Read-only jj and
-    # routine checks remain allowed by the default rule.
-    "git": "ask"
-    "git *": "ask"
-    "jj abandon*": "ask"
-    "jj bookmark delete*": "ask"
-    "jj bookmark move*": "ask"
-    "jj bookmark set*": "ask"
-    "jj commit*": "ask"
-    "jj git push*": "ask"
-    "jj push*": "ask"
-    "jj ship*": "ask"
-    "jj tag-push*": "ask"
-    # GitHub org/repo/auth/issue administration is higher-impact than reads
-    # and PR review/status commands.
-    "gh auth*": "ask"
-    "gh org*": "ask"
-    "gh issue*": "ask"
-    "gh repo*": "ask"
-    # Kubernetes secret reads and mutating/session commands stay prompt-gated.
-    "kubectl describe *secret*": "ask"
-    "kubectl get *secret*": "ask"
-    "kubectl apply*": "ask"
-    "kubectl annotate*": "ask"
-    "kubectl attach*": "ask"
-    "kubectl cp*": "ask"
-    "kubectl create*": "ask"
-    "kubectl debug*": "ask"
-    "kubectl delete*": "ask"
-    "kubectl drain*": "ask"
-    "kubectl edit*": "ask"
-    "kubectl exec*": "ask"
-    "kubectl expose*": "ask"
-    "kubectl label*": "ask"
-    "kubectl patch*": "ask"
-    "kubectl port-forward*": "ask"
-    "kubectl replace*": "ask"
-    "kubectl rollout*": "ask"
-    "kubectl run*": "ask"
-    "kubectl scale*": "ask"
-    "kubectl set*": "ask"
-    "kubectl taint*": "ask"
   '';
   trimmedSharedBashPermissions = builtins.substring 0 ((builtins.stringLength sharedBashPermissions) - 1) sharedBashPermissions;
   indentedSharedBashPermissions = builtins.replaceStrings ["\n"] ["\n    "] trimmedSharedBashPermissions;

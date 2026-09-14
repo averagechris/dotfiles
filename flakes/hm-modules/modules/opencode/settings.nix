@@ -17,7 +17,7 @@ in {
 
   # Upstream defaults to 1, which lets only primary sessions delegate. Permit
   # one deliberate nested handoff while keeping deeper delegation bounded.
-  subagent_depth = 2;
+  experimental.subagent_depth = 2;
 
   # Keep the built-in exploration prompt and tools, but use a fast model with
   # enough reasoning for cross-file codebase research.

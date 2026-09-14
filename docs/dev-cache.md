@@ -109,10 +109,10 @@ keeps the configured wrapper visible and prevents the workaround from becoming
 the default pattern.
 
 By default, `sccache.disableOpencodeIncremental = true` installs the global
-OpenCode plugin `dotfiles-rust-cache.js`. Its `shell.env` hook sets
-`CARGO_INCREMENTAL=0` for AI tool commands and OpenCode user terminals. Cargo
-still performs normal target freshness checks, but changed crates are compiled
-as complete cacheable outputs rather than workspace-local incremental outputs.
+OpenCode plugin `dotfiles-rust-cache.js`. Its V2 `shell.create.before` hook sets
+`CARGO_INCREMENTAL=0` in each OpenCode shell event's environment. Cargo still
+performs normal target freshness checks, but changed crates are compiled as
+complete cacheable outputs rather than workspace-local incremental outputs.
 This favors clean and short-lived parallel agent workspaces. Cargo commands in
 ordinary terminals retain the default incremental edit/build loop. An explicit
 inline `CARGO_INCREMENTAL=1 cargo ...` can opt an individual OpenCode command

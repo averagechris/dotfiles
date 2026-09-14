@@ -14,9 +14,11 @@ session. Nothing is written to any config file. Use the `oconf` shell
 function (installed for zsh and bash) to apply them:
 
   oconf                                          interactive flow
-  oconf && opencode                              launch with overrides
-  oconf openrouter/x-ai/grok-4.5 && opencode     trial for every role
-  oconf -v high <model> minion build && opencode variant + specific agents
+  oconf && opencode --standalone                 launch with overrides
+  oconf openrouter/x-ai/grok-4.5 && opencode --standalone
+                                                trial for every role
+  oconf -v high <model> minion build && opencode --standalone
+                                                variant + specific agents
   oconf -u                                       clear overrides
 
 Interactive flow: pick a trial model (live from `opencode models`), choose
@@ -82,16 +84,31 @@ emit() {
              (if .value.variant then " (variant " + .value.variant + ")" else "" end))' \
       <<<"$config_json"
     echo "clear with: oconf -u"
+    echo "launch with: opencode --standalone (an existing V2 server keeps its own config)"
   } >&2
   # JSON never contains single quotes, so plain quoting is safe.
   case "$config_json" in *"'"*) die "unexpected quote in generated config" ;; esac
   printf "export OPENCODE_CONFIG_CONTENT='%s'\n" "$config_json"
 }
 
+# V2's model list can be empty while a cold location activates its plugins.
+# Retry only empty successful responses, never hide a CLI/transport failure.
+live_models() {
+  local models attempt
+  for attempt in 1 2 3 4 5; do
+    models=$(opencode models 2>/dev/null) || return $?
+    if [[ -n "$models" ]]; then
+      printf '%s\n' "$models"
+      return 0
+    fi
+    [[ "$attempt" == 5 ]] || sleep 0.25
+  done
+}
+
 # Validate every model mentioned in a plan against the live model list.
 validate_plan() {
   local file="$1" model_list bad line key rest model
-  model_list=$(opencode models 2>/dev/null) || die "'opencode models' failed"
+  model_list=$(live_models) || die "'opencode models' failed"
   [[ -n "$model_list" ]] || die "opencode reports no available models"
   bad=""
   while IFS= read -r line; do
@@ -233,7 +250,7 @@ human_size() {
 interactive_flow() {
   command -v fzf >/dev/null 2>&1 || die "fzf is required for interactive mode"
   local model_list trial_model scope choice
-  model_list=$(opencode models 2>/dev/null) || die "'opencode models' failed"
+  model_list=$(live_models) || die "'opencode models' failed"
   [[ -n "$model_list" ]] || die "opencode reports no available models"
 
   trial_model=$(printf '%s\n' "$model_list" | fzf --height=50% --reverse \

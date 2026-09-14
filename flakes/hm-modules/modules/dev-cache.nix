@@ -779,13 +779,7 @@ in {
     # jj workspaces, so favor machine-wide sccache reuse only for their shell
     # commands while preserving incremental builds in interactive shells.
     xdg.configFile."opencode/plugins/dotfiles-rust-cache.js" = lib.mkIf (config.programs.opencode.enable && cfg.sccache.disableOpencodeIncremental) {
-      text = ''
-        export const DotfilesRustCache = async () => ({
-          "shell.env": async (_input, output) => {
-            output.env.CARGO_INCREMENTAL = "0"
-          },
-        })
-      '';
+      source = ./opencode/plugins/dotfiles-rust-cache.js;
     };
 
     launchd.agents.sccache-server = lib.mkIf pkgs.stdenv.isDarwin {
