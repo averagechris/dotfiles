@@ -10,6 +10,60 @@
   ctxPackage = inputs.ctx.packages.${pkgs.stdenv.hostPlatform.system}.ctx;
   rdnyPackage = inputs.rdny.packages.${pkgs.stdenv.hostPlatform.system}.rdny;
   srhtPackage = inputs.srht.packages.${pkgs.stdenv.hostPlatform.system}.srht;
+  opencodeReferences = {
+    sure-workspace = {
+      path = "~/sureapp";
+      description = "Index of canonical Sure company repositories; inspect the relevant direct child and ignore the ws task-workspace directory";
+    };
+    personal-projects = {
+      path = "~/projects";
+      description = "Index of canonical personal and OSS project checkouts; inspect the relevant direct child and ignore the ws task-workspace directory";
+    };
+    oss-contrib = {
+      path = "~/contrib";
+      description = "Index of canonical third-party OSS checkouts used for upstream inspection and contributions";
+    };
+    surecraft-core = {
+      path = "~/sureapp/surecraft-core";
+      description = "Use for the core Surecraft domain and platform implementation";
+    };
+    product-configuration = {
+      path = "~/sureapp/product-configuration";
+      description = "Use for product definitions, configuration schemas, and product behavior";
+    };
+    rating-calculator = {
+      path = "~/sureapp/rating-calculator";
+      description = "Use for rating calculation behavior and its service implementation";
+    };
+    orchestrasure = {
+      path = "~/sureapp/orchestrasure";
+      description = "Use for workflow orchestration and cross-service execution behavior";
+    };
+    surecraft-apps = {
+      path = "~/sureapp/surecraft-apps";
+      description = "Use for Surecraft application and frontend implementations";
+    };
+    surecraft-api-docs = {
+      path = "~/sureapp/surecraft-api-docs";
+      description = "Use for published Surecraft API contracts and integration documentation";
+    };
+    surecraft-e2e-tests = {
+      path = "~/sureapp/surecraft-e2e-tests";
+      description = "Use for cross-system end-to-end scenarios and expected product behavior";
+    };
+  };
+  expectedOpencodeReferenceAliases = [
+    "orchestrasure"
+    "oss-contrib"
+    "personal-projects"
+    "product-configuration"
+    "rating-calculator"
+    "sure-workspace"
+    "surecraft-api-docs"
+    "surecraft-apps"
+    "surecraft-core"
+    "surecraft-e2e-tests"
+  ];
   rdnyHeliumPackage = pkgs.writeShellApplication {
     name = "rdny-helium";
     runtimeInputs = [pkgs.coreutils pkgs.curl rdnyPackage];
@@ -130,6 +184,21 @@ in {
     inputs.darwin-modules.darwinModules.colemak-dh
     inputs.darwin-modules.darwinModules.custom-sshd
     ./self-update.nix
+  ];
+
+  assertions = [
+    {
+      assertion = builtins.attrNames opencodeReferences == expectedOpencodeReferenceAliases;
+      message = "suremac's curated OpenCode reference set should contain three indexes and seven focused Surecraft repositories";
+    }
+    {
+      assertion = lib.all (reference: reference.description != "") (builtins.attrValues opencodeReferences);
+      message = "suremac OpenCode references must advertise when they are relevant";
+    }
+    {
+      assertion = lib.all (reference: !(lib.hasSuffix "/ws" reference.path)) (builtins.attrValues opencodeReferences);
+      message = "suremac OpenCode references must point at canonical checkouts, not managed task workspaces";
+    }
   ];
 
   age.identityPaths = ["/Users/chris/.ssh/id_ed25519" "/Users/chris/.ssh/id_rsa"];
@@ -476,6 +545,7 @@ in {
       }
     ];
     programs.opencode.enable = true;
+    programs.opencode.settings.references = opencodeReferences;
     dotfiles.opencode.sessionCleanup.enable = true;
     programs.opencode.skills.granola-meeting-context = builtins.readFile ../../hm-modules/modules/opencode/skills/granola-meeting-context/SKILL.md;
     programs.opencode.skills.pup-cli = builtins.readFile ../../hm-modules/modules/opencode/skills/pup-cli/SKILL.md;

@@ -25,6 +25,7 @@ This keeps OpenCode close to upstream releases while preserving the normal
 - optional `CIRCLECI_TOKEN` shell export via `dotfiles.opencode.circleciTokenFile`
 - agent-specific runtime packages and prompt metadata exposed via `dotfiles.opencode.agentTools`
 - host-specific private skill appendices materialized during Home Manager activation
+- host-specific named references to relevant local repositories
 - on hosts with `dotfiles.devCache`, an automatically loaded
   `shell.create.before` plugin hook sets `CARGO_INCREMENTAL=0` for each
   OpenCode shell invocation so parallel isolated Rust workspaces favor the
@@ -32,6 +33,23 @@ This keeps OpenCode close to upstream releases while preserving the normal
 - on hosts with direnv enabled, a `dotfiles-direnv` plugin uses the same
   per-invocation hook, including the invocation's cwd and mutable environment,
   to load each working directory's direnv-allowed dev shell environment
+
+## Local repository references on suremac
+
+`suremac` configures OpenCode V2 references for three checkout indexes and a
+small set of frequently useful Surecraft repositories. The index aliases are
+`sure-workspace` for `~/sureapp`, `personal-projects` for `~/projects`, and
+`oss-contrib` for `~/contrib`. Their descriptions direct agents to canonical
+direct-child checkouts; managed task clones under `~/sureapp/ws` and
+`~/projects/ws` are not canonical sources.
+
+The focused Surecraft references cover `surecraft-core`,
+`product-configuration`, `rating-calculator`, `orchestrasure`,
+`surecraft-apps`, `surecraft-api-docs`, and `surecraft-e2e-tests`. Each alias
+maps to one local directory and describes that repository's role. Attachments
+list only the referenced root's immediate entries, so agents must inspect a
+specific child path for deeper context. These company paths stay in the
+`suremac` host configuration rather than the shared OpenCode settings.
 
 ## V2 trial and migration
 
