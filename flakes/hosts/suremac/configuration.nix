@@ -10,6 +10,22 @@
   ctxPackage = inputs.ctx.packages.${pkgs.stdenv.hostPlatform.system}.ctx;
   rdnyPackage = inputs.rdny.packages.${pkgs.stdenv.hostPlatform.system}.rdny;
   srhtPackage = inputs.srht.packages.${pkgs.stdenv.hostPlatform.system}.srht;
+  opencodeCliPreferences = {
+    "$schema" = "https://opencode.ai/v2/cli.json";
+    theme.name = "rosepine";
+    diffs.wrap = "word";
+    session = {
+      sidebar = "auto";
+      scrollbar = false;
+      thinking = "hide";
+    };
+    animations = true;
+    attention = {
+      enabled = true;
+      notifications = true;
+      sound = false;
+    };
+  };
   opencodeReferences = {
     sure-workspace = {
       path = "~/sureapp";
@@ -460,7 +476,7 @@ in {
 
   services.openssh.enable = true;
 
-  home-manager.users.chris = {pkgs, ...}: {
+  home-manager.users.chris = hmArgs @ {pkgs, ...}: {
     home.stateVersion = "26.05";
     home.packages = with pkgs; [
       inputs.slack.packages.${pkgs.stdenv.hostPlatform.system}.slack
@@ -546,6 +562,28 @@ in {
     ];
     programs.opencode.enable = true;
     programs.opencode.settings.references = opencodeReferences;
+    # The pinned Home Manager module only manages the obsolete V1 tui.json.
+    # cli.json remains client-owned so settings changed in the TUI survive;
+    # activation only enforces this host's selected keys via a recursive merge.
+    home.activation.merge-opencode-cli-preferences = inputs.home-manager.lib.hm.dag.entryAfter ["writeBoundary"] ''
+      config_dir="${hmArgs.config.xdg.configHome}/opencode"
+      cli_config="$config_dir/cli.json"
+      ${pkgs.coreutils}/bin/mkdir -p "$config_dir"
+      existing='{}'
+      if [[ -e "$cli_config" ]]; then
+        existing="$(${pkgs.coreutils}/bin/cat "$cli_config")"
+      fi
+      tmp="$(${pkgs.coreutils}/bin/mktemp "$config_dir/.cli.json.XXXXXX")"
+      if ! ${pkgs.jq}/bin/jq -n -S \
+        --argjson existing "$existing" \
+        --argjson managed '${builtins.toJSON opencodeCliPreferences}' \
+        '$existing * $managed' > "$tmp"; then
+        ${pkgs.coreutils}/bin/rm -f "$tmp"
+        exit 1
+      fi
+      ${pkgs.coreutils}/bin/chmod 0600 "$tmp"
+      ${pkgs.coreutils}/bin/mv -f "$tmp" "$cli_config"
+    '';
     dotfiles.opencode.sessionCleanup.enable = true;
     programs.opencode.skills.granola-meeting-context = builtins.readFile ../../hm-modules/modules/opencode/skills/granola-meeting-context/SKILL.md;
     programs.opencode.skills.pup-cli = builtins.readFile ../../hm-modules/modules/opencode/skills/pup-cli/SKILL.md;

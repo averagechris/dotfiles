@@ -26,6 +26,8 @@ This keeps OpenCode close to upstream releases while preserving the normal
 - agent-specific runtime packages and prompt metadata exposed via `dotfiles.opencode.agentTools`
 - host-specific private skill appendices materialized during Home Manager activation
 - host-specific named references to relevant local repositories
+- on `suremac`, client-owned CLI preferences with attention desktop notifications
+  enabled and notification sound disabled
 - on hosts with `dotfiles.devCache`, an automatically loaded
   `shell.create.before` plugin hook sets `CARGO_INCREMENTAL=0` for each
   OpenCode shell invocation so parallel isolated Rust workspaces favor the
@@ -78,10 +80,12 @@ For the pinned 1.18.29 V1 state, expect at least 38 completed migrations before
 proceeding. Replace the example path with the database in your backup, not the
 live `~/.local/share/opencode` path.
 
-This repository does not manage a V2 CLI preferences file. There are no existing
-managed TUI settings to carry over, and Home Manager currently exposes only its
-V1 `tui.json` option. Remove this exception when Home Manager adds a V2 CLI
-option. Do not add speculative CLI option machinery locally.
+The pinned Home Manager release does not expose a V2 `cli.json` option. On
+`suremac`, activation recursively and atomically merges the selected existing
+preferences with attention desktop notifications enabled and notification sound
+disabled into the client-owned `~/.config/opencode/cli.json`. Unrelated TUI
+settings survive. If the existing JSON is malformed, activation fails rather
+than clobbering it.
 
 After activation, exit and restart any shared OpenCode server before using the
 new package. A server that survived activation can continue serving the old
