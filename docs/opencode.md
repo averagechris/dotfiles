@@ -351,8 +351,8 @@ more reasoning. Minion uses GPT-5.6 Sol at `low` and is the default implementati
 tier: the orchestrator decomposes work and supplies clear implementation packets
 so Minion performs the bulk of coding. Build is reserved for ambiguity, breadth,
 investigation, or coordination that planning cannot reasonably remove. The
-higher-capability `wise` agent uses `openrouter/anthropic/claude-fable-5.1` with
-`variant = "high"`. All coding agents share one generated shell permission
+higher-capability `wise` agent uses `openrouter/anthropic/claude-fable-5.1#high`.
+All coding agents share one generated shell permission
 policy so safety-rule changes stay consistent across tiers. Their concise
 descriptions summarize the intended delegation tradeoff so primary agents can
 choose effectively from the subagent tool.
@@ -381,11 +381,9 @@ or build work. Handoff prompts steer justified nested work through the
 subagent tool and say not to use `opencode run` as a routine delegation escape
 hatch. That command remains permission-allowed rather than banned.
 
-The managed agent catalog and existing permission fields remain intentionally
-compatible with the supported Home Manager/OpenCode configuration surface.
-Those fields retain the legacy `bash` and `task` names where required; the V2
-concepts are shell execution and subagents, so generated guidance uses those
-terms instead of treating the field names as user-facing concepts.
+The managed agent catalog emits OpenCode V2-native frontmatter: model variants
+use the `model#variant` form, request tuning lives under `request.body`, and
+ordered `permissions` rules use the `shell` and `subagent` action names.
 
 The repo-managed `subagent-selection` skill and orchestrator both render the
 canonical routing policy from `agent-selection-policy.md` and the relative
@@ -452,15 +450,15 @@ subtraction unless added scope has a clear payoff, and use fresh scoped handoffs
 when work or context no longer fits the packet.
 
 The built-in `explore` subagent keeps its upstream prompt and tools but is
-configured through `settings.agent.explore` to use
-`openrouter/openai/gpt-5.6-luna` with the `medium` variant. This favors cheap,
+configured through `settings.agents.explore` to use
+`openrouter/openai/gpt-5.6-luna#medium`. This favors cheap,
 parallel codebase research with a research-specific prompt and tool set; Tiny
 remains narrower and mechanical, while Luna handles bounded reasoned work.
 
 OpenCode normally prompts before any tool touches a path outside the project it
 was started in. To keep delegated coding work smooth without opening up entire
 project trees, the Home Manager module derives
-`permission.external_directory` allow rules from
+ordered `permissions` rules for the `external_directory` action from
 `dotfiles.jujutsu.workspaces.projectGroups`: each canonical managed workspace
 namespace (`<project-group>/<workspace-dir>/**`, such as `~/projects/ws/**` and
 on `suremac` also `~/sureapp/ws/**`) is trusted by default. This covers files
@@ -721,7 +719,9 @@ with interactive shells.
 
 ## MCP integrations
 
-All MCP servers are defined in `flakes/hm-modules/modules/opencode/settings.nix` and default to `enabled = false` unless explicitly turned on.
+All MCP servers are defined under `mcp.servers` in
+`flakes/hm-modules/modules/opencode/settings.nix` and default to
+`disabled = true` unless explicitly turned on.
 
 | MCP server | Type | Default | Notes |
 |------------|------|---------|-------|

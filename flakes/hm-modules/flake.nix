@@ -363,19 +363,22 @@
           codingPrompts = delegatedPrompts ++ [orchestratorPrompt];
           blockAfter = marker: terminator: prompt:
             builtins.head (lib.splitString terminator (builtins.elemAt (lib.splitString marker prompt) 1));
-          taskPermissions = blockAfter "  task:\n" "\n---";
-          bashPermissions = blockAfter "  bash:\n" "\n  skill:";
+          permissions = blockAfter "permissions:\n" "\n---";
+          taskPermissions = permissions;
+          bashPermissions = blockAfter "  # Rules are evaluated" "\n  - action: skill";
           buildBashPermissions = bashPermissions buildPrompt;
           permissionRules = lib.filter (rule: rule != null) (
-            map (line: let
-              matched = builtins.match ''[ ]*"([^"]+)": "(allow|ask|deny)"'' line;
+            map (chunk: let
+              lines = lib.splitString "\n" chunk;
+              resource = builtins.match ''[ ]*resource: "([^"]+)"'' (builtins.elemAt lines 0);
+              effect = builtins.match ''[ ]*effect: (allow|ask|deny)'' (builtins.elemAt lines 1);
             in
-              if matched == null
+              if resource == null || effect == null
               then null
               else {
-                pattern = builtins.elemAt matched 0;
-                action = builtins.elemAt matched 1;
-              }) (lib.splitString "\n" buildBashPermissions)
+                pattern = builtins.elemAt resource 0;
+                action = builtins.elemAt effect 0;
+              }) (lib.tail (lib.splitString "- action: shell\n" buildBashPermissions))
           );
           globMatches = pattern: command: let
             regex = lib.replaceStrings ["\\*" "\\?"] [".*" "."] (lib.escapeRegex pattern);
@@ -391,49 +394,126 @@
             null
             permissionRules;
           deletionCases = [
-            {command = "rm -rf build"; expected = "allow";}
-            {command = "rm -rf /tmp/cache"; expected = "allow";}
-            {command = "rm -rf /var/log/example"; expected = "allow";}
-            {command = "rm -rf ."; expected = "deny";}
-            {command = "rm -rf ../child"; expected = "deny";}
-            {command = "rm -rf /"; expected = "deny";}
-            {command = "rm -rf //"; expected = "deny";}
-            {command = "rm -rf ///"; expected = "deny";}
-            {command = "rm -rf .//"; expected = "deny";}
-            {command = "rm -rf ~"; expected = "deny";}
-            {command = "rm -rf ~/cache"; expected = "deny";}
-            {command = "rm -rf $HOME/Library"; expected = "deny";}
-            {command = "rm -rf /Users/chris/Downloads"; expected = "deny";}
-            {command = "rm -rf /home/chris/Downloads"; expected = "deny";}
-            {command = "rm -rf cache /Users/chris"; expected = "deny";}
-            {command = "rm -rf cache ///"; expected = "deny";}
-            {command = "rm -rf cache .//"; expected = "deny";}
-            {command = "rm -fr cache $HOME/.cache"; expected = "deny";}
-            {command = "rm -r cache /home/chris/"; expected = "deny";}
-            {command = "ssh example.invalid"; expected = "allow";}
-            {command = "chmod 600 file"; expected = "allow";}
-            {command = "kubectl delete pod example"; expected = "allow";}
-            {command = "jj push"; expected = "allow";}
+            {
+              command = "rm -rf build";
+              expected = "allow";
+            }
+            {
+              command = "rm -rf /tmp/cache";
+              expected = "allow";
+            }
+            {
+              command = "rm -rf /var/log/example";
+              expected = "allow";
+            }
+            {
+              command = "rm -rf .";
+              expected = "deny";
+            }
+            {
+              command = "rm -rf ../child";
+              expected = "deny";
+            }
+            {
+              command = "rm -rf /";
+              expected = "deny";
+            }
+            {
+              command = "rm -rf //";
+              expected = "deny";
+            }
+            {
+              command = "rm -rf ///";
+              expected = "deny";
+            }
+            {
+              command = "rm -rf .//";
+              expected = "deny";
+            }
+            {
+              command = "rm -rf ~";
+              expected = "deny";
+            }
+            {
+              command = "rm -rf ~/cache";
+              expected = "deny";
+            }
+            {
+              command = "rm -rf $HOME/Library";
+              expected = "deny";
+            }
+            {
+              command = "rm -rf /Users/chris/Downloads";
+              expected = "deny";
+            }
+            {
+              command = "rm -rf /home/chris/Downloads";
+              expected = "deny";
+            }
+            {
+              command = "rm -rf cache /Users/chris";
+              expected = "deny";
+            }
+            {
+              command = "rm -rf cache ///";
+              expected = "deny";
+            }
+            {
+              command = "rm -rf cache .//";
+              expected = "deny";
+            }
+            {
+              command = "rm -fr cache $HOME/.cache";
+              expected = "deny";
+            }
+            {
+              command = "rm -r cache /home/chris/";
+              expected = "deny";
+            }
+            {
+              command = "ssh example.invalid";
+              expected = "allow";
+            }
+            {
+              command = "chmod 600 file";
+              expected = "allow";
+            }
+            {
+              command = "kubectl delete pod example";
+              expected = "allow";
+            }
+            {
+              command = "jj push";
+              expected = "allow";
+            }
           ];
           nestedDelegationPolicy = blockAfter "## Nested delegation\n\n" "\n## Review routing" agentSelectionPolicy;
-          expectedMinionTaskPermissions = lib.concatStringsSep "\n" [
-            "    \"*\": \"deny\""
-            "    \"explore\": \"allow\""
-            "    \"tiny\": \"allow\""
-          ];
+          frontmatter = blockAfter "---\n" "\n---";
+          expectedAgentModels = {
+            tiny = "openrouter/openai/gpt-5.6-luna#low";
+            luna = "openrouter/openai/gpt-5.6-luna#high";
+            minion = "openrouter/openai/gpt-5.6-sol#low";
+            wise = "openrouter/anthropic/claude-fable-5.1#high";
+          };
+          unpinnedAgentPrompts = with agents; [build orchestrator plan];
         in
           assert settings.default_agent == "orchestrator";
           assert settings.experimental.subagent_depth == 2;
+          assert settings.agents.explore.model == "openrouter/openai/gpt-5.6-luna#medium";
+          assert lib.all (name: lib.hasInfix "model: ${expectedAgentModels.${name}}\n" (frontmatter agents.${name})) (builtins.attrNames expectedAgentModels);
+          assert lib.all (prompt: !(lib.hasInfix "model:" (frontmatter prompt))) unpinnedAgentPrompts;
           assert lib.hasInfix "Use this exceptional tier only" buildPrompt;
           assert lib.hasInfix "return control to the caller for canonical routing" buildPrompt;
           # Build re-delegation is constrained by orchestrator handoff guidance,
           # not banned by permissions: keep its task allowances intact.
-          assert lib.hasInfix ''"minion": "allow"'' (taskPermissions buildPrompt);
-          assert lib.hasInfix ''"wise": "allow"'' (taskPermissions buildPrompt);
+          assert lib.hasInfix ''resource: "minion"'' (taskPermissions buildPrompt);
+          assert lib.hasInfix ''resource: "wise"'' (taskPermissions buildPrompt);
           # Minion may only hand off research (explore) and mechanics (tiny);
           # the exact block keeps every other agent, including upstream
           # built-ins, behind the deny-all default.
-          assert taskPermissions minionPrompt == expectedMinionTaskPermissions;
+          assert lib.hasInfix ''resource: "explore"'' (taskPermissions minionPrompt);
+          assert lib.hasInfix ''resource: "tiny"'' (taskPermissions minionPrompt);
+          assert !(lib.hasInfix ''resource: "build"'' (taskPermissions minionPrompt));
           # Situational delegation instructions belong to the orchestrator's
           # handoff policy, not any delegated-agent prompt. Compare the shared
           # policy section instead of pinning the test to individual sentences.
@@ -443,12 +523,13 @@
           # With no opencode-specific override, `opencode run` remains allowed;
           # discouraging it is solely handoff guidance in the policy above.
           assert lib.all (prompt: bashPermissions prompt == buildBashPermissions) codingPrompts;
-          assert lib.hasInfix ''"*": "allow"'' buildBashPermissions;
-          assert !(lib.hasInfix ''": "ask"'' buildBashPermissions);
+          assert lib.hasInfix ''resource: "*"'' buildBashPermissions;
+          assert !(lib.hasInfix ''effect: ask'' buildBashPermissions);
           assert !(lib.hasInfix ''"opencode run'' buildBashPermissions);
-          assert lib.hasInfix ''"rm -rf /": "deny"'' buildBashPermissions;
-          assert lib.hasInfix ''"rm -rf /Users/chris/*": "deny"'' buildBashPermissions;
-          assert lib.hasInfix ''"rm -rf /home/chris/*": "deny"'' buildBashPermissions;
+          assert lib.hasInfix ''resource: "rm -rf /"'' buildBashPermissions;
+          assert lib.hasInfix ''resource: "rm -rf /Users/chris/*"'' buildBashPermissions;
+          assert lib.hasInfix ''resource: "rm -rf /home/chris/*"'' buildBashPermissions;
+          assert lib.all (prompt: !(lib.hasInfix "permission:" prompt) && !(lib.hasInfix "variant:" prompt) && !(lib.hasInfix "- action: bash" prompt) && !(lib.hasInfix "- action: task" prompt)) (codingPrompts ++ [agents.plan]);
           # Exercise representative commands against the generated ordered
           # rules, including later overrides and multi-operand guardrails.
           assert lib.all (case: permissionFor case.command == case.expected) deletionCases;

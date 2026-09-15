@@ -8,32 +8,79 @@
     protectedTargets = ["~" "$HOME" "/Users/chris" "/home/chris"];
     rulesFor = command:
       [
-        ''"${command} /": "deny"''
-        ''"${command} //": "deny"''
-        ''"${command} ///*": "deny"''
-        ''"${command} .": "deny"''
-        ''"${command} ./": "deny"''
-        ''"${command} .//*": "deny"''
-        ''"${command} ..": "deny"''
-        ''"${command} ../*": "deny"''
-        ''"${command} */.": "deny"''
-        ''"${command} */..": "deny"''
-        ''"${command} */../*": "deny"''
-        ''"${command} * /": "deny"''
-        ''"${command} * //": "deny"''
-        ''"${command} * ///*": "deny"''
-        ''"${command} * .": "deny"''
-        ''"${command} * ./": "deny"''
-        ''"${command} * .//*": "deny"''
-        ''"${command} * ..": "deny"''
-        ''"${command} * ../*": "deny"''
+        ''          - action: shell
+            resource: "${command} /"
+            effect: deny''
+        ''          - action: shell
+            resource: "${command} //"
+            effect: deny''
+        ''          - action: shell
+            resource: "${command} ///*"
+            effect: deny''
+        ''          - action: shell
+            resource: "${command} ."
+            effect: deny''
+        ''          - action: shell
+            resource: "${command} ./"
+            effect: deny''
+        ''          - action: shell
+            resource: "${command} .//*"
+            effect: deny''
+        ''          - action: shell
+            resource: "${command} .."
+            effect: deny''
+        ''          - action: shell
+            resource: "${command} ../*"
+            effect: deny''
+        ''          - action: shell
+            resource: "${command} */."
+            effect: deny''
+        ''          - action: shell
+            resource: "${command} */.."
+            effect: deny''
+        ''          - action: shell
+            resource: "${command} */../*"
+            effect: deny''
+        ''          - action: shell
+            resource: "${command} * /"
+            effect: deny''
+        ''          - action: shell
+            resource: "${command} * //"
+            effect: deny''
+        ''          - action: shell
+            resource: "${command} * ///*"
+            effect: deny''
+        ''          - action: shell
+            resource: "${command} * ."
+            effect: deny''
+        ''          - action: shell
+            resource: "${command} * ./"
+            effect: deny''
+        ''          - action: shell
+            resource: "${command} * .//*"
+            effect: deny''
+        ''          - action: shell
+            resource: "${command} * .."
+            effect: deny''
+        ''          - action: shell
+            resource: "${command} * ../*"
+            effect: deny''
       ]
       ++ builtins.concatMap (target: [
-        ''"${command} ${target}": "deny"''
-        ''"${command} ${target}/*": "deny"''
-        ''"${command} * ${target}": "deny"''
-        ''"${command} * ${target}/*": "deny"''
-      ]) protectedTargets;
+        ''          - action: shell
+            resource: "${command} ${target}"
+            effect: deny''
+        ''          - action: shell
+            resource: "${command} ${target}/*"
+            effect: deny''
+        ''          - action: shell
+            resource: "${command} * ${target}"
+            effect: deny''
+        ''          - action: shell
+            resource: "${command} * ${target}/*"
+            effect: deny''
+      ])
+      protectedTargets;
   in
     builtins.concatStringsSep "\n" (
       [
@@ -46,65 +93,140 @@
     # Rules are evaluated in insertion order with the last match winning.
     # Coding agents never prompt for shell execution. The catch-all allows
     # normal work; only commands that must never run are denied below.
-    "*": "allow"
+    - action: shell
+      resource: "*"
+      effect: allow
     # Never let agents directly inspect encrypted secret material, but allow
     # workflows that create/update encrypted secret files through normal
     # editors or generators.
-    "cat *secrets/*.age*": "deny"
-    "cat *secrets/**/*": "deny"
-    "head *secrets/*.age*": "deny"
-    "head *secrets/**/*": "deny"
-    "tail *secrets/*.age*": "deny"
-    "tail *secrets/**/*": "deny"
-    "grep *secrets/*.age*": "deny"
-    "grep *secrets/**/*": "deny"
-    "rg *secrets/*.age*": "deny"
-    "rg *secrets/**/*": "deny"
-    "sed *secrets/*.age*": "deny"
-    "sed *secrets/**/*": "deny"
-    "less *secrets/*.age*": "deny"
-    "less *secrets/**/*": "deny"
-    "more *secrets/*.age*": "deny"
-    "more *secrets/**/*": "deny"
+    - action: shell
+      resource: "cat *secrets/*.age*"
+      effect: deny
+    - action: shell
+      resource: "cat *secrets/**/*"
+      effect: deny
+    - action: shell
+      resource: "head *secrets/*.age*"
+      effect: deny
+    - action: shell
+      resource: "head *secrets/**/*"
+      effect: deny
+    - action: shell
+      resource: "tail *secrets/*.age*"
+      effect: deny
+    - action: shell
+      resource: "tail *secrets/**/*"
+      effect: deny
+    - action: shell
+      resource: "grep *secrets/*.age*"
+      effect: deny
+    - action: shell
+      resource: "grep *secrets/**/*"
+      effect: deny
+    - action: shell
+      resource: "rg *secrets/*.age*"
+      effect: deny
+    - action: shell
+      resource: "rg *secrets/**/*"
+      effect: deny
+    - action: shell
+      resource: "sed *secrets/*.age*"
+      effect: deny
+    - action: shell
+      resource: "sed *secrets/**/*"
+      effect: deny
+    - action: shell
+      resource: "less *secrets/*.age*"
+      effect: deny
+    - action: shell
+      resource: "less *secrets/**/*"
+      effect: deny
+    - action: shell
+      resource: "more *secrets/*.age*"
+      effect: deny
+    - action: shell
+      resource: "more *secrets/**/*"
+      effect: deny
     # Privilege escalation is not useful non-interactively and would need a
     # human password anyway.
-    "sudo": "deny"
-    "sudo *": "deny"
-    "doas": "deny"
-    "doas *": "deny"
-    "su": "deny"
-    "su *": "deny"
+    - action: shell
+      resource: "sudo"
+      effect: deny
+    - action: shell
+      resource: "sudo *"
+      effect: deny
+    - action: shell
+      resource: "doas"
+      effect: deny
+    - action: shell
+      resource: "doas *"
+      effect: deny
+    - action: shell
+      resource: "su"
+      effect: deny
+    - action: shell
+      resource: "su *"
+      effect: deny
     ${deletionBashPermissions}
-    "mkfs*": "deny"
+    - action: shell
+      resource: "mkfs*"
+      effect: deny
   '';
   trimmedSharedBashPermissions = builtins.substring 0 ((builtins.stringLength sharedBashPermissions) - 1) sharedBashPermissions;
-  indentedSharedBashPermissions = builtins.replaceStrings ["\n"] ["\n    "] trimmedSharedBashPermissions;
+  indentedSharedBashPermissions = builtins.replaceStrings ["\n"] ["\n  "] trimmedSharedBashPermissions;
 in {
   build = ''
     ---
     description: Capable generalist for broad or ambiguous implementation and review.
     mode: all
-    temperature: 0.0
+    request:
+      body:
+        temperature: 0.0
     steps: 9999
-    permission:
-      read: "allow"
-      edit: "allow"
-      glob: "allow"
-      grep: "allow"
-      list: "allow"
-      webfetch: "allow"
-      bash:
-        ${indentedSharedBashPermissions}
-      skill:
-        "*": "allow"
-      task:
-        "*": "deny"
-        "build": "allow"
-        "explore": "allow"
-        "luna": "allow"
-        "minion": "allow"
-        "tiny": "allow"
-        "wise": "allow"
+    permissions:
+      - action: read
+        resource: "*"
+        effect: allow
+      - action: edit
+        resource: "*"
+        effect: allow
+      - action: glob
+        resource: "*"
+        effect: allow
+      - action: grep
+        resource: "*"
+        effect: allow
+      - action: list
+        resource: "*"
+        effect: allow
+      - action: webfetch
+        resource: "*"
+        effect: allow
+      ${indentedSharedBashPermissions}
+      - action: skill
+        resource: "*"
+        effect: allow
+      - action: subagent
+        resource: "*"
+        effect: deny
+      - action: subagent
+        resource: "build"
+        effect: allow
+      - action: subagent
+        resource: "explore"
+        effect: allow
+      - action: subagent
+        resource: "luna"
+        effect: allow
+      - action: subagent
+        resource: "minion"
+        effect: allow
+      - action: subagent
+        resource: "tiny"
+        effect: allow
+      - action: subagent
+        resource: "wise"
+        effect: allow
     ---
 
     You are the Build agent. Use this exceptional tier only when unresolved
@@ -119,27 +241,54 @@ in {
     ---
     description: Delegates ambitious multi-track work across capability and cost tiers.
     mode: all
-    temperature: 0.0
+    request:
+      body:
+        temperature: 0.0
     steps: 9999
-    permission:
-      read: "allow"
-      edit: "allow"
-      glob: "allow"
-      grep: "allow"
-      list: "allow"
-      webfetch: "allow"
-      bash:
-        ${indentedSharedBashPermissions}
-      skill:
-        "*": "allow"
-      task:
-        "*": "deny"
-        "build": "allow"
-        "explore": "allow"
-        "luna": "allow"
-        "minion": "allow"
-        "tiny": "allow"
-        "wise": "allow"
+    permissions:
+      - action: read
+        resource: "*"
+        effect: allow
+      - action: edit
+        resource: "*"
+        effect: allow
+      - action: glob
+        resource: "*"
+        effect: allow
+      - action: grep
+        resource: "*"
+        effect: allow
+      - action: list
+        resource: "*"
+        effect: allow
+      - action: webfetch
+        resource: "*"
+        effect: allow
+      ${indentedSharedBashPermissions}
+      - action: skill
+        resource: "*"
+        effect: allow
+      - action: subagent
+        resource: "*"
+        effect: deny
+      - action: subagent
+        resource: "build"
+        effect: allow
+      - action: subagent
+        resource: "explore"
+        effect: allow
+      - action: subagent
+        resource: "luna"
+        effect: allow
+      - action: subagent
+        resource: "minion"
+        effect: allow
+      - action: subagent
+        resource: "tiny"
+        effect: allow
+      - action: subagent
+        resource: "wise"
+        effect: allow
     ---
 
     You are an orchestrator agent. Delegation is the name of the game.
@@ -172,25 +321,43 @@ in {
     ---
     description: Cost-effective coder and reviewer for sustained routine work with broader context.
     mode: subagent
-    model: openrouter/openai/gpt-5.6-sol
-    variant: low
-    temperature: 0.0
+    model: openrouter/openai/gpt-5.6-sol#low
+    request:
+      body:
+        temperature: 0.0
     steps: 9999
-    permission:
-      read: "allow"
-      edit: "allow"
-      glob: "allow"
-      grep: "allow"
-      list: "allow"
-      webfetch: "allow"
-      bash:
-        ${indentedSharedBashPermissions}
-      skill:
-        "*": "allow"
-      task:
-        "*": "deny"
-        "explore": "allow"
-        "tiny": "allow"
+    permissions:
+      - action: read
+        resource: "*"
+        effect: allow
+      - action: edit
+        resource: "*"
+        effect: allow
+      - action: glob
+        resource: "*"
+        effect: allow
+      - action: grep
+        resource: "*"
+        effect: allow
+      - action: list
+        resource: "*"
+        effect: allow
+      - action: webfetch
+        resource: "*"
+        effect: allow
+      ${indentedSharedBashPermissions}
+      - action: skill
+        resource: "*"
+        effect: allow
+      - action: subagent
+        resource: "*"
+        effect: deny
+      - action: subagent
+        resource: "explore"
+        effect: allow
+      - action: subagent
+        resource: "tiny"
+        effect: allow
     ---
 
     You are a coding agent. ALWAYS USE `jj` over `git` for version control actions.
@@ -201,29 +368,55 @@ in {
     ---
     description: Cheapest delegate for mechanical logistics, exact checks, cleanup, and tiny deterministic edits.
     mode: subagent
-    model: openrouter/openai/gpt-5.6-luna
-    variant: low
-    temperature: 0.0
+    model: openrouter/openai/gpt-5.6-luna#low
+    request:
+      body:
+        temperature: 0.0
     steps: 9999
-    permission:
-      read: "allow"
-      edit: "allow"
-      glob: "allow"
-      grep: "allow"
-      list: "allow"
-      webfetch: "allow"
-      bash:
-        ${indentedSharedBashPermissions}
-      skill:
-        "*": "allow"
-      task:
-        "*": "deny"
-        "build": "allow"
-        "explore": "allow"
-        "luna": "allow"
-        "minion": "allow"
-        "tiny": "allow"
-        "wise": "allow"
+    permissions:
+      - action: read
+        resource: "*"
+        effect: allow
+      - action: edit
+        resource: "*"
+        effect: allow
+      - action: glob
+        resource: "*"
+        effect: allow
+      - action: grep
+        resource: "*"
+        effect: allow
+      - action: list
+        resource: "*"
+        effect: allow
+      - action: webfetch
+        resource: "*"
+        effect: allow
+      ${indentedSharedBashPermissions}
+      - action: skill
+        resource: "*"
+        effect: allow
+      - action: subagent
+        resource: "*"
+        effect: deny
+      - action: subagent
+        resource: "build"
+        effect: allow
+      - action: subagent
+        resource: "explore"
+        effect: allow
+      - action: subagent
+        resource: "luna"
+        effect: allow
+      - action: subagent
+        resource: "minion"
+        effect: allow
+      - action: subagent
+        resource: "tiny"
+        effect: allow
+      - action: subagent
+        resource: "wise"
+        effect: allow
     ---
 
     You are a coding agent. ALWAYS USE `jj` over `git` for version control actions.
@@ -234,29 +427,55 @@ in {
     ---
     description: Cost-effective delegate for bounded medium-complexity work and deterministic review needing reasoning.
     mode: subagent
-    model: openrouter/openai/gpt-5.6-luna
-    variant: high
-    temperature: 0.0
+    model: openrouter/openai/gpt-5.6-luna#high
+    request:
+      body:
+        temperature: 0.0
     steps: 9999
-    permission:
-      read: "allow"
-      edit: "allow"
-      glob: "allow"
-      grep: "allow"
-      list: "allow"
-      webfetch: "allow"
-      bash:
-        ${indentedSharedBashPermissions}
-      skill:
-        "*": "allow"
-      task:
-        "*": "deny"
-        "build": "allow"
-        "explore": "allow"
-        "luna": "allow"
-        "minion": "allow"
-        "tiny": "allow"
-        "wise": "allow"
+    permissions:
+      - action: read
+        resource: "*"
+        effect: allow
+      - action: edit
+        resource: "*"
+        effect: allow
+      - action: glob
+        resource: "*"
+        effect: allow
+      - action: grep
+        resource: "*"
+        effect: allow
+      - action: list
+        resource: "*"
+        effect: allow
+      - action: webfetch
+        resource: "*"
+        effect: allow
+      ${indentedSharedBashPermissions}
+      - action: skill
+        resource: "*"
+        effect: allow
+      - action: subagent
+        resource: "*"
+        effect: deny
+      - action: subagent
+        resource: "build"
+        effect: allow
+      - action: subagent
+        resource: "explore"
+        effect: allow
+      - action: subagent
+        resource: "luna"
+        effect: allow
+      - action: subagent
+        resource: "minion"
+        effect: allow
+      - action: subagent
+        resource: "tiny"
+        effect: allow
+      - action: subagent
+        resource: "wise"
+        effect: allow
     ---
 
     You are a coding agent. ALWAYS USE `jj` over `git` for version control actions.
@@ -267,29 +486,55 @@ in {
     ---
     description: Highest-capability delegate for difficult, high-stakes work; expensive.
     mode: subagent
-    model: openrouter/anthropic/claude-fable-5.1
-    variant: high
-    temperature: 0.0
+    model: openrouter/anthropic/claude-fable-5.1#high
+    request:
+      body:
+        temperature: 0.0
     steps: 9999
-    permission:
-      read: "allow"
-      edit: "allow"
-      glob: "allow"
-      grep: "allow"
-      list: "allow"
-      webfetch: "allow"
-      bash:
-        ${indentedSharedBashPermissions}
-      skill:
-        "*": "allow"
-      task:
-        "*": "deny"
-        "build": "allow"
-        "explore": "allow"
-        "luna": "allow"
-        "minion": "allow"
-        "tiny": "allow"
-        "wise": "allow"
+    permissions:
+      - action: read
+        resource: "*"
+        effect: allow
+      - action: edit
+        resource: "*"
+        effect: allow
+      - action: glob
+        resource: "*"
+        effect: allow
+      - action: grep
+        resource: "*"
+        effect: allow
+      - action: list
+        resource: "*"
+        effect: allow
+      - action: webfetch
+        resource: "*"
+        effect: allow
+      ${indentedSharedBashPermissions}
+      - action: skill
+        resource: "*"
+        effect: allow
+      - action: subagent
+        resource: "*"
+        effect: deny
+      - action: subagent
+        resource: "build"
+        effect: allow
+      - action: subagent
+        resource: "explore"
+        effect: allow
+      - action: subagent
+        resource: "luna"
+        effect: allow
+      - action: subagent
+        resource: "minion"
+        effect: allow
+      - action: subagent
+        resource: "tiny"
+        effect: allow
+      - action: subagent
+        resource: "wise"
+        effect: allow
     ---
 
     You are a coding agent. ALWAYS USE `jj` over `git` for version control actions.
@@ -306,71 +551,188 @@ in {
     ---
     description: Plan agent - analysis and planning (read-only)
     mode: primary
-    temperature: 0.0
+    request:
+      body:
+        temperature: 0.0
     steps: 50
-    permission:
-      read: "allow"
-      edit: "deny"
-      glob: "allow"
-      grep: "allow"
-      list: "allow"
-      webfetch: "allow"
-      bash:
-        "*": "deny"
-        "cat": "allow"
-        "cat *": "allow"
-        "echo": "allow"
-        "echo *": "allow"
-        "fd": "allow"
-        "fd *": "allow"
-        "find": "allow"
-        "find *": "allow"
-        "grep": "allow"
-        "grep *": "allow"
-        "head": "allow"
-        "head *": "allow"
-        "ls": "allow"
-        "ls *": "allow"
-        "rg": "allow"
-        "rg *": "allow"
-        "sort": "allow"
-        "sort *": "allow"
-        "tail": "allow"
-        "tail *": "allow"
-        "wc": "allow"
-        "wc *": "allow"
-        "which": "allow"
-        "which *": "allow"
-        "cargo": "allow"
-        "cargo *": "allow"
-        "jj bookmark list": "allow"
-        "jj bookmark list *": "allow"
-        "jj config": "allow"
-        "jj config *": "allow"
-        "jj diff": "allow"
-        "jj diff *": "allow"
-        "jj files": "allow"
-        "jj files *": "allow"
-        "jj log": "allow"
-        "jj log *": "allow"
-        "jj op log": "allow"
-        "jj op log *": "allow"
-        "jj resolve --list": "allow"
-        "jj resolve --list *": "allow"
-        "jj show": "allow"
-        "jj show *": "allow"
-        "jj status": "allow"
-        "jj status *": "allow"
-        "nix eval": "allow"
-        "nix eval *": "allow"
-        "nix flake show": "allow"
-        "nix flake show *": "allow"
-      skill:
-        "*": "allow"
-      task:
-        "*": "deny"
-        "build": "allow"
-        "explore": "allow"
+    permissions:
+      - action: read
+        resource: "*"
+        effect: allow
+      - action: edit
+        resource: "*"
+        effect: deny
+      - action: glob
+        resource: "*"
+        effect: allow
+      - action: grep
+        resource: "*"
+        effect: allow
+      - action: list
+        resource: "*"
+        effect: allow
+      - action: webfetch
+        resource: "*"
+        effect: allow
+      - action: shell
+        resource: "*"
+        effect: deny
+      - action: shell
+        resource: "cat"
+        effect: allow
+      - action: shell
+        resource: "cat *"
+        effect: allow
+      - action: shell
+        resource: "echo"
+        effect: allow
+      - action: shell
+        resource: "echo *"
+        effect: allow
+      - action: shell
+        resource: "fd"
+        effect: allow
+      - action: shell
+        resource: "fd *"
+        effect: allow
+      - action: shell
+        resource: "find"
+        effect: allow
+      - action: shell
+        resource: "find *"
+        effect: allow
+      - action: shell
+        resource: "grep"
+        effect: allow
+      - action: shell
+        resource: "grep *"
+        effect: allow
+      - action: shell
+        resource: "head"
+        effect: allow
+      - action: shell
+        resource: "head *"
+        effect: allow
+      - action: shell
+        resource: "ls"
+        effect: allow
+      - action: shell
+        resource: "ls *"
+        effect: allow
+      - action: shell
+        resource: "rg"
+        effect: allow
+      - action: shell
+        resource: "rg *"
+        effect: allow
+      - action: shell
+        resource: "sort"
+        effect: allow
+      - action: shell
+        resource: "sort *"
+        effect: allow
+      - action: shell
+        resource: "tail"
+        effect: allow
+      - action: shell
+        resource: "tail *"
+        effect: allow
+      - action: shell
+        resource: "wc"
+        effect: allow
+      - action: shell
+        resource: "wc *"
+        effect: allow
+      - action: shell
+        resource: "which"
+        effect: allow
+      - action: shell
+        resource: "which *"
+        effect: allow
+      - action: shell
+        resource: "cargo"
+        effect: allow
+      - action: shell
+        resource: "cargo *"
+        effect: allow
+      - action: shell
+        resource: "jj bookmark list"
+        effect: allow
+      - action: shell
+        resource: "jj bookmark list *"
+        effect: allow
+      - action: shell
+        resource: "jj config"
+        effect: allow
+      - action: shell
+        resource: "jj config *"
+        effect: allow
+      - action: shell
+        resource: "jj diff"
+        effect: allow
+      - action: shell
+        resource: "jj diff *"
+        effect: allow
+      - action: shell
+        resource: "jj files"
+        effect: allow
+      - action: shell
+        resource: "jj files *"
+        effect: allow
+      - action: shell
+        resource: "jj log"
+        effect: allow
+      - action: shell
+        resource: "jj log *"
+        effect: allow
+      - action: shell
+        resource: "jj op log"
+        effect: allow
+      - action: shell
+        resource: "jj op log *"
+        effect: allow
+      - action: shell
+        resource: "jj resolve --list"
+        effect: allow
+      - action: shell
+        resource: "jj resolve --list *"
+        effect: allow
+      - action: shell
+        resource: "jj show"
+        effect: allow
+      - action: shell
+        resource: "jj show *"
+        effect: allow
+      - action: shell
+        resource: "jj status"
+        effect: allow
+      - action: shell
+        resource: "jj status *"
+        effect: allow
+      - action: shell
+        resource: "nix eval"
+        effect: allow
+      - action: shell
+        resource: "nix eval *"
+        effect: allow
+      - action: shell
+        resource: "nix flake show"
+        effect: allow
+      - action: shell
+        resource: "nix flake show *"
+        effect: allow
+      - action: skill
+        resource: "*"
+        effect: allow
+      - action: subagent
+        resource: "*"
+        effect: deny
+      - action: subagent
+        resource: "build"
+        effect: allow
+      - action: subagent
+        resource: "explore"
+        effect: allow
     ---
 
     You are the Plan primary agent. Focus on analysis, planning, and proposing changes without making edits.

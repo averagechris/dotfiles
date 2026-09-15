@@ -21,9 +21,8 @@ in {
 
   # Keep the built-in exploration prompt and tools, but use a fast model with
   # enough reasoning for cross-file codebase research.
-  agent.explore = {
-    model = "openrouter/openai/gpt-5.6-luna";
-    variant = "medium";
+  agents.explore = {
+    model = "openrouter/openai/gpt-5.6-luna#medium";
   };
 
   # Managed jj workspaces and temporary files live outside the OpenCode
@@ -31,24 +30,27 @@ in {
   # temp paths, including both macOS's visible and canonical path spellings.
   # The Nix store is immutable to normal users and is useful build context, so
   # allow agents to inspect package sources and outputs there without prompting.
-  permission.external_directory =
-    {
-      "*" = "ask";
-      "/nix/store/**" = "allow";
-      "/tmp/**" = "allow";
-      "/private/tmp/**" = "allow";
-      "/var/folders/**/T/opencode/**" = "allow";
-      "/private/var/folders/**/T/opencode/**" = "allow";
-    }
-    // managedJjWorkspaceExternalDirectories;
+  permissions =
+    lib.mapAttrsToList (resource: effect: {
+      action = "external_directory";
+      inherit resource effect;
+    }) ({
+        "*" = "ask";
+        "/nix/store/**" = "allow";
+        "/tmp/**" = "allow";
+        "/private/tmp/**" = "allow";
+        "/var/folders/**/T/opencode/**" = "allow";
+        "/private/var/folders/**/T/opencode/**" = "allow";
+      }
+      // managedJjWorkspaceExternalDirectories);
 
   # MCP Servers - External tool integrations
-  mcp = {
+  mcp.servers = {
     # Context7 - Search documentation for various tools and frameworks
     context7 = {
       type = "remote";
       url = "https://mcp.context7.com/mcp";
-      enabled = false;
+      disabled = true;
     };
 
     # CircleCI - Pipeline, workflow, and build insights
@@ -60,7 +62,7 @@ in {
         "-y"
         "@circleci/mcp-server-circleci@latest"
       ];
-      enabled = false;
+      disabled = true;
     };
 
     chrome-dev-tools = {
@@ -71,20 +73,20 @@ in {
         "chrome-devtools-mcp@latest"
         "--autoConnect"
       ];
-      enabled = false;
+      disabled = true;
     };
 
     datadog = {
       type = "remote";
       url = "https://mcp.datadoghq.com/api/unstable/mcp-server/mcp?toolsets=all";
-      enabled = false;
+      disabled = true;
     };
 
     # Grep by Vercel - Search code examples on GitHub
     gh-grep = {
       type = "remote";
       url = "https://mcp.grep.app";
-      enabled = false;
+      disabled = true;
     };
 
     # Gander - live jj code review session (routes to the workspace's
@@ -93,13 +95,13 @@ in {
     gander = {
       type = "local";
       command = ["gander" "mcp"];
-      enabled = false;
+      disabled = true;
     };
 
     github = {
       type = "remote";
       url = "https://api.githubcopilot.com/mcp/";
-      enabled = false;
+      disabled = true;
     };
 
     # Playwright - Browser automation MCP server
@@ -110,7 +112,7 @@ in {
         "-y"
         "@playwright/mcp@latest"
       ];
-      enabled = false;
+      disabled = true;
     };
 
     # Notion - Hosted remote MCP with OAuth support
@@ -118,7 +120,7 @@ in {
       type = "remote";
       url = "https://mcp.notion.com/mcp";
       oauth = {};
-      enabled = false;
+      disabled = true;
     };
 
     # Serena - Semantic code retrieval/editing tools for large codebases
@@ -132,7 +134,7 @@ in {
         "serena"
         "start-mcp-server"
       ];
-      enabled = false;
+      disabled = true;
     };
 
     # Sentry - Hosted remote MCP with OAuth support
@@ -140,7 +142,7 @@ in {
       type = "remote";
       url = "https://mcp.sentry.dev/mcp";
       oauth = {};
-      enabled = false;
+      disabled = true;
     };
   };
 }

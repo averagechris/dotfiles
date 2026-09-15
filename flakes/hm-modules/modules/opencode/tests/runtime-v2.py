@@ -10,6 +10,7 @@ from contextlib import contextmanager
 import json
 import os
 from pathlib import Path
+import re
 import shlex
 import shutil
 import signal
@@ -45,10 +46,19 @@ for key, name in [("XDG_CONFIG_HOME", "config"), ("XDG_DATA_HOME", "data"),
 config_file = root / "config/opencode/opencode.json"
 config_file.chmod(0o644)
 config = json.loads(config_file.read_text())
-assert all(not m.get("enabled", True) for m in config.get("mcp", {}).values()), "MCP must be disabled"
-config.update({"model": "fixture/base", "provider": {"fixture": {
-    "npm": "@ai-sdk/openai-compatible",
-    "options": {"baseURL": "http://127.0.0.1:9/v1", "apiKey": "not-a-credential"},
+assert all(m.get("disabled") is True for m in config.get("mcp", {}).get("servers", {}).values()), "MCP must be disabled"
+assert not ({"agent", "permission", "provider"} & config.keys())
+assert "agents" in config and "permissions" in config and "servers" in config["mcp"]
+assert all("enabled" not in server for server in config["mcp"]["servers"].values())
+for agent_file in (root / "config/opencode/agents").glob("*.md"):
+    frontmatter = agent_file.read_text().split("---", 2)[1]
+    assert not re.search(r"(?m)^(permission|variant|temperature):", frontmatter)
+    assert re.search(r"(?m)^permissions:$", frontmatter)
+    assert re.search(r"(?m)^request:\n\s+body:\n\s+temperature:", frontmatter)
+    assert "action: bash" not in frontmatter and "action: task" not in frontmatter
+config.update({"model": "fixture/base", "providers": {"fixture": {
+    "package": "@ai-sdk/openai-compatible",
+    "settings": {"baseURL": "http://127.0.0.1:9/v1", "apiKey": "not-a-credential"},
     "models": {"base": {"name": "Base"}, "trial": {"name": "Trial"}},
 }}})
 config_file.write_text(json.dumps(config))
