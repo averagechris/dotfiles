@@ -542,3 +542,17 @@ Reject names containing path separators, `..`, whitespace, or shell metacharacte
 - [x] Update `AGENTS.md` with the new workspace convention and agent usage guidance.
 - [x] Add or update user-facing docs and keep `docs/README.md` in sync.
 - [x] Run formatting and lint checks.
+# Bay and managed Jujutsu workspaces
+
+`bay` is the device-wide interface to managed workspaces. A group is a
+configured checkout parent, a repository is its Jujutsu repository (whose main
+workspace is named `default`), and a bay is any non-main workspace. Jujutsu's
+workspace registry is authoritative; Bay does not reconstruct missing roots.
+
+Use `bay list --json` from anywhere, `bay path repo/name`, `bay root repo`,
+`bay add repo/topic`, and `bay rm repo/topic`. A bare name first uses the
+repository containing the current directory and otherwise must be unique
+device-wide. `jj ws list`, `path`, `add`, and `forget` remain compatible
+repository-local spellings. Discovery is bounded to direct group children and
+`<group>/<workspaces>/<repo>/<bay>/.jj`; reads use explicit `-R` and
+`--ignore-working-copy` and are not cached.

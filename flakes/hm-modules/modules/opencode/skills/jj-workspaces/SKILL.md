@@ -15,7 +15,16 @@ Managed path layout:
 
 ## Commands: when and why
 
+Prefer `bay` when the current directory is not already in the target repository
+or when selecting device-wide. Use `repo/name` selectors; bare names outside a
+repository must be unique. `jj ws` remains the repository-local compatibility
+spelling for list, path, add, and forget.
+
 ```bash
+bay list --json                   # bounded device-wide discovery
+bay add <repo>/<name> -q          # create without first changing directory
+bay path <repo>/<name>            # resolve an absolute recorded root
+bay rm <repo>/<name> --dry-run    # preview device-wide removal
 jj ws add <name> -q              # create workspace; prints path only enough for agents
 jj ws add <name> -r <revset> -q  # create from explicit base/current change
 jj ws path <name>                # resolve path for existing workspace

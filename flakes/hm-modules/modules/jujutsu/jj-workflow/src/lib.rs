@@ -13,6 +13,7 @@ use std::thread;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 pub mod ws;
+pub mod bay;
 #[cfg(test)]
 use ws::*;
 use ws::{

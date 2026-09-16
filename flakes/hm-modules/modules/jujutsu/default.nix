@@ -79,6 +79,8 @@
           pkgs.docker
         ]
         ++ lib.optional dotCfg.prWorkflow.enable pkgs.gh)}
+      wrapProgram $out/bin/bay \
+        --prefix PATH : ${lib.makeBinPath [pkgs.fzf pkgs.jujutsu config.programs.git.package pkgs.direnv pkgs.docker]}
     '';
 
     meta = {
@@ -87,6 +89,12 @@
     };
   };
 in {
+  options.dotfiles.jujutsu.workflowPackage = lib.mkOption {
+    type = lib.types.package;
+    readOnly = true;
+    default = jjWorkflow;
+    description = "The installed jj-workflow package, including the bay executable.";
+  };
   options.dotfiles.jujutsu.workspaces = with lib; {
     projectGroups = mkOption {
       type = types.listOf (types.submodule {
@@ -301,7 +309,7 @@ in {
           # Sync with upstream: fetch, then rebase onto the integration bookmark
           sync = ["util" "exec" "--" "${jjWorkflow}/bin/jj-workflow" "sync"];
 
-          # Jujutsu workspace management.
+          # Preserve the original repository-local workspace command exactly.
           ws = ["util" "exec" "--" "${jjWorkflow}/bin/jj-workflow" "ws"];
 
           # Push with pre-push lints (configurable per-repo)
@@ -351,6 +359,13 @@ in {
       };
     };
   };
+  config.home.packages = lib.mkIf (cfg.enable && dotCfg.workflowAliases.enable) [dotCfg.workflowPackage];
+  config.assertions = lib.mkIf (cfg.enable && dotCfg.workflowAliases.enable) [
+    {
+      assertion = lib.elem dotCfg.workflowPackage config.home.packages;
+      message = "Jujutsu workflow support must expose the package containing bay in the Home Manager profile.";
+    }
+  ];
   config.xdg.configFile."bay/config.toml" = lib.mkIf cfg.enable {
     source = (pkgs.formats.toml {}).generate "bay-config.toml" bayConfig;
   };
