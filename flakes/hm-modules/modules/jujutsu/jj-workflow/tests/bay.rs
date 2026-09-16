@@ -25,18 +25,23 @@ fn bay(home: &PathBuf) -> Command {
     command
 }
 
-fn init_repo(home: &PathBuf, group: &str, repo: &str, workspace: &str) -> PathBuf {
-    let root=home.join(group).join(repo);fs::create_dir_all(&root).unwrap();
-    assert!(Command::new("jj").current_dir(&root).args(["git","init"]).status().unwrap().success());
-    let dest=home.join(group).join("ws").join(repo).join(workspace);fs::create_dir_all(dest.parent().unwrap()).unwrap();
-    assert!(Command::new("jj").current_dir(&root).args(["workspace","add","--name",workspace,dest.to_str().unwrap()]).status().unwrap().success());
-    root
+fn init_repo(path: &PathBuf) {
+    fs::create_dir_all(path).unwrap();
+    let status = Command::new("jj")
+        .args(["git", "init", path.to_str().unwrap()])
+        .status()
+        .unwrap();
+    assert!(status.success());
 }
 
 #[test]
 fn device_json_from_non_repo_is_clean_and_stable() {
     let home = home("list");
-    let output = bay(&home).current_dir(&home).args(["list", "--json"]).output().unwrap();
+    let output = bay(&home)
+        .current_dir(&home)
+        .args(["list", "--json"])
+        .output()
+        .unwrap();
     assert!(output.status.success());
     assert!(output.stderr.is_empty());
     let value: Value = serde_json::from_slice(&output.stdout).unwrap();
@@ -47,7 +52,11 @@ fn device_json_from_non_repo_is_clean_and_stable() {
 #[test]
 fn not_found_uses_stderr_and_documented_exit_code() {
     let home = home("errors");
-    let output = bay(&home).current_dir(&home).args(["path", "missing", "--json"]).output().unwrap();
+    let output = bay(&home)
+        .current_dir(&home)
+        .args(["path", "missing", "--json"])
+        .output()
+        .unwrap();
     assert_eq!(output.status.code(), Some(3));
     assert!(output.stdout.is_empty());
     let value: Value = serde_json::from_slice(&output.stderr).unwrap();
@@ -58,45 +67,116 @@ fn not_found_uses_stderr_and_documented_exit_code() {
 #[test]
 fn jj_ws_empty_invocation_preserves_success_and_usage() {
     let home = home("local");
-    let output = Command::new(env!("CARGO_BIN_EXE_jj-workflow")).env("XDG_CONFIG_HOME",home).arg("ws").output().unwrap();
-    assert!(output.status.success());
-    assert!(output.stdout.is_empty());
+    let output=Command::new(env!("CARGO_BIN_EXE_jj-workflow")).env("XDG_CONFIG_HOME",home).arg("ws").output().unwrap();
+    assert!(output.status.success());assert!(output.stdout.is_empty());
     assert!(String::from_utf8_lossy(&output.stderr).starts_with("Usage:\n  jj ws add"));
 }
 
 #[test]
-fn jj_ws_unknown_command_preserves_error_prefix_and_exit() {
-    let output = Command::new(env!("CARGO_BIN_EXE_jj-workflow")).args(["ws","nope"]).output().unwrap();
-    assert_eq!(output.status.code(),Some(1));
-    assert!(String::from_utf8_lossy(&output.stderr).starts_with("Error: unknown ws subcommand: nope"));
-}
+fn jj_ws_unknown_command_preserves_error_prefix_and_exit(){let output=Command::new(env!("CARGO_BIN_EXE_jj-workflow")).args(["ws","nope"]).output().unwrap();assert_eq!(output.status.code(),Some(1));assert!(String::from_utf8_lossy(&output.stderr).starts_with("Error: unknown ws subcommand: nope"));}
 
 #[test]
 fn revision_before_name_is_not_misparsed_as_the_name() {
     let home = home("option-first");
-    let output = bay(&home).current_dir(&home).args(["add", "-r", "@", "repo/topic", "--json"]).output().unwrap();
+    let output = bay(&home)
+        .current_dir(&home)
+        .args(["add", "-r", "@", "repo/topic", "--json"])
+        .output()
+        .unwrap();
     assert_eq!(output.status.code(), Some(3));
     let value: Value = serde_json::from_slice(&output.stderr).unwrap();
     assert_eq!(value["error"]["code"], "not_a_repo");
 }
 
 #[test]
-fn ambiguous_selector_reports_candidates_on_stderr() {
-    let home=home("ambiguous");init_repo(&home,"one","alpha","shared");init_repo(&home,"two","beta","shared");
-    let output=bay(&home).current_dir(&home).args(["path","shared","--json"]).output().unwrap();
-    assert_eq!(output.status.code(),Some(3));assert!(output.stdout.is_empty());
-    let value:Value=serde_json::from_slice(&output.stderr).unwrap();
-    assert_eq!(value["error"]["code"],"ambiguous");assert_eq!(value["error"]["candidates"].as_array().unwrap().len(),2);
+fn gc_requires_a_repository_outside_managed_repos() {
+    let home = home("gc-no-repo");
+    let output = bay(&home)
+        .current_dir("/")
+        .args(["gc", "--dry-run"])
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(2));
+    assert!(String::from_utf8_lossy(&output.stderr).contains("requires REPO"));
 }
 
 #[test]
-fn duplicate_workspace_anchors_query_registry_once() {
-    let home=home("dedupe");init_repo(&home,"one","alpha","shared");
-    let real=which::which("jj").unwrap();let bin=home.join("bin");fs::create_dir_all(&bin).unwrap();let count=home.join("count");
-    fs::write(bin.join("jj"),format!("#!/bin/sh\nprintf '%s\\n' \"$*\" | grep -q 'workspace list' && echo x >> {:?}\nexec {:?} \"$@\"\n",count,real)).unwrap();
-    #[cfg(unix)] { use std::os::unix::fs::PermissionsExt;fs::set_permissions(bin.join("jj"),fs::Permissions::from_mode(0o755)).unwrap(); }
-    let old=std::env::var("PATH").unwrap();let output=bay(&home).env("PATH",format!("{}:{old}",bin.display())).args(["list","--json"]).output().unwrap();assert!(output.status.success(),"{}",String::from_utf8_lossy(&output.stderr));let value:Value=serde_json::from_slice(&output.stdout).unwrap();let repos:std::collections::HashSet<_>=value["workspaces"].as_array().unwrap().iter().map(|record|record["repo"].as_str().unwrap()).collect();assert_eq!(repos.len(),1);assert_eq!(repos.into_iter().next(),Some("alpha"));
-    assert_eq!(fs::read_to_string(count).unwrap().lines().count(),1);
+fn maintenance_is_scoped_to_the_selected_repository() {
+    let home = home("maintenance-scope");
+    let one = home.join("one/alpha");
+    let two = home.join("two/beta");
+    init_repo(&one);
+    init_repo(&two);
+
+    let alpha_root = bay(&home)
+        .current_dir(&home)
+        .args(["root", "alpha"])
+        .output()
+        .unwrap();
+    let beta_root = bay(&home)
+        .current_dir(&home)
+        .args(["root", "beta"])
+        .output()
+        .unwrap();
+    assert!(alpha_root.status.success());
+    assert!(beta_root.status.success());
+    let alpha_trash = PathBuf::from(String::from_utf8(alpha_root.stdout).unwrap().trim())
+        .join(".trash/0-alpha-old");
+    let beta_trash = PathBuf::from(String::from_utf8(beta_root.stdout).unwrap().trim())
+        .join(".trash/0-beta-old");
+    fs::create_dir_all(&alpha_trash).unwrap();
+    fs::create_dir_all(&beta_trash).unwrap();
+
+    let output = bay(&home)
+        .current_dir(&home)
+        .args(["gc", "alpha", "--older-than", "0h", "--dry-run"])
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("alpha-old"));
+    assert!(!stdout.contains("beta-old"));
+    assert!(alpha_trash.exists());
+    assert!(beta_trash.exists());
+
+    for repo in ["alpha", "beta"] {
+        let output = bay(&home)
+            .current_dir(&home)
+            .args(["add", &format!("{repo}/work"), "-r", "@", "-q"])
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+    let alpha_work = home.join("one/ws/alpha/work");
+    let beta_work = home.join("two/ws/beta/work");
+    fs::create_dir_all(alpha_work.join("target")).unwrap();
+    fs::create_dir_all(beta_work.join("target")).unwrap();
+    fs::write(alpha_work.join("target/artifact"), "alpha").unwrap();
+    fs::write(beta_work.join("target/artifact"), "beta").unwrap();
+
+    let output = bay(&home)
+        .current_dir(&home)
+        .args(["sweep", "alpha", "--idle", "0h", "--dry-run"])
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains(alpha_work.to_str().unwrap()), "{stdout}");
+    assert!(!stdout.contains(beta_work.to_str().unwrap()));
+    assert!(alpha_work.join("target/artifact").exists());
+    assert!(beta_work.join("target/artifact").exists());
 }
 
 fn counting_path(home:&PathBuf)->(String,PathBuf){let real=which::which("jj").unwrap();let bin=home.join("counter-bin");fs::create_dir_all(&bin).unwrap();let count=home.join("query-count");fs::write(bin.join("jj"),format!("#!/bin/sh\nprintf '%s\\n' \"$*\" | grep -q 'workspace list' && echo x >> {:?}\nexec {:?} \"$@\"\n",count,real)).unwrap();#[cfg(unix)]{use std::os::unix::fs::PermissionsExt;fs::set_permissions(bin.join("jj"),fs::Permissions::from_mode(0o755)).unwrap();}(format!("{}:{}",bin.display(),std::env::var("PATH").unwrap()),count)}

@@ -12,8 +12,8 @@ use std::process::{Command, Stdio};
 use std::thread;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
-pub mod ws;
 pub mod bay;
+pub mod ws;
 #[cfg(test)]
 use ws::*;
 use ws::{

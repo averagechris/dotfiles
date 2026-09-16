@@ -556,3 +556,10 @@ device-wide. `jj ws list`, `path`, `add`, and `forget` remain compatible
 repository-local spellings. Discovery is bounded to direct group children and
 `<group>/<workspaces>/<repo>/<bay>/.jj`; reads use explicit `-R` and
 `--ignore-working-copy` and are not cached.
+
+Repository maintenance is also available without changing directories:
+`bay prune [repo]`, `bay gc [repo]`, `bay du [repo]`, and `bay sweep [repo]`.
+They accept the same operation flags as their `jj ws` counterparts. The
+repository may be selected by configured basename or path; when omitted, Bay
+uses the repository containing the current directory. It never applies a
+maintenance command across every configured repository.
