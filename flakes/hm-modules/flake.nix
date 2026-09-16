@@ -500,6 +500,36 @@
           assert settings.default_agent == "orchestrator";
           assert settings.experimental.subagent_depth == 2;
           assert settings.agents.explore.model == "openrouter/openai/gpt-5.6-luna#medium";
+          assert settings.compaction
+          == {
+            auto = true;
+            buffer = 20000;
+            keep.tokens = 15000;
+          };
+          assert settings.warming == false;
+          assert let
+            models = settings.providers.openrouter.models;
+            expected = [
+              "~openai/gpt-sol-latest"
+              "~openai/gpt-astra-latest"
+              "openai/gpt-5.6-sol"
+              "openai/gpt-5.6-luna"
+              "anthropic/claude-fable-5.1"
+            ];
+            thresholdFor = model:
+              lib.min
+              (model.limit.input - settings.compaction.buffer)
+              (1000000 - lib.max 128000 settings.compaction.buffer);
+          in
+            lib.all (id:
+              models.${id}
+              == {
+                limit.input = 370000;
+                compaction.mode = "local";
+              }
+              && thresholdFor models.${id} == 350000
+              && 230000 < thresholdFor models.${id})
+            expected;
           assert lib.all (name: lib.hasInfix "model: ${expectedAgentModels.${name}}\n" (frontmatter agents.${name})) (builtins.attrNames expectedAgentModels);
           assert lib.all (prompt: !(lib.hasInfix "model:" (frontmatter prompt))) unpinnedAgentPrompts;
           assert lib.hasInfix "Use this exceptional tier only" buildPrompt;

@@ -47,6 +47,16 @@ config_file = root / "config/opencode/opencode.json"
 config_file.chmod(0o644)
 config = json.loads(config_file.read_text())
 assert all(m.get("disabled") is True for m in config.get("mcp", {}).get("servers", {}).values()), "MCP must be disabled"
+assert config["compaction"] == {"auto": True, "keep": {"tokens": 15000}, "buffer": 20000}
+assert config["warming"] is False
+compacted_models = config["providers"]["openrouter"]["models"]
+for model_id in ["~openai/gpt-sol-latest", "~openai/gpt-astra-latest", "openai/gpt-5.6-sol",
+                 "openai/gpt-5.6-luna", "anthropic/claude-fable-5.1"]:
+    policy = compacted_models[model_id]
+    assert policy == {"limit": {"input": 370000}, "compaction": {"mode": "local"}}
+    threshold = min(policy["limit"]["input"] - config["compaction"]["buffer"],
+                    1000000 - max(128000, config["compaction"]["buffer"]))
+    assert threshold == 350000 and 230000 < threshold
 assert not ({"agent", "permission", "provider"} & config.keys())
 assert "agents" in config and "permissions" in config and "servers" in config["mcp"]
 assert all("enabled" not in server for server in config["mcp"]["servers"].values())

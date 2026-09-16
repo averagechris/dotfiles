@@ -35,6 +35,25 @@ This keeps OpenCode close to upstream releases while preserving the normal
 - on hosts with direnv enabled, a `dotfiles-direnv` plugin uses the same
   per-invocation hook, including the invocation's cwd and mutable environment,
   to load each working directory's direnv-allowed dev shell environment
+- local automatic compaction at 350,000 input tokens for the primary aliases
+  and pinned subagent models, with warming explicitly disabled
+
+## Long-session compaction
+
+The managed V2 configuration keeps local automatic compaction enabled, retains
+15,000 recent tokens, and uses the default 20,000-token buffer. For the current
+primary aliases and pinned OpenRouter agent models it overrides only the catalog
+`limit.input` value to 370,000 and selects `compaction.mode = "local"`. It does
+not enable provider-native compaction or replace catalog IDs, capabilities, or
+truthful context/output limits.
+
+V2's automatic threshold is
+`min(input limit - buffer, context limit - max(output reserve, buffer))`.
+With the observed catalog limits (922k input, roughly 1.0–1.05m context, and
+128k output), the 370k input policy makes that threshold exactly 350k; a session
+ending around 230k remains below it. Paid testing confirmed local compaction
+works while OpenRouter provider-native compaction is unsupported. Source,
+evaluation, and credential-free runtime checks assert this policy.
 
 ## Local repository references on suremac
 
