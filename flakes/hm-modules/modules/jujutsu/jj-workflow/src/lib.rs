@@ -15,7 +15,10 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 pub mod ws;
 #[cfg(test)]
 use ws::*;
-use ws::{jj_config_bool, jj_config_string, run_ws, ws_config, WsConfig};
+use ws::{
+    discover_workspaces, jj_config_bool, jj_config_string, run_ws, ws_config, WorkspaceKind,
+    WsConfig,
+};
 
 #[derive(Debug, Parser)]
 #[command(
@@ -3448,7 +3451,7 @@ fn discover_pr_workspace_candidates(
 ) -> Vec<PrWorkspaceCandidate> {
     let mut candidates = Vec::new();
     let mut seen = Vec::<PathBuf>::new();
-    for (path, kind) in candidate_workspace_paths(config, &pr.repo_name) {
+    for (path, kind) in candidate_workspace_paths(config, &pr.repo_name, warnings) {
         let canonical = fs::canonicalize(&path).unwrap_or(path.clone());
         if seen.contains(&canonical) {
             continue;
@@ -3495,22 +3498,41 @@ fn match_pr_workspaces(
     matches
 }
 
-fn candidate_workspace_paths(config: &WsConfig, repo_name: &str) -> Vec<(PathBuf, String)> {
+fn candidate_workspace_paths(
+    config: &WsConfig,
+    repo_name: &str,
+    warnings: &mut Vec<String>,
+) -> Vec<(PathBuf, String)> {
     let mut paths = Vec::new();
     for group in &config.project_groups {
         let group_path = fs::canonicalize(&group.path).unwrap_or(group.path.clone());
         let main = group_path.join(repo_name);
-        if main.is_dir() {
-            paths.push((main, "main".to_string()));
+        if !main.is_dir() {
+            continue;
         }
-        let workspace_root = group_path.join(&group.workspace_dir).join(repo_name);
-        if let Ok(entries) = fs::read_dir(&workspace_root) {
-            for entry in entries.flatten() {
-                let path = entry.path();
-                if path.is_dir() {
-                    paths.push((path, "workspace".to_string()));
+        match discover_workspaces(&main, config) {
+            Ok(entries) => {
+                for entry in entries {
+                    if let Some(path) = entry.path {
+                        let kind = match entry.kind {
+                            WorkspaceKind::Main => "main",
+                            WorkspaceKind::Bay => "bay",
+                            WorkspaceKind::Managed => "workspace",
+                            WorkspaceKind::External => "external",
+                        };
+                        paths.push((path, kind.to_string()));
+                    } else {
+                        warnings.push(format!(
+                            "workspace {} for {} has a missing recorded root",
+                            entry.name, repo_name
+                        ));
+                    }
                 }
             }
+            Err(err) => warnings.push(format!(
+                "could not discover jj workspaces from {}: {err:#}",
+                main.display()
+            )),
         }
     }
     paths
@@ -6279,16 +6301,16 @@ struct JjOutput {
 mod tests {
     use super::{
         choose_ship_bookmark, choose_sync_base, clone_artifact_dirs, clone_dir_strict,
-        collect_workspace_children, configured_lints, current_context, effective_clone_artifacts,
-        effective_venv_plan, fetch_remote_choice, first_unsupported_pr_flag, infer_lint_name,
-        infer_remote_integration_bookmark_from, is_check_only_format_script,
-        is_integration_bookmark, is_safe_package_check_script, is_validation_name,
-        lint_config_toml, lint_display_name, lint_onboard_json, lint_onboard_report,
-        load_reviewer_config_from, load_workspace_repo_config, load_ws_config, makefile_targets,
-        managed_workspace_candidates, measure_tree, move_to_trash, parse_checks_json,
-        parse_common_args, parse_config_string_array, parse_duration_arg, parse_github_remote_url,
-        parse_idle_duration, parse_lint_selection, parse_lints_toml, parse_pr_args,
-        parse_pr_hygiene_args, parse_pr_hygiene_graphql, parse_retention_seconds,
+        collect_workspace_children, configured_lints, current_context, discover_workspaces,
+        effective_clone_artifacts, effective_venv_plan, fetch_remote_choice,
+        first_unsupported_pr_flag, infer_lint_name, infer_remote_integration_bookmark_from,
+        is_check_only_format_script, is_integration_bookmark, is_safe_package_check_script,
+        is_validation_name, lint_config_toml, lint_display_name, lint_onboard_json,
+        lint_onboard_report, load_reviewer_config_from, load_workspace_repo_config, load_ws_config,
+        makefile_targets, managed_workspace_candidates, measure_tree, move_to_trash,
+        parse_checks_json, parse_common_args, parse_config_string_array, parse_duration_arg,
+        parse_github_remote_url, parse_idle_duration, parse_lint_selection, parse_lints_toml,
+        parse_pr_args, parse_pr_hygiene_args, parse_pr_hygiene_graphql, parse_retention_seconds,
         parse_review_state_json, parse_tag_push_args, parse_trash_entry_timestamp,
         parse_ws_add_args, parse_ws_forget_args, parse_ws_path_args, parse_ws_prune_args,
         parse_ws_sweep_args, path_is_contained, python_runner, render_bookmark_template,
@@ -6301,8 +6323,8 @@ mod tests {
         validate_ws_name, workspace_context_for_repo, workspace_has_unpublished_work,
         write_tracked_lint_config, ws_config, Cli, CliCommand, FetchChoice, LintCommand,
         LintOnboardReport, LintSuggestion, ParsedArgs, PrArgs, ProjectGroup, Reviewer,
-        ReviewerConfig, ShipPlan, TagCommand, TagPushArgs, TagSigning, VenvPlan, WorkspaceUsage,
-        WsAddArgs, WsConfig, WsForgetArgs, WsPathArgs, WsPruneArgs, WsSweepArgs,
+        ReviewerConfig, ShipPlan, TagCommand, TagPushArgs, TagSigning, VenvPlan, WorkspaceKind,
+        WorkspaceUsage, WsAddArgs, WsConfig, WsForgetArgs, WsPathArgs, WsPruneArgs, WsSweepArgs,
         DEFAULT_CLONE_ARTIFACTS, DEFAULT_SWEEP_IDLE,
     };
     use clap::Parser;
@@ -6814,6 +6836,74 @@ aliases = ["sammy", "Sam Smith"]
         let _ = fs::remove_dir_all(&path);
         fs::create_dir_all(&path).unwrap();
         path
+    }
+
+    #[test]
+    fn workspace_discovery_uses_recorded_roots_without_mutating_repo() {
+        let root = named_tempdir("workspace-discovery");
+        let group = root.join("projects");
+        let main = group.join("demo");
+        let external = root.join("elsewhere/raw-checkout");
+        fs::create_dir_all(&main).unwrap();
+        fs::create_dir_all(external.parent().unwrap()).unwrap();
+        let status = Command::new("jj")
+            .args(["git", "init"])
+            .arg(&main)
+            .status()
+            .unwrap();
+        assert!(status.success());
+        let status = Command::new("jj")
+            .arg("-R")
+            .arg(&main)
+            .args(["workspace", "add", "--name", "raw"])
+            .arg(&external)
+            .status()
+            .unwrap();
+        assert!(status.success());
+        let config = test_config(&group);
+        let op_count = || {
+            let output = Command::new("jj")
+                .arg("-R")
+                .arg(&main)
+                .args([
+                    "--ignore-working-copy",
+                    "op",
+                    "log",
+                    "--no-graph",
+                    "-T",
+                    "self.id() ++ \"\\n\"",
+                ])
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "{}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+            String::from_utf8(output.stdout).unwrap().lines().count()
+        };
+        let before = op_count();
+        let from_main = discover_workspaces(&main, &config).unwrap();
+        let from_external = discover_workspaces(&external, &config).unwrap();
+        assert_eq!(from_main, from_external);
+        assert_eq!(op_count(), before);
+        let raw = from_main.iter().find(|entry| entry.name == "raw").unwrap();
+        assert_eq!(raw.path, Some(fs::canonicalize(&external).unwrap()));
+        assert_eq!(raw.kind, WorkspaceKind::External);
+        assert!(!raw.managed);
+
+        let moved = root.join("moved");
+        fs::rename(&external, &moved).unwrap();
+        let missing = discover_workspaces(&main, &config).unwrap();
+        assert_eq!(
+            missing
+                .iter()
+                .find(|entry| entry.name == "raw")
+                .unwrap()
+                .path,
+            None
+        );
+        assert_eq!(op_count(), before);
     }
 
     #[test]

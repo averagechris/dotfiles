@@ -1098,49 +1098,129 @@ pub(crate) fn file_is_tracked(repo: &Path, file: &str) -> Result<bool> {
     Ok(output.status.success())
 }
 
-pub(crate) fn workspace_entries() -> Result<Vec<(String, String)>> {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum WorkspaceKind {
+    Main,
+    Bay,
+    Managed,
+    External,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct DiscoveredWorkspace {
+    pub(crate) name: String,
+    /// The root recorded by jj, if it still exists. A missing checkout is not
+    /// silently replaced with the path bay would have chosen for it.
+    pub(crate) path: Option<PathBuf>,
+    pub(crate) kind: WorkspaceKind,
+    pub(crate) managed: bool,
+}
+
+/// Read jj's workspace registry from an explicit repository anchor. This is
+/// deliberately independent of cwd and suppresses working-copy snapshots.
+pub(crate) fn discover_workspaces(
+    anchor: &Path,
+    config: &WsConfig,
+) -> Result<Vec<DiscoveredWorkspace>> {
+    let output = Command::new("jj")
+        .current_dir(anchor)
+        .arg("-R")
+        .arg(anchor)
+        .arg("--ignore-working-copy")
+        .args([
+            "workspace",
+            "list",
+            "--color=never",
+            "-T",
+            "self.name() ++ \"\\t\" ++ self.root() ++ \"\\n\"",
+        ])
+        .output()
+        .with_context(|| format!("failed to list jj workspaces from {}", anchor.display()))?;
+    if !output.status.success() {
+        bail!(
+            "jj workspace list failed for {}: {}",
+            anchor.display(),
+            String::from_utf8_lossy(&output.stderr).trim()
+        );
+    }
+    let text = String::from_utf8(output.stdout)?;
+    let mut entries = Vec::new();
+    for line in text.lines().filter(|line| !line.is_empty()) {
+        let (name, recorded) = line
+            .split_once('\t')
+            .ok_or_else(|| anyhow!("invalid jj workspace list record: {line:?}"))?;
+        let recorded = PathBuf::from(recorded);
+        let (kind, managed) = classify_workspace(name, Some(&recorded), config);
+        let path = recorded
+            .is_dir()
+            .then(|| fs::canonicalize(&recorded).unwrap_or_else(|_| recorded.clone()));
+        entries.push(DiscoveredWorkspace {
+            name: name.to_string(),
+            path,
+            kind,
+            managed,
+        });
+    }
+    Ok(entries)
+}
+
+pub(crate) fn classify_workspace(
+    name: &str,
+    path: Option<&Path>,
+    config: &WsConfig,
+) -> (WorkspaceKind, bool) {
+    if name == "default" {
+        return (WorkspaceKind::Main, false);
+    }
+    if name == "bay" {
+        return (WorkspaceKind::Bay, false);
+    }
+    if let Some(path) = path {
+        for group in &config.project_groups {
+            let group_path = fs::canonicalize(&group.path).unwrap_or_else(|_| group.path.clone());
+            let Ok(relative) = path.strip_prefix(group_path.join(&group.workspace_dir)) else {
+                continue;
+            };
+            let parts: Vec<_> = relative.components().collect();
+            if parts.len() == 2 && parts[1].as_os_str() == name {
+                return (WorkspaceKind::Managed, true);
+            }
+        }
+    }
+    (WorkspaceKind::External, false)
+}
+
+pub(crate) fn workspace_entries() -> Result<Vec<DiscoveredWorkspace>> {
     let config = ws_config()?;
     let ctx = current_context(&config, None)?;
-    let output = run_jj_capture([
-        "workspace",
-        "list",
-        "--color=never",
-        "-T",
-        "self.name() ++ \"\\n\"",
-    ])?;
-    let current_name = jj_config_string("workspace.name")?.unwrap_or_else(|| "default".to_string());
-    let current_root = fs::canonicalize(run_jj_capture(["root", "--color=never"])?.stdout.trim())
-        .unwrap_or(ctx.repo_root.clone());
-    let entries = output
-        .stdout
-        .lines()
-        .map(str::trim)
-        .filter(|name| !name.is_empty())
-        .map(|name| {
-            let path = if name == current_name {
-                current_root.clone()
-            } else {
-                ctx.workspace_root.join(name)
-            };
-            (name.to_string(), path.display().to_string())
-        })
-        .collect();
-    Ok(entries)
+    discover_workspaces(&ctx.repo_root, &config)
 }
 
 pub(crate) fn ws_list(args: Vec<OsString>) -> Result<()> {
     let pick = parse_pick_only_args("jj ws list", args)?;
     let entries = workspace_entries()?;
     if pick {
-        let lines: Vec<String> = entries.iter().map(|(n, p)| format!("{n}\t{p}")).collect();
+        let lines: Vec<String> = entries.iter().map(format_workspace_entry).collect();
         println!("{}", pick_lines("Workspace", &lines)?.unwrap_or_default());
     } else {
         println!("NAME\tPATH");
-        for (name, path) in entries {
-            println!("{name}\t{path}");
+        for entry in entries {
+            println!("{}", format_workspace_entry(&entry));
         }
     }
     Ok(())
+}
+
+fn format_workspace_entry(entry: &DiscoveredWorkspace) -> String {
+    format!(
+        "{}\t{}",
+        entry.name,
+        entry
+            .path
+            .as_ref()
+            .map(|p| p.display().to_string())
+            .unwrap_or_else(|| "<missing>".into())
+    )
 }
 
 pub(crate) fn parse_pick_only_args(command: &str, args: Vec<OsString>) -> Result<bool> {
@@ -1198,17 +1278,20 @@ pub(crate) fn ws_path(args: Vec<OsString>) -> Result<()> {
     let parsed = parse_ws_path_args(args)?;
     let entries = workspace_entries()?;
     let selected = if parsed.pick {
-        let lines: Vec<String> = entries.iter().map(|(n, p)| format!("{n}\t{p}")).collect();
+        let lines: Vec<String> = entries.iter().map(format_workspace_entry).collect();
         let line =
             pick_lines("Workspace", &lines)?.ok_or_else(|| anyhow!("no workspace selected"))?;
         line.split('\t').nth(1).unwrap_or(line.as_str()).to_string()
     } else {
         let name = parsed.name.expect("validated by parser");
-        entries
+        let entry = entries
             .into_iter()
-            .find(|(n, _)| n == &name)
-            .map(|(_, p)| p)
-            .ok_or_else(|| anyhow!("workspace not found: {name}"))?
+            .find(|entry| entry.name == name)
+            .ok_or_else(|| anyhow!("workspace not found: {name}"))?;
+        entry
+            .path
+            .map(|p| p.display().to_string())
+            .ok_or_else(|| anyhow!("workspace {name} has no checkout at its recorded root"))?
     };
     println!("{selected}");
     Ok(())
@@ -1292,21 +1375,41 @@ pub(crate) fn ws_forget(args: Vec<OsString>) -> Result<()> {
     let parsed = parse_ws_forget_args(args)?;
     let entries = workspace_entries()?;
     let (name, path) = if parsed.pick {
-        let lines: Vec<String> = entries.iter().map(|(n, p)| format!("{n}\t{p}")).collect();
+        let lines: Vec<String> = entries.iter().map(format_workspace_entry).collect();
         let line = pick_lines("Forget workspace", &lines)?
             .ok_or_else(|| anyhow!("no workspace selected"))?;
         let (n, p) = line
             .split_once('\t')
             .ok_or_else(|| anyhow!("invalid picker selection"))?;
-        (n.to_string(), PathBuf::from(p))
+        let path = (p != "<missing>").then(|| PathBuf::from(p));
+        (n.to_string(), path)
     } else {
         let n = parsed.name.expect("validated by parser");
-        let p = entries
+        let entry = entries
             .iter()
-            .find(|(en, _)| en == &n)
-            .map(|(_, p)| PathBuf::from(p))
+            .find(|entry| entry.name == n)
             .ok_or_else(|| anyhow!("workspace not found: {n}"))?;
+        let p = entry.path.clone();
         (n, p)
+    };
+    let config = ws_config()?;
+    let ctx = current_context(&config, None)?;
+    let Some(path) = path else {
+        if parsed.dry_run {
+            println!("would forget {name} (recorded root is missing)");
+            return Ok(());
+        }
+        run_jj_status_os(vec![
+            OsString::from("-R"),
+            ctx.repo_root.into_os_string(),
+            OsString::from("workspace"),
+            OsString::from("forget"),
+            OsString::from(name.as_str()),
+        ])?;
+        if !parsed.quiet {
+            println!("forgot workspace {name} (recorded root was missing)");
+        }
+        return Ok(());
     };
     let current = fs::canonicalize(run_jj_capture(["root", "--color=never"])?.stdout.trim()).ok();
     let target = fs::canonicalize(&path).unwrap_or(path.clone());
@@ -1316,8 +1419,6 @@ pub(crate) fn ws_forget(args: Vec<OsString>) -> Result<()> {
     if !parsed.force && workspace_has_unpublished_work(&target)? {
         bail!("workspace {name} has unpublished work at {}\n\nReview it first with:\n  jj --repository {} status\n\nIf this workspace was already pushed or merged, fetch remote refs and retry:\n  jj --repository {} git fetch\n\nUse --force to forget and delete anyway.", target.display(), target.display(), target.display());
     }
-    let config = ws_config()?;
-    let ctx = current_context(&config, None)?;
     let repo_config =
         load_workspace_repo_config(&path.join(WORKSPACE_REPO_CONFIG_FILE)).map_err(|err| {
             anyhow!(
@@ -1385,7 +1486,13 @@ pub(crate) fn ws_forget(args: Vec<OsString>) -> Result<()> {
         }
         run_status(&mut cmd, "docker compose down")?;
     }
-    run_jj_status(["workspace", "forget", name.as_str()])?;
+    run_jj_status_os(vec![
+        OsString::from("-R"),
+        ctx.repo_root.clone().into_os_string(),
+        OsString::from("workspace"),
+        OsString::from("forget"),
+        OsString::from(name.as_str()),
+    ])?;
     if !parsed.keep_dir && path.exists() {
         if parsed.purge {
             fs::remove_dir_all(&path)
@@ -1454,7 +1561,7 @@ pub(crate) fn ws_prune(args: Vec<OsString>) -> Result<()> {
     let ctx = current_context(&config, None)?;
     let registered: Vec<PathBuf> = workspace_entries()?
         .into_iter()
-        .map(|(_, p)| fs::canonicalize(&p).unwrap_or(PathBuf::from(p)))
+        .filter_map(|entry| entry.path)
         .collect();
     let children = collect_workspace_children(&ctx.workspace_root);
     let mut stale = stale_workspace_dirs(&children, &registered);
@@ -1921,25 +2028,14 @@ pub(crate) fn scan_workspace(
 pub(crate) fn managed_workspace_candidates(
     ctx: &WorkspaceContext,
 ) -> Result<Vec<(String, PathBuf)>> {
-    let output = run_jj_capture([
-        "workspace",
-        "list",
-        "--color=never",
-        "-T",
-        "self.name() ++ \"\\n\"",
-    ])?;
+    let config = ws_config()?;
     let canon_root =
         fs::canonicalize(&ctx.workspace_root).unwrap_or_else(|_| ctx.workspace_root.clone());
     let mut candidates = Vec::new();
-    for name in output
-        .stdout
-        .lines()
-        .map(str::trim)
-        .filter(|n| !n.is_empty())
-    {
-        let raw = ctx.workspace_root.join(name);
-        let path = fs::canonicalize(&raw).unwrap_or(raw);
-        if !path_is_contained(&path, &canon_root) {
+    for entry in discover_workspaces(&ctx.repo_root, &config)? {
+        let Some(path) = entry.path else { continue };
+        let name = entry.name;
+        if entry.kind != WorkspaceKind::Main && !path_is_contained(&path, &canon_root) {
             eprintln!(
                 "warning: skipping {name}: {} is outside workspace root {}",
                 path.display(),
@@ -1947,7 +2043,7 @@ pub(crate) fn managed_workspace_candidates(
             );
             continue;
         }
-        candidates.push((name.to_string(), path));
+        candidates.push((name, path));
     }
     Ok(candidates)
 }
