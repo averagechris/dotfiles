@@ -133,12 +133,14 @@ Configure these project groups through Nix/home-manager:
 - all personal hosts: `~/projects`, with workspace dir `ws`
 - `suremac`: `~/projects` and `~/sureapp`, each with workspace dir `ws`
 
-## jj config shape
+## Device config shape
 
-The generated jj config uses a flat project-group list. Each item is `path:workspace-dir`; omit `:workspace-dir` to use `ws`.
+Home Manager generates `$XDG_CONFIG_HOME/bay/config.toml` from the
+`dotfiles.jujutsu.workspaces.*` options. Repository-specific hooks remain in
+`.jj-workspace.toml`; device workspace settings do not belong in jj config.
 
 ```toml
-[dotfiles.workspaces]
+schema = 1
 copy-envrc = "untracked"
 venv-mode = "copy"
 direnv-allow = true
@@ -150,7 +152,14 @@ sweep-idle = "14d"
 trash-retention = "7d"
 # Optional when multiple remotes exist:
 # fetch-remote = "origin"
-project-groups = ["~/projects:ws", "~/sureapp:ws"]
+
+[[groups]]
+path = "~/projects"
+workspaces = "ws"
+
+[[groups]]
+path = "~/sureapp"
+workspaces = "ws"
 ```
 
 ## Main checkout vs managed workspace

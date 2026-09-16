@@ -6284,26 +6284,26 @@ mod tests {
         infer_remote_integration_bookmark_from, is_check_only_format_script,
         is_integration_bookmark, is_safe_package_check_script, is_validation_name,
         lint_config_toml, lint_display_name, lint_onboard_json, lint_onboard_report,
-        load_reviewer_config_from, load_workspace_repo_config, makefile_targets,
+        load_reviewer_config_from, load_workspace_repo_config, load_ws_config, makefile_targets,
         managed_workspace_candidates, measure_tree, move_to_trash, parse_checks_json,
         parse_common_args, parse_config_string_array, parse_duration_arg, parse_github_remote_url,
         parse_idle_duration, parse_lint_selection, parse_lints_toml, parse_pr_args,
         parse_pr_hygiene_args, parse_pr_hygiene_graphql, parse_retention_seconds,
-        parse_review_state_json, parse_tag_push_args, parse_toml_string_array,
-        parse_trash_entry_timestamp, parse_ws_add_args, parse_ws_forget_args, parse_ws_path_args,
-        parse_ws_prune_args, parse_ws_sweep_args, path_is_contained, python_runner,
-        render_bookmark_template, repair_venv_paths, resolve_pr_base, resolve_reviewer_values,
-        resolve_reviewers_from_path, review_effort, run_lint, run_lint_onboard, run_ship, run_sync,
-        run_ws, run_ws_with_warning, scan_workspace, selected_lints, ship_plan,
-        short_description_from_title, source_venv_python_usable, stale_workspace_dirs, sweepable,
-        sync_base_candidates, tag_push, top_level_artifact_paths, trash_entry_is_expired,
-        unix_now_secs, valid_github_handle, validate_body_source, validate_pr_watch_args,
-        validate_release_tag, validate_ticket, validate_ws_name, workspace_context_for_repo,
-        workspace_has_unpublished_work, write_tracked_lint_config, ws_config, Cli, CliCommand,
-        FetchChoice, LintCommand, LintOnboardReport, LintSuggestion, ParsedArgs, PrArgs,
-        ProjectGroup, Reviewer, ReviewerConfig, ShipPlan, TagCommand, TagPushArgs, TagSigning,
-        VenvPlan, WorkspaceUsage, WsAddArgs, WsConfig, WsForgetArgs, WsPathArgs, WsPruneArgs,
-        WsSweepArgs, DEFAULT_CLONE_ARTIFACTS, DEFAULT_SWEEP_IDLE,
+        parse_review_state_json, parse_tag_push_args, parse_trash_entry_timestamp,
+        parse_ws_add_args, parse_ws_forget_args, parse_ws_path_args, parse_ws_prune_args,
+        parse_ws_sweep_args, path_is_contained, python_runner, render_bookmark_template,
+        repair_venv_paths, resolve_pr_base, resolve_reviewer_values, resolve_reviewers_from_path,
+        review_effort, run_lint, run_lint_onboard, run_ship, run_sync, run_ws, run_ws_with_warning,
+        scan_workspace, selected_lints, ship_plan, short_description_from_title,
+        source_venv_python_usable, stale_workspace_dirs, sweepable, sync_base_candidates, tag_push,
+        top_level_artifact_paths, trash_entry_is_expired, unix_now_secs, valid_github_handle,
+        validate_body_source, validate_pr_watch_args, validate_release_tag, validate_ticket,
+        validate_ws_name, workspace_context_for_repo, workspace_has_unpublished_work,
+        write_tracked_lint_config, ws_config, Cli, CliCommand, FetchChoice, LintCommand,
+        LintOnboardReport, LintSuggestion, ParsedArgs, PrArgs, ProjectGroup, Reviewer,
+        ReviewerConfig, ShipPlan, TagCommand, TagPushArgs, TagSigning, VenvPlan, WorkspaceUsage,
+        WsAddArgs, WsConfig, WsForgetArgs, WsPathArgs, WsPruneArgs, WsSweepArgs,
+        DEFAULT_CLONE_ARTIFACTS, DEFAULT_SWEEP_IDLE,
     };
     use clap::Parser;
     use std::env;
@@ -6805,6 +6805,7 @@ aliases = ["sammy", "Sam Smith"]
                 .map(std::string::ToString::to_string)
                 .collect(),
             sweep_idle: DEFAULT_SWEEP_IDLE.to_string(),
+            trash_retention: "7d".to_string(),
         }
     }
 
@@ -6813,6 +6814,38 @@ aliases = ["sammy", "Sam Smith"]
         let _ = fs::remove_dir_all(&path);
         fs::create_dir_all(&path).unwrap();
         path
+    }
+
+    #[test]
+    fn bay_config_parses_two_groups_and_operational_defaults() {
+        let root = named_tempdir("bay-config");
+        let path = root.join("config.toml");
+        fs::write(
+            &path,
+            "schema = 1\n\n[[groups]]\npath = \"/projects\"\nworkspaces = \"ws\"\n\n[[groups]]\npath = \"/sureapp\"\n",
+        )
+        .unwrap();
+        let config = load_ws_config(&path).unwrap();
+        assert_eq!(config.project_groups.len(), 2);
+        assert_eq!(config.project_groups[0].path, PathBuf::from("/projects"));
+        assert_eq!(config.project_groups[1].workspace_dir, "ws");
+        assert_eq!(config.copy_envrc, "untracked");
+        assert_eq!(config.venv_mode, "copy");
+        assert!(config.direnv_allow);
+        assert_eq!(config.docker_cleanup, "auto");
+        assert!(config.docker_remove_volumes);
+        assert_eq!(config.clone_artifacts, strings(DEFAULT_CLONE_ARTIFACTS));
+        assert_eq!(config.sweep_idle, "14d");
+        assert_eq!(config.trash_retention, "7d");
+        assert_eq!(config.fetch_remote, None);
+    }
+
+    #[test]
+    fn bay_config_errors_name_the_path() {
+        let path = named_tempdir("bad-bay-config").join("config.toml");
+        fs::write(&path, "schema = nope").unwrap();
+        let error = load_ws_config(&path).unwrap_err().to_string();
+        assert!(error.contains(path.to_str().unwrap()));
     }
 
     fn filetime_from_unix(secs: u64) -> SystemTime {
@@ -6864,6 +6897,58 @@ aliases = ["sammy", "Sam Smith"]
     }
 
     fn jj(repo: &Path, args: &[&str]) {
+        // Legacy integration setup used repo-scoped jj keys. Mirror those test
+        // inputs into the device config now consumed by workspace operations.
+        if args.len() >= 5
+            && args[0..3] == ["config", "set", "--repo"]
+            && args[3].starts_with("dotfiles.workspaces.")
+        {
+            let config_home =
+                env::temp_dir().join(format!("jj-workflow-device-config-{}", std::process::id()));
+            env::set_var("XDG_CONFIG_HOME", &config_home);
+            let jj_user_config = config_home.join("jj/config.toml");
+            if !jj_user_config.exists() {
+                fs::create_dir_all(jj_user_config.parent().unwrap()).unwrap();
+                fs::write(
+                    &jj_user_config,
+                    "[user]\nname = \"jj-workflow-tests\"\nemail = \"jj-workflow-tests@example.invalid\"\n",
+                )
+                .unwrap();
+            }
+            let path = config_home.join("bay/config.toml");
+            fs::create_dir_all(path.parent().unwrap()).unwrap();
+            let mut value: toml::Value = if path.exists() {
+                toml::from_str(&fs::read_to_string(&path).unwrap()).unwrap()
+            } else {
+                toml::from_str("schema = 1\n").unwrap()
+            };
+            let key = args[3].trim_start_matches("dotfiles.workspaces.");
+            if key == "project-groups" {
+                let groups = parse_config_string_array(args[4]);
+                value.as_table_mut().unwrap().insert(
+                    "groups".into(),
+                    toml::Value::Array(
+                        groups
+                            .into_iter()
+                            .map(|item| {
+                                let (path, workspaces) =
+                                    item.split_once(':').unwrap_or((&item, "ws"));
+                                toml::Value::Table(toml::Table::from_iter([
+                                    ("path".into(), toml::Value::String(path.into())),
+                                    ("workspaces".into(), toml::Value::String(workspaces.into())),
+                                ]))
+                            })
+                            .collect(),
+                    ),
+                );
+            } else {
+                let parsed = toml::from_str::<toml::Value>(&format!("v = {}", args[4])).unwrap()
+                    ["v"]
+                    .clone();
+                value.as_table_mut().unwrap().insert(key.into(), parsed);
+            }
+            fs::write(path, toml::to_string(&value).unwrap()).unwrap();
+        }
         let mut command = Command::new("jj");
         command.current_dir(repo).args(args);
         run(&mut command);
@@ -8125,14 +8210,6 @@ aliases = ["sammy", "Sam Smith"]
         assert!(sweepable(threshold, threshold));
         assert!(sweepable(threshold + Duration::from_secs(1), threshold));
         assert!(sweepable(Duration::ZERO, Duration::ZERO));
-    }
-
-    #[test]
-    fn parses_flat_project_group_config() {
-        assert_eq!(
-            parse_toml_string_array("[\"~/projects:ws\", \"~/sureapp:workspaces\"]"),
-            strings(&["~/projects:ws", "~/sureapp:workspaces"])
-        );
     }
 
     #[test]

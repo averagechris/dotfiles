@@ -19,6 +19,28 @@
   ];
   compactLogArgs = ["log" "--no-graph" "--no-pager" "--color=never" "-T" compactLogTemplate];
   compactLogRevset = revset: compactLogArgs ++ ["-r" revset];
+  bayConfig =
+    {
+      schema = 1;
+      groups =
+        map (group: {
+          inherit (group) path;
+          workspaces = group.workspaceDir;
+        })
+        dotCfg.workspaces.projectGroups;
+      copy-envrc = "untracked";
+      venv-mode = "copy";
+      direnv-allow = true;
+      docker-cleanup = "auto";
+      docker-remove-volumes = true;
+      picker = "fzf";
+      clone-artifacts = dotCfg.workspaces.cloneArtifacts;
+      sweep-idle = dotCfg.workspaces.sweepIdle;
+      trash-retention = dotCfg.workspaces.trashRetention;
+    }
+    // lib.optionalAttrs (dotCfg.workspaces.fetchRemote != null) {
+      fetch-remote = dotCfg.workspaces.fetchRemote;
+    };
   jjWorkflow = pkgs.rustPlatform.buildRustPackage {
     pname = "jj-workflow";
     version = "0.1.0";
@@ -316,22 +338,6 @@ in {
           };
         }
       ];
-      dotfiles.workspaces =
-        {
-          copy-envrc = "untracked";
-          venv-mode = "copy";
-          direnv-allow = true;
-          docker-cleanup = "auto";
-          docker-remove-volumes = true;
-          picker = "fzf";
-          clone-artifacts = dotCfg.workspaces.cloneArtifacts;
-          sweep-idle = dotCfg.workspaces.sweepIdle;
-          trash-retention = dotCfg.workspaces.trashRetention;
-          project-groups = map (group: "${group.path}:${group.workspaceDir}") dotCfg.workspaces.projectGroups;
-        }
-        // lib.optionalAttrs (dotCfg.workspaces.fetchRemote != null) {
-          fetch-remote = dotCfg.workspaces.fetchRemote;
-        };
       dotfiles.pr = lib.mkIf dotCfg.prWorkflow.enable {
         auto-bookmark = dotCfg.prWorkflow.autoBookmark;
         bookmark-template = dotCfg.prWorkflow.bookmarkTemplate;
@@ -344,6 +350,9 @@ in {
         backend = "gpg";
       };
     };
+  };
+  config.xdg.configFile."bay/config.toml" = lib.mkIf cfg.enable {
+    source = (pkgs.formats.toml {}).generate "bay-config.toml" bayConfig;
   };
   config.programs.starship.settings = lib.mkIf cfg.enable (let
     starshipJj = inputs.starship-jj.packages.${pkgs.stdenv.hostPlatform.system}.default;

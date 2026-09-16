@@ -30,9 +30,11 @@ pub(crate) struct WsConfig {
     pub(crate) fetch_remote: Option<String>,
     pub(crate) clone_artifacts: Vec<String>,
     pub(crate) sweep_idle: String,
+    pub(crate) trash_retention: String,
 }
 
 pub(crate) const DEFAULT_SWEEP_IDLE: &str = "14d";
+pub(crate) const DEFAULT_TRASH_RETENTION: &str = "7d";
 
 pub(crate) const DEFAULT_CLONE_ARTIFACTS: &[&str] = &[".direnv", "target", "node_modules", ".venv"];
 
@@ -117,43 +119,110 @@ pub(crate) fn print_ws_root_usage() {
     eprintln!("Usage:\n  jj ws root\n\nPrints this repo's managed workspace root.");
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+struct BayConfig {
+    schema: u32,
+    groups: Vec<BayGroup>,
+    #[serde(default = "default_copy_envrc")]
+    copy_envrc: String,
+    #[serde(default = "default_venv_mode")]
+    venv_mode: String,
+    #[serde(default = "default_true")]
+    direnv_allow: bool,
+    #[serde(default = "default_docker_cleanup")]
+    docker_cleanup: String,
+    #[serde(default = "default_true")]
+    docker_remove_volumes: bool,
+    fetch_remote: Option<String>,
+    #[serde(default = "default_clone_artifacts")]
+    clone_artifacts: Vec<String>,
+    #[serde(default = "default_sweep_idle")]
+    sweep_idle: String,
+    #[serde(default = "default_trash_retention")]
+    trash_retention: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct BayGroup {
+    path: String,
+    #[serde(default = "default_workspace_dir")]
+    workspaces: String,
+}
+fn default_true() -> bool {
+    true
+}
+fn default_copy_envrc() -> String {
+    "untracked".into()
+}
+fn default_venv_mode() -> String {
+    "copy".into()
+}
+fn default_docker_cleanup() -> String {
+    "auto".into()
+}
+fn default_workspace_dir() -> String {
+    "ws".into()
+}
+fn default_clone_artifacts() -> Vec<String> {
+    DEFAULT_CLONE_ARTIFACTS
+        .iter()
+        .map(|s| (*s).into())
+        .collect()
+}
+fn default_sweep_idle() -> String {
+    DEFAULT_SWEEP_IDLE.into()
+}
+fn default_trash_retention() -> String {
+    DEFAULT_TRASH_RETENTION.into()
+}
+
 pub(crate) fn ws_config() -> Result<WsConfig> {
-    let copy_envrc = jj_config_string("dotfiles.workspaces.copy-envrc")?
-        .unwrap_or_else(|| "untracked".to_string());
-    let venv_mode =
-        jj_config_string("dotfiles.workspaces.venv-mode")?.unwrap_or_else(|| match jj_config_bool(
-            "dotfiles.workspaces.link-venv",
-        ) {
-            Ok(Some(false)) => "none".to_string(),
-            _ => "copy".to_string(),
-        });
-    validate_venv_mode(&venv_mode)?;
-    let direnv_allow = jj_config_bool("dotfiles.workspaces.direnv-allow")?.unwrap_or(true);
-    let docker_cleanup = jj_config_string("dotfiles.workspaces.docker-cleanup")?
-        .unwrap_or_else(|| "auto".to_string());
-    let docker_remove_volumes =
-        jj_config_bool("dotfiles.workspaces.docker-remove-volumes")?.unwrap_or(true);
-    let fetch_remote = jj_config_string("dotfiles.workspaces.fetch-remote")?;
-    let clone_artifacts = match jj_config_string("dotfiles.workspaces.clone-artifacts")? {
-        Some(raw) => parse_toml_string_array(&raw),
-        None => DEFAULT_CLONE_ARTIFACTS
-            .iter()
-            .map(std::string::ToString::to_string)
-            .collect(),
-    };
-    let sweep_idle = jj_config_string("dotfiles.workspaces.sweep-idle")?
-        .unwrap_or_else(|| DEFAULT_SWEEP_IDLE.to_string());
-    let groups = jj_config_project_groups()?;
+    let base = env::var_os("XDG_CONFIG_HOME")
+        .map(PathBuf::from)
+        .or_else(|| env::var_os("HOME").map(|p| PathBuf::from(p).join(".config")))
+        .ok_or_else(|| {
+            anyhow!("cannot locate bay config: neither XDG_CONFIG_HOME nor HOME is set")
+        })?;
+    load_ws_config(&base.join("bay/config.toml"))
+}
+
+pub(crate) fn load_ws_config(path: &Path) -> Result<WsConfig> {
+    let raw = fs::read_to_string(path)
+        .with_context(|| format!("failed to read bay config {}", path.display()))?;
+    let parsed: BayConfig =
+        toml::from_str(&raw).with_context(|| format!("malformed bay config {}", path.display()))?;
+    if parsed.schema != 1 {
+        bail!(
+            "unsupported schema {} in bay config {} (expected 1)",
+            parsed.schema,
+            path.display()
+        );
+    }
+    if parsed.groups.is_empty() {
+        bail!("bay config {} has no groups", path.display());
+    }
+    validate_venv_mode(&parsed.venv_mode)
+        .with_context(|| format!("invalid bay config {}", path.display()))?;
+    let project_groups = parsed
+        .groups
+        .into_iter()
+        .map(|g| ProjectGroup {
+            path: expand_tilde(&g.path),
+            workspace_dir: g.workspaces,
+        })
+        .collect();
     Ok(WsConfig {
-        project_groups: groups,
-        copy_envrc,
-        venv_mode,
-        direnv_allow,
-        docker_cleanup,
-        docker_remove_volumes,
-        fetch_remote,
-        clone_artifacts,
-        sweep_idle,
+        project_groups,
+        copy_envrc: parsed.copy_envrc,
+        venv_mode: parsed.venv_mode,
+        direnv_allow: parsed.direnv_allow,
+        docker_cleanup: parsed.docker_cleanup,
+        docker_remove_volumes: parsed.docker_remove_volumes,
+        fetch_remote: parsed.fetch_remote,
+        clone_artifacts: parsed.clone_artifacts,
+        sweep_idle: parsed.sweep_idle,
+        trash_retention: parsed.trash_retention,
     })
 }
 
@@ -174,41 +243,6 @@ pub(crate) fn jj_config_bool(key: &str) -> Result<Option<bool>> {
             _ => None,
         }),
     )
-}
-
-pub(crate) fn jj_config_project_groups() -> Result<Vec<ProjectGroup>> {
-    // Prefer the generated flat shape because it is robust to parse from `jj config get`.
-    // Each item is `path` or `path:workspace-dir`.
-    let raw = jj_config_string("dotfiles.workspaces.project-groups")?
-        .or_else(|| {
-            jj_config_string("dotfiles.workspaces.project-dirs")
-                .ok()
-                .flatten()
-        })
-        .unwrap_or_else(|| "[\"~/projects\"]".to_string());
-    let mut groups = Vec::new();
-    for item in parse_toml_string_array(&raw) {
-        let (path, workspace_dir) = item.split_once(':').unwrap_or((&item, "ws"));
-        groups.push(ProjectGroup {
-            path: expand_tilde(path),
-            workspace_dir: workspace_dir.to_string(),
-        });
-    }
-    if groups.is_empty() {
-        bail!("no dotfiles.workspaces.project-groups configured");
-    }
-    Ok(groups)
-}
-
-pub(crate) fn parse_toml_string_array(raw: &str) -> Vec<String> {
-    raw.trim()
-        .trim_start_matches('[')
-        .trim_end_matches(']')
-        .split(',')
-        .map(|part| part.trim().trim_matches('"').trim_matches('\''))
-        .filter(|part| !part.is_empty())
-        .map(std::string::ToString::to_string)
-        .collect()
 }
 
 pub(crate) fn expand_tilde(path: &str) -> PathBuf {
@@ -1498,12 +1532,7 @@ pub(crate) fn ws_gc(args: Vec<OsString>) -> Result<()> {
     let parsed = parse_ws_gc_args(args)?;
     let config = ws_config()?;
     let ctx = current_context(&config, None)?;
-    let retention_raw = parsed.older_than.unwrap_or_else(|| {
-        jj_config_string("dotfiles.workspaces.trash-retention")
-            .ok()
-            .flatten()
-            .unwrap_or_else(|| DEFAULT_TRASH_RETENTION.to_string())
-    });
+    let retention_raw = parsed.older_than.unwrap_or(config.trash_retention);
     let retention_secs = parse_retention_seconds(&retention_raw)?;
     let trash = ws_trash_dir(&ctx.workspace_root);
     let now = unix_now_secs();
@@ -1574,8 +1603,6 @@ pub(crate) fn ws_gc(args: Vec<OsString>) -> Result<()> {
     }
     Ok(())
 }
-
-pub(crate) const DEFAULT_TRASH_RETENTION: &str = "7d";
 
 pub(crate) fn ws_trash_dir(workspace_root: &Path) -> PathBuf {
     workspace_root.join(".trash")
