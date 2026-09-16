@@ -7,6 +7,11 @@ description: Use when creating or working in an isolated jj workspace checkout, 
 
 Use when work should happen in a separate checkout instead of the current repo directory.
 
+OpenCode's native worktree UI is backed by Bay only when the server's canonical
+location is a Bay-recognized Jujutsu repository. Git-only repositories retain
+OpenCode's built-in Git strategy. Bay removals use recoverable trash by default;
+never add `--purge` implicitly.
+
 Managed path layout:
 
 ```text

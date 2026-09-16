@@ -513,7 +513,9 @@ where
         println!("copied .jj-workspace.toml");
     }
     if parsed.quiet {
-        println!("{}", dest.display());
+        if std::env::var_os("BAY_JSON").is_none() {
+            println!("{}", dest.display());
+        }
     } else {
         println!("created workspace {name} at {}", dest.display());
         println!("base: {base}");

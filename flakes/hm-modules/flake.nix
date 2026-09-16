@@ -578,6 +578,36 @@
             mkdir -p "$out"
           '';
 
+        opencode-bay-worktrees-contract =
+          pkgs.runCommand "opencode-bay-worktrees-contract" {
+            nativeBuildInputs = [pkgs.nodejs];
+          } ''
+            node ${./modules/opencode/tests/bay-worktrees-contract.mjs} \
+              ${./modules/opencode/plugins/dotfiles-bay-worktrees.js}
+            mkdir -p "$out"
+          '';
+
+        opencode-bay-worktrees-actual-contract = let
+          workflow = pkgs.rustPlatform.buildRustPackage {
+            pname = "bay-contract";
+            version = "0.1.0";
+            src = builtins.path {
+              path = ./modules/jujutsu/jj-workflow;
+              name = "jj-workflow-contract-source";
+            };
+            cargoLock.lockFile = ./modules/jujutsu/jj-workflow/Cargo.lock;
+            doCheck = false;
+          };
+        in
+          pkgs.runCommand "opencode-bay-worktrees-actual-contract" {
+            nativeBuildInputs = [pkgs.nodejs pkgs.gitMinimal pkgs.jujutsu];
+          } ''
+            node ${./modules/opencode/tests/bay-worktrees-actual-contract.mjs} \
+              ${./modules/opencode/plugins/dotfiles-bay-worktrees.js} \
+              ${workflow}/bin/bay ${pkgs.jujutsu}/bin/jj
+            mkdir -p "$out"
+          '';
+
         opencode-session-cleanup-contract =
           pkgs.runCommand "opencode-session-cleanup-contract" {
             nativeBuildInputs = [pkgs.python3];

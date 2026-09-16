@@ -110,6 +110,9 @@
   direnvPlugin = pkgs.replaceVars ./plugins/dotfiles-direnv.js {
     direnv = lib.getExe config.programs.direnv.package;
   };
+  bayWorktreesPlugin = pkgs.replaceVars ./plugins/dotfiles-bay-worktrees.js {
+    bay = "${config.dotfiles.jujutsu.workflowPackage}/bin/bay";
+  };
   # Print shell exports that override opencode models for the current shell
   # session via OPENCODE_CONFIG_CONTENT (merged last, so it beats the managed
   # config) without touching any persistent configuration. The `oconf` shell
@@ -197,6 +200,17 @@ in {
         command environment. This gives agents (including subagents working in
         other repos) project dev-shell tooling without `nix develop --command`
         or `direnv exec` wrappers. Only direnv-allowed `.envrc` files load.
+      '';
+    };
+
+    bayWorktrees.enable = lib.mkOption {
+      type = lib.types.bool;
+      default = config.programs.jujutsu.enable && config.dotfiles.jujutsu.workflowAliases.enable;
+      defaultText = lib.literalExpression "config.programs.jujutsu.enable && config.dotfiles.jujutsu.workflowAliases.enable";
+      description = ''
+        Install the location-sensitive Bay worktree strategy. It registers only
+        when OpenCode's canonical location is a Bay-recognized Jujutsu
+        repository, leaving the built-in Git strategy active elsewhere.
       '';
     };
 
@@ -300,6 +314,10 @@ in {
     # Per-workdir direnv environments for agent shell commands
     (lib.mkIf (config.programs.opencode.enable && cfg.direnv.enable) {
       xdg.configFile."opencode/plugins/dotfiles-direnv.js".source = direnvPlugin;
+    })
+
+    (lib.mkIf (config.programs.opencode.enable && cfg.bayWorktrees.enable) {
+      xdg.configFile."opencode/plugins/dotfiles-bay-worktrees.js".source = bayWorktreesPlugin;
     })
 
     # OpenRouter API key configuration (only when openrouterApiKeyFile is set)

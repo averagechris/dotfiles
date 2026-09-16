@@ -170,6 +170,10 @@ fn root(args: Vec<OsString>) -> Result<()> {
 }
 
 fn add(mut args: Vec<OsString>) -> Result<()> {
+    let json_out = take_flag(&mut args, "--json");
+    if json_out && !args.iter().any(|arg| arg == "-q" || arg == "--quiet") {
+        args.push("-q".into());
+    }
     let mut repo_path = None;
     let mut at = None;
     let mut i = 0;
@@ -205,9 +209,30 @@ fn add(mut args: Vec<OsString>) -> Result<()> {
         let all=discover()?;
         unique_repo(repo_records_from_cwd(&all))?.anchor
     };
-    in_dir(&anchor, || run_ws(prepend("add", args)))?.map_err(operation_err)
+    let requested_name = name.to_string();
+    if json_out {
+        env::set_var("BAY_JSON", "1");
+    }
+    let result = in_dir(&anchor, || run_ws(prepend("add", args)));
+    if json_out {
+        env::remove_var("BAY_JSON");
+    }
+    result?.map_err(operation_err)?;
+    if json_out {
+        let store = repo_store(&anchor)?;
+        let workspace = discover()?
+            .into_iter()
+            .find(|r| r.name == requested_name && repo_store(&r.anchor).is_ok_and(|candidate| candidate == store))
+            .ok_or_else(|| err(1, "jj_failed", "created workspace was not discoverable"))?;
+        println!("{}", json!({"schema":1,"workspace":workspace}));
+    }
+    Ok(())
 }
 fn remove(mut args: Vec<OsString>) -> Result<()> {
+    let json_out = take_flag(&mut args, "--json");
+    if json_out && !args.iter().any(|arg| arg == "-q" || arg == "--quiet") {
+        args.push("-q".into());
+    }
     let selector_i = args
         .iter()
         .position(|a| !a.to_string_lossy().starts_with('-'))
@@ -215,7 +240,11 @@ fn remove(mut args: Vec<OsString>) -> Result<()> {
     let selector=args[selector_i].to_string_lossy();let all=discover_for_workspace_selector(&selector)?;
     let r = select(&selector, &all)?;
     args[selector_i] = OsString::from(&r.name);
-    in_dir(&r.anchor, || run_ws(prepend("forget", args)))?.map_err(operation_err)
+    in_dir(&r.anchor, || run_ws(prepend("forget", args)))?.map_err(operation_err)?;
+    if json_out {
+        println!("{}", json!({"schema":1,"removed":{"name":r.name,"path":r.path}}));
+    }
+    Ok(())
 }
 fn maintenance(sub: &str, mut args: Vec<OsString>) -> Result<()> {
     let value_flags: &[&str] = match sub {
@@ -328,6 +357,11 @@ fn prepend(s: &str, mut a: Vec<OsString>) -> Vec<OsString> {
     let mut v = vec![s.into()];
     v.append(&mut a);
     v
+}
+fn take_flag(args: &mut Vec<OsString>, flag: &str) -> bool {
+    let found = args.iter().any(|arg| arg == flag);
+    args.retain(|arg| arg != flag);
+    found
 }
 fn in_dir<T>(p: &Path, f: impl FnOnce() -> T) -> Result<T> {
     let old = env::current_dir().map_err(|e| {

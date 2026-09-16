@@ -176,7 +176,6 @@ in {
       not retain the workflow helper runtime closure.
     '';
   };
-
   config.programs.jujutsu = lib.mkIf cfg.enable {
     settings = {
       user = {

@@ -14,6 +14,18 @@ The workflow should be safe and agent-friendly:
 - destructive operations are conservative and support dry-runs or force flags
 - picker flows are explicit and only used when requested
 
+## OpenCode worktrees
+
+When `dotfiles.opencode.bayWorktrees.enable` is enabled, OpenCode V2 uses Bay
+for its worktree UI in recognized Jujutsu repositories. Registration is checked
+against OpenCode's canonical location at plugin setup; Git-only locations keep
+OpenCode's built-in Git strategy. Missing Bay, invalid JSON, or an unrecognized
+location fails closed without replacing Git.
+
+Creates use Bay's managed group layout rather than OpenCode's requested path.
+Removes use Bay's recoverable trash behavior; unpublished work still requires
+an explicit force retry, and the plugin never adds `--purge`.
+
 ## Commands
 
 Commands:
