@@ -1,6 +1,7 @@
 //! Device-wide facade for the repository-local workspace operations.
+use crate::bay_repo::{github_slug, route_group};
 use crate::ws::{discover_workspaces, run_ws, ws_config, ProjectGroup, WorkspaceKind, WsConfig};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::{BTreeMap, HashSet};
 use std::env;
@@ -76,13 +77,14 @@ fn run(mut args: Vec<OsString>) -> Result<()> {
         return Err(err(2, "usage", usage()));
     }
     let sub = args.remove(0).to_string_lossy().into_owned();
-    if !matches!(sub.as_str(), "list" | "ls") { args.retain(|arg| arg != "--json"); }
+    if !matches!(sub.as_str(), "list" | "ls" | "repo") { args.retain(|arg| arg != "--json"); }
     match sub.as_str() {
         "list" | "ls" => list(args),
         "path" => path(args),
         "root" => root(args),
         "add" => add(args),
         "rm" | "forget" => remove(args),
+        "repo" => repo(args),
         "prune" | "gc" | "du" | "sweep" => maintenance(&sub, args),
         "-h" | "--help" | "help" => {
             println!("{}", usage());
@@ -96,7 +98,102 @@ fn run(mut args: Vec<OsString>) -> Result<()> {
     }
 }
 fn usage() -> &'static str {
-    "Usage: bay list|ls [REPO] [--json]\n       bay path <selector>\n       bay root [REPO]\n       bay add [<repo>/]<name> [-r REV] [--repo PATH] [--at DIR]\n       bay rm|forget <selector> [jj ws forget options]\n       bay prune [REPO] [--dry-run] [--delete] [--pick] [--yes]\n       bay gc [REPO] [--older-than DUR] [--dry-run]\n       bay du [REPO]\n       bay sweep [REPO] [--idle DUR] [--dry-run]"
+    "Usage: bay list|ls [REPO] [--json]\n       bay repo find <query> [--owner LOGIN] [--limit N] [--json]\n       bay path <selector>\n       bay root [REPO]\n       bay add [<repo>/]<name> [-r REV] [--repo PATH] [--at DIR]\n       bay rm|forget <selector> [jj ws forget options]\n       bay prune [REPO] [--dry-run] [--delete] [--pick] [--yes]\n       bay gc [REPO] [--older-than DUR] [--dry-run]\n       bay du [REPO]\n       bay sweep [REPO] [--idle DUR] [--dry-run]"
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct GhRepo {
+    #[serde(alias = "fullName")]
+    name_with_owner: String,
+    description: Option<String>,
+    url: String,
+    is_archived: bool,
+    is_private: bool,
+    updated_at: String,
+}
+
+#[derive(Serialize)]
+struct FoundLocal { path: PathBuf, status: &'static str }
+#[derive(Serialize)]
+struct FoundRepo {
+    slug: String, owner: String, name: String, description: Option<String>, url: String,
+    archived: bool, private: bool, updated_at: String, group: Option<PathBuf>, local: Option<FoundLocal>,
+}
+
+fn repo(mut args: Vec<OsString>) -> Result<()> {
+    if args.first().is_none_or(|arg| arg != "find") {
+        return Err(err(2, "usage", "usage: bay repo find <query> [--owner LOGIN] [--limit N] [--json]"));
+    }
+    args.remove(0);
+    let json_out = take_flag(&mut args, "--json");
+    let mut owner = None;
+    let mut limit = 20usize;
+    let mut query = None;
+    let mut i = 0;
+    while i < args.len() {
+        let value = args[i].to_string_lossy();
+        if value == "--owner" || value == "--limit" {
+            if i + 1 >= args.len() { return Err(err(2, "usage", format!("missing value for {value}"))); }
+            let flag = args.remove(i); let raw = args.remove(i).to_string_lossy().into_owned();
+            if flag == "--owner" { owner = Some(raw); }
+            else { limit = raw.parse().ok().filter(|n| *n > 0).ok_or_else(|| err(2,"usage","--limit must be a positive integer"))?; }
+        } else if value.starts_with('-') || query.replace(value.into_owned()).is_some() {
+            return Err(err(2, "usage", "unexpected argument to bay repo find"));
+        } else { i += 1; }
+    }
+    let query = query.ok_or_else(|| err(2,"usage","bay repo find requires a query"))?;
+    let exact = github_slug(&query);
+    if (query.contains('/') || query.contains("://") || query.contains('@')) && exact.is_none() {
+        return Err(err(2, "usage", format!("invalid GitHub repository {query:?}")));
+    }
+    let fields = "nameWithOwner,description,url,isArchived,isPrivate,updatedAt";
+    let mut command = Command::new("gh");
+    command.env("GH_PROMPT_DISABLED", "1");
+    if let Some((ref owner, ref name)) = exact {
+        command.args(["repo","view",&format!("{owner}/{name}"),"--json",fields]);
+    } else {
+        command.args(["search","repos",&query,"--limit",&limit.to_string(),"--json","fullName,description,url,isArchived,isPrivate,updatedAt"]);
+        if let Some(ref owner) = owner { command.args(["--owner", owner]); }
+    }
+    let output = command.output().map_err(|e| err(1,"gh_unavailable",format!("cannot run gh: {e}")))?;
+    if !output.status.success() {
+        let message = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        let lower = message.to_ascii_lowercase();
+        if exact.is_some() && (lower.contains("could not resolve") || lower.contains("not found")) { return Err(err(3,"not_found",message)); }
+        let kind = if lower.contains("auth") || lower.contains("login") || lower.contains("token") { "gh_auth" } else { "gh_failed" };
+        return Err(err(1,kind,message));
+    }
+    let mut raw: Vec<GhRepo> = if exact.is_some() {
+        vec![serde_json::from_slice(&output.stdout).map_err(|e| err(1,"gh_failed",format!("invalid gh response: {e}")))?]
+    } else { serde_json::from_slice(&output.stdout).map_err(|e| err(1,"gh_failed",format!("invalid gh response: {e}")))? };
+    raw.sort_by_key(|r| r.name_with_owner.to_ascii_lowercase());
+    raw.dedup_by(|a,b| a.name_with_owner.eq_ignore_ascii_case(&b.name_with_owner));
+    let cfg = ws_config().map_err(config_err)?;
+    let repos: Vec<_> = raw.into_iter().filter_map(|r| {
+        let (repo_owner,name)=r.name_with_owner.split_once('/')?;
+        let group=route_group(&cfg.project_groups,None,Some(repo_owner)).ok();
+        let local=group.and_then(|g| local_identity(&g.path.join(name),repo_owner,name));
+        Some(FoundRepo{slug:format!("{repo_owner}/{name}"),owner:repo_owner.into(),name:name.into(),description:r.description,url:r.url,archived:r.is_archived,private:r.is_private,updated_at:r.updated_at,group:group.map(|g|g.path.clone()),local})
+    }).collect();
+    if json_out { println!("{}",json!({"schema":1,"query":query,"repos":repos})); }
+    else {
+        println!("SLUG\tGROUP\tLOCAL\tDESCRIPTION");
+        for r in repos { println!("{}{}\t{}\t{}\t{}",r.slug,if r.archived{" [archived]"}else{""},r.group.as_ref().map_or("-".into(),|p|p.display().to_string()),r.local.as_ref().map_or("absent",|l|l.status),r.description.unwrap_or_default().replace(['\t','\n']," ")); }
+    }
+    Ok(())
+}
+
+fn local_identity(path: &Path, owner: &str, name: &str) -> Option<FoundLocal> {
+    if !path.exists() { return None; }
+    let mut urls = Vec::new();
+    if path.join(".jj").exists() {
+        if let Ok(out)=Command::new("jj").args(["-R"]).arg(path).args(["--ignore-working-copy","git","remote","list"]).output() { urls.extend(String::from_utf8_lossy(&out.stdout).split_whitespace().map(str::to_owned)); }
+    } else if path.join(".git").exists() {
+        if let Ok(out)=Command::new("git").args(["-C"]).arg(path).args(["remote","-v"]).output() { urls.extend(String::from_utf8_lossy(&out.stdout).split_whitespace().map(str::to_owned)); }
+    }
+    let present=urls.iter().filter_map(|url|github_slug(url)).any(|(o,n)|o.eq_ignore_ascii_case(owner)&&n.eq_ignore_ascii_case(name));
+    Some(FoundLocal{path:canonical(path),status:if present{"present"}else{"foreign"}})
 }
 
 fn list(args: Vec<OsString>) -> Result<()> {

@@ -1,6 +1,35 @@
 use crate::ws::ProjectGroup;
 use std::path::Path;
 
+/// Parse a GitHub repository identity from a slug or clone/browser URL.
+/// Browser URL suffixes are deliberately ignored: repository identity is the
+/// first two path components.
+pub(crate) fn github_slug(value: &str) -> Option<(String, String)> {
+    let value = value.trim();
+    let (path, allow_suffix) = if let Some(path) = value.strip_prefix("git@github.com:") {
+        (path, false)
+    } else if let Some(path) = value.strip_prefix("ssh://git@github.com/") {
+        (path, false)
+    } else if value.get(..8).is_some_and(|scheme|scheme.eq_ignore_ascii_case("https://")) {
+        let rest=&value[8..];
+        let (host,path)=rest.split_once('/')?;
+        if !host.eq_ignore_ascii_case("github.com") { return None; }
+        (path.split(['?','#']).next()?, true)
+    } else if value.contains("://") || value.contains('@') {
+        return None;
+    } else {
+        (value, false)
+    };
+    let mut parts = path.split('/');
+    let owner = parts.next()?;
+    let raw_repo = parts.next()?;
+    let repo = raw_repo.strip_suffix(".git").unwrap_or(raw_repo);
+    if !allow_suffix && parts.next().is_some() { return None; }
+    let valid = |s: &str| !s.is_empty() && s != "." && s != ".." && s.bytes().all(|b| b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_' | b'.'));
+    if !valid(owner) || !valid(repo) { return None; }
+    Some((owner.to_string(), repo.to_string()))
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) enum RouteError {
     NoGroup,
@@ -58,5 +87,26 @@ mod tests {
         assert!(matches!(route_group(&groups[..1], None, Some("other")), Err(RouteError::NoGroup)));
         assert_eq!(RouteError::NoGroup.exit_code(), 3);
         assert_eq!(RouteError::NoGroup.kind(), "no_group");
+    }
+
+    #[test]
+    fn github_identity_parser_table() {
+        for (input, expected) in [
+            ("SureApp/api", Some(("SureApp", "api"))),
+            ("SureApp/api.git", Some(("SureApp", "api"))),
+            ("https://github.com/SureApp/api/pull/42", Some(("SureApp", "api"))),
+            ("https://github.com/SureApp/api/tree/main/src", Some(("SureApp", "api"))),
+            ("HTTPS://GITHUB.COM/SureApp/api?tab=readme#top", Some(("SureApp", "api"))),
+            ("https://github.com/SureApp/api.git?x=1", Some(("SureApp", "api"))),
+            ("https://github.com.evil/SureApp/api", None),
+            ("git@github.com:SureApp/api.git", Some(("SureApp", "api"))),
+            ("ssh://git@github.com/SureApp/api.git", Some(("SureApp", "api"))),
+            ("api", None),
+            ("https://gitlab.com/SureApp/api", None),
+            ("SureApp/", None),
+            ("/api", None),
+        ] {
+            assert_eq!(github_slug(input), expected.map(|(o,n)|(o.into(),n.into())), "{input}");
+        }
     }
 }

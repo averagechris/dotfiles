@@ -188,3 +188,40 @@ fn absolute_repo_selection_queries_only_selected_store(){let home=home("absolute
 
 #[test]
 fn basename_selection_does_not_query_unrelated_repositories(){let home=home("basename-target");init_repo(&home.join("one/alpha"));init_repo(&home.join("one/beta"));init_repo(&home.join("two/alpha"));let(path,count)=counting_path(&home);let output=bay(&home).env("PATH",path).args(["list","alpha","--json"]).output().unwrap();assert!(output.status.success(),"{}",String::from_utf8_lossy(&output.stderr));assert_eq!(query_count(&count),2);let value:Value=serde_json::from_slice(&output.stdout).unwrap();assert!(value["workspaces"].as_array().unwrap().iter().all(|record|record["repo"]=="alpha"));}
+
+fn fake_gh(home: &PathBuf) -> (String, PathBuf) {
+    let bin=home.join("fake-gh-bin"); fs::create_dir_all(&bin).unwrap();
+    let log=home.join("gh-log");
+    fs::write(bin.join("gh"),format!("#!/bin/sh\nprintf 'prompt=%s\\n' \"$GH_PROMPT_DISABLED\" > {:?}\nprintf '%s\\n' \"$*\" >> {:?}\nprintf '%s' \"$GH_RESPONSE\"\n",log,log)).unwrap();
+    #[cfg(unix)] { use std::os::unix::fs::PermissionsExt; fs::set_permissions(bin.join("gh"),fs::Permissions::from_mode(0o755)).unwrap(); }
+    (format!("{}:{}",bin.display(),std::env::var("PATH").unwrap()),log)
+}
+
+fn find_home(name:&str)->PathBuf {
+    let h=home(name);
+    fs::create_dir_all(h.join("one")).unwrap();
+    fs::write(h.join("bay/config.toml"),format!("schema = 1\n[[groups]]\npath = {:?}\ngithub-owners = [\"SureApp\"]\n[[groups]]\npath = {:?}\ngithub-owners = [\"*\"]\n",h.join("one").display().to_string(),h.join("two").display().to_string())).unwrap();
+    h
+}
+
+#[test]
+fn repo_find_search_uses_stable_gh_contract_and_no_prompt() {
+    let h=find_home("repo-search"); let (path,log)=fake_gh(&h);
+    let response=r#"[{"fullName":"SureApp/api","description":"API","url":"https://github.com/SureApp/api","isArchived":false,"isPrivate":true,"updatedAt":"2026-01-02T03:04:05Z"}]"#;
+    let out=bay(&h).env("PATH",path).env("GH_RESPONSE",response).args(["repo","find","insurance","--owner","SureApp","--limit","7","--json"]).output().unwrap();
+    assert!(out.status.success(),"{}",String::from_utf8_lossy(&out.stderr));
+    let value:Value=serde_json::from_slice(&out.stdout).unwrap(); assert_eq!(value["schema"],1); assert_eq!(value["query"],"insurance"); assert_eq!(value["repos"][0]["group"],h.join("one").display().to_string()); assert!(value["repos"][0]["local"].is_null());
+    let invocation=fs::read_to_string(log).unwrap(); assert!(invocation.contains("prompt=1")); assert!(invocation.contains("search repos insurance --limit 7 --json fullName,description,url,isArchived,isPrivate,updatedAt --owner SureApp"));
+}
+
+#[test]
+fn exact_url_uses_view_and_reports_present_or_foreign_without_writes() {
+    let h=find_home("repo-exact"); let repo=h.join("one/api"); init_repo(&repo);
+    assert!(Command::new("jj").current_dir(&repo).args(["git","remote","add","origin","git@github.com:sureapp/API.git"]).status().unwrap().success());
+    let (path,log)=fake_gh(&h); let response=r#"{"nameWithOwner":"SureApp/api","description":null,"url":"https://github.com/SureApp/api","isArchived":true,"isPrivate":false,"updatedAt":"2026-01-02T03:04:05Z"}"#;
+    let marker=repo.join("untouched"); fs::write(&marker,"keep").unwrap();
+    let out=bay(&h).env("PATH",path.clone()).env("GH_RESPONSE",response).args(["repo","find","https://github.com/SureApp/api/issues/9","--json"]).output().unwrap();
+    assert!(out.status.success(),"{}",String::from_utf8_lossy(&out.stderr)); let value:Value=serde_json::from_slice(&out.stdout).unwrap(); assert_eq!(value["repos"][0]["local"]["status"],"present"); assert_eq!(fs::read_to_string(&marker).unwrap(),"keep"); assert!(fs::read_to_string(&log).unwrap().contains("repo view SureApp/api --json"));
+    assert!(Command::new("jj").current_dir(&repo).args(["git","remote","set-url","origin","https://github.com/Other/api"]).status().unwrap().success());
+    let out=bay(&h).env("PATH",path).env("GH_RESPONSE",response).args(["repo","find","SureApp/api.git","--json"]).output().unwrap(); let value:Value=serde_json::from_slice(&out.stdout).unwrap(); assert_eq!(value["repos"][0]["local"]["status"],"foreign");
+}
