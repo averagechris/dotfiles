@@ -812,7 +812,7 @@ build time. Current examples include:
 - `jj-change-management`
 - `jj-conflict-resolution`
 - `jj-repo-workflow`
-- `jj-workspaces`
+- `bay-workspaces`
 - `linear-admin`, `linear-data`, `linear-git`, `linear-issues`,
   `linear-organization`, `linear-planning`, and `linear-tracking` (registered by
   `dotfiles.linearCli`)

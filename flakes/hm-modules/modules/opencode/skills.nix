@@ -7,7 +7,8 @@ in {
   jj-change-management = skillDirectory "jj-change-management";
   jj-conflict-resolution = skillDirectory "jj-conflict-resolution";
   jj-repo-workflow = skillDirectory "jj-repo-workflow";
-  jj-workspaces = skillDirectory "jj-workspaces";
+  bay-workspaces = skillDirectory "bay-workspaces";
+  suremac-jj-pr = skillDirectory "suremac-jj-pr";
   conventional-commits = skillDirectory "conventional-commits";
   code-review = skillDirectory "code-review";
   test-curation = skillDirectory "test-curation";

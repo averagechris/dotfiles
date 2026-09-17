@@ -132,7 +132,7 @@ Canonical workspace path:
 Examples:
 
 ```text
-~/projects/ws/dotfiles/jj-workspaces
+~/projects/ws/dotfiles/bay-workspaces
 ~/sureapp/ws/backend/auth-v2
 ```
 

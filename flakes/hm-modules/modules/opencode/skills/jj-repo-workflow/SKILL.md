@@ -1,101 +1,56 @@
 ---
 name: jj-repo-workflow
-description: "Use when running repo-level jj workflow aliases: `jj lint` and lint onboarding, `jj sync`, `jj push`, `jj ship`, release tags via `jj tag-push`, `jj pr` on suremac, integration bookmark inference, and pre-handoff checks. Do not use for low-level change shaping (load `jj-change-management`) or workspace management (load `jj-workspaces`)."
+description: Use for repository-level jj workflow: lint and onboarding, sync, push, ship, annotated release tags, and final handoff. Never publish without an explicit request. Route local shaping, conflicts, Bay workspace lifecycle, and suremac GitHub PRs to their owning skills.
 ---
 
-# jj repo workflow
+# jj repository workflow
 
-Use when preparing, updating, validating, pushing, or shipping a change.
+Use this skill to validate, update, publish, or hand off a coherent change. Load `jj-change-management` for local split, squash, describe, rebase, or bookmark work.
 
-## Commands: when and why
+## Validate
 
-```bash
-jj lint                 # run repo-configured checks; use before handoff/push
-jj sync -q --fail-on-conflicts # fetch + rebase current stack onto inferred integration base
-jj sync --json --fail-on-conflicts # structured agent/script output
-jj sync --onto <revset> # sync to explicit base when inference is wrong
-jj push                 # run lints, then push current bookmark/change; only when asked
-jj ship --bookmark <b>  # finish/publish selected work; only when asked to ship/publish
-jj ship --bookmark <b> --tag vX.Y.Z # ship and publish a human/agent-created tag
-jj tag-push vX.Y.Z --revision <rev> # publish a tag after the bookmark is already shipped
-jj pr doctor            # suremac-only GitHub PR helper preflight for jj workspaces
-jj pr watch             # compact GitHub check/review polling for an existing PR
-```
-
-## `jj lint`
-
-- Reads `.jj-lint.toml` first, then repo config `dotfiles.push-lints`. Entries may be strings or `{ name, command }` tables; omit `name` to use the inferred label.
-- Runs configured commands with `sh -c` from the repo root. Use after meaningful edits and before asking for review.
-- On failure, fix the issue and rerun the smallest relevant check first if possible.
-- With no lints configured, do not ignore it:
+Run repository-configured checks after meaningful edits and before handoff:
 
 ```bash
-jj lint onboard --print
+jj lint
 ```
 
-Onboarding output reports high-confidence suggestions plus files to inspect: package scripts, Python pyproject/tox/nox, Makefile, justfile, Docker Compose, README/CONTRIBUTING, CI workflows, Husky/lint-staged/pre-commit/lefthook.
+If no lints are configured, inspect safe suggestions with `jj lint onboard --print`. Adding local or tracked lint configuration changes repository behavior, so ask before writing it unless the user requested onboarding. Prefer deterministic all-files checks. Reject watch servers, deploy commands, mutating fix modes, and staging-only hooks.
+
+## Sync
 
 ```bash
-jj lint onboard --print                 # safe human-readable discovery
-jj lint onboard --json                  # structured discovery
-jj lint onboard --local                 # set per-repo local dotfiles.push-lints
-jj lint onboard --write                 # write tracked .jj-lint.toml; ask first unless requested
-jj lint onboard --preview --select=1,3  # preview selected .jj-lint.toml suggestions
-jj lint onboard --local --select=1,3    # save only chosen numbered suggestions
-jj lint onboard --write --select=2      # write only chosen suggestions
+jj sync -q --fail-on-conflicts
 ```
 
-Prefer deterministic all-files commands. Avoid watch/dev/server/deploy commands and staged-file-only hooks; jj has no staging area. For Docker/Make/Just/Python workflows, check whether commands need services, secrets, network, mutating fix modes, or slow container builds before adding them. Prefer aggregate project commands (`scripts/check`, `make lint`, `tox run -e linting`) over duplicated primitive tool commands.
+Sync fetches, infers one integration base, and rebases the stack containing `@`. Use an explicit base only when inference is ambiguous or wrong. If sync reports conflicts, stop and load `jj-conflict-resolution`. Do not continue toward publication with unresolved conflicts.
 
-## `jj sync`
+## Publish
 
-Fetches from remote, infers one integration base, then rebases the branch/stack containing `@` onto it. Agents should prefer this over hand-spelled `jj git fetch` + `jj rebase`.
-
-Base inference order: `develop`/`dev`, then `main`/`master`/`trunk`, then `release*`, then `trunk()` fallback. Remote integration bookmarks like `main@origin` win over local `main`. If multiple remote candidates match, sync stops and asks for `--remote`, `--bookmark`, `--onto`, or per-repo config:
-
-```toml
-# .jj/repo/config.toml
-[dotfiles.sync]
-remote = "origin"
-```
-
-After rebase, sync checks `conflicts()`. With `--fail-on-conflicts`, conflicts fail the command and hand off to `jj-conflict-resolution`.
-
-## `jj push`
-
-Delegates to the same lint runner as `jj lint`, then pushes. Use when the user says push/publish but does not need the full `ship` flow. Skip lints only with explicit user instruction via `jj git push`.
-
-## `jj ship`
-
-Runs lints, then ships the parent of an empty working copy (never empty `@`), refusing empty targets and requiring `--bookmark` if only integration bookmarks are nearby. Pushes via `jj git push` after lints pass to avoid duplicate lint runs.
-
-With `--tag vX.Y.Z`, creates an annotated Git tag for the exact shipped commit, pushes `refs/tags/<tag>`, and verifies the remote tag is annotated and peels to that commit. Tags are signed by default when jj GPG signing is configured; `--no-sign` forces unsigned annotated tags in automation/backfills, `--sign` requires signing.
-
-## Tags
-
-Prefer `jj ship --bookmark <b> --tag vX.Y.Z`; if the bookmark is already shipped, use `jj tag-push vX.Y.Z --revision <rev>`. Do not use `jj tag set` for release tags that need artifacts: it creates lightweight tags, while hosts like sourcehut require annotated tags. Do not expect `jj git push --all` to create new remote tags; jj intentionally refuses that.
-
-## `jj pr` on suremac
-
-When creating, updating, or closing GitHub PRs for work repos from jj workspaces on `suremac`, load the `suremac-jj-pr` skill and prefer `jj pr` over bare `gh pr create`.
+Do not run push, ship, or tag publication unless the user explicitly asks to publish.
 
 ```bash
-jj pr doctor
-jj pr create --base develop --sync --run-lints --ticket EPD-1234 --title "fix(scope): summary [EPD-1234]" --body-file /tmp/pr-body.md
-jj pr watch
+jj push
+jj ship --bookmark <bookmark>
+jj ship --bookmark <bookmark> --tag vX.Y.Z
+jj tag-push vX.Y.Z --revision <rev>
 ```
 
-The helper infers the GitHub repo from jj remotes and always passes `gh --repo`, so it works in non-colocated jj workspaces. Use `jj pr watch` instead of dumping raw CI logs or full review threads into agent context; fetch details with `gh` only when the compact summary is insufficient.
+`push` validates and pushes the current work. `ship` validates, selects the intended nonempty change, moves the bookmark, and publishes it. Prefer `ship --tag` when shipping a release. Use `tag-push` only when the bookmark is already shipped.
 
-## Agent defaults
+Release tags must be annotated. Do not substitute lightweight tag creation, and do not assume an all-refs push creates a remote release tag. Let configured signing policy apply unless the user requests a supported override.
 
-- Do not push/ship unless explicitly asked.
-- Before handoff, run or suggest `jj lint` depending on task size.
-- Final concise state:
+## GitHub pull requests on suremac
 
-```bash
-jj status --no-pager --color=never
-jj log-recent || jj log -n 8 --no-pager --color=never
-```
+Creating, updating, reviewing, watching, or closing a GitHub PR belongs to `suremac-jj-pr`. Load that skill and follow its `jj pr` workflow. This skill owns validation and publication boundaries, not PR mechanics.
 
-- The changelog entry is the `jj describe` message; keep it concise and Conventional-Commit style.
+## Handoff
+
+Before handoff:
+
+1. Run the smallest relevant checks, then `jj lint` when configured.
+2. Confirm status and inspect the final diff.
+3. Confirm `conflicts()` is empty after any sync or rebase.
+4. Report checks, skipped checks, current change state, and whether anything was published.
+
+Repository acquisition and isolated checkout lifecycle belong to `bay-workspaces`.

@@ -1,66 +1,41 @@
 ---
 name: jj-conflict-resolution
-description: Use when jj reports conflicts after rebase, sync, squash, or another operation, when `jj status` or `jj log -r 'conflicts()'` lists conflicted revisions, or when resolving conflicted files. Do not use for routine change shaping; load `jj-change-management`.
+description: Use only when jj reports conflicts or `conflicts()` is nonempty. Resolve by direct edits or an explicit side, stay noninteractive, verify no conflicts remain, then return to the skill that handed off.
 ---
 
 # jj conflict resolution
 
-`jj rebase` can exit 0 while creating conflicts. Inspect after every rebase.
+Use this skill only for an existing conflict. A rebase can exit successfully while leaving conflicts.
 
-## Inspect first
+## Inspect
 
 ```bash
 jj status --no-pager --color=never
 jj log -r 'conflicts()' --no-pager --color=never
 jj resolve --list
-jj op log --limit 10 --no-pager --color=never
 ```
 
-## Resolve agent-safe
+Read the conflicted files and surrounding diff. Prefer direct edits. Avoid plain `jj resolve`, which may launch a merge tool.
 
-Prefer direct edits to the conflicted files, then verify:
-
-```bash
-jj resolve --list
-jj diff --no-pager --color=never
-jj status --no-pager --color=never
-```
-
-Avoid plain `jj resolve`; it may launch an external merge tool/editor/TUI.
-
-If the conflict is not in `@`, work on the conflicted revision explicitly:
-
-```bash
-jj new '<conflicted-rev>'
-jj resolve --list
-# edit files
-jj squash -m "fix(scope): resolve conflict"
-```
-
-Resolving in a child working copy keeps the conflicted revision target clear; squashing moves the resolution back.
-
-## Noninteractive side choice
-
-Use only when inspection makes the intended side obvious:
+If inspection proves one side is correct, select it explicitly and verify the result:
 
 ```bash
 jj resolve --tool :ours root:path/to/file
 jj resolve --tool :theirs root:path/to/file
 ```
 
-For rebase conflicts, observed convention: `:ours` is the destination/current-parent side and `:theirs` is the rebased-change side. Verify conflict labels before choosing.
+For rebase conflicts, confirm the displayed labels before choosing a side. Do not infer side meaning from a remembered convention. Quote revsets and use root-relative filesets.
 
-## Path/revset rules
+If the conflict is outside `@`, create a child at the conflicted revision, edit there, and squash the resolution back with an explicit message. Keep every command noninteractive. Never pass editor or interactive flags.
 
-- Quote revsets: `jj log -r 'conflicts()'`.
-- Prefer `root:path/to/file` filesets, especially with `jj -R /path/to/repo ...`.
-- Never use `--ignore-working-copy` or `--ignore-immutable` unless explicitly requested.
-
-## Recovery
-
-If a resolution went wrong:
+## Verify
 
 ```bash
-jj op log --limit 10 --no-pager --color=never
-jj undo
+jj diff --no-pager --color=never
+jj status --no-pager --color=never
+jj log -r 'conflicts()' --no-pager --color=never
 ```
+
+Do not return until `conflicts()` is empty and the resolved diff preserves both intended behaviors.
+
+If the resolution is wrong, inspect `jj op log`, then use `jj undo`. Return to `jj-change-management` for local shaping, `jj-repo-workflow` for sync or handoff, or `bay-workspaces` for isolated checkout lifecycle.

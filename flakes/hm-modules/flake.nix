@@ -578,6 +578,16 @@
             mkdir -p "$out"
           '';
 
+        opencode-jj-skills =
+          pkgs.runCommand "opencode-jj-skills" {
+            nativeBuildInputs = [pkgs.python3];
+            src = ./.;
+            checkScript = ./modules/opencode/tests/check-jj-skills.py;
+          } ''
+            OPENCODE_SKILL_ROOT="$src" python3 "$checkScript"
+            mkdir -p "$out"
+          '';
+
         opencode-bay-worktrees-contract =
           pkgs.runCommand "opencode-bay-worktrees-contract" {
             nativeBuildInputs = [pkgs.nodejs];

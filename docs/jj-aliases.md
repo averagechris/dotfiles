@@ -90,7 +90,7 @@ Use this when you only need the local stack entries that are ahead of trunk.
 The same module also installs higher-level helpers documented elsewhere when
 `dotfiles.jujutsu.workflowAliases.enable` is true, which is the default:
 
-- [`jj ws`](/docs/jj-workspaces.md) for managed workspaces
+- [`jj ws`](/docs/bay-workspaces.md) for managed workspaces
 - [`jj pr`](/docs/jj-pr-workflow.md) on hosts that enable the GitHub PR helper
 - [`jj ship` and `jj tag-push`](/docs/jj-tag-workflow.md) for publishing and
   annotated release tags
