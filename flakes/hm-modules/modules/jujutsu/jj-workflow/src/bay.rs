@@ -7,10 +7,16 @@ use std::collections::{BTreeMap, HashSet};
 use std::env;
 use std::ffi::OsString;
 use std::fs;
+use std::fs::OpenOptions;
+use std::hash::{DefaultHasher, Hash, Hasher};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::{Arc, Mutex};
 use std::thread;
+use std::time::Duration;
+
+#[cfg(not(unix))]
+compile_error!("bay repository clone locking requires Unix openat/O_NOFOLLOW support");
 
 #[derive(Clone, Debug, Serialize)]
 struct Record {
@@ -98,7 +104,7 @@ fn run(mut args: Vec<OsString>) -> Result<()> {
     }
 }
 fn usage() -> &'static str {
-    "Usage: bay list|ls [REPO] [--json]\n       bay repo find <query> [--owner LOGIN] [--limit N] [--json]\n       bay path <selector>\n       bay root [REPO]\n       bay add [<repo>/]<name> [-r REV] [--repo PATH] [--at DIR]\n       bay rm|forget <selector> [jj ws forget options]\n       bay prune [REPO] [--dry-run] [--delete] [--pick] [--yes]\n       bay gc [REPO] [--older-than DUR] [--dry-run]\n       bay du [REPO]\n       bay sweep [REPO] [--idle DUR] [--dry-run]"
+    "Usage: bay list|ls [REPO] [--json]\n       bay repo find <query> [--owner LOGIN] [--limit N] [--json]\n       bay repo clone <input> [--group PATH] [--as NAME] [--protocol ssh|https] [--depth N] [--json]\n       bay path <selector>\n       bay root [REPO]\n       bay add [<repo>/]<name> [-r REV] [--repo PATH] [--at DIR]\n       bay rm|forget <selector> [jj ws forget options]\n       bay prune [REPO] [--dry-run] [--delete] [--pick] [--yes]\n       bay gc [REPO] [--older-than DUR] [--dry-run]\n       bay du [REPO]\n       bay sweep [REPO] [--idle DUR] [--dry-run]"
 }
 
 #[derive(Debug, Deserialize)]
@@ -121,9 +127,35 @@ struct FoundRepo {
     archived: bool, private: bool, updated_at: String, group: Option<PathBuf>, local: Option<FoundLocal>,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CloneGhRepo {
+    name_with_owner: String,
+    owner: GhOwner,
+    name: String,
+    url: String,
+    ssh_url: String,
+    default_branch_ref: Option<GhBranch>,
+    is_archived: bool,
+    is_private: bool,
+    visibility: String,
+    viewer_permission: Option<String>,
+}
+#[derive(Debug, Deserialize)] struct GhOwner { login: String }
+#[derive(Debug, Deserialize)] struct GhBranch { name: String }
+#[derive(Serialize)] struct ClonedRepo<'a> {
+    slug: &'a str, owner: &'a str, name: &'a str, url: &'a str, clone_url: &'a str,
+    protocol: &'a str, group: &'a Path, path: &'a Path, status: &'a str,
+    default_branch: Option<&'a str>, archived: bool, private: bool,
+}
+
 fn repo(mut args: Vec<OsString>) -> Result<()> {
+    if args.first().is_some_and(|arg| arg == "clone") {
+        args.remove(0);
+        return repo_clone(args);
+    }
     if args.first().is_none_or(|arg| arg != "find") {
-        return Err(err(2, "usage", "usage: bay repo find <query> [--owner LOGIN] [--limit N] [--json]"));
+        return Err(err(2, "usage", "usage: bay repo find <query> [--owner LOGIN] [--limit N] [--json]\n       bay repo clone <input> [--group PATH] [--as NAME] [--protocol ssh|https] [--depth N] [--json]"));
     }
     args.remove(0);
     let json_out = take_flag(&mut args, "--json");
@@ -182,6 +214,179 @@ fn repo(mut args: Vec<OsString>) -> Result<()> {
         for r in repos { println!("{}{}\t{}\t{}\t{}",r.slug,if r.archived{" [archived]"}else{""},r.group.as_ref().map_or("-".into(),|p|p.display().to_string()),r.local.as_ref().map_or("absent",|l|l.status),r.description.unwrap_or_default().replace(['\t','\n']," ")); }
     }
     Ok(())
+}
+
+fn repo_clone(mut args: Vec<OsString>) -> Result<()> {
+    let json_out = take_flag(&mut args, "--json");
+    let mut input = None;
+    let mut group = None;
+    let mut alias = None;
+    let mut protocol = None;
+    let mut depth = None;
+    let mut i = 0;
+    while i < args.len() {
+        let value = args[i].to_string_lossy().into_owned();
+        if matches!(value.as_str(), "--group" | "--as" | "--protocol" | "--depth") {
+            if i + 1 >= args.len() { return Err(err(2,"usage",format!("missing value for {value}"))); }
+            args.remove(i); let raw=args.remove(i).to_string_lossy().into_owned();
+            match value.as_str() {
+                "--group" => group=Some(PathBuf::from(raw)),
+                "--as" => alias=Some(raw),
+                "--protocol" if matches!(raw.as_str(),"ssh"|"https") => protocol=Some(raw),
+                "--protocol" => return Err(err(2,"usage","--protocol must be ssh or https")),
+                "--depth" => { raw.parse::<usize>().ok().filter(|n|*n>0).ok_or_else(||err(2,"usage","--depth must be a positive integer"))?; depth=Some(raw); },
+                _ => unreachable!(),
+            }
+        } else if value.starts_with('-') || input.replace(value).is_some() {
+            return Err(err(2,"usage","unexpected argument to bay repo clone"));
+        } else { i += 1; }
+    }
+    let input=input.ok_or_else(||err(2,"usage","bay repo clone requires an input"))?;
+    let (requested_owner,requested_name)=github_slug(&input).ok_or_else(||err(2,"usage",format!("invalid GitHub repository {input:?}")))?;
+    if let Some(name)=alias.as_deref() {
+        let valid=!name.starts_with('.') && !name.is_empty() && name != "." && name != ".." && !name.contains(['/', '\\']);
+        if !valid { return Err(err(2,"usage","--as must be a basename and may not start with a dot")); }
+    }
+    let fields="nameWithOwner,owner,name,url,sshUrl,defaultBranchRef,isArchived,isPrivate,visibility,viewerPermission";
+    let output=Command::new("gh").env("GH_PROMPT_DISABLED","1").args(["repo","view",&format!("{requested_owner}/{requested_name}"),"--json",fields]).output()
+        .map_err(|e|err(1,"gh_unavailable",format!("cannot run gh: {e}")))?;
+    if !output.status.success() {
+        let message=String::from_utf8_lossy(&output.stderr).trim().to_string(); let lower=message.to_ascii_lowercase();
+        if lower.contains("could not resolve") || lower.contains("not found") { return Err(err(3,"not_found",message)); }
+        let kind=if lower.contains("auth")||lower.contains("login")||lower.contains("token"){"gh_auth"}else{"gh_failed"};
+        return Err(err(1,kind,message));
+    }
+    let metadata:CloneGhRepo=serde_json::from_slice(&output.stdout).map_err(|e|err(1,"gh_failed",format!("invalid gh response: {e}")))?;
+    let cfg=ws_config().map_err(config_err)?;
+    let selected=route_group(&cfg.project_groups,group.as_deref(),Some(&metadata.owner.login))
+        .map_err(|e|err(e.exit_code(),e.kind(),"no configured project group matches this repository"))?;
+    let basename=alias.as_deref().unwrap_or(&metadata.name);
+    let group_path=fs::canonicalize(&selected.path).map_err(|e|err(3,"no_group",format!("cannot access configured group {}: {e}",selected.path.display())))?;
+    if !group_path.is_dir() { return Err(err(3,"no_group",format!("configured group is not a directory: {}",group_path.display()))); }
+    let destination=group_path.join(basename);
+    // The destination is always one validated basename below the canonical group. The
+    // claim serializes inspection and cloning without placing anything in destination.
+    let _claim=DestinationClaim::acquire(&group_path,&destination)?;
+    let chosen=protocol.unwrap_or_else(|| {
+        let low_privilege=metadata.viewer_permission.as_deref().is_none_or(|p|matches!(p,"READ"|"TRIAGE"));
+        if metadata.visibility.eq_ignore_ascii_case("PUBLIC") && low_privilege { "https".into() } else { "ssh".into() }
+    });
+    let clone_url=if chosen=="https" { &metadata.url } else { &metadata.ssh_url };
+    let mut status="cloned";
+    let destination_existed=match fs::symlink_metadata(&destination) {
+        Ok(metadata) if metadata.file_type().is_symlink() || !metadata.is_dir() => return Err(collision(&destination,vec![])),
+        Ok(_) => true,
+        Err(e) if e.kind()==std::io::ErrorKind::NotFound => { fs::create_dir(&destination).map_err(|e|err(3,"collision",format!("cannot claim destination {}: {e}",destination.display())))?; false },
+        Err(e) => return Err(err(3,"collision",format!("cannot inspect destination {}: {e}",destination.display()))),
+    };
+    let claimed_path=fs::canonicalize(&destination).map_err(|e|err(3,"collision",format!("cannot resolve destination {}: {e}",destination.display())))?;
+    if !claimed_path.starts_with(&group_path) { return Err(collision(&destination,vec![])); }
+    if destination_existed {
+        let is_repo=destination.join(".jj").exists() || destination.join(".git").exists();
+        let nonempty=fs::read_dir(&destination).map(|mut e|e.next().is_some()).unwrap_or(true);
+        if is_repo {
+            let remotes=repo_remote_urls(&destination);
+            let matching=remotes.iter().any(|remote| {
+                remote.eq_ignore_ascii_case(clone_url) || github_slug(remote).is_some_and(|(o,n)|o.eq_ignore_ascii_case(&metadata.owner.login)&&n.eq_ignore_ascii_case(&metadata.name))
+            });
+            if matching { status="exists"; }
+            else { return Err(collision(&destination,remotes)); }
+        } else if nonempty { return Err(collision(&destination,vec![])); }
+    }
+    if status=="cloned" {
+        // Revalidate under the advisory lock immediately before handing the path to
+        // jj. In particular, a waiter never relies on inspection done before lock.
+        let metadata=fs::symlink_metadata(&destination).map_err(|e|err(3,"collision",format!("destination changed before clone: {e}")))?;
+        let before_clone=fs::canonicalize(&destination).map_err(|e|err(3,"collision",format!("destination changed before clone: {e}")))?;
+        if metadata.file_type().is_symlink() || !metadata.is_dir() || !before_clone.starts_with(&group_path) { return Err(collision(&destination,vec![])); }
+        let mut command=Command::new("jj"); command.env("GIT_TERMINAL_PROMPT","0").args(["git","clone"]);
+        if let Some(depth)=depth.as_deref(){command.args(["--depth",depth]);}
+        let output=command.arg(clone_url).arg(&destination).output().map_err(|e|err(1,"clone_failed",format!("cannot run jj: {e}")))?;
+        if !output.status.success() {
+            let message=String::from_utf8_lossy(&output.stderr).trim().to_string();
+            let suffix=if destination_existed{""}else{"; the newly claimed empty destination was left in place"};
+            return Err(err(1,"clone_failed",format!("{}{suffix}",if message.is_empty(){"jj git clone failed"}else{&message})));
+        }
+    }
+    if metadata.is_archived { eprintln!("bay: warning: {} is archived",metadata.name_with_owner); }
+    let path=fs::canonicalize(&destination).map_err(|e|err(1,"clone_failed",format!("cannot resolve cloned destination: {e}")))?;
+    if !path.starts_with(&group_path) { return Err(collision(&destination,vec![])); }
+    let result=ClonedRepo{slug:&metadata.name_with_owner,owner:&metadata.owner.login,name:&metadata.name,url:&metadata.url,clone_url,protocol:&chosen,group:&group_path,path:&path,status,default_branch:metadata.default_branch_ref.as_ref().map(|b|b.name.as_str()),archived:metadata.is_archived,private:metadata.is_private};
+    if json_out { println!("{}",json!({"schema":1,"repo":result})); } else { println!("{}",path.display()); }
+    Ok(())
+}
+
+fn repo_remote_urls(path:&Path)->Vec<String> {
+    let output=if path.join(".jj").exists(){Command::new("jj").args(["-R"]).arg(path).args(["--ignore-working-copy","git","remote","list"]).output()}
+    else{Command::new("git").args(["-C"]).arg(path).args(["remote","-v"]).output()};
+    output.ok().filter(|o|o.status.success()).map(|o|String::from_utf8_lossy(&o.stdout).lines().filter_map(|line|line.split_whitespace().nth(1).map(str::to_owned)).collect()).unwrap_or_default()
+}
+fn collision(path:&Path,remotes:Vec<String>)->BayError { let mut e=err(3,"collision",format!("destination already exists: {}",path.display())); e.details=Some(json!({"path":path,"existing_remotes":remotes})); e }
+
+struct DestinationClaim(fs::File);
+impl DestinationClaim {
+    fn acquire(group:&Path,destination:&Path)->Result<Self> {
+        let lock_dir=group.join(".bay-clone-locks");
+        match fs::symlink_metadata(&lock_dir) {
+            Ok(metadata) if metadata.file_type().is_symlink() || !metadata.is_dir() => return Err(err(3,"collision",format!("unsafe clone lock directory: {}",lock_dir.display()))),
+            Err(e) if e.kind()==std::io::ErrorKind::NotFound => {
+                match fs::create_dir(&lock_dir) { Ok(())=>{}, Err(e) if e.kind()==std::io::ErrorKind::AlreadyExists=>{}, Err(e)=>return Err(err(1,"clone_failed",format!("cannot create clone lock directory: {e}"))) }
+                let metadata=fs::symlink_metadata(&lock_dir).map_err(|e|err(1,"clone_failed",format!("cannot inspect clone lock directory: {e}")))?;
+                if metadata.file_type().is_symlink() || !metadata.is_dir() { return Err(err(3,"collision",format!("unsafe clone lock directory: {}",lock_dir.display()))); }
+                #[cfg(unix)] { use std::os::unix::fs::PermissionsExt; fs::set_permissions(&lock_dir,fs::Permissions::from_mode(0o700)).map_err(|e|err(1,"clone_failed",format!("cannot secure clone lock directory: {e}")))?; }
+            }
+            Err(e) => return Err(err(1,"clone_failed",format!("cannot inspect clone lock directory: {e}"))),
+            _ => {}
+        }
+        let canonical_lock=fs::canonicalize(&lock_dir).map_err(|e|err(1,"clone_failed",format!("cannot resolve clone lock directory: {e}")))?;
+        if !canonical_lock.starts_with(group) { return Err(err(3,"collision","clone lock directory escapes configured group")); }
+        let mut hash=DefaultHasher::new(); destination.hash(&mut hash);
+        let path=canonical_lock.join(format!("{:016x}.lock",hash.finish()));
+        if fs::symlink_metadata(&path).is_ok_and(|m|m.file_type().is_symlink() || !m.is_file()) { return Err(err(3,"collision","unsafe clone lock file")); }
+        let file=open_lock_nofollow(&canonical_lock,&path)?;
+        #[cfg(unix)] {
+            use std::os::unix::fs::{MetadataExt,PermissionsExt};
+            let opened=file.metadata().map_err(|e|err(1,"clone_failed",format!("cannot inspect opened clone lock: {e}")))?;
+            let named=fs::symlink_metadata(&path).map_err(|e|err(1,"clone_failed",format!("cannot inspect clone lock path: {e}")))?;
+            if named.file_type().is_symlink() || opened.dev()!=named.dev() || opened.ino()!=named.ino() { return Err(err(3,"collision","clone lock path changed while opening")); }
+            file.set_permissions(fs::Permissions::from_mode(0o600)).map_err(|e|err(1,"clone_failed",format!("cannot secure clone lock: {e}")))?;
+        }
+        // Kernel ownership releases on close, process exit, and SIGKILL. Persistent
+        // files therefore carry no stale-owner state.
+        for _ in 0..600 {
+            match file.try_lock() {
+                Ok(()) => return Ok(Self(file)),
+                Err(std::fs::TryLockError::WouldBlock) => thread::sleep(Duration::from_millis(50)),
+                Err(std::fs::TryLockError::Error(e)) => return Err(err(1,"clone_failed",format!("cannot lock clone destination: {e}"))),
+            }
+        }
+        Err(err(3,"collision",format!("clone destination is busy: {}",destination.display())))
+    }
+}
+
+#[cfg(unix)]
+fn open_lock_nofollow(lock_dir:&Path,path:&Path)->Result<fs::File> {
+    use std::ffi::CString;
+    use std::os::fd::{AsRawFd,FromRawFd};
+    use std::os::unix::ffi::OsStrExt;
+    use std::os::unix::fs::{MetadataExt,OpenOptionsExt};
+    // Pin the real directory first. openat then cannot be redirected if its name
+    // is replaced between validation and opening the lock file.
+    let directory=OpenOptions::new().read(true).custom_flags(libc::O_DIRECTORY|libc::O_NOFOLLOW|libc::O_CLOEXEC).open(lock_dir)
+        .map_err(|e|err(3,"collision",format!("cannot safely open clone lock directory: {e}")))?;
+    let opened=directory.metadata().map_err(|e|err(1,"clone_failed",format!("cannot inspect opened clone lock directory: {e}")))?;
+    let named=fs::symlink_metadata(lock_dir).map_err(|e|err(1,"clone_failed",format!("cannot inspect clone lock directory path: {e}")))?;
+    if named.file_type().is_symlink() || opened.dev()!=named.dev() || opened.ino()!=named.ino() { return Err(err(3,"collision","clone lock directory changed while opening")); }
+    let name=CString::new(path.file_name().expect("lock path has filename").as_bytes()).expect("hashed lock filename has no NUL");
+    // SAFETY: directory is an owned, open directory fd; name is NUL-terminated
+    // and contains no slash; successful fd ownership is transferred exactly once.
+    let fd=unsafe { libc::openat(directory.as_raw_fd(),name.as_ptr(),libc::O_RDWR|libc::O_CREAT|libc::O_NOFOLLOW|libc::O_CLOEXEC,0o600) };
+    if fd<0 {
+        let error=std::io::Error::last_os_error();
+        return Err(if error.raw_os_error()==Some(libc::ELOOP) { err(3,"collision","unsafe clone lock symlink") } else { err(1,"clone_failed",format!("cannot safely open clone lock: {error}")) });
+    }
+    // SAFETY: openat returned a new owned descriptor and no other File owns it.
+    Ok(unsafe { fs::File::from_raw_fd(fd) })
 }
 
 fn local_identity(path: &Path, owner: &str, name: &str) -> Option<FoundLocal> {

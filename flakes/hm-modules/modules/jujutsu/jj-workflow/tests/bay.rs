@@ -197,6 +197,13 @@ fn fake_gh(home: &PathBuf) -> (String, PathBuf) {
     (format!("{}:{}",bin.display(),std::env::var("PATH").unwrap()),log)
 }
 
+fn clone_fixture(name:&str)->(PathBuf,String,PathBuf) {
+    let h=find_home(name); let source=h.join("source"); init_repo(&source);
+    let (path,_)=fake_gh(&h);
+    let response=serde_json::json!({"nameWithOwner":"SureApp/api","owner":{"login":"SureApp"},"name":"api","url":source,"sshUrl":source,"defaultBranchRef":null,"isArchived":false,"isPrivate":false,"visibility":"PUBLIC","viewerPermission":"READ"}).to_string();
+    (h,path,PathBuf::from(response))
+}
+
 fn find_home(name:&str)->PathBuf {
     let h=home(name);
     fs::create_dir_all(h.join("one")).unwrap();
@@ -224,4 +231,85 @@ fn exact_url_uses_view_and_reports_present_or_foreign_without_writes() {
     assert!(out.status.success(),"{}",String::from_utf8_lossy(&out.stderr)); let value:Value=serde_json::from_slice(&out.stdout).unwrap(); assert_eq!(value["repos"][0]["local"]["status"],"present"); assert_eq!(fs::read_to_string(&marker).unwrap(),"keep"); assert!(fs::read_to_string(&log).unwrap().contains("repo view SureApp/api --json"));
     assert!(Command::new("jj").current_dir(&repo).args(["git","remote","set-url","origin","https://github.com/Other/api"]).status().unwrap().success());
     let out=bay(&h).env("PATH",path).env("GH_RESPONSE",response).args(["repo","find","SureApp/api.git","--json"]).output().unwrap(); let value:Value=serde_json::from_slice(&out.stdout).unwrap(); assert_eq!(value["repos"][0]["local"]["status"],"foreign");
+}
+
+
+#[test]
+fn repo_clone_is_real_clean_and_idempotent_including_empty_destination() {
+    let (h,path,response)=clone_fixture("clone-real"); let dest=h.join("one/api"); fs::create_dir_all(&dest).unwrap();
+    let first=bay(&h).env("PATH",&path).env("GH_RESPONSE",response.as_os_str()).args(["repo","clone","SureApp/api","--json"]).output().unwrap();
+    assert!(first.status.success(),"{}",String::from_utf8_lossy(&first.stderr));
+    let value:Value=serde_json::from_slice(&first.stdout).unwrap(); assert_eq!(value["repo"]["status"],"cloned"); assert!(dest.join(".jj").exists()); assert!(dest.join(".git").exists());
+    let before=fs::metadata(&dest).unwrap().modified().unwrap();
+    let second=bay(&h).env("PATH",path).env("GH_RESPONSE",response.as_os_str()).args(["repo","clone","SureApp/api","--json"]).output().unwrap();
+    assert!(second.status.success(),"{}",String::from_utf8_lossy(&second.stderr)); assert!(second.stderr.is_empty());
+    assert_eq!(serde_json::from_slice::<Value>(&second.stdout).unwrap()["repo"]["status"],"exists"); assert_eq!(fs::metadata(&dest).unwrap().modified().unwrap(),before);
+}
+
+#[cfg(unix)]
+#[test]
+fn repo_clone_refuses_destination_symlink_without_outside_writes() {
+    use std::os::unix::fs::symlink;
+    let (h,path,response)=clone_fixture("clone-symlink"); let outside=h.join("outside"); fs::create_dir_all(&outside).unwrap(); symlink(&outside,h.join("one/api")).unwrap();
+    let out=bay(&h).env("PATH",path).env("GH_RESPONSE",response.as_os_str()).args(["repo","clone","SureApp/api","--json"]).output().unwrap();
+    assert_eq!(out.status.code(),Some(3)); assert!(out.stdout.is_empty()); assert_eq!(serde_json::from_slice::<Value>(&out.stderr).unwrap()["error"]["code"],"collision"); assert_eq!(fs::read_dir(outside).unwrap().count(),0);
+}
+
+#[test]
+fn repo_clone_collisions_leave_existing_contents_untouched() {
+    for (suffix,repo) in [("file",false),("foreign",true)] {
+        let (h,path,response)=clone_fixture(&format!("clone-collision-{suffix}")); let dest=h.join("one/api");
+        if repo { init_repo(&dest); assert!(Command::new("jj").current_dir(&dest).args(["git","remote","add","origin","https://github.com/Other/api.git"]).status().unwrap().success()); }
+        else { fs::create_dir_all(&dest).unwrap(); }
+        let marker=dest.join("keep"); fs::write(&marker,"untouched").unwrap();
+        let out=bay(&h).env("PATH",path).env("GH_RESPONSE",response.as_os_str()).args(["repo","clone","SureApp/api","--json"]).output().unwrap();
+        assert_eq!(out.status.code(),Some(3)); assert!(out.stdout.is_empty()); let error:Value=serde_json::from_slice(&out.stderr).unwrap(); assert_eq!(error["error"]["code"],"collision"); assert_eq!(error["error"]["details"]["path"],dest.display().to_string()); assert_eq!(fs::read_to_string(marker).unwrap(),"untouched");
+    }
+}
+
+#[test]
+fn concurrent_identical_clones_serialize_to_cloned_then_exists() {
+    let (h,path,response)=clone_fixture("clone-concurrent");
+    let spawn=|| bay(&h).env("PATH",&path).env("GH_RESPONSE",response.as_os_str()).stdout(std::process::Stdio::piped()).stderr(std::process::Stdio::piped()).args(["repo","clone","SureApp/api","--json"]).spawn().unwrap();
+    let a=spawn(); let b=spawn(); let outputs=[a.wait_with_output().unwrap(),b.wait_with_output().unwrap()];
+    assert!(outputs.iter().all(|o|o.status.success()),"{:?}",outputs.iter().map(|o|String::from_utf8_lossy(&o.stderr)).collect::<Vec<_>>());
+    let mut statuses=outputs.iter().map(|o|serde_json::from_slice::<Value>(&o.stdout).unwrap()["repo"]["status"].as_str().unwrap().to_owned()).collect::<Vec<_>>(); statuses.sort(); assert_eq!(statuses,["cloned","exists"]);
+}
+
+#[cfg(unix)]
+fn paused_clone(h:&PathBuf,path:&str,response:&PathBuf)->(std::process::Child,PathBuf,PathBuf) {
+    use std::os::unix::fs::PermissionsExt;
+    let bin=h.join("fake-gh-bin"); let ready=h.join("clone-ready"); let invocations=h.join("jj-invocations");
+    fs::write(bin.join("jj"),format!("#!/bin/sh\necho x >> {:?}\ntouch {:?}\nsleep 30\n",invocations,ready)).unwrap(); fs::set_permissions(bin.join("jj"),fs::Permissions::from_mode(0o755)).unwrap();
+    let child=bay(h).env("PATH",path).env("GH_RESPONSE",response.as_os_str()).stdout(std::process::Stdio::piped()).stderr(std::process::Stdio::piped()).args(["repo","clone","SureApp/api","--json"]).spawn().unwrap();
+    for _ in 0..100 { if ready.exists(){return (child,ready,invocations)} std::thread::sleep(std::time::Duration::from_millis(20)); }
+    panic!("clone did not reach transport");
+}
+
+#[cfg(unix)]
+#[test]
+fn killed_lock_owner_releases_advisory_lock_for_immediate_retry() {
+    let (h,path,response)=clone_fixture("clone-killed-owner"); let (mut owner,_,_)=paused_clone(&h,&path,&response); owner.kill().unwrap(); owner.wait().unwrap(); fs::remove_file(h.join("fake-gh-bin/jj")).unwrap(); let started=std::time::Instant::now();
+    let out=bay(&h).env("PATH",path).env("GH_RESPONSE",response.as_os_str()).args(["repo","clone","SureApp/api","--json"]).output().unwrap();
+    assert!(out.status.success(),"{}",String::from_utf8_lossy(&out.stderr)); assert!(started.elapsed()<std::time::Duration::from_secs(5)); assert_eq!(serde_json::from_slice::<Value>(&out.stdout).unwrap()["repo"]["status"],"cloned");
+}
+
+#[cfg(unix)]
+#[test]
+fn waiter_rechecks_destination_after_lock_and_refuses_installed_symlink() {
+    use std::os::unix::fs::symlink;
+    let (h,path,response)=clone_fixture("clone-waiter-symlink"); let (mut owner,_,invocations)=paused_clone(&h,&path,&response);
+    let waiter=bay(&h).env("PATH",&path).env("GH_RESPONSE",response.as_os_str()).stdout(std::process::Stdio::piped()).stderr(std::process::Stdio::piped()).args(["repo","clone","SureApp/api","--json"]).spawn().unwrap();
+    std::thread::sleep(std::time::Duration::from_millis(100)); let destination=h.join("one/api"); let outside=h.join("outside"); fs::remove_dir(&destination).unwrap(); fs::create_dir(&outside).unwrap(); symlink(&outside,&destination).unwrap();
+    owner.kill().unwrap(); owner.wait().unwrap(); let started=std::time::Instant::now(); let out=waiter.wait_with_output().unwrap();
+    assert!(started.elapsed()<std::time::Duration::from_secs(5)); assert_eq!(out.status.code(),Some(3)); assert_eq!(serde_json::from_slice::<Value>(&out.stderr).unwrap()["error"]["code"],"collision"); assert_eq!(fs::read_to_string(invocations).unwrap().lines().count(),1); assert_eq!(fs::read_dir(outside).unwrap().count(),0);
+}
+
+#[cfg(unix)]
+#[test]
+fn lock_file_symlink_never_creates_external_target() {
+    use std::os::unix::fs::symlink;
+    let (h,path,response)=clone_fixture("clone-lock-symlink"); let first=bay(&h).env("PATH",&path).env("GH_RESPONSE",response.as_os_str()).args(["repo","clone","SureApp/api","--json"]).output().unwrap(); assert!(first.status.success());
+    let lock_dir=h.join("one/.bay-clone-locks"); let lock=fs::read_dir(&lock_dir).unwrap().next().unwrap().unwrap().path(); fs::remove_file(&lock).unwrap(); let outside=h.join("must-not-be-created"); symlink(&outside,&lock).unwrap();
+    let out=bay(&h).env("PATH",path).env("GH_RESPONSE",response.as_os_str()).args(["repo","clone","SureApp/api","--json"]).output().unwrap(); assert_eq!(out.status.code(),Some(3)); assert!(!outside.exists());
 }
