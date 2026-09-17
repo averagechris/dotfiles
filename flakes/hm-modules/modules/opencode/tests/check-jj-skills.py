@@ -1,14 +1,20 @@
 #!/usr/bin/env python3
-"""Check the four generic Jujutsu and Bay skills as one bounded suite."""
+"""Check the generic jj suite and its known host-specific PR cross-link."""
 from pathlib import Path
-import os, re, sys
+import re, sys
 
-ROOT = Path(os.environ["OPENCODE_SKILL_ROOT"]) if "OPENCODE_SKILL_ROOT" in os.environ else Path(__file__).resolve().parents[5]
+if len(sys.argv) != 3:
+    raise SystemExit("usage: check-jj-skills.py SKILL_ROOT SUREMAC_CONFIG")
+
+ROOT = Path(sys.argv[1])
 HM = ROOT if (ROOT / "modules/opencode").is_dir() else ROOT / "flakes/hm-modules"
 SKILLS = HM / "modules/opencode/skills"
 REGISTRY = HM / "modules/opencode/skills.nix"
+SUREMAC_CONFIG = Path(sys.argv[2])
 IDS = ("jj-change-management", "jj-conflict-resolution", "jj-repo-workflow", "bay-workspaces")
 LIMITS = {"jj-change-management": 600, "jj-conflict-resolution": 325, "jj-repo-workflow": 600, "bay-workspaces": 750}
+HOST_SKILL = "suremac-jj-pr"
+HOST_LIMIT = 1200
 errors = []
 texts = {}
 
@@ -37,7 +43,25 @@ registered = set(re.findall(r"^\s{2}([\w-]+)\s*=", registry, re.M))
 require(set(IDS) <= registered, "generic IDs missing from skills.nix")
 generic_registered = {skill_id for skill_id in registered if skill_id.startswith("jj-") or skill_id == "bay-workspaces"}
 require(generic_registered == set(IDS), f"generic registry IDs differ: {sorted(generic_registered)}")
+require(HOST_SKILL not in registered, f"{HOST_SKILL}: host-specific skill must not be globally registered")
 require("jj-workspaces" not in registry, "legacy jj-workspaces registry entry exists")
+require(SUREMAC_CONFIG.is_file(), f"{HOST_SKILL}: missing suremac config input {SUREMAC_CONFIG}")
+if SUREMAC_CONFIG.is_file():
+    registration = re.search(
+        r"programs\.opencode\.skills\.suremac-jj-pr\s*=\s*builtins\.readFile\s+([^;]+);",
+        SUREMAC_CONFIG.read_text(),
+    )
+    require(registration is not None, f"{HOST_SKILL}: missing suremac host registration")
+    if registration:
+        require("suremac-jj-pr/SKILL.md" in registration.group(1), f"{HOST_SKILL}: host registration points elsewhere")
+
+host_path = SKILLS / HOST_SKILL / "SKILL.md"
+require(host_path.is_file(), f"missing host-specific skill {host_path.relative_to(ROOT)}")
+if host_path.is_file():
+    host_text = host_path.read_text()
+    host_words = len(re.findall(r"\b[\w'-]+\b", host_text))
+    require(host_words <= HOST_LIMIT, f"{HOST_SKILL}: {host_words} words exceeds {HOST_LIMIT}")
+    require("Use this skill only on `suremac`" in host_text, f"{HOST_SKILL}: missing host scope")
 
 all_repo_text = "\n".join(p.read_text(errors="ignore") for p in ROOT.rglob("*") if p.is_file() and p.name != "check-jj-skills.py" and ".jj" not in p.parts)
 require("jj-workspaces" not in all_repo_text, "legacy jj-workspaces reference exists")
@@ -59,10 +83,12 @@ for skill_id, text in texts.items():
 
 for source_id, text in texts.items():
     for target in re.findall(r"`((?:jj|bay|suremac)-[a-z-]+|conventional-commits)`", text):
-        require(target in registered, f"{source_id}: unregistered cross-reference {target}")
+        require(target in registered or target == HOST_SKILL, f"{source_id}: unknown cross-reference {target}")
 
 if errors:
     print("\n".join(f"error: {e}" for e in errors), file=sys.stderr)
     raise SystemExit(1)
 for skill_id, text in texts.items():
     print(f"{skill_id}: {len(re.findall(r'\b[\w\'-]+\b', text))} words")
+if host_path.is_file():
+    print(f"{HOST_SKILL}: {len(re.findall(r'\b[\w\'-]+\b', host_path.read_text()))} words (host-specific)")

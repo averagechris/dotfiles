@@ -488,6 +488,7 @@
             }
           ];
           nestedDelegationPolicy = blockAfter "## Nested delegation\n\n" "\n## Review routing" agentSelectionPolicy;
+          jjSkillRouting = blockAfter "## Jujutsu skill routing\n\n" "\n\n    Do not copy command manuals" orchestratorPrompt;
           frontmatter = blockAfter "---\n" "\n---";
           expectedAgentModels = {
             tiny = "openrouter/openai/gpt-5.6-luna#low";
@@ -549,6 +550,22 @@
           # policy section instead of pinning the test to individual sentences.
           assert lib.hasInfix nestedDelegationPolicy orchestratorPrompt;
           assert lib.all (prompt: !(lib.hasInfix nestedDelegationPolicy prompt)) delegatedPrompts;
+          assert lib.all (skill: lib.hasInfix "`${skill}`" jjSkillRouting) [
+            "jj-change-management"
+            "jj-conflict-resolution"
+            "jj-repo-workflow"
+            "bay-workspaces"
+            "suremac-jj-pr"
+          ];
+          assert lib.all (owner: lib.hasInfix owner jjSkillRouting) [
+            "Local change shaping"
+            "Conflict resolution"
+            "Lint, sync, push, or ship"
+            "Repository acquisition or isolated checkouts"
+            "GitHub PR work on suremac"
+          ];
+          assert lib.hasInfix "exact Bay workspace path" orchestratorPrompt;
+          assert lib.all (prompt: !(lib.hasInfix "## Jujutsu skill routing" prompt)) delegatedPrompts;
           # All coding agents share the same open-by-default bash policy.
           # With no opencode-specific override, `opencode run` remains allowed;
           # discouraging it is solely handoff guidance in the policy above.
@@ -575,16 +592,6 @@
             node ${./modules/opencode/tests/plugin-v2-contract.mjs} \
               ${./modules/opencode/plugins/dotfiles-direnv.js} \
               ${./modules/opencode/plugins/dotfiles-rust-cache.js}
-            mkdir -p "$out"
-          '';
-
-        opencode-jj-skills =
-          pkgs.runCommand "opencode-jj-skills" {
-            nativeBuildInputs = [pkgs.python3];
-            src = ./.;
-            checkScript = ./modules/opencode/tests/check-jj-skills.py;
-          } ''
-            OPENCODE_SKILL_ROOT="$src" python3 "$checkScript"
             mkdir -p "$out"
           '';
 

@@ -1,311 +1,78 @@
 ---
 name: suremac-jj-pr
-description: Use when creating, updating, closing, watching, commenting on, requesting review for, or sweeping GitHub PR hygiene from jj workspaces on suremac work repos. Prefer `jj pr` over bare `gh pr create`; covers PR body style, review comments and replies, reviewer tagging, jj remotes, bookmarks, sync, lints, push, CI, review polling, and open-PR follow-up reports.
+description: Use on suremac to create, update, close, watch, comment on, request review for, or sweep GitHub PRs from jj workspaces. Prefer `jj pr` over bare `gh pr create`. Covers PR identity, publication consent, reviewer communication, CI, and follow-up.
 ---
 
-# Suremac jj PR Workflow
+# Suremac jj PR workflow
 
-Use this skill on `suremac` when the user asks to create, update, close, watch,
-prepare, or sweep hygiene/follow-up for GitHub pull requests from jj workspaces,
-especially for work repositories under `~/sureapp`.
+Use this skill only on `suremac` for GitHub PR work, especially in work repositories under `~/sureapp`. Use `jj-change-management` for local change shaping, `jj-conflict-resolution` for conflicts, `jj-repo-workflow` for lint, sync, push, and ship, and `bay-workspaces` for repository acquisition or isolated checkouts. Detailed helper flags and output schemas belong in `jj pr --help` and `docs/jj-pr-workflow.md`.
 
 ## Core rule
 
-Do **not** run bare `gh pr create` from jj workspaces. Use the repo-managed helper:
+Prefer the repository's `jj pr` helper. Do not use bare `gh pr create` from a jj workspace. The helper resolves the GitHub repository from jj remotes and passes an explicit repository identity to GitHub.
 
-```bash
-jj pr doctor
-jj pr create ...
-jj pr update ...
-jj pr close ...
-jj pr hygiene
-```
+Before any create, update, close, watch, or comment operation, confirm the intended repository, base, PR, head bookmark, and current change. Never guess when multiple remotes, bookmarks, or PRs are plausible. `jj pr create` must publish the current work, not an ancestor selected merely because it already has a bookmark.
 
-The helper infers the GitHub repository from `jj git remote list` and always calls GitHub CLI commands with explicit `--repo owner/repo`, which works in non-colocated jj workspaces where `gh pr create` cannot discover `.git`.
+## Publication boundary
 
-## Standard create flow
+Creating a PR or pushing its bookmark publishes work. Do it only when the user explicitly asks to create, push, ship, publish, or perform an equivalent action. Preparing a title or body, checking readiness, or asking for review does not authorize publication. Updating or closing an existing PR also requires a clear request for that mutation.
 
-1. Inspect current state:
+Run the repository's required sync and lint gates before publication. If sync creates conflicts, stop and load `jj-conflict-resolution`. Do not force-push through bookmark divergence or silently switch the PR's head, base, or repository. Ask when resolving the mismatch could overwrite or detach work.
 
-   ```bash
-   jj pr doctor
-   ```
+## Create and update
 
-   Use JSON for scripts or when you need stable fields:
+For a new PR:
 
-   ```bash
-   jj pr doctor --json
-   ```
+1. Inspect helper diagnostics and the jj stack.
+2. Confirm a suitable bookmark points at the intended PR tip. Create one deliberately if needed.
+3. Confirm repository, base, title, body, draft state, and reviewers.
+4. Sync and run configured checks through the owning workflow.
+5. Create through `jj pr`, then read back the resulting PR identity and key fields.
+6. Watch CI and review state when the request includes follow-up.
 
-2. Ensure there is a suitable jj bookmark at `@`. `jj pr create` intentionally
-   does not infer an ancestor bookmark for creation because that can omit the
-   current work. If none exists, pass a ticket so `jj pr create` can auto-create
-   one from the configured template:
+An automatically created bookmark is durable. If a later check, push, or GitHub operation fails, resume from it rather than making a second identity. If an open PR already exists for the head bookmark, update that PR or ask what to do. Never create a duplicate.
 
-   ```text
-   {whoami}/{ticket-number}/{short-description}
-   ```
+For an existing PR, resolve it from the confirmed bookmark or explicit PR identity. Update only the fields the user requested. Closing a PR closes the GitHub PR; it must not delete local changes or bookmarks. Verify the final state after any mutation.
 
-3. Create the PR with explicit body input:
+## PR body policy
 
-   ```bash
-   jj pr create \
-     --base develop \
-     --sync \
-      --run-lints \
-     --ticket EPD-1234 \
-     --title "fix(policy): concise change summary [EPD-1234]" \
-     --body-file /tmp/pr-body.md
-   ```
+Write for a reviewer deciding whether the change is safe to merge. Keep the body concise and explain:
 
-   Notes:
-   - `--sync` runs `jj sync --onto <base>@<inferred-remote> --fail-on-conflicts` before checks, usually with `origin`.
-   - `--run-lints` runs `jj lint`.
-   - Push is enabled by default. Use `--no-push` only when explicitly needed.
-   - Add `--draft` for draft PRs.
-   - `--dry-run` plans auto-bookmarking without creating the bookmark.
-   - Use `--remote <remote>` when the push/sync remote cannot be inferred or when `--repo owner/repo` is explicit and multiple/no matching jj remotes exist.
+1. the problem and its effect;
+2. the chosen solution and non-obvious reasoning;
+3. the result, scope limits, and rollout risk when relevant;
+4. verification outcomes and anything material that was not tested.
 
-Auto-created bookmarks are durable. If a later sync, lint, push, or GitHub step fails, leave the bookmark in place and resume from it. Ticket values for auto-bookmarking must be simple safe identifiers using only letters, numbers, dot, underscore, or hyphen.
+Link the Linear issue once with context. Do not repeat the title, narrate the diff, dump commands or logs, or describe agent and workspace logistics. Quantify claims when evidence exists. Put long evidence in a comment or linked artifact. For user-visible or risky behavior, include the smallest useful before-and-after evidence and use the relevant Suremise skill for its mechanics.
 
-Before creating a PR, the helper checks the PR-relevant stack for conflicts and
-requires the current change to have a jj description. If it reports an empty
-description, run `jj describe -m "<conventional commit message>"` before
-retrying.
+## Comments, replies, and reviewers
 
-## Writing the PR body
-
-PR bodies are for human reviewers deciding whether to trust and merge the
-change. Explain the problem and why this solution; never narrate the diff.
-
-Structure, in order (omit sections that genuinely do not apply):
-
-1. **Problem** — why this PR exists. What is broken, slow, risky, or missing,
-   and who/what it affects. If you cannot state a problem, question the PR.
-2. **Fix / Change** — the shape of the solution and why this approach, in a
-   few plain sentences. Layer detail: short summary first, mechanism after.
-   Reviewers read the diff for the "what"; give them the "why" and the
-   non-obvious decisions.
-3. **Result / Impact** — quantify when possible (latency deltas, CI minutes
-   saved, counts). State explicit non-goals and scope guards: "this does not
-   deploy anything", "the image-pull delay is out of scope".
-4. **Safety / Rollout** — only for risky or user-visible changes: fallback
-   behavior, flags, rollout order, cross-repo merge order with PR links.
-5. **Verification** — what was verified, in outcome terms ("full suite: 1046
-   passed; strict mypy clean"), not raw command dumps with env vars. Disclose
-   honestly anything that could not be run and why. Where behavioral evidence
-   would genuinely help the reviewer, add it per the section below.
-
-Rules:
-
-- Lead with the problem in prose, not a bullet list of diff restatements.
-- Link the Linear ticket once as a real link with context, e.g.
-  `Fixes [EPD-1234](https://linear.app/sureapp/issue/EPD-1234/slug)` near the
-  top. Do not scatter `Tracking:`/`Linear:` variants.
-- Do not repeat the PR title as a heading inside the body.
-- No agent-workspace narration ("in this managed workspace", "artifacts were
-  not committed", devenv/sandbox limitations). If a check could not run, state
-  the reviewer-relevant fact plainly ("Vitest not run: no Node in the build
-  environment") without workflow autobiography.
-- Proofread the final body: no tool-call debris, stray flags, or truncated
-  lines. Read it back after `jj pr create`/`update` if there is any doubt.
-- Keep evidence proportional: digests, sha256 values, and long logs belong in
-  a comment or the ticket, not the body.
-
-## Verification evidence
-
-Unit tests prove the code; evidence proves the behavior. Match the evidence to
-the risk and skip it where it adds nothing: dependency bumps, config tweaks,
-refactors, and doc changes usually need no more than their passing checks.
-Spend evidence effort where the reviewer would otherwise have to trust or
-reproduce the change themselves — user-visible behavior, tricky logic,
-performance claims, security-sensitive paths.
-
-Cheap, creative verifications are welcome as long as they are proportional to
-the risk: a one-liner curl against a running service, a focused script whose
-trimmed output shows the before/after, a log line proving the new code path
-ran. Full-stack verification with `suremise` (the local full-stack k8s CLI) is
-the heavyweight option for changes that warrant it; load `suremise-test-change`,
-`suremise-e2e`, or `suremise-evidence` for the mechanics and prefer the
-smallest workflow that proves the behavior.
-
-When evidence is worth including:
-
-- **UI/UX changes**: before/after screenshots or a short video — Playwright
-  artifacts from `suremise verify`, or a browser screenshot of the running
-  local stack. GitHub uploads cannot be done from the CLI, so save artifacts
-  to a stable local path and give chris the paths to drag into the PR, or link
-  CI-collected artifacts when the run happened in CI. Name files
-  descriptively (`admin-portal-before.png`), not `screenshot-1.png`.
-- **Backend changes**: replayable evidence — the exact request and trimmed
-  response (curl + JSON), the relevant log lines, or the state before/after.
-  When it helps, add a short "How to verify" snippet: the two or three
-  commands a reviewer would run to see the same result.
-- One artifact that shows the fix beats a checklist of commands. Trim output
-  to the lines that matter; long transcripts go in a comment or the ticket.
-- If meaningful verification was warranted but not possible, say so plainly in
-  Verification rather than substituting unit-test output for behavioral
-  evidence.
-
-## PR comments and review replies
-
-When commenting on a PR or replying to review threads on chris's behalf, start
-every comment with an attribution line:
+When commenting on Chris's behalf, begin with:
 
 ```markdown
 `<model name> <model version> commenting on behalf of chris`
 ```
 
-Use `responding` instead of `commenting` when replying to a person. Fill in
-your actual model name and version (e.g. `claude fable 5`).
+For a reply to a person, use `responding` instead of `commenting`. Use the actual model and version. Keep comments direct, answer first, and keep one concern per comment. Use a GitHub suggestion block for a small concrete edit. Disagree with a reason and evidence; when accepting feedback, say what will change and where. Reply in the existing thread and preserve explicit repository identity.
 
-Tone and content rules:
+Resolve requested colleagues through the helper's reviewer mapping. If a name is missing or ambiguous, investigate once and confirm ambiguity with the user before storing or using an identity. Do not tag a guessed GitHub account.
 
-- Simple technical language, simple grammar. Short sentences.
-- Chill but very direct. No fluff, no hedging, no "great point!" filler, no
-  apologies, no emoji.
-- Answer the question first, context after. One comment per concern.
-- Use GitHub suggestion blocks (```suggestion) whenever proposing a concrete
-  small code change on a review thread, so it is one-click applicable.
-- Disagree plainly with a reason and evidence. If accepting, say what will
-  change and where.
-- Reply on the thread (`gh api` review-comment reply endpoints or
-  `gh pr comment` for top-level) with explicit `--repo owner/repo`.
+## Watch and hygiene
 
-## Requesting reviewers
+Use `jj pr watch` for compact CI, review-decision, and unresolved-thread status. Follow links into detailed logs or comments only when needed. A closed or merged PR is terminal, not a stale CI failure. Do not ignore unresolved comments unless the user explicitly asks for a CI-only gate.
 
-Resolve colleague names through the cached reviewer mapping instead of
-re-discovering identities each time:
+For an open-PR hygiene request, use the suremac hygiene report before making recommendations. Process outcomes in this order:
 
-```bash
-jj pr reviewers list
-jj pr reviewers resolve <name>
-jj pr reviewers add <name> --github <handle> [--linear <id>] [--alias <alt>]...
-```
+- Fix failing CI and review comments before requesting more review.
+- Wait for pending CI before nudging reviewers.
+- Finish drafts before requesting review.
+- For green PRs awaiting review, provide the PR link and a concise reviewer nudge.
+- Treat merge-ready PRs as a merge or handoff decision, not permission to merge.
 
-Then tag reviewers at create/update time with `--reviewer <name-or-handle>`
-(repeatable), or `gh pr edit --repo owner/repo --add-reviewer <handle>` for an
-existing PR.
+Use cached normal reporting unless the user asks for a fresh query. Cache internals, report flags, and field definitions live in the helper documentation.
 
-On a resolve miss: discover the person once (e.g. `gh api` user search, recent
-PR authorship in the repo, or the Linear CLI), confirm with the user if
-ambiguous, then `jj pr reviewers add` so the lookup never repeats. The mapping
-lives in `$XDG_CONFIG_HOME/jj-workflow/reviewers.toml`, falling back to
-`~/.config/jj-workflow/reviewers.toml`, and is intentionally not checked into
-dotfiles.
+## Follow-up after CI or review
 
-## Existing PRs
+Make feedback fixes in a new jj change on top of the reviewed tip. Describe the change, run the configured lint gate, then move the existing PR bookmark to the new tip intentionally. Push only with publication authorization. Re-check CI and unresolved review threads afterward.
 
-`jj pr create` fails loudly if an open PR already exists for the head bookmark. Do not create duplicates.
-
-Update only requested fields:
-
-```bash
-jj pr update --title "fix(policy): updated title [EPD-1234]"
-jj pr update --body-file /tmp/pr-body.md
-jj pr update --base main
-```
-
-Close the GitHub PR only; local jj bookmarks and changes are left untouched:
-
-```bash
-jj pr close
-```
-
-## CI and review watch
-
-Use `jj pr watch` instead of dumping raw CI logs or full review threads into the
-agent context:
-
-```bash
-jj pr watch
-jj pr watch --interval 60s --timeout 30m
-jj pr watch --once --json
-```
-
-The helper polls GitHub checks, unresolved review threads, and review decisions.
-It prints a compact summary with check counts, failing checks plus links,
-pending checks, review decision, and first lines/permalinks for unresolved review
-comments. It treats empty check lists as pending, exits 0 only when checks pass
-and no unresolved comments/blocking review decisions remain, and exits nonzero
-when checks fail, `CHANGES_REQUESTED` is present, comments need attention, or
-`--once` observes a pending state. With `--json` in polling mode it emits
-newline-delimited JSON snapshots.
-
-If the PR is already closed or merged, `jj pr watch` reports that state directly
-and exits nonzero; do not treat stale check output from closed PRs as active work.
-
-Use the printed links or `gh` directly only when detailed logs/full comments are
-needed. Prefer `--ignore-comments` only when the user explicitly wants to gate on
-CI checks alone.
-
-## PR hygiene sweep
-
-When the user asks to catch up on open PRs, run PR follow-up hygiene next to the
-Linear hygiene loop:
-
-```bash
-github-pr-hygiene-report
-github-pr-hygiene-report --force
-github-pr-hygiene-report --json
-```
-
-Prefer `github-pr-hygiene-report` for normal on-demand follow-up: it reads the
-scheduled cache when it is fresh and refreshes only after the TTL expires or the
-requested search, limit, TTL, workdir list, or `--no-workspaces` flag differs from the cached inputs. Use
-`github-pr-hygiene-report --force` when the user explicitly wants a fresh GitHub
-query now, and `github-pr-hygiene-report --json` for stable cached fields. The
-shell prompt reads the same cache locally with `jq`, so prompt rendering does
-not start Python or hit GitHub/jj.
-
-The lower-level `jj pr hygiene` command searches open GitHub PRs authored by the current GitHub user
-(default search: `author:@me is:pr is:open archived:false`), enriches them with
-checks, review decision, unresolved comments, size, and base/head branch data,
-then scans configured jj workspace roots for related local workspaces. The human
-report includes links, status, review effort estimate, heuristic priority, a
-suggested follow-up, and a copyable reviewer nudge for PRs that are green and
-waiting for review.
-
-Use direct `jj pr hygiene` only when you intentionally want an uncached GitHub
-query from inside a jj repo. The cached wrapper exists because scheduled launchd
-and shell workflows may start outside any particular jj checkout; it finds a
-configured jj workdir, keeps the shared cache fresh, and avoids hitting GitHub
-from prompts.
-
-Use it before telling the user what to complain about. Prefer these outcomes:
-
-- `needs-fix`: fix CI/review comments before asking people for more review.
-- `ready`: merge or hand off the merge decision.
-- `needs-review`: nudge reviewers, including the effort estimate and PR link.
-- `waiting-ci`: wait or inspect CI; do not ask humans before checks are green.
-- `draft`: finish or mark ready before requesting review.
-
-Use `--search <github-search>` to narrow scope, `--limit <n>` for shorter sweeps,
-and `--no-workspaces` if local workspace discovery is slow or irrelevant. The
-cached wrapper also keys freshness on the TTL and configured workdir strings. Use
-`--json` when another script/agent needs stable fields.
-
-## Follow-up changes after CI/review
-
-When CI or GitHub review feedback needs code changes, make a new jj change on top, move the PR bookmark intentionally, and push again:
-
-```bash
-jj new @
-# edit files
-jj describe -m "fix(scope): address PR feedback"
-jj bookmark set <pr-bookmark> -r @
-jj lint
-jj git push --bookmark <pr-bookmark>
-```
-
-Do not raw-push a feedback change before `jj lint` succeeds. If the repository's
-canonical `jj push` helper targets the intended bookmark and preserves the same
-semantics, prefer it because it runs the lint gate before pushing.
-
-Then re-check the PR with GitHub/CircleCI tools as appropriate.
-
-## Failure handling
-
-- If `jj pr create` reports an existing PR, use `jj pr update` or ask the user whether to close/update it.
-- If push fails due to remote bookmark divergence, do not force-push automatically. Read the helper hints and ask if destructive/update semantics are needed.
-- If sync reports conflicts, load `jj-conflict-resolution` and resolve before continuing.
+Never raw-push first and lint later. Never move a similarly named bookmark without confirming it is the PR head. If feedback reveals a conflict, repository mismatch, or divergent remote bookmark, stop and hand off to the owning skill rather than improvising destructive recovery.

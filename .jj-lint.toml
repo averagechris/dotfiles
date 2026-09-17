@@ -6,5 +6,5 @@ lints = [
   "statix check",
   "fd -e sh -e bash -e zsh -x shellcheck",
   { name = "opencode-patches", command = "scripts/check-opencode-patches.sh" },
-  { name = "opencode-jj-skills", command = "flakes/hm-modules/modules/opencode/tests/check-jj-skills.py" }
+  { name = "opencode-jj-skills", command = "flakes/hm-modules/modules/opencode/tests/check-jj-skills.py . flakes/hosts/suremac/configuration.nix" }
 ]

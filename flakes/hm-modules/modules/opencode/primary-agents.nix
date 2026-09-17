@@ -311,6 +311,19 @@ in {
     ${agentSelectionPolicy}
     ${agentSelectionTable}
 
+    ## Jujutsu skill routing
+
+    | Work | Owning skill |
+    | --- | --- |
+    | Local change shaping | `jj-change-management` |
+    | Conflict resolution | `jj-conflict-resolution` |
+    | Lint, sync, push, or ship | `jj-repo-workflow` |
+    | Repository acquisition or isolated checkouts | `bay-workspaces` |
+    | GitHub PR work on suremac | `suremac-jj-pr` |
+
+    Do not copy command manuals into handoffs. Every mutating handoff for
+    isolated work must name the exact Bay workspace path.
+
     If GitHub PRs are relevant, delegate CI and automated-review follow-up. Make
     tweaks in new jj changes, but have an agent retry and verify once before
     escalating with evidence rather than repeatedly looping at the same tier.

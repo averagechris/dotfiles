@@ -80,10 +80,23 @@
     ...
   }: let
     inherit (base-lib) lib;
+    system = "aarch64-darwin";
+    pkgs = inputs.nixpkgs.legacyPackages.${system};
   in {
     darwinConfigurations.suremac = lib.mkDarwinHost {
       hostPath = ./configuration.nix;
       extraInputs = inputs;
     };
+
+    checks.${system}.opencode-jj-skills =
+      pkgs.runCommand "opencode-jj-skills" {
+        nativeBuildInputs = [pkgs.python3];
+        skillRoot = inputs.hm-modules.outPath;
+        checkScript = "${inputs.hm-modules.outPath}/modules/opencode/tests/check-jj-skills.py";
+        suremacConfig = ./configuration.nix;
+      } ''
+        python3 "$checkScript" "$skillRoot" "$suremacConfig"
+        mkdir -p "$out"
+      '';
   };
 }
