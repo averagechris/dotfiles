@@ -44,6 +44,45 @@ jj ws sweep                      # remove artifact dirs from idle workspaces
 
 Capture `jj ws add -q` output and treat it as the repo root for subsequent tools.
 
+## GitHub repository onboarding
+
+When the target repository is not local, use find, clone, then add:
+
+```bash
+bay repo find <query> --json
+bay repo clone <owner>/<repo> --json
+bay add <repo>/<topic> --json
+```
+
+Choose an exact `repos[].slug` from find output. Inspect `archived` and `local`
+before cloning. `local` is null when absent; `present` identifies the same repo,
+while `foreign` means the routed path belongs to something else. Ask for
+confirmation before cloning an archived repo.
+
+Never proactively pass `--group` or `--as`. Routing first uses a
+case-insensitive exact `githubOwners` match, then the first `"*"` group. On
+`suremac`, that wildcard sends unmatched owners to `~/contrib`; exact personal
+and SureApp routes still win. If clone returns `no_group`, ask the user which
+configured group to use. If it returns `collision`, leave the existing path
+alone and only then offer `--as <different-basename>`.
+
+Bay uses HTTPS for public repos with read, triage, or no reported viewer access;
+otherwise it uses SSH. Do not override `--protocol` without a reason. Clone is
+idempotent: JSON `repo.status` is `cloned` for a new checkout and `exists` for a
+matching checkout. Bay does not automatically rename or clean up paths.
+
+Find JSON has `schema`, `query`, and `repos`. Each result has `slug`, `owner`,
+`name`, `description`, `url`, `archived`, `private`, `updated_at`, `group`, and
+`local`; local records have `path` and `status`. Clone JSON has `schema` and a
+`repo` containing `slug`, `owner`, `name`, `url`, `clone_url`, `protocol`,
+`group`, `path`, `status`, `default_branch`, `archived`, and `private`.
+
+With `--json`, errors are written to stderr under
+`{"schema":1,"error":{"code":"collision","message":"...","candidates":[],"details":{...}}}`. Usage
+errors exit 2. `not_found`, `no_group`, and `collision` exit 3; collision details
+include `path` and `existing_remotes`. `gh_unavailable`, `gh_auth`, `gh_failed`,
+and `clone_failed` exit 1.
+
 ## Base selection
 
 - From a main checkout: fetches when safe, then bases on the inferred remote integration bookmark.

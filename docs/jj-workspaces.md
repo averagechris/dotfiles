@@ -578,3 +578,90 @@ They accept the same operation flags as their `jj ws` counterparts. The
 repository may be selected by configured basename or path; when omitted, Bay
 uses the repository containing the current directory. It never applies a
 maintenance command across every configured repository.
+
+## Onboard a GitHub repository with Bay
+
+Use this three-command flow when the repository is not on the device yet:
+
+```bash
+# 1. Search without changing the filesystem.
+bay repo find insurance --json
+
+# 2. Choose a repos[].slug, then clone its main checkout.
+bay repo clone SureApp/insurance-api --json
+
+# 3. Create the workspace where the work will happen.
+bay add insurance-api/lin-123-renewal-fix --json
+```
+
+`bay repo find` accepts a search term, an `OWNER/REPO` slug, or a GitHub clone or
+browser URL. Search can be narrowed with `--owner LOGIN` and `--limit N`. Before
+cloning, inspect the selected result's `archived` and `local` fields:
+
+- `local: null` means Bay did not find the routed checkout.
+- `local.status: "present"` means the path has a remote for that GitHub repo.
+- `local.status: "foreign"` means the expected path exists but identifies a
+  different repo. Do not overwrite or remove it.
+- If `archived` is `true`, ask the user to confirm before cloning. Clone itself
+  only prints a warning; it does not require confirmation.
+
+Do not proactively pass `--group` or `--as`. Bay routes by the repository owner:
+
+1. `--group PATH`, when explicitly requested, selects that configured group.
+2. Otherwise, the first case-insensitive exact owner in `githubOwners` wins.
+3. Otherwise, the first group whose `githubOwners` contains `"*"` wins.
+4. Without a match, clone exits with `no_group`. Ask the user which configured
+   group to use rather than choosing one.
+
+On `suremac`, the wildcard routes unmatched owners to `~/contrib`. It does not
+mean that every repository goes there; exact `averagechris` and `sureapp`
+routes take precedence.
+
+Bay chooses HTTPS for a public repository when the viewer has only read or
+triage access, or no reported permission. It chooses SSH for private repos and
+repos where the viewer has higher access. Use `--protocol ssh|https` only when
+the user needs to override that rule.
+
+Clone is idempotent when the destination is already a Git or Jujutsu checkout
+with a remote identifying the same GitHub repo. Its result then has
+`status: "exists"`; otherwise a new clone has `status: "cloned"`. A nonempty
+non-repository path or a checkout for another repo returns `collision` and does
+not modify the path. Only after that collision should you offer a different
+basename with `--as NAME`. Bay never renames, removes, or cleans up an existing
+path automatically.
+
+### JSON contract and errors
+
+`bay repo find ... --json` writes this shape to stdout:
+
+```json
+{
+  "schema": 1,
+  "query": "insurance",
+  "repos": [{
+    "slug": "SureApp/insurance-api",
+    "owner": "SureApp",
+    "name": "insurance-api",
+    "description": "Insurance API",
+    "url": "https://github.com/SureApp/insurance-api",
+    "archived": false,
+    "private": true,
+    "updated_at": "2026-01-02T03:04:05Z",
+    "group": "/Users/chris/sureapp",
+    "local": null
+  }]
+}
+```
+
+`bay repo clone ... --json` writes `{"schema":1,"repo":{...}}`. The `repo`
+object contains `slug`, `owner`, `name`, `url`, `clone_url`, `protocol`, `group`,
+`path`, `status`, `default_branch`, `archived`, and `private`. `bay add --json`
+uses the workspace command's schema and returns the created workspace record;
+pass its reported path to subsequent tools.
+
+JSON failures go to stderr as
+`{"schema":1,"error":{"code":"...","message":"...","candidates":[],"details":...}}`.
+Exit status 2 with `code: "usage"` means invalid input. Exit status 3 uses
+`not_found`, `no_group`, or `collision`; collision details include `path` and
+`existing_remotes`. Operational failures exit 1 with `gh_unavailable`,
+`gh_auth`, `gh_failed`, or `clone_failed`.

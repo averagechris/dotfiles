@@ -104,7 +104,7 @@ fn run(mut args: Vec<OsString>) -> Result<()> {
     }
 }
 fn usage() -> &'static str {
-    "Usage: bay list|ls [REPO] [--json]\n       bay repo find <query> [--owner LOGIN] [--limit N] [--json]\n       bay repo clone <input> [--group PATH] [--as NAME] [--protocol ssh|https] [--depth N] [--json]\n       bay path <selector>\n       bay root [REPO]\n       bay add [<repo>/]<name> [-r REV] [--repo PATH] [--at DIR]\n       bay rm|forget <selector> [jj ws forget options]\n       bay prune [REPO] [--dry-run] [--delete] [--pick] [--yes]\n       bay gc [REPO] [--older-than DUR] [--dry-run]\n       bay du [REPO]\n       bay sweep [REPO] [--idle DUR] [--dry-run]"
+    "Usage: bay list|ls [REPO] [--json]\n       bay repo find <query> [--owner LOGIN] [--limit N] [--json]\n       bay repo clone <input> [--group PATH] [--as NAME] [--protocol ssh|https] [--depth N] [--json]\n       bay path <selector>\n       bay root [REPO]\n       bay add [<repo>/]<name> [-r REV] [--repo PATH] [--at DIR] [--json]\n       bay rm|forget <selector> [jj ws forget options]\n       bay prune [REPO] [--dry-run] [--delete] [--pick] [--yes]\n       bay gc [REPO] [--older-than DUR] [--dry-run]\n       bay du [REPO]\n       bay sweep [REPO] [--idle DUR] [--dry-run]"
 }
 
 #[derive(Debug, Deserialize)]
