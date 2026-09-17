@@ -1,96 +1,6 @@
-# jj workspace workflow
+# Repository-local workspace engine
 
-This documents the repo-managed `jj ws` workflow for ergonomic Jujutsu workspace management.
-
-## Goal
-
-`jj ws` creates, locates, forgets, and prunes Jujutsu workspaces with predictable paths and low-noise output.
-
-The workflow should be safe and agent-friendly:
-
-- noninteractive by default
-- concise output by default
-- `-q` / `--quiet` suppresses noncritical output
-- destructive operations are conservative and support dry-runs or force flags
-- picker flows are explicit and only used when requested
-
-## OpenCode worktrees
-
-When `dotfiles.opencode.bayWorktrees.enable` is enabled, OpenCode V2 uses Bay
-for its worktree UI in recognized Jujutsu repositories. Registration is checked
-against OpenCode's canonical location at plugin setup; Git-only locations keep
-OpenCode's built-in Git strategy. Missing Bay, invalid JSON, or an unrecognized
-location fails closed without replacing Git.
-
-Creates use Bay's managed group layout rather than OpenCode's requested path.
-Removes use Bay's recoverable trash behavior; unpublished work still requires
-an explicit force retry, and the plugin never adds `--purge`.
-
-## Commands
-
-Commands:
-
-```bash
-jj ws add <name> [-r <revset>] [--venv=<copy|link|none>] [--no-envrc] [--no-venv] [--no-clone-artifacts] [--no-direnv] [--no-hooks]
-jj ws list [--pick]
-jj ws path <name>
-jj ws path --pick
-jj ws forget <name> [--force] [--purge|--keep-dir] [--no-docker] [--docker-volumes|--keep-docker-volumes] [--no-hooks] [--dry-run]
-jj ws forget --pick [options]
-jj ws prune [--dry-run] [--delete] [--pick] [--yes]
-jj ws du
-jj ws sweep [--idle <duration>] [--dry-run]
-jj ws gc [--older-than <duration>] [--dry-run]
-jj ws root
-```
-
-`jj ws` with no arguments prints a compact usage guide.
-
-## Quick usage
-
-Create and print only the path:
-
-```bash
-jj ws add feature-x -q
-```
-
-Base on the current revision:
-
-```bash
-jj ws add followup -r @
-```
-
-Enter from a shell:
-
-```bash
-cd "$(jj ws path feature-x)"
-```
-
-Preview deletion:
-
-```bash
-jj ws forget feature-x --dry-run
-```
-
-Forget and move to trash:
-
-```bash
-jj ws forget feature-x
-```
-
-Delete immediately instead of trashing:
-
-```bash
-jj ws forget feature-x --purge
-```
-
-List stale dirs:
-
-```bash
-jj ws prune
-```
-
-Agents/scripts should use `jj ws add -q`, `jj ws path <name>`, and `jj ws list`. Avoid `--pick`; it requires an interactive terminal.
+`jj ws` is the repository-local compatibility interface to the workspace engine used by [Bay](/docs/bay.md). Use Bay for device-wide repository discovery and workspace lifecycle. Use this reference for configuration, base inference, hooks, environment setup, cleanup internals, and `jj ws` compatibility. Complete command syntax lives in `jj ws --help` and `jj ws <command> --help`.
 
 ## Build-time test environment
 
@@ -101,9 +11,9 @@ check phase therefore provides those tools explicitly and sets an isolated
 `HOME`/`XDG_CONFIG_HOME` with test-only jj user identity so builds do not depend
 on the invoking user's configuration or Nix's default `/homeless-shelter` home.
 
-## Help and error ergonomics
+## Help and errors
 
-Keep output concise and actionable:
+The helper keeps output concise and actionable:
 
 - `jj ws` and `jj ws --help` print a compact usage guide
 - `jj ws <command> --help` prints command-specific usage
@@ -112,9 +22,9 @@ Keep output concise and actionable:
 - multi-remote warnings mention `dotfiles.workspaces.fetch-remote`
 - destructive refusals explain the required next step or flag
 
-Do not integrate this workflow with `jj ship` in v1. Shipping often requires CI follow-up or other cleanup decisions before deleting a workspace.
+`jj ship` does not remove workspaces. Shipping often requires CI follow-up or other cleanup decisions before deleting a workspace.
 
-## Project groups and directory convention
+## Groups and directory convention
 
 Workspace roots are configured as project groups. Each group has:
 
@@ -123,7 +33,7 @@ Workspace roots are configured as project groups. Each group has:
 - optional GitHub repository owners used to route repositories to the group;
   owner matching is case-insensitive and `*` selects the fallback group
 
-Canonical workspace path:
+The canonical workspace path is:
 
 ```text
 <project-group-path>/<workspace-dir>/<repo-name>/<workspace-name>
@@ -136,13 +46,13 @@ Examples:
 ~/sureapp/ws/backend/auth-v2
 ```
 
-If canonical parent directories do not exist, create them automatically.
+The helper creates missing canonical parent directories.
 
 The workspace namespace directory is configurable per project group. `/ws/` is the default convention.
 
 ## Host configuration decisions
 
-Configure these project groups through Nix/home-manager:
+The host configuration defines these groups:
 
 - all personal hosts: `~/projects`, with workspace dir `ws`
 - `suremac`: `~/projects` (`averagechris`), `~/sureapp` (`sureapp`), and the
@@ -224,7 +134,7 @@ If integration bookmark inference is ambiguous or impossible, fail clearly and a
 
 ## Output and quiet mode
 
-Default output should be concise. Example:
+Default output is concise. Example:
 
 ```text
 created workspace billing-refactor at /home/chris/projects/ws/api/billing-refactor
@@ -258,12 +168,12 @@ Default behavior:
 - copy it to the workspace
 - run `direnv allow <workspace-path>`
 
-Tracked `.jj-lint.toml` files should naturally appear in the workspace through
+Tracked `.jj-lint.toml` files appear in the workspace through
 Jujutsu. The explicit copy exists for repos that intentionally keep local lint
 configuration ignored but still want new managed workspaces to run the same
 `jj lint` commands.
 
-Tracked `.envrc` files should naturally appear in the workspace and should not be manually copied.
+Tracked `.envrc` files appear in the workspace and are not copied manually.
 
 After the lint/`.envrc` step, `jj ws add` clones configured build artifact
 directories from the source checkout into matching relative paths in the new
@@ -294,8 +204,8 @@ known-broken environment.
 For scratch work where sharing the source checkout's environment is desired,
 use `--venv=link`. To skip virtualenv setup entirely, use `--venv=none` or
 `--no-venv`; both leave no `.venv` in the destination at all — not even an
-unrepaired clone. A tracked `.venv` is never cloned or set up; it should
-appear through Jujutsu like any other tracked file.
+unrepaired clone. A tracked `.venv` is never cloned or set up; it appears
+through Jujutsu like any other tracked file.
 
 CLI overrides:
 
@@ -306,8 +216,6 @@ CLI overrides:
 --no-clone-artifacts
 --no-direnv
 ```
-
-More elaborate setup hooks can be deferred, but the config shape should leave room for repo-configurable setup behavior later.
 
 ## Disk hygiene
 
@@ -334,9 +242,7 @@ apparent sizes can overcount real disk usage reclaimed by a sweep.
 
 ## Picker support
 
-Include picker support in v1.
-
-Use `fzf` if available rather than implementing a Rust-native TUI initially.
+Picker commands use `fzf`.
 
 Rules:
 
@@ -365,13 +271,13 @@ billing-refactor  /home/chris/projects/ws/api/billing-refactor
 auth-v2           /home/chris/projects/ws/api/auth-v2
 ```
 
-No cache is planned for v1. Listing should be cheap when scoped to the current repo.
+Listing reads the current repository without a cache.
 
 `jj ws path <name>` prints only the path, making it suitable for shell functions and agents.
 
 ## Forget behavior
 
-`jj ws forget <name>` should:
+`jj ws forget <name>`:
 
 1. resolve the workspace name to a registered workspace path
 2. refuse to forget the current workspace
@@ -489,10 +395,6 @@ Rules:
 `--no-hooks` on `add` or `forget` skips repo hooks; on `forget` it also skips
 the builtin Docker cleanup. `--no-docker` continues to skip only Docker.
 
-Out of scope for now: precreate/postforget hooks, parallel hooks, a general
-plugin API, Windows shells, and loading this config outside configured project
-groups.
-
 ## Prune behavior
 
 `jj ws prune` cleans stale directories under:
@@ -520,7 +422,7 @@ jj ws prune --pick
 
 `jj ws gc [--older-than <duration>] [--dry-run]` deletes trash entries under the current repo's `<workspace-root>/.trash` that are at or older than the retention period. Retention comes from `dotfiles.workspaces.trash-retention` (default `7d`) or `--older-than`. Durations are positive integers with an `h`, `d`, or `w` suffix; `--older-than 0h` deletes all trash. `--dry-run` prints each path with its age without deleting anything.
 
-A launchd/systemd timer for automatic collection is a possible follow-up; run `jj ws gc` manually or from a scheduled job for now.
+Trash collection is manual or supplied by an external scheduled job.
 
 ## Workspace name validation
 
@@ -531,137 +433,3 @@ Allow workspace names matching:
 ```
 
 Reject names containing path separators, `..`, whitespace, or shell metacharacters.
-
-## High-level implementation checklist
-
-- [x] Inspect existing `jj-workflow` helper and jj alias configuration.
-- [x] Add workspace config parsing, including project groups and per-group `workspace-dir` defaulting to `ws`.
-- [x] Add Nix/home-manager options for workspace project groups.
-- [x] Configure `~/projects` for all personal hosts.
-- [x] Configure both `~/projects` and `~/sureapp` for `suremac`.
-- [x] Add `jj ws` alias wiring to the jj config.
-- [x] Implement main checkout vs managed workspace detection.
-- [x] Implement base revision selection and remote-fetch behavior.
-- [x] Implement `jj ws root`.
-- [x] Implement `jj ws list`.
-- [x] Implement `jj ws path`.
-- [x] Implement `jj ws add`.
-- [x] Implement untracked `.envrc` copying.
-- [x] Implement `direnv allow` handling.
-- [x] Implement explicit `fzf` picker support for supported commands.
-- [x] Implement `jj ws forget` safety checks.
-- [x] Implement Docker Compose cleanup for forget.
-- [x] Implement directory deletion and empty parent cleanup.
-- [x] Implement `jj ws prune` with conservative default behavior.
-- [x] Update repo-managed jj skills because this changes workspace workflow behavior.
-- [x] Update `AGENTS.md` with the new workspace convention and agent usage guidance.
-- [x] Add or update user-facing docs and keep `docs/README.md` in sync.
-- [x] Run formatting and lint checks.
-# Bay and managed Jujutsu workspaces
-
-`bay` is the device-wide interface to managed workspaces. A group is a
-configured checkout parent, a repository is its Jujutsu repository (whose main
-workspace is named `default`), and a bay is any non-main workspace. Jujutsu's
-workspace registry is authoritative; Bay does not reconstruct missing roots.
-
-Use `bay list --json` from anywhere, `bay path repo/name`, `bay root repo`,
-`bay add repo/topic`, and `bay rm repo/topic`. A bare name first uses the
-repository containing the current directory and otherwise must be unique
-device-wide. `jj ws list`, `path`, `add`, and `forget` remain compatible
-repository-local spellings. Discovery is bounded to direct group children and
-`<group>/<workspaces>/<repo>/<bay>/.jj`; reads use explicit `-R` and
-`--ignore-working-copy` and are not cached.
-
-Repository maintenance is also available without changing directories:
-`bay prune [repo]`, `bay gc [repo]`, `bay du [repo]`, and `bay sweep [repo]`.
-They accept the same operation flags as their `jj ws` counterparts. The
-repository may be selected by configured basename or path; when omitted, Bay
-uses the repository containing the current directory. It never applies a
-maintenance command across every configured repository.
-
-## Onboard a GitHub repository with Bay
-
-Use this three-command flow when the repository is not on the device yet:
-
-```bash
-# 1. Search without changing the filesystem.
-bay repo find insurance --json
-
-# 2. Choose a repos[].slug, then clone its main checkout.
-bay repo clone SureApp/insurance-api --json
-
-# 3. Create the workspace where the work will happen.
-bay add insurance-api/lin-123-renewal-fix --json
-```
-
-`bay repo find` accepts a search term, an `OWNER/REPO` slug, or a GitHub clone or
-browser URL. Search can be narrowed with `--owner LOGIN` and `--limit N`. Before
-cloning, inspect the selected result's `archived` and `local` fields:
-
-- `local: null` means Bay did not find the routed checkout.
-- `local.status: "present"` means the path has a remote for that GitHub repo.
-- `local.status: "foreign"` means the expected path exists but identifies a
-  different repo. Do not overwrite or remove it.
-- If `archived` is `true`, ask the user to confirm before cloning. Clone itself
-  only prints a warning; it does not require confirmation.
-
-Do not proactively pass `--group` or `--as`. Bay routes by the repository owner:
-
-1. `--group PATH`, when explicitly requested, selects that configured group.
-2. Otherwise, the first case-insensitive exact owner in `githubOwners` wins.
-3. Otherwise, the first group whose `githubOwners` contains `"*"` wins.
-4. Without a match, clone exits with `no_group`. Ask the user which configured
-   group to use rather than choosing one.
-
-On `suremac`, the wildcard routes unmatched owners to `~/contrib`. It does not
-mean that every repository goes there; exact `averagechris` and `sureapp`
-routes take precedence.
-
-Bay chooses HTTPS for a public repository when the viewer has only read or
-triage access, or no reported permission. It chooses SSH for private repos and
-repos where the viewer has higher access. Use `--protocol ssh|https` only when
-the user needs to override that rule.
-
-Clone is idempotent when the destination is already a Git or Jujutsu checkout
-with a remote identifying the same GitHub repo. Its result then has
-`status: "exists"`; otherwise a new clone has `status: "cloned"`. A nonempty
-non-repository path or a checkout for another repo returns `collision` and does
-not modify the path. Only after that collision should you offer a different
-basename with `--as NAME`. Bay never renames, removes, or cleans up an existing
-path automatically.
-
-### JSON contract and errors
-
-`bay repo find ... --json` writes this shape to stdout:
-
-```json
-{
-  "schema": 1,
-  "query": "insurance",
-  "repos": [{
-    "slug": "SureApp/insurance-api",
-    "owner": "SureApp",
-    "name": "insurance-api",
-    "description": "Insurance API",
-    "url": "https://github.com/SureApp/insurance-api",
-    "archived": false,
-    "private": true,
-    "updated_at": "2026-01-02T03:04:05Z",
-    "group": "/Users/chris/sureapp",
-    "local": null
-  }]
-}
-```
-
-`bay repo clone ... --json` writes `{"schema":1,"repo":{...}}`. The `repo`
-object contains `slug`, `owner`, `name`, `url`, `clone_url`, `protocol`, `group`,
-`path`, `status`, `default_branch`, `archived`, and `private`. `bay add --json`
-uses the workspace command's schema and returns the created workspace record;
-pass its reported path to subsequent tools.
-
-JSON failures go to stderr as
-`{"schema":1,"error":{"code":"...","message":"...","candidates":[],"details":...}}`.
-Exit status 2 with `code: "usage"` means invalid input. Exit status 3 uses
-`not_found`, `no_group`, or `collision`; collision details include `path` and
-`existing_remotes`. Operational failures exit 1 with `gh_unavailable`,
-`gh_auth`, `gh_failed`, or `clone_failed`.

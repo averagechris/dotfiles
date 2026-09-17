@@ -63,9 +63,6 @@ if host_path.is_file():
     require(host_words <= HOST_LIMIT, f"{HOST_SKILL}: {host_words} words exceeds {HOST_LIMIT}")
     require("Use this skill only on `suremac`" in host_text, f"{HOST_SKILL}: missing host scope")
 
-all_repo_text = "\n".join(p.read_text(errors="ignore") for p in ROOT.rglob("*") if p.is_file() and p.name != "check-jj-skills.py" and ".jj" not in p.parts)
-require("jj-workspaces" not in all_repo_text, "legacy jj-workspaces reference exists")
-
 for skill_id, text in texts.items():
     commands = "\n".join(re.findall(r"```bash\n(.*?)```", text, re.S))
     require(not re.search(r"(^|\s)git(?:\s|$)", commands), f"{skill_id}: git command is forbidden")

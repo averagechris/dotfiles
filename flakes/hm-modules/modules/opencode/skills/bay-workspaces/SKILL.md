@@ -1,9 +1,11 @@
 ---
 name: bay-workspaces
-description: Use Bay for repository acquisition and isolated checkout lifecycle: find, clone, create, locate, and safely remove workspaces. Use the returned absolute path for all work. Route edits inside a checkout to `jj-change-management`.
+description: Use Bay for isolated workspaces: find, clone, create, locate, and remove jj workspaces including repository acquisition from github. 
 ---
 
 # Bay workspaces
+
+Use the returned absolute path for all work. Route edits inside a checkout to `jj-change-management`.
 
 Bay maps repositories and their isolated Jujutsu checkouts across the device. A repository is the shared history and main checkout. A workspace is a separate working copy for one task. Use Bay first. `jj ws` exists only as a repository-local compatibility interface.
 
@@ -48,4 +50,4 @@ Use `bay list --json` for bounded discovery before cleanup. Do not guess paths o
 
 ## Boundaries
 
-Bay owns repository acquisition plus workspace creation, lookup, and removal. Once inside the returned path, load `jj-change-management` for edits and local history, `jj-conflict-resolution` for conflicts, and `jj-repo-workflow` for sync, lint, publication, or handoff. Bay's help and documentation own detailed flags, JSON schemas, hooks, routing internals, and artifact setup.
+Bay owns repository acquisition plus workspace creation, lookup, and removal. Once inside the returned path, load `jj-change-management` for edits and local history, `jj-conflict-resolution` for conflicts, and `jj-repo-workflow` for sync, lint, publication, or handoff. `docs/bay.md` owns the operator model. `bay --help` and `docs/jj-workspaces.md` own detailed flags, hooks, compatibility, and artifact setup.

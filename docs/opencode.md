@@ -812,7 +812,7 @@ build time. Current examples include:
 - `jj-change-management`
 - `jj-conflict-resolution`
 - `jj-repo-workflow`
-- `bay-workspaces`
+- `bay-workspaces`, for Bay-first repository acquisition and isolated checkout lifecycle; see [Bay](/docs/bay.md) for the operator model and [jj workspaces](/docs/jj-workspaces.md) for shared-engine details
 - `linear-admin`, `linear-data`, `linear-git`, `linear-issues`,
   `linear-organization`, `linear-planning`, and `linear-tracking` (registered by
   `dotfiles.linearCli`)

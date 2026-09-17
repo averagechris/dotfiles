@@ -19,7 +19,8 @@
 - [jj aliases](/docs/jj-aliases.md) - Compact `jj log-*` aliases for agent-friendly status, stack, and history inspection
 - [jj PR workflow](/docs/jj-pr-workflow.md) - suremac-only `jj pr` helper for creating, watching, and sweeping GitHub PRs from jj workspaces
 - [jj tag workflow](/docs/jj-tag-workflow.md) - Optional `jj ship --tag` and `jj tag-push` flow for annotated human/agent-created release tags
-- [Bay workspaces](/docs/bay-workspaces.md) - Design decisions and implementation checklist for Bay-managed jj workspaces
+- [Bay](/docs/bay.md) - Device-wide repository and workspace operator guide
+- [jj workspaces](/docs/jj-workspaces.md) - Repository-local workspace engine configuration and compatibility reference
 - [LAN SSH](/docs/lan-ssh.md) - DHCP-friendly local-network host discovery, safe SSH wrappers, and host key authorization notes
 - [linear-cli](/docs/linear-cli.md) - Linear CLI Home Manager module, completions, agent-facing context defaults, and hygiene automation (scheduled checks, notifications, prompt nudges, PR hygiene cache, agentic autofix)
 - [manual package updates](/docs/manual-package-updates.md) - Rust flake/manual package updater, manifest enrollment, cooldowns, and fixed-hash package pins
