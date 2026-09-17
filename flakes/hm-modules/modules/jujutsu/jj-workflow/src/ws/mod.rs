@@ -17,6 +17,7 @@ use crate::*;
 pub(crate) struct ProjectGroup {
     pub(crate) path: PathBuf,
     pub(crate) workspace_dir: String,
+    pub(crate) github_owners: Vec<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -148,6 +149,9 @@ struct BayGroup {
     path: String,
     #[serde(default = "default_workspace_dir")]
     workspaces: String,
+    #[serde(default)]
+    #[serde(rename = "github-owners")]
+    github_owners: Vec<String>,
 }
 fn default_true() -> bool {
     true
@@ -204,14 +208,17 @@ pub(crate) fn load_ws_config(path: &Path) -> Result<WsConfig> {
     }
     validate_venv_mode(&parsed.venv_mode)
         .with_context(|| format!("invalid bay config {}", path.display()))?;
-    let project_groups = parsed
+    let project_groups: Vec<_> = parsed
         .groups
         .into_iter()
         .map(|g| ProjectGroup {
             path: expand_tilde(&g.path),
             workspace_dir: g.workspaces,
+            github_owners: g.github_owners,
         })
         .collect();
+    validate_github_owners(&project_groups)
+        .with_context(|| format!("invalid bay config {}", path.display()))?;
     Ok(WsConfig {
         project_groups,
         copy_envrc: parsed.copy_envrc,
@@ -224,6 +231,29 @@ pub(crate) fn load_ws_config(path: &Path) -> Result<WsConfig> {
         sweep_idle: parsed.sweep_idle,
         trash_retention: parsed.trash_retention,
     })
+}
+
+fn validate_github_owners(groups: &[ProjectGroup]) -> Result<()> {
+    let mut owners: HashMap<String, &Path> = HashMap::new();
+    let mut wildcard: Option<&Path> = None;
+    for group in groups {
+        for owner in &group.github_owners {
+            let normalized = owner.to_lowercase();
+            if normalized == "*" {
+                if let Some(previous) = wildcard {
+                    bail!("github owner wildcard is configured for both {} and {}", previous.display(), group.path.display());
+                }
+                wildcard = Some(&group.path);
+            } else if let Some(previous) = owners.get(&normalized) {
+                if *previous != group.path {
+                    bail!("github owner {owner:?} is configured for both {} and {}", previous.display(), group.path.display());
+                }
+            } else {
+                owners.insert(normalized, &group.path);
+            }
+        }
+    }
+    Ok(())
 }
 
 pub(crate) fn jj_config_string(key: &str) -> Result<Option<String>> {
@@ -272,6 +302,7 @@ pub(crate) fn workspace_context_for_repo(
         ProjectGroup {
             path: expand_tilde(&path.to_string_lossy()),
             workspace_dir: "ws".to_string(),
+            github_owners: vec![],
         }
     } else {
         config

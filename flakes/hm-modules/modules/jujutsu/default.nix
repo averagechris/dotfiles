@@ -26,6 +26,7 @@
         map (group: {
           inherit (group) path;
           workspaces = group.workspaceDir;
+          github-owners = group.githubOwners;
         })
         dotCfg.workspaces.projectGroups;
       copy-envrc = "untracked";
@@ -80,7 +81,7 @@
         ]
         ++ lib.optional dotCfg.prWorkflow.enable pkgs.gh)}
       wrapProgram $out/bin/bay \
-        --prefix PATH : ${lib.makeBinPath [pkgs.fzf pkgs.jujutsu config.programs.git.package pkgs.direnv pkgs.docker]}
+        --prefix PATH : ${lib.makeBinPath [pkgs.fzf pkgs.jujutsu config.programs.git.package pkgs.direnv pkgs.docker pkgs.gh]}
     '';
 
     meta = {
@@ -107,6 +108,11 @@ in {
             type = types.str;
             default = "ws";
             description = "Workspace namespace directory under the project group.";
+          };
+          githubOwners = mkOption {
+            type = types.listOf types.str;
+            default = [];
+            description = "GitHub repository owners routed to this project group; * is the fallback.";
           };
         };
       });

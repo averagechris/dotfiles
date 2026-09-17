@@ -13,6 +13,7 @@ use std::thread;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 pub mod bay;
+mod bay_repo;
 pub mod ws;
 #[cfg(test)]
 use ws::*;
@@ -6816,6 +6817,7 @@ aliases = ["sammy", "Sam Smith"]
             project_groups: vec![ProjectGroup {
                 path: group.to_path_buf(),
                 workspace_dir: "ws".to_string(),
+                github_owners: vec![],
             }],
             copy_envrc: "untracked".to_string(),
             venv_mode: "copy".to_string(),
@@ -6920,6 +6922,7 @@ aliases = ["sammy", "Sam Smith"]
         assert_eq!(config.project_groups.len(), 2);
         assert_eq!(config.project_groups[0].path, PathBuf::from("/projects"));
         assert_eq!(config.project_groups[1].workspace_dir, "ws");
+        assert!(config.project_groups[0].github_owners.is_empty());
         assert_eq!(config.copy_envrc, "untracked");
         assert_eq!(config.venv_mode, "copy");
         assert!(config.direnv_allow);
@@ -6929,6 +6932,16 @@ aliases = ["sammy", "Sam Smith"]
         assert_eq!(config.sweep_idle, "14d");
         assert_eq!(config.trash_retention, "7d");
         assert_eq!(config.fetch_remote, None);
+    }
+
+    #[test]
+    fn bay_config_rejects_duplicate_owners_and_wildcards_case_insensitively() {
+        let root = named_tempdir("bay-owner-config");
+        let path = root.join("config.toml");
+        fs::write(&path, "schema=1\n[[groups]]\npath='/one'\ngithub-owners=['SureApp']\n[[groups]]\npath='/two'\ngithub-owners=['sureapp']\n").unwrap();
+        assert!(format!("{:#}", load_ws_config(&path).unwrap_err()).contains("configured for both"));
+        fs::write(&path, "schema=1\n[[groups]]\npath='/one'\ngithub-owners=['*']\n[[groups]]\npath='/two'\ngithub-owners=['*']\n").unwrap();
+        assert!(format!("{:#}", load_ws_config(&path).unwrap_err()).contains("wildcard"));
     }
 
     #[test]
@@ -8330,10 +8343,12 @@ aliases = ["sammy", "Sam Smith"]
                 ProjectGroup {
                     path: outer.clone(),
                     workspace_dir: "ws".to_string(),
+                    github_owners: vec![],
                 },
                 ProjectGroup {
                     path: inner.clone(),
                     workspace_dir: "work".to_string(),
+                    github_owners: vec![],
                 },
             ],
             ..test_config(&outer)

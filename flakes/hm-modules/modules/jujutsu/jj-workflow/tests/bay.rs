@@ -62,6 +62,7 @@ fn not_found_uses_stderr_and_documented_exit_code() {
     let value: Value = serde_json::from_slice(&output.stderr).unwrap();
     assert_eq!(value["schema"], 1);
     assert_eq!(value["error"]["code"], "not_found");
+    assert!(value["error"].get("details").is_none());
 }
 
 #[test]

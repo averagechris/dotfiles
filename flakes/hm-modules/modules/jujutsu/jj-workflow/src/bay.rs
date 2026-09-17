@@ -30,6 +30,7 @@ struct BayError {
     kind: &'static str,
     message: String,
     candidates: Vec<Record>,
+    details: Option<serde_json::Value>,
 }
 type Result<T> = std::result::Result<T, BayError>;
 fn err(code: i32, kind: &'static str, message: impl Into<String>) -> BayError {
@@ -38,6 +39,7 @@ fn err(code: i32, kind: &'static str, message: impl Into<String>) -> BayError {
         kind,
         message: message.into(),
         candidates: vec![],
+        details: None,
     }
 }
 
@@ -48,10 +50,9 @@ pub fn run_cli() -> i32 {
         Ok(()) => 0,
         Err(e) => {
             if json_mode {
-                eprintln!(
-                    "{}",
-                    json!({"schema":1,"error":{"code":e.kind,"message":e.message,"candidates":e.candidates}})
-                );
+                let mut error = json!({"code":e.kind,"message":e.message,"candidates":e.candidates});
+                if let Some(details) = e.details { error["details"] = details; }
+                eprintln!("{}", json!({"schema":1,"error":error}));
             } else {
                 eprintln!("bay: {}", e.message);
                 for c in e.candidates {

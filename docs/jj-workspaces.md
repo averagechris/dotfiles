@@ -120,6 +120,8 @@ Workspace roots are configured as project groups. Each group has:
 
 - a project group path, such as `~/projects`
 - a workspace namespace directory, defaulting to `ws`
+- optional GitHub repository owners used to route repositories to the group;
+  owner matching is case-insensitive and `*` selects the fallback group
 
 Canonical workspace path:
 
@@ -143,7 +145,8 @@ The workspace namespace directory is configurable per project group. `/ws/` is t
 Configure these project groups through Nix/home-manager:
 
 - all personal hosts: `~/projects`, with workspace dir `ws`
-- `suremac`: `~/projects` and `~/sureapp`, each with workspace dir `ws`
+- `suremac`: `~/projects` (`averagechris`), `~/sureapp` (`sureapp`), and the
+  `~/contrib` fallback (`*`), each with workspace dir `ws`
 
 ## Device config shape
 

@@ -547,8 +547,18 @@ in {
     };
     programs.git.signing.signByDefault = true;
     dotfiles.jujutsu.workspaces.projectGroups = [
-      {path = "~/projects";}
-      {path = "~/sureapp";}
+      {
+        path = "~/projects";
+        githubOwners = ["averagechris"];
+      }
+      {
+        path = "~/sureapp";
+        githubOwners = ["sureapp"];
+      }
+      {
+        path = "~/contrib";
+        githubOwners = ["*"];
+      }
     ];
     dotfiles.jujutsu.prWorkflow.enable = true;
     programs.jujutsu.settings.scope = [
