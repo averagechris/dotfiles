@@ -110,7 +110,7 @@
       ''}
 
       ${
-        if pkgs.stdenv.isDarwin
+        if pkgs.stdenv.hostPlatform.isDarwin
         then ''
           # GC and the Darwin self-update share this lock. The readiness check
           # happens in the cheap launchd wrappers; this closes the remaining
@@ -175,7 +175,7 @@
         df -h /nix || true
       ''}
 
-      ${lib.optionalString (cfg.nixGc.rootGcReminder.enable && pkgs.stdenv.isDarwin) ''
+      ${lib.optionalString (cfg.nixGc.rootGcReminder.enable && pkgs.stdenv.hostPlatform.isDarwin) ''
         # Unprivileged GC never removes root-owned darwin system generations,
         # so remind about the manual root-level cleanup once they pile up. The
         # suggested command keeps the most recent generations, so the current
@@ -233,7 +233,7 @@
       ${lib.optionalString cfg.cleanup.lowDisk.enable ''
         if [ "$pressure_mode" -eq 1 ] || root_is_low_disk; then
           log "low-disk pressure cleanup triggered: $(root_available_gib) GiB free on /; threshold is ${toString cfg.cleanup.lowDisk.minFreeGiB} GiB"
-          ${lib.optionalString (cfg.cleanup.lowDisk.notify && pkgs.stdenv.isDarwin) ''
+          ${lib.optionalString (cfg.cleanup.lowDisk.notify && pkgs.stdenv.hostPlatform.isDarwin) ''
           /usr/bin/osascript -e "display notification \"Low disk cleanup started ($(root_available_gib) GiB free; threshold ${toString cfg.cleanup.lowDisk.minFreeGiB} GiB).\" with title \"Dev cache cleanup\"" || true
         ''}
 
@@ -364,13 +364,13 @@
         printf '[%s] low disk detected: %s GiB free on /; threshold is ${toString cfg.cleanup.lowDisk.minFreeGiB} GiB\n' \
           "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
           "$((available / 1024 / 1024))"
-        ${lib.optionalString pkgs.stdenv.isDarwin ''
+        ${lib.optionalString pkgs.stdenv.hostPlatform.isDarwin ''
         if ! ${lib.getExe macosNixMaintenance.readyCheck}; then
           exit 0
         fi
       ''}
         if ${lib.getExe cleanupScript}; then
-          ${lib.optionalString pkgs.stdenv.isDarwin ''
+          ${lib.optionalString pkgs.stdenv.hostPlatform.isDarwin ''
         state_dir=${lib.escapeShellArg macosNixMaintenance.stateDir}
         mkdir -p "$state_dir"
         date +%s >"$state_dir/last-cleanup"
@@ -459,8 +459,8 @@ in {
     rustLinker = {
       enable = lib.mkOption {
         type = lib.types.bool;
-        default = pkgs.stdenv.isDarwin;
-        defaultText = lib.literalExpression "pkgs.stdenv.isDarwin";
+        default = pkgs.stdenv.hostPlatform.isDarwin;
+        defaultText = lib.literalExpression "pkgs.stdenv.hostPlatform.isDarwin";
         description = ''
           Configure Cargo to link Apple targets through a dispatcher that
           prefers a manually installed Apple "ld-prime" linker (Xcode 15+
@@ -746,7 +746,7 @@ in {
         cleanupScript
         pkgs.sccache
       ]
-      ++ lib.optional (cfg.cleanup.enable && pkgs.stdenv.isDarwin) scheduledCleanupScript
+      ++ lib.optional (cfg.cleanup.enable && pkgs.stdenv.hostPlatform.isDarwin) scheduledCleanupScript
       ++ lib.optional cfg.cleanup.lowDisk.enable lowDiskCleanupScript
       ++ lib.optional cfg.docker.enable pkgs.docker-client;
 
@@ -772,7 +772,7 @@ in {
         [profile.dev]
         debug = "${cfg.rustDevProfileDebug}"
       ''
-      + lib.optionalString (cfg.rustLinker.enable && pkgs.stdenv.isDarwin) rustLinkerCargoConfig;
+      + lib.optionalString (cfg.rustLinker.enable && pkgs.stdenv.hostPlatform.isDarwin) rustLinkerCargoConfig;
 
     # Incremental rustc outputs are tied to one target directory and cannot be
     # cached by sccache. OpenCode agents commonly build in short-lived isolated
@@ -782,7 +782,7 @@ in {
       source = ./opencode/plugins/dotfiles-rust-cache.js;
     };
 
-    launchd.agents.sccache-server = lib.mkIf pkgs.stdenv.isDarwin {
+    launchd.agents.sccache-server = lib.mkIf pkgs.stdenv.hostPlatform.isDarwin {
       enable = true;
       config = {
         ProgramArguments = [
@@ -802,7 +802,7 @@ in {
       };
     };
 
-    launchd.agents.dev-cache-cleanup = lib.mkIf (cfg.cleanup.enable && pkgs.stdenv.isDarwin) {
+    launchd.agents.dev-cache-cleanup = lib.mkIf (cfg.cleanup.enable && pkgs.stdenv.hostPlatform.isDarwin) {
       enable = true;
       config = {
         ProgramArguments = [
@@ -817,7 +817,7 @@ in {
       };
     };
 
-    launchd.agents.dev-cache-low-disk-cleanup = lib.mkIf (cfg.cleanup.enable && cfg.cleanup.lowDisk.enable && pkgs.stdenv.isDarwin) {
+    launchd.agents.dev-cache-low-disk-cleanup = lib.mkIf (cfg.cleanup.enable && cfg.cleanup.lowDisk.enable && pkgs.stdenv.hostPlatform.isDarwin) {
       enable = true;
       config = {
         ProgramArguments = [
@@ -831,7 +831,7 @@ in {
       };
     };
 
-    systemd.user.services.sccache-server = lib.mkIf pkgs.stdenv.isLinux {
+    systemd.user.services.sccache-server = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
       Unit = {
         Description = "Supervised sccache server";
       };
@@ -848,7 +848,7 @@ in {
       };
     };
 
-    systemd.user.services.dev-cache-cleanup = lib.mkIf (cfg.cleanup.enable && pkgs.stdenv.isLinux) {
+    systemd.user.services.dev-cache-cleanup = lib.mkIf (cfg.cleanup.enable && pkgs.stdenv.hostPlatform.isLinux) {
       Unit = {
         Description = "Dev cache cleanup (nix GC, cargo sweep, docker prune)";
       };
@@ -860,7 +860,7 @@ in {
       };
     };
 
-    systemd.user.services.dev-cache-low-disk-cleanup = lib.mkIf (cfg.cleanup.enable && cfg.cleanup.lowDisk.enable && pkgs.stdenv.isLinux) {
+    systemd.user.services.dev-cache-low-disk-cleanup = lib.mkIf (cfg.cleanup.enable && cfg.cleanup.lowDisk.enable && pkgs.stdenv.hostPlatform.isLinux) {
       Unit = {
         Description = "Dev cache low-disk cleanup check";
       };
@@ -872,7 +872,7 @@ in {
       };
     };
 
-    systemd.user.timers.dev-cache-cleanup = lib.mkIf (cfg.cleanup.enable && pkgs.stdenv.isLinux) {
+    systemd.user.timers.dev-cache-cleanup = lib.mkIf (cfg.cleanup.enable && pkgs.stdenv.hostPlatform.isLinux) {
       Unit = {
         Description = "Periodic dev cache cleanup";
       };
@@ -885,7 +885,7 @@ in {
       };
     };
 
-    systemd.user.timers.dev-cache-low-disk-cleanup = lib.mkIf (cfg.cleanup.enable && cfg.cleanup.lowDisk.enable && pkgs.stdenv.isLinux) {
+    systemd.user.timers.dev-cache-low-disk-cleanup = lib.mkIf (cfg.cleanup.enable && cfg.cleanup.lowDisk.enable && pkgs.stdenv.hostPlatform.isLinux) {
       Unit = {
         Description = "Periodic dev cache low-disk cleanup check";
       };

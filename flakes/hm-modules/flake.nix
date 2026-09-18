@@ -140,7 +140,7 @@
           })
         ];
       };
-      inherit (pkgs.stdenv) isLinux;
+      inherit (pkgs.stdenv.hostPlatform) isLinux;
       # Provide dotfiles_lib that modules expect (normally provided by base-lib)
       dotfiles_lib = {
         options = with nixpkgs.lib; {
