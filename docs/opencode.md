@@ -4,7 +4,7 @@ This repository manages OpenCode through the Home Manager module at
 `flakes/hm-modules/modules/opencode/`.
 
 OpenCode itself comes from the upstream `github:anomalyco/opencode/v2` flake
-input, not from nixpkgs. The current pin reports version `2.0.3`; the exact
+input, not from nixpkgs. The current pin reports version `2.0.8`; the exact
 revision and package lifecycle live in [OpenCode patch lifecycle](opencode-patches.md).
 The upstream flake builds its `packages/cli` package. `flakes/base-lib/` exposes
 that package through the shared overlay as `pkgs.opencode`, and

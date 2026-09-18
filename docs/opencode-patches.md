@@ -2,7 +2,7 @@
 
 The Home Manager OpenCode module applies repository-owned patches to the source
 from the pinned `github:anomalyco/opencode/v2` flake input. The package is pinned
-at revision `76594882b4a9a6a14dd4f99b515d4aba2d5e6f16`, OpenCode 2.0.3. The patch
+at revision `b1860465cd13d186e69a911642d098a10cef0b49`, OpenCode 2.0.8. The patch
 list lives in `flakes/hm-modules/modules/opencode/default.nix`, and patch files
 live beside the module under `patches/`.
 
@@ -65,9 +65,13 @@ an executable fixture. Remove the override once upstream installs directly into
 the output, or once an upstream replacement passes the same output-equivalence
 check.
 
-The old per-revision node-module hashes and ghostty lockfile fix are gone. V2's
-`nix/hashes.json` supplies the aarch64-darwin hash for this revision and the
-package builds without either override.
+The old ghostty lockfile fix is gone. V2's `nix/hashes.json` supplies upstream
+node-module hashes, but this repository overrides the hash on aarch64-darwin in
+both the shared overlay and standalone Home Manager flake. The pinned nixpkgs
+provides a newer Bun than upstream used to record its hash, which changes the
+fixed-output dependency tree even though the OpenCode source revision is the
+same. Other platforms retain upstream's hashes until their outputs are directly
+verified with this repository's toolchain.
 
 ## Update checklist
 
@@ -79,6 +83,8 @@ When the pinned OpenCode revision changes:
    each active patch.
 3. Run `scripts/check-opencode-node-modules-install.sh` while the local install
    override remains.
-4. Build the actual Home Manager package for aarch64-darwin and run `--version`
+4. Recompute and update the scoped aarch64-darwin node-module hash in both
+   package construction paths when either OpenCode or nixpkgs/Bun changes.
+5. Build the actual Home Manager package for aarch64-darwin and run `--version`
    with isolated `HOME` and XDG directories. Do not activate the configuration
    as part of package validation.
