@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use std::process::Command;
 
 fn home(name: &str) -> PathBuf {
-    let root = std::env::temp_dir().join(format!("bay-bin-{}-{name}", std::process::id()));
+    let root = fs::canonicalize(std::env::temp_dir()).unwrap().join(format!("bay-bin-{}-{name}", std::process::id()));
     let _ = fs::remove_dir_all(&root);
     fs::create_dir_all(root.join("bay")).unwrap();
     fs::write(
@@ -32,6 +32,79 @@ fn init_repo(path: &PathBuf) {
         .status()
         .unwrap();
     assert!(status.success());
+}
+
+#[cfg(unix)]
+#[test]
+fn add_json_is_one_value_despite_noisy_setup_and_hook_stdout() {
+    use std::os::unix::fs::PermissionsExt;
+    let home = home("json-noise");
+    let repo = home.join("one/demo");
+    init_repo(&repo);
+    fs::write(repo.join(".envrc"), "export BAY_TEST=1\n").unwrap();
+    fs::write(repo.join(".gitignore"), ".opencode/node_modules/\n").unwrap();
+    fs::create_dir_all(repo.join(".opencode/node_modules/package")).unwrap();
+    fs::write(repo.join(".opencode/node_modules/package/artifact"), "cached").unwrap();
+    fs::write(
+        repo.join(".jj-workspace.toml"),
+        "version = 1\n\n[hooks]\npostcreate = [\"printf 'noisy hook stdout\\n'\"]\n",
+    )
+    .unwrap();
+    assert!(Command::new("jj").current_dir(&repo).arg("status").status().unwrap().success());
+    let bin = home.join("bin");
+    fs::create_dir(&bin).unwrap();
+    fs::write(bin.join("direnv"), "#!/bin/sh\nprintf 'noisy direnv stdout\\n'\n").unwrap();
+    fs::set_permissions(bin.join("direnv"), fs::Permissions::from_mode(0o755)).unwrap();
+
+    let output = bay(&home)
+        .current_dir(&repo)
+        .env("PATH", format!("{}:{}", bin.display(), std::env::var("PATH").unwrap()))
+        .args(["add", "demo/noisy", "-r", "@", "--json"])
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+    let value: Value = serde_json::from_slice(&output.stdout)
+        .unwrap_or_else(|error| panic!("invalid stdout {error}: {:?}", String::from_utf8_lossy(&output.stdout)));
+    assert_eq!(value["schema"], 1);
+    assert_eq!(value["workspace"]["name"], "noisy");
+    assert_eq!(String::from_utf8_lossy(&output.stdout).lines().count(), 1);
+    assert!(!String::from_utf8_lossy(&output.stdout).contains("noisy hook"));
+    assert!(!String::from_utf8_lossy(&output.stdout).contains("noisy direnv"));
+    let workspace = home.join("one/ws/demo/noisy");
+    assert!(workspace.join(".opencode/node_modules/package/artifact").exists());
+    let status = Command::new("jj").current_dir(&workspace).args(["diff", "--summary", "--no-pager"]).output().unwrap();
+    assert!(status.status.success());
+    assert!(status.stdout.is_empty(), "{}", String::from_utf8_lossy(&status.stdout));
+}
+
+#[test]
+fn remove_from_child_current_dir_succeeds_and_keeps_recoverable_trash() {
+    let home = home("remove-from-target");
+    let repo = home.join("one/demo");
+    init_repo(&repo);
+    let created = bay(&home)
+        .current_dir(&repo)
+        .args(["add", "demo/topic", "-r", "@", "-q"])
+        .output()
+        .unwrap();
+    assert!(created.status.success(), "{}", String::from_utf8_lossy(&created.stderr));
+    let target = home.join("one/ws/demo/topic");
+    let child = target.join("child");
+    fs::create_dir(&child).unwrap();
+    fs::write(child.join("recover-me"), "content").unwrap();
+
+    let output = bay(&home)
+        .current_dir(&child)
+        .arg("rm")
+        .arg(&target)
+        .args(["--force", "-q"])
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+    assert!(!target.exists());
+    let trash = home.join("one/ws/demo/.trash");
+    let trashed = fs::read_dir(trash).unwrap().next().unwrap().unwrap().path();
+    assert_eq!(fs::read_to_string(trashed.join("child/recover-me")).unwrap(), "content");
 }
 
 #[test]

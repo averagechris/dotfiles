@@ -83,7 +83,7 @@ fn run(mut args: Vec<OsString>) -> Result<()> {
         return Err(err(2, "usage", usage()));
     }
     let sub = args.remove(0).to_string_lossy().into_owned();
-    if !matches!(sub.as_str(), "list" | "ls" | "repo") { args.retain(|arg| arg != "--json"); }
+    if !matches!(sub.as_str(), "list" | "ls" | "repo" | "add" | "rm" | "forget") { args.retain(|arg| arg != "--json"); }
     match sub.as_str() {
         "list" | "ls" => list(args),
         "path" => path(args),
@@ -516,7 +516,15 @@ fn add(mut args: Vec<OsString>) -> Result<()> {
     if json_out {
         env::set_var("BAY_JSON", "1");
     }
-    let result = in_dir(&anchor, || run_ws(prepend("add", args)));
+    // `jj ws` setup steps and repository hooks are intentionally free to write to
+    // stdout in text mode.  In JSON mode Bay owns stdout as a machine protocol,
+    // so silence the complete in-process operation (including inherited child
+    // stdout) while leaving stderr attached for warnings and diagnostics.
+    let result = if json_out {
+        with_suppressed_stdout(|| in_dir(&anchor, || run_ws(prepend("add", args))))?
+    } else {
+        in_dir(&anchor, || run_ws(prepend("add", args)))
+    };
     if json_out {
         env::remove_var("BAY_JSON");
     }
@@ -543,11 +551,44 @@ fn remove(mut args: Vec<OsString>) -> Result<()> {
     let selector=args[selector_i].to_string_lossy();let all=discover_for_workspace_selector(&selector)?;
     let r = select(&selector, &all)?;
     args[selector_i] = OsString::from(&r.name);
+    // A process cannot restore its cwd after the workspace containing that cwd
+    // has been renamed into trash. Move to the repository anchor first, but only
+    // for this proven containment case; all other restoration errors remain fatal.
+    if let (Ok(caller), Some(target)) = (env::current_dir().and_then(fs::canonicalize), r.path.as_deref()) {
+        let target = fs::canonicalize(target).map_err(|e| err(3, "not_found", format!("cannot resolve workspace {}: {e}", target.display())))?;
+        if caller.starts_with(&target) {
+            env::set_current_dir(&r.anchor).map_err(|e| err(1, "jj_failed", format!("cannot leave workspace before removal: {e}")))?;
+        }
+    }
     in_dir(&r.anchor, || run_ws(prepend("forget", args)))?.map_err(operation_err)?;
     if json_out {
         println!("{}", json!({"schema":1,"removed":{"name":r.name,"path":r.path}}));
     }
     Ok(())
+}
+
+#[cfg(unix)]
+fn with_suppressed_stdout<T>(f: impl FnOnce() -> T) -> Result<T> {
+    use std::os::fd::AsRawFd;
+    use std::io::Write;
+    let sink = OpenOptions::new().write(true).open("/dev/null")
+        .map_err(|e| err(1, "jj_failed", format!("cannot open stdout sink: {e}")))?;
+    // SAFETY: dup creates an owned descriptor and dup2 only changes fd 1 for this
+    // single-threaded CLI operation. Both calls are checked and restoration occurs
+    // before returning to the JSON emitter.
+    std::io::stdout().flush().map_err(|e| err(1, "jj_failed", format!("cannot flush stdout: {e}")))?;
+    let saved = unsafe { libc::dup(libc::STDOUT_FILENO) };
+    if saved < 0 { return Err(err(1, "jj_failed", format!("cannot preserve stdout: {}", std::io::Error::last_os_error()))); }
+    if unsafe { libc::dup2(sink.as_raw_fd(), libc::STDOUT_FILENO) } < 0 {
+        unsafe { libc::close(saved); }
+        return Err(err(1, "jj_failed", format!("cannot suppress stdout: {}", std::io::Error::last_os_error())));
+    }
+    let out = f();
+    std::io::stdout().flush().map_err(|e| err(1, "jj_failed", format!("cannot flush suppressed stdout: {e}")))?;
+    let restored = unsafe { libc::dup2(saved, libc::STDOUT_FILENO) };
+    unsafe { libc::close(saved); }
+    if restored < 0 { return Err(err(1, "jj_failed", format!("cannot restore stdout: {}", std::io::Error::last_os_error()))); }
+    Ok(out)
 }
 fn maintenance(sub: &str, mut args: Vec<OsString>) -> Result<()> {
     let value_flags: &[&str] = match sub {

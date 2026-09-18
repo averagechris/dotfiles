@@ -84,6 +84,8 @@ For scripts and agents, read the absolute path from the JSON result of `bay add`
 
 Use `--json` for discovery, clone, creation, and list operations when another
 tool will consume the result. Successful JSON records include `schema: 1`.
+Successful commands emit exactly one JSON value on stdout; setup and hook output
+is suppressed there, while warnings and diagnostics remain on stderr.
 Failures write a structured error to stderr and return a nonzero status.
 
 The error code tells you what to do next:
@@ -125,7 +127,11 @@ bay rm repo/topic --dry-run
 bay rm repo/topic
 ```
 
-Bay refuses to remove the current workspace. It also checks the whole non-empty stack ending at the workspace's `@` for commits that remote bookmarks or tags cannot reach. An empty `@` does not make unpublished ancestors safe to remove.
+Bay can remove an explicitly selected workspace even when the caller's process
+directory is inside it; Bay first moves its own cwd to the surviving repository
+anchor. It also checks the whole non-empty stack ending at the workspace's `@`
+for commits that remote bookmarks or tags cannot reach. An empty `@` does not
+make unpublished ancestors safe to remove.
 
 Normal removal forgets the Jujutsu workspace and moves its directory to the repository's `.trash` directory with a same-filesystem rename. It does not purge files. Trash remains recoverable until a separate garbage-collection command deletes it.
 
