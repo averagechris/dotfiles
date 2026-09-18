@@ -1,6 +1,8 @@
 ---
 name: bay-workspaces
-description: Use Bay for isolated workspaces: find, clone, create, locate, and remove jj workspaces including repository acquisition from github. 
+description: >-
+  Use Bay for isolated workspaces: find, clone, create, locate, and remove jj
+  workspaces including repository acquisition from github.
 ---
 
 # Bay workspaces

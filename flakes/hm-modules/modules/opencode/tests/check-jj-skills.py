@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
-"""Check the generic jj suite and its known host-specific PR cross-link."""
+"""Audit skill YAML and check the jj suite plus its host-specific cross-link."""
 from pathlib import Path
 import re, sys
+import yaml
 
-if len(sys.argv) != 3:
-    raise SystemExit("usage: check-jj-skills.py SKILL_ROOT SUREMAC_CONFIG")
+if len(sys.argv) not in (2, 3):
+    raise SystemExit("usage: check-jj-skills.py SKILL_ROOT [SUREMAC_CONFIG]")
 
 ROOT = Path(sys.argv[1])
 HM = ROOT if (ROOT / "modules/opencode").is_dir() else ROOT / "flakes/hm-modules"
-SKILLS = HM / "modules/opencode/skills"
+SKILLS = ROOT / "skills" if (ROOT / "skills").is_dir() else HM / "modules/opencode/skills"
 REGISTRY = HM / "modules/opencode/skills.nix"
-SUREMAC_CONFIG = Path(sys.argv[2])
+SUREMAC_CONFIG = Path(sys.argv[2]) if len(sys.argv) == 3 else None
 IDS = ("jj-change-management", "jj-conflict-resolution", "jj-repo-workflow", "bay-workspaces")
 LIMITS = {"jj-change-management": 600, "jj-conflict-resolution": 325, "jj-repo-workflow": 600, "bay-workspaces": 750}
 HOST_SKILL = "suremac-jj-pr"
@@ -21,18 +22,45 @@ texts = {}
 def require(ok, message):
     if not ok: errors.append(message)
 
+def frontmatter(path):
+    text = path.read_text()
+    match = re.match(r"\A---\s*\n(.*?)\n---\s*(?:\n|\Z)", text, re.S)
+    require(match is not None, f"{path.parent.name}: missing YAML frontmatter")
+    if not match:
+        return None
+    try:
+        data = yaml.safe_load(match.group(1))
+    except yaml.YAMLError as error:
+        require(False, f"{path.parent.name}: invalid YAML frontmatter: {error}")
+        return None
+    require(isinstance(data, dict), f"{path.parent.name}: frontmatter must be a mapping")
+    if not isinstance(data, dict):
+        return None
+    name, description = data.get("name"), data.get("description")
+    require(isinstance(name, str) and bool(name.strip()), f"{path.parent.name}: name must be nonempty")
+    require(isinstance(description, str) and bool(description.strip()), f"{path.parent.name}: description must be nonempty")
+    require(name == path.parent.name, f"{path.parent.name}: frontmatter name mismatch")
+    return data
+
+for path in sorted(SKILLS.glob("*/SKILL.md")):
+    frontmatter(path)
+
+# The one-argument mode is used by the malformed-YAML negative fixture.
+if SUREMAC_CONFIG is None:
+    if errors:
+        print("\n".join(f"error: {e}" for e in errors), file=sys.stderr)
+        raise SystemExit(1)
+    raise SystemExit(0)
+
 for skill_id in IDS:
     path = SKILLS / skill_id / "SKILL.md"
     require(path.is_file(), f"missing {path.relative_to(ROOT)}")
     if not path.is_file(): continue
     text = path.read_text()
     texts[skill_id] = text
-    name = re.search(r"^name:\s*([^\s]+)$", text, re.M)
-    desc = re.search(r"^description:\s*(.+)$", text, re.M)
-    require(name and name.group(1).strip('"') == skill_id, f"{skill_id}: frontmatter name mismatch")
-    require(desc is not None, f"{skill_id}: missing one-line description")
-    if desc:
-        require(len(re.findall(r"\b[\w'-]+\b", desc.group(1))) <= 55, f"{skill_id}: description exceeds 55 words")
+    metadata = frontmatter(path)
+    if metadata and isinstance(metadata.get("description"), str):
+        require(len(re.findall(r"\b[\w'-]+\b", metadata["description"])) <= 55, f"{skill_id}: description exceeds 55 words")
     words = len(re.findall(r"\b[\w'-]+\b", text))
     require(words <= LIMITS[skill_id], f"{skill_id}: {words} words exceeds {LIMITS[skill_id]}")
 

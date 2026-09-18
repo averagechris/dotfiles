@@ -113,6 +113,23 @@
   bayWorktreesPlugin = pkgs.replaceVars ./plugins/dotfiles-bay-worktrees.js {
     bay = "${config.dotfiles.jujutsu.workflowPackage}/bin/bay";
   };
+  # Bundle the exact V2 API so OpenCode's config-root package namespace remains
+  # runtime-owned and loading this global plugin never invokes an installer.
+  opencodePluginRuntime = let
+    runtime = pkgs.callPackage ./plugin-runtime {};
+  in
+    assert lib.assertMsg
+    (lib.hasPrefix runtime.version (lib.getVersion patchedOpencode))
+    "Update the locked @opencode/plugin runtime with the pinned OpenCode V2 package"; runtime;
+  bundledBayWorktreesPlugin =
+    pkgs.runCommand "dotfiles-bay-worktrees-bundled.js" {
+      nativeBuildInputs = [pkgs.esbuild];
+    } ''
+        mkdir -p build/node_modules
+        ln -s ${opencodePluginRuntime}/node_modules/@opencode build/node_modules/@opencode
+      NODE_PATH="$PWD/build/node_modules" \
+        esbuild ${bayWorktreesPlugin} --bundle --platform=node --format=esm --outfile="$out"
+    '';
   # Print shell exports that override opencode models for the current shell
   # session via OPENCODE_CONFIG_CONTENT (merged last, so it beats the managed
   # config) without touching any persistent configuration. The `oconf` shell
@@ -317,7 +334,7 @@ in {
     })
 
     (lib.mkIf (config.programs.opencode.enable && cfg.bayWorktrees.enable) {
-      xdg.configFile."opencode/plugins/dotfiles-bay-worktrees.js".source = bayWorktreesPlugin;
+      xdg.configFile."opencode/plugins/dotfiles-bay-worktrees.js".source = bundledBayWorktreesPlugin;
     })
 
     # OpenRouter API key configuration (only when openrouterApiKeyFile is set)

@@ -374,6 +374,12 @@ at `stdenv.cc.cc.lib`. This lets OpenCode's native file-watcher binding find
 `libstdc++.so.6` on NixOS. Without the wrapper, OpenCode may log or surface
 startup failures while loading project or global files, including custom tools.
 
+When the Bay worktree strategy is enabled, Nix bundles its locked
+`@opencode/plugin` V2 dependency into the generated plugin artifact. Home
+Manager owns only the file under `~/.config/opencode/plugins`; OpenCode retains
+ownership of config-root package metadata and dependencies. Loading the plugin
+therefore requires neither a package-manager install nor network access.
+
 ## Agent-exposed tools
 
 The OpenCode module installs a small, explicit set of agent-specific tools and

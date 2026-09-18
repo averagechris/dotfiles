@@ -1,6 +1,10 @@
 ---
 name: jj-change-management
-description: Use for local jj change work: status, diff, describe, new, split, squash, manual rebase, bookmarks, and undo. Route conflicts to `jj-conflict-resolution`, repository lifecycle to `jj-repo-workflow`, and repository acquisition or isolated checkouts to `bay-workspaces`.
+description: >-
+  Use for local jj change work: status, diff, describe, new, split, squash,
+  manual rebase, bookmarks, and undo. Route conflicts to
+  `jj-conflict-resolution`, repository lifecycle to `jj-repo-workflow`, and
+  repository acquisition or isolated checkouts to `bay-workspaces`.
 ---
 
 # jj change management

@@ -1,12 +1,12 @@
 import assert from "node:assert/strict"
-import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises"
+import { mkdir, mkdtemp, readFile, symlink, writeFile } from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
 import { spawnSync } from "node:child_process"
 import { pathToFileURL } from "node:url"
 
-const [source, bay, jj] = process.argv.slice(2)
-assert(source && bay && jj, "usage: bay-worktrees-actual-contract.mjs PLUGIN BAY JJ")
+const [source, runtime, bay, jj] = process.argv.slice(2)
+assert(source && runtime && bay && jj, "usage: bay-worktrees-actual-contract.mjs PLUGIN NODE_MODULES BAY JJ")
 const temporary = await mkdtemp(path.join(os.tmpdir(), "bay-worktrees-actual-"))
 const home = path.join(temporary, "home")
 const projects = path.join(temporary, "projects")
@@ -23,10 +23,11 @@ function command(binary, args, cwd = repo) {
 command(jj, ["config", "set", "--user", "user.name", "contract"])
 command(jj, ["config", "set", "--user", "user.email", "contract@example.invalid"])
 command(jj, ["git", "init", repo])
-let text = (await readFile(source, "utf8"))
-  .replace('import { Worktree } from "@opencode/plugin"', 'class E extends Error { constructor(x){super(x.message);Object.assign(this,x)} }; const Worktree={OperationError:E}')
-  .replaceAll("@bay@", bay)
-const rendered = path.join(temporary, "plugin.mjs")
+let text = (await readFile(source, "utf8")).replaceAll("@bay@", bay)
+const config = path.join(temporary, "opencode")
+const rendered = path.join(config, "plugins", "plugin.mjs")
+await mkdir(path.dirname(rendered), { recursive: true })
+await symlink(runtime, path.join(config, "node_modules"))
 await writeFile(rendered, text)
 const plugin = (await import(pathToFileURL(rendered))).default
 let definition

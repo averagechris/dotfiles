@@ -1,11 +1,11 @@
 import assert from "node:assert/strict"
-import { chmod, mkdtemp, readFile, writeFile } from "node:fs/promises"
+import { chmod, mkdir, mkdtemp, readFile, symlink, writeFile } from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
 
-const source = process.argv[2]
-assert(source, "usage: bay-worktrees-contract.mjs PLUGIN")
+const [source, runtime] = process.argv.slice(2)
+assert(source && runtime, "usage: bay-worktrees-contract.mjs PLUGIN NODE_MODULES")
 const temporary = await mkdtemp(path.join(os.tmpdir(), "bay-worktrees-test-"))
 const fakeBay = path.join(temporary, "bay")
 const calls = path.join(temporary, "calls")
@@ -20,12 +20,15 @@ else if(a[0]==="rm" && a[1].includes("dirty")) { console.error(JSON.stringify({s
 else ok({removed:{}});
 `)
 await chmod(fakeBay, 0o755)
-const rendered = path.join(temporary, "plugin.mjs")
+const config = path.join(temporary, "opencode")
+const rendered = path.join(config, "plugins", "plugin.mjs")
+await mkdir(path.dirname(rendered), { recursive: true })
+await symlink(runtime, path.join(config, "node_modules"))
 let text = await readFile(source, "utf8")
-text = text.replace('import { Worktree } from "@opencode/plugin"', 'class E extends Error { constructor(x){super(x.message);Object.assign(this,x)} }; const Worktree={OperationError:E}')
-  .replaceAll("@bay@", fakeBay)
+text = text.replaceAll("@bay@", fakeBay)
 await writeFile(rendered, text)
 const plugin = (await import(pathToFileURL(rendered))).default
+const { Worktree } = await import(pathToFileURL(path.join(config, "node_modules", "@opencode", "plugin", "dist", "promise", "index.js")))
 
 async function setup(location) {
   let definition
@@ -41,7 +44,7 @@ assert.deepEqual(await definition.list(root, { signal }), [{ directory: root, ty
 assert.deepEqual(await definition.create({ sourceDirectory: root, directory: "/requested/task", branch: "main@origin" }, { signal }), { directory: "/managed/actual" })
 await definition.create({ sourceDirectory: root, directory: "/requested/no-branch" }, { signal })
 await definition.remove({ directory: "/managed/task", force: true }, { signal })
-await assert.rejects(definition.remove({ directory: "/managed/dirty", force: false }, { signal }), (error) => error.forceRequired === true)
+await assert.rejects(definition.remove({ directory: "/managed/dirty", force: false }, { signal }), (error) => error instanceof Worktree.OperationError && error.forceRequired === true)
 await assert.rejects(definition.create({ sourceDirectory: root, directory: "/requested/bad..name" }, { signal }), /Invalid Bay workspace name/)
 await assert.rejects(definition.list(path.join(temporary, "malformed"), { signal }), /Invalid Bay list JSON/)
 const controller = new AbortController()

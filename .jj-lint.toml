@@ -6,5 +6,5 @@ lints = [
   "statix check",
   "fd -e sh -e bash -e zsh -x shellcheck",
   { name = "opencode-patches", command = "scripts/check-opencode-patches.sh" },
-  { name = "opencode-jj-skills", command = "flakes/hm-modules/modules/opencode/tests/check-jj-skills.py . flakes/hosts/suremac/configuration.nix" }
+  { name = "opencode-jj-skills", command = "nix shell --impure --expr 'with import <nixpkgs> {}; python3.withPackages (python: [python.pyyaml])' -c python3 flakes/hm-modules/modules/opencode/tests/check-jj-skills.py . flakes/hosts/suremac/configuration.nix" }
 ]

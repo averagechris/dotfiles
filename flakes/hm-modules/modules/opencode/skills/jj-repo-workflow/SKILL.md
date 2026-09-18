@@ -1,6 +1,10 @@
 ---
 name: jj-repo-workflow
-description: Use for repository-level jj workflow: lint and onboarding, sync, push, ship, annotated release tags, and final handoff. Never publish without an explicit request. Route local shaping, conflicts, Bay workspace lifecycle, and suremac GitHub PRs to their owning skills.
+description: >-
+  Use for repository-level jj workflow: lint and onboarding, sync, push, ship,
+  annotated release tags, and final handoff. Never publish without an explicit
+  request. Route local shaping, conflicts, Bay workspace lifecycle, and suremac
+  GitHub PRs to their owning skills.
 ---
 
 # jj repository workflow

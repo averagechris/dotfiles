@@ -148,6 +148,7 @@
             };
         };
       };
+      opencodePluginRuntime = pkgs.callPackage ./modules/opencode/plugin-runtime {};
     in {
       checks = {
         agent-skills-directory-source = let
@@ -600,7 +601,8 @@
             nativeBuildInputs = [pkgs.nodejs];
           } ''
             node ${./modules/opencode/tests/bay-worktrees-contract.mjs} \
-              ${./modules/opencode/plugins/dotfiles-bay-worktrees.js}
+              ${./modules/opencode/plugins/dotfiles-bay-worktrees.js} \
+              ${opencodePluginRuntime}/node_modules
             mkdir -p "$out"
           '';
 
@@ -621,6 +623,7 @@
           } ''
             node ${./modules/opencode/tests/bay-worktrees-actual-contract.mjs} \
               ${./modules/opencode/plugins/dotfiles-bay-worktrees.js} \
+              ${opencodePluginRuntime}/node_modules \
               ${workflow}/bin/bay ${pkgs.jujutsu}/bin/jj
             mkdir -p "$out"
           '';
@@ -723,6 +726,39 @@
             test '${renderNames removed.added}' = none
             test '${renderNames removed.removed}' = retired-skill
             touch $out
+          '';
+
+        agent-skill-deployment-yaml-negative = let
+          testConfig = home-manager.lib.homeManagerConfiguration {
+            inherit pkgs;
+            modules = [
+              ./modules/agent-skills.nix
+              {
+                home.username = "test";
+                home.homeDirectory = "/tmp/test-home";
+                home.stateVersion = "26.05";
+                programs.opencode.enable = true;
+                programs.opencode.package = pkgs.hello;
+                dotfiles.agentSkills.broken.source = ./tests/agent-skills/malformed/skills/broken/SKILL.md;
+              }
+            ];
+          };
+          deployed = testConfig.config.xdg.configFile."opencode/skills/broken";
+          manifest = pkgs.writeText "malformed-deployed-skill.json" (builtins.toJSON [
+            {
+              destination = "opencode/skills/broken";
+              source = toString deployed.source;
+            }
+          ]);
+        in
+          pkgs.runCommand "agent-skill-deployment-yaml-negative" {
+            nativeBuildInputs = [(pkgs.python3.withPackages (python: [python.pyyaml]))];
+          } ''
+            if python3 ${./modules/opencode/tests/check-deployed-skills.py} ${manifest}; then
+              echo "externally sourced malformed deployed skill unexpectedly passed" >&2
+              exit 1
+            fi
+            mkdir -p "$out"
           '';
 
         rdny-module-completions-and-skills = let
