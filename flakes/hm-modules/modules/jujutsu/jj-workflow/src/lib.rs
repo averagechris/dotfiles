@@ -6316,7 +6316,7 @@ mod tests {
         parse_review_state_json, parse_tag_push_args, parse_trash_entry_timestamp,
         parse_ws_add_args, parse_ws_forget_args, parse_ws_path_args, parse_ws_prune_args,
         parse_ws_sweep_args, path_is_contained, python_runner, render_bookmark_template,
-        repair_venv_paths, resolve_pr_base, resolve_reviewer_values, resolve_reviewers_from_path,
+        remove_artifact, repair_venv_paths, resolve_pr_base, resolve_reviewer_values, resolve_reviewers_from_path,
         review_effort, run_lint, run_lint_onboard, run_ship, run_sync, run_ws, run_ws_with_warning,
         scan_workspace, selected_lints, ship_plan, short_description_from_title,
         source_venv_python_usable, stale_workspace_dirs, sweepable, sync_base_candidates, tag_push,
@@ -6327,7 +6327,7 @@ mod tests {
         LintOnboardReport, LintSuggestion, ParsedArgs, PrArgs, ProjectGroup, Reviewer,
         ReviewerConfig, ShipPlan, TagCommand, TagPushArgs, TagSigning, VenvPlan, WorkspaceKind,
         WorkspaceUsage, WsAddArgs, WsConfig, WsForgetArgs, WsPathArgs, WsPruneArgs, WsSweepArgs,
-        DEFAULT_CLONE_ARTIFACTS, DEFAULT_SWEEP_IDLE,
+        DEFAULT_CLONE_ARTIFACTS, DEFAULT_SWEEP_ARTIFACTS, DEFAULT_SWEEP_IDLE,
     };
     use clap::Parser;
     use std::env;
@@ -6829,6 +6829,10 @@ aliases = ["sammy", "Sam Smith"]
                 .iter()
                 .map(std::string::ToString::to_string)
                 .collect(),
+            sweep_artifacts: DEFAULT_SWEEP_ARTIFACTS
+                .iter()
+                .map(std::string::ToString::to_string)
+                .collect(),
             sweep_idle: DEFAULT_SWEEP_IDLE.to_string(),
             trash_retention: "7d".to_string(),
         }
@@ -6929,6 +6933,9 @@ aliases = ["sammy", "Sam Smith"]
         assert_eq!(config.docker_cleanup, "auto");
         assert!(config.docker_remove_volumes);
         assert_eq!(config.clone_artifacts, strings(DEFAULT_CLONE_ARTIFACTS));
+        // Hand-written legacy configs retain the old coupling. Generated
+        // configs always emit sweep-artifacts explicitly.
+        assert_eq!(config.sweep_artifacts, strings(DEFAULT_CLONE_ARTIFACTS));
         assert_eq!(config.sweep_idle, "14d");
         assert_eq!(config.trash_retention, "7d");
         assert_eq!(config.fetch_remote, None);
@@ -8213,6 +8220,50 @@ aliases = ["sammy", "Sam Smith"]
     }
 
     #[test]
+    fn measure_tree_collects_nix_artifact_directories_files_and_links() {
+        let root = named_tempdir("du-nix-artifacts");
+        let outside = named_tempdir("du-nix-artifacts-outside");
+        fs::create_dir(root.join(".devenv")).unwrap();
+        fs::write(root.join("result"), "result file").unwrap();
+        fs::write(root.join("result-2"), "numbered").unwrap();
+        fs::write(root.join("result-docs"), "named").unwrap();
+        fs::write(root.join("resultish"), "keep").unwrap();
+        fs::write(outside.join("target"), "outside").unwrap();
+        #[cfg(unix)]
+        std::os::unix::fs::symlink(outside.join("target"), root.join("result-link")).unwrap();
+
+        let artifacts = strings(DEFAULT_SWEEP_ARTIFACTS);
+        let (usage, _) = scan_workspace(&root, &artifacts).unwrap();
+        let paths: Vec<_> = usage
+            .artifact_paths
+            .iter()
+            .map(|(p, _)| p.file_name().unwrap().to_string_lossy().into_owned())
+            .collect();
+        for expected in [
+            ".devenv",
+            "result",
+            "result-2",
+            "result-docs",
+            "result-link",
+        ] {
+            assert!(
+                paths.contains(&expected.to_string()),
+                "missing {expected}: {paths:?}"
+            );
+        }
+        assert!(!paths.contains(&"resultish".to_string()));
+
+        #[cfg(unix)]
+        {
+            remove_artifact(&root.join("result-link")).unwrap();
+            assert!(!root.join("result-link").exists());
+            assert!(outside.join("target").exists());
+        }
+        let _ = fs::remove_dir_all(&root);
+        let _ = fs::remove_dir_all(&outside);
+    }
+
+    #[test]
     fn top_level_artifact_paths_drops_contained_candidates() {
         let outer = PathBuf::from("/w/target");
         let inner = PathBuf::from("/w/target/node_modules");
@@ -9041,7 +9092,7 @@ tests = []
     }
 
     #[test]
-    fn integration_sweep_dry_run_is_inert_and_du_lists_current_workspace() {
+    fn integration_sweep_preserves_current_and_main_workspaces() {
         let _guard = INTEGRATION_LOCK.lock().unwrap();
         let root = named_tempdir("sweep-du");
         let group = root.join("projects");
@@ -9074,11 +9125,24 @@ tests = []
                 "config",
                 "set",
                 "--repo",
+                "dotfiles.workspaces.sweep-artifacts",
+                "[\"target\", \".devenv\", \"result\"]",
+            ],
+        );
+        jj(
+            &repo,
+            &[
+                "config",
+                "set",
+                "--repo",
                 "dotfiles.workspaces.direnv-allow",
                 "false",
             ],
         );
         fs::write(repo.join("file.txt"), "hello\n").unwrap();
+        fs::write(repo.join(".gitignore"), ".devenv\nresult*\n").unwrap();
+        fs::create_dir(repo.join(".devenv")).unwrap();
+        fs::write(repo.join("result"), "source result").unwrap();
         jj(&repo, &["describe", "-m", "initial"]);
 
         let old = env::current_dir().unwrap();
@@ -9098,15 +9162,26 @@ tests = []
         let mut names: Vec<String> = managed_workspace_candidates(&ctx)
             .unwrap()
             .into_iter()
-            .map(|(name, _)| name)
+            .map(|(name, _, _)| name)
             .collect();
         names.sort();
         assert_eq!(names, vec!["default".to_string(), "feature-x".to_string()]);
 
         // Dry-run reports but does not delete; a real sweep then removes.
         let ws = group.join("ws/demo/feature-x");
+        // Sweep-only artifacts from the source are not cloned during add.
+        assert!(!ws.join(".devenv").exists());
+        assert!(!ws.join("result").exists());
         fs::create_dir_all(ws.join("target/pkg")).unwrap();
         fs::write(ws.join("target/pkg/blob"), "12345").unwrap();
+        fs::create_dir(ws.join(".devenv")).unwrap();
+        fs::write(ws.join("result"), "plain file").unwrap();
+        fs::write(ws.join("result-2"), "numbered result").unwrap();
+        fs::write(ws.join("result-docs"), "named result").unwrap();
+        let outside = root.join("outside-result");
+        fs::write(&outside, "must survive").unwrap();
+        #[cfg(unix)]
+        std::os::unix::fs::symlink(&outside, ws.join("result-link")).unwrap();
         run_ws(vec![
             "sweep".into(),
             "--idle".into(),
@@ -9115,8 +9190,30 @@ tests = []
         ])
         .unwrap();
         assert!(ws.join("target/pkg/blob").exists());
+        assert!(ws.join(".devenv").exists());
+        assert!(ws.join("result-2").exists());
         run_ws(vec!["sweep".into(), "--idle".into(), "0h".into()]).unwrap();
         assert!(!ws.join("target").exists());
+        assert!(!ws.join(".devenv").exists());
+        assert!(!ws.join("result").exists());
+        assert!(!ws.join("result-2").exists());
+        assert!(!ws.join("result-docs").exists());
+        assert!(!ws.join("result-link").exists());
+        assert!(outside.exists());
+
+        // Regression: when invoked from a secondary workspace, sweep must
+        // preserve both that current workspace and the repository's main
+        // checkout. Workspace kind must remain available after discovery;
+        // excluding only the current path is insufficient here.
+        fs::create_dir_all(repo.join("target/main-pkg")).unwrap();
+        fs::write(repo.join("target/main-pkg/blob"), "main").unwrap();
+        fs::create_dir_all(ws.join("target/current-pkg")).unwrap();
+        fs::write(ws.join("target/current-pkg/blob"), "current").unwrap();
+        env::set_current_dir(&ws).unwrap();
+        run_ws(vec!["sweep".into(), "--idle".into(), "0h".into()]).unwrap();
+        assert!(repo.join("target/main-pkg/blob").exists());
+        assert!(ws.join("target/current-pkg/blob").exists());
+
         env::set_current_dir(&old).unwrap();
         let _ = fs::remove_dir_all(&root);
     }

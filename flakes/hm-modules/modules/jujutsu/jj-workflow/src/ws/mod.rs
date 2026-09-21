@@ -30,6 +30,7 @@ pub(crate) struct WsConfig {
     pub(crate) docker_remove_volumes: bool,
     pub(crate) fetch_remote: Option<String>,
     pub(crate) clone_artifacts: Vec<String>,
+    pub(crate) sweep_artifacts: Vec<String>,
     pub(crate) sweep_idle: String,
     pub(crate) trash_retention: String,
 }
@@ -38,6 +39,15 @@ pub(crate) const DEFAULT_SWEEP_IDLE: &str = "14d";
 pub(crate) const DEFAULT_TRASH_RETENTION: &str = "7d";
 
 pub(crate) const DEFAULT_CLONE_ARTIFACTS: &[&str] = &[".direnv", "target", "node_modules", ".venv"];
+#[cfg(test)]
+pub(crate) const DEFAULT_SWEEP_ARTIFACTS: &[&str] = &[
+    ".direnv",
+    "target",
+    "node_modules",
+    ".venv",
+    ".devenv",
+    "result",
+];
 
 #[derive(Debug, Clone)]
 pub(crate) struct WorkspaceContext {
@@ -109,11 +119,11 @@ pub(crate) fn print_ws_gc_usage() {
 }
 
 pub(crate) fn print_ws_du_usage() {
-    eprintln!("Usage:\n  jj ws du\n\nReports apparent bytes per registered managed workspace: total, one column per configured artifact (dotfiles.workspaces.clone-artifacts), other, last-touched (unix seconds), and idle seconds.\nNote: on APFS, cloned artifacts share blocks with the source checkout, so apparent sizes can overcount real disk usage.");
+    eprintln!("Usage:\n  jj ws du\n\nReports apparent bytes per registered managed workspace: total, one column per configured sweep artifact (dotfiles.workspaces.sweep-artifacts), other, last-touched (unix seconds), and idle seconds. The result class also includes result-* names.\nNote: on APFS, cloned artifacts share blocks with the source checkout, so apparent sizes can overcount real disk usage.");
 }
 
 pub(crate) fn print_ws_sweep_usage() {
-    eprintln!("Usage:\n  jj ws sweep [--idle <duration>] [--dry-run]\n\nRemoves configured artifact directories from managed workspaces idle for at least <duration> (default dotfiles.workspaces.sweep-idle, 14d). Durations: positive integers with h, d, or w; 0h is allowed for smoke tests. Never touches the current workspace, the main checkout, or paths outside the workspace root. Symlinks are never followed.\nNote: on APFS, cloned artifacts share blocks with the source checkout, so reported bytes can overcount real disk usage.\n\nExamples:\n  jj ws sweep --dry-run\n  jj ws sweep --idle 0h");
+    eprintln!("Usage:\n  jj ws sweep [--idle <duration>] [--dry-run]\n\nRemoves configured artifact paths from managed workspaces idle for at least <duration> (default dotfiles.workspaces.sweep-idle, 14d). Artifacts may be directories, files, or symlinks; result also matches result-*. Durations: positive integers with h, d, or w; 0h is allowed for smoke tests. Never touches the current workspace, the main checkout, or paths outside the workspace root. Symlinks are unlinked and never followed.\nNote: removing local Nix root endpoints does not reclaim store paths until a later Nix GC. On APFS, cloned artifacts share blocks with the source checkout, so reported bytes can overcount real disk usage.\n\nExamples:\n  jj ws sweep --dry-run\n  jj ws sweep --idle 0h");
 }
 
 pub(crate) fn print_ws_root_usage() {
@@ -138,6 +148,8 @@ struct BayConfig {
     fetch_remote: Option<String>,
     #[serde(default = "default_clone_artifacts")]
     clone_artifacts: Vec<String>,
+    #[serde(default)]
+    sweep_artifacts: Option<Vec<String>>,
     #[serde(default = "default_sweep_idle")]
     sweep_idle: String,
     #[serde(default = "default_trash_retention")]
@@ -219,6 +231,9 @@ pub(crate) fn load_ws_config(path: &Path) -> Result<WsConfig> {
         .collect();
     validate_github_owners(&project_groups)
         .with_context(|| format!("invalid bay config {}", path.display()))?;
+    let sweep_artifacts = parsed
+        .sweep_artifacts
+        .unwrap_or_else(|| parsed.clone_artifacts.clone());
     Ok(WsConfig {
         project_groups,
         copy_envrc: parsed.copy_envrc,
@@ -228,6 +243,7 @@ pub(crate) fn load_ws_config(path: &Path) -> Result<WsConfig> {
         docker_remove_volumes: parsed.docker_remove_volumes,
         fetch_remote: parsed.fetch_remote,
         clone_artifacts: parsed.clone_artifacts,
+        sweep_artifacts,
         sweep_idle: parsed.sweep_idle,
         trash_retention: parsed.trash_retention,
     })
@@ -1953,6 +1969,18 @@ pub(crate) struct WorkspaceUsage {
     pub(crate) artifact_paths: Vec<(PathBuf, u64)>,
 }
 
+fn artifact_class(name: &str, artifacts: &[String]) -> Option<String> {
+    artifacts.iter().find_map(|artifact| {
+        if name == artifact
+            || (artifact == "result" && name.starts_with("result-") && name.len() > 7)
+        {
+            Some(artifact.clone())
+        } else {
+            None
+        }
+    })
+}
+
 impl WorkspaceUsage {
     fn touch(&mut self, time: SystemTime) {
         self.last_touched = Some(match self.last_touched {
@@ -1999,7 +2027,18 @@ pub(crate) fn measure_tree(
                 continue;
             }
         };
+        let name = entry.file_name().to_string_lossy().to_string();
+        let in_jj = name == ".jj";
+        let artifact = (!in_jj).then(|| artifact_class(&name, artifacts)).flatten();
         if metadata.is_symlink() {
+            if let Some(class) = artifact {
+                let bytes = metadata.len();
+                *usage.class.entry(class).or_default() += bytes;
+                usage.artifact_paths.push((path, bytes));
+                total += bytes;
+                classified += bytes;
+                continue;
+            }
             if track_time {
                 if let Ok(mtime) = metadata.modified() {
                     usage.touch(mtime);
@@ -2007,14 +2046,12 @@ pub(crate) fn measure_tree(
             }
             total += metadata.len();
         } else if metadata.is_dir() {
-            let name = entry.file_name().to_string_lossy().to_string();
-            let in_jj = name == ".jj";
             let child_track = track_time && !in_jj;
-            if !in_jj && artifacts.iter().any(|a| a == &name) {
+            if let Some(class) = artifact {
                 // Artifact-internal mtimes never count toward last-touch;
                 // freshly built artifacts must not keep a workspace non-idle.
                 let (bytes, nested_classified) = measure_tree(&path, artifacts, usage, false);
-                *usage.class.entry(name.clone()).or_default() += bytes - nested_classified;
+                *usage.class.entry(class).or_default() += bytes - nested_classified;
                 usage.artifact_paths.push((path.clone(), bytes));
                 total += bytes;
                 classified += bytes;
@@ -2029,6 +2066,14 @@ pub(crate) fn measure_tree(
                 classified += nested_classified;
             }
         } else {
+            if let Some(class) = artifact {
+                let bytes = metadata.len();
+                *usage.class.entry(class).or_default() += bytes;
+                usage.artifact_paths.push((path, bytes));
+                total += bytes;
+                classified += bytes;
+                continue;
+            }
             if track_time {
                 if let Ok(mtime) = metadata.modified() {
                     usage.touch(mtime);
@@ -2060,7 +2105,7 @@ pub(crate) fn scan_workspace(
 /// root are skipped with a warning.
 pub(crate) fn managed_workspace_candidates(
     ctx: &WorkspaceContext,
-) -> Result<Vec<(String, PathBuf)>> {
+) -> Result<Vec<(String, PathBuf, WorkspaceKind)>> {
     let config = ws_config()?;
     let canon_root =
         fs::canonicalize(&ctx.workspace_root).unwrap_or_else(|_| ctx.workspace_root.clone());
@@ -2076,7 +2121,7 @@ pub(crate) fn managed_workspace_candidates(
             );
             continue;
         }
-        candidates.push((name, path));
+        candidates.push((name, path, entry.kind));
     }
     Ok(candidates)
 }
@@ -2109,16 +2154,16 @@ pub(crate) fn ws_du(args: Vec<OsString>) -> Result<()> {
         "PATH".to_string(),
         "TOTAL_BYTES".to_string(),
     ];
-    header.extend(config.clone_artifacts.iter().cloned());
+    header.extend(config.sweep_artifacts.iter().cloned());
     header.push("OTHER_BYTES".to_string());
     header.push("LAST_TOUCHED".to_string());
     header.push("IDLE".to_string());
     println!("{}", header.join("\t"));
     let now = SystemTime::now();
-    for (name, path) in candidates {
-        let (usage, last_touched) = scan_workspace(&path, &config.clone_artifacts)?;
+    for (name, path, _) in candidates {
+        let (usage, last_touched) = scan_workspace(&path, &config.sweep_artifacts)?;
         let mut row = vec![name, path.display().to_string(), usage.total.to_string()];
-        for artifact in &config.clone_artifacts {
+        for artifact in &config.sweep_artifacts {
             row.push(usage.class.get(artifact).copied().unwrap_or(0).to_string());
         }
         row.push(usage.other.to_string());
@@ -2156,6 +2201,15 @@ pub(crate) fn top_level_artifact_paths(paths: Vec<(PathBuf, u64)>) -> Vec<(PathB
     kept
 }
 
+pub(crate) fn remove_artifact(path: &Path) -> io::Result<()> {
+    let metadata = fs::symlink_metadata(path)?;
+    if metadata.is_dir() && !metadata.is_symlink() {
+        fs::remove_dir_all(path)
+    } else {
+        fs::remove_file(path)
+    }
+}
+
 pub(crate) fn ws_sweep(args: Vec<OsString>) -> Result<()> {
     let parsed = parse_ws_sweep_args(args)?;
     if parsed.help {
@@ -2172,13 +2226,15 @@ pub(crate) fn ws_sweep(args: Vec<OsString>) -> Result<()> {
     // Sweep never touches the workspace it runs in.
     let candidates: Vec<_> = managed_workspace_candidates(&ctx)?
         .into_iter()
-        .filter(|(name, path)| name != &current_name && path != &current_root)
+        .filter(|(name, path, kind)| {
+            *kind != WorkspaceKind::Main && name != &current_name && path != &current_root
+        })
         .collect();
     let now = SystemTime::now();
     let mut total_bytes = 0u64;
     let mut total_removed = 0usize;
-    for (_, path) in candidates {
-        let (usage, last_touched) = scan_workspace(&path, &config.clone_artifacts)?;
+    for (_, path, _) in candidates {
+        let (usage, last_touched) = scan_workspace(&path, &config.sweep_artifacts)?;
         let Some(last_touched) = last_touched else {
             continue;
         };
@@ -2190,7 +2246,7 @@ pub(crate) fn ws_sweep(args: Vec<OsString>) -> Result<()> {
             if parsed.dry_run {
                 println!("would remove {}\t{bytes}", artifact_path.display());
             } else {
-                match fs::remove_dir_all(&artifact_path) {
+                match remove_artifact(&artifact_path) {
                     Ok(()) => {
                         println!("removed {}\t{bytes}", artifact_path.display());
                         total_bytes += bytes;

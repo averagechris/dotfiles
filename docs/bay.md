@@ -142,7 +142,7 @@ The maintenance commands have separate jobs:
 - `bay prune [repo]` finds canonical workspace directories that are no longer registered. Its default is a report. `--delete` moves them to trash.
 - `bay gc [repo]` permanently deletes trash entries old enough to meet the retention setting. Use `--dry-run` first when the deletion was not already requested.
 - `bay du [repo]` reports apparent workspace and artifact sizes.
-- `bay sweep [repo]` removes configured build artifact directories from idle workspaces. It skips the current workspace, main checkout, and paths outside the canonical root.
+- `bay sweep [repo]` removes configured build artifact paths from idle workspaces, including `.direnv`, `.devenv`, `result`/`result-*`, `target`, `node_modules`, and `.venv` by default. Files and symlinks are removed without following symlinks. It skips the current workspace, main checkout, and paths outside the canonical root. This removes local Nix root endpoints; store reclamation requires a later Nix GC.
 
 On APFS, copy-on-write artifacts share blocks with the source checkout, so apparent sizes can overstate the disk space that `sweep` will reclaim.
 

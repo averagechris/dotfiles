@@ -36,6 +36,7 @@
       docker-remove-volumes = true;
       picker = "fzf";
       clone-artifacts = dotCfg.workspaces.cloneArtifacts;
+      sweep-artifacts = dotCfg.workspaces.sweepArtifacts;
       sweep-idle = dotCfg.workspaces.sweepIdle;
       trash-retention = dotCfg.workspaces.trashRetention;
     }
@@ -137,6 +138,23 @@ in {
       description = ''
         Directory basenames that jj ws add CoW-clones from the source checkout
         into new workspaces. An empty list disables artifact cloning.
+      '';
+    };
+
+    sweepArtifacts = mkOption {
+      type = types.listOf types.str;
+      default = [
+        ".direnv"
+        "target"
+        "node_modules"
+        ".venv"
+        ".devenv"
+        "result"
+      ];
+      description = ''
+        Basenames that jj ws sweep removes and jj ws du classifies in retained
+        idle workspaces. The result entry also matches result-* paths. Artifacts
+        may be directories, files, or symlinks; symlinks are never followed.
       '';
     };
 

@@ -73,6 +73,7 @@ docker-cleanup = "auto"
 docker-remove-volumes = true
 picker = "fzf"
 clone-artifacts = [".direnv", "target", "node_modules", ".venv"]
+sweep-artifacts = [".direnv", "target", "node_modules", ".venv", ".devenv", "result"]
 sweep-idle = "14d"
 trash-retention = "7d"
 # Optional when multiple remotes exist:
@@ -221,21 +222,30 @@ CLI overrides:
 
 `jj ws du` reports apparent bytes for each registered managed workspace as
 stable TSV: `NAME`, `PATH`, `TOTAL_BYTES`, one column per configured artifact
-in `dotfiles.workspaces.clone-artifacts` order, `OTHER_BYTES`, `LAST_TOUCHED`
+in `dotfiles.workspaces.sweep-artifacts` order, `OTHER_BYTES`, `LAST_TOUCHED`
 (unix seconds), and `IDLE` (seconds). One Rust walk produces the breakdown,
 total, and last-touch data; symlinks are measured as links and never followed.
 
 `jj ws sweep [--idle <duration>] [--dry-run]` removes configured artifact
-directories from managed workspaces whose last-touch time is at least the idle
+paths from managed workspaces whose last-touch time is at least the idle
 threshold old. The default threshold is `dotfiles.workspaces.sweep-idle`
 (default `14d`); durations are positive integers with `h`, `d`, or `w`, and
 `0h` is allowed on the CLI for smoke tests. Last-touch is the newest mtime
 found while recursively walking non-artifact files and directories, excluding
 `.jj`; a workspace with no eligible entry uses its root mtime. Sweep never
 touches the current workspace, the main checkout, or paths outside the
-canonical workspace root, and it only removes directories whose basename is in
-the configured artifact set. Dry-run prints exactly what normal mode would
+canonical workspace root. The default sweep set adds `.devenv` and Nix
+`result` outputs to the clone artifact defaults; configuring `result` also
+matches non-empty `result-*` names. These sweep-only artifacts are not cloned
+into new workspaces. Matching directories, regular files, and symlinks are
+removed; symlinks are unlinked without following their targets. Dry-run prints exactly what normal mode would
 remove, one path and apparent byte count per line.
+
+Normal `forget` keeps its recoverable-trash behavior: renaming the workspace
+makes absolute indirect Nix roots stale without deleting generated state.
+Sweeping a retained workspace instead removes its local root endpoints. Bay
+does not edit `/nix/var/nix/gcroots` or run Nix GC; a later Nix GC is required
+to reclaim now-unreferenced store paths.
 
 Note: on APFS, CoW-cloned artifacts share blocks with the source checkout, so
 apparent sizes can overcount real disk usage reclaimed by a sweep.
