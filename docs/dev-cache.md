@@ -202,14 +202,21 @@ Each full cleanup run:
 
 1. **sccache stats.** Reported for visibility; sccache itself is bounded by
    `sccache.cacheSize` (LRU), so it needs no explicit cleanup.
-2. **Nix GC** (`nixGc`, default on, 7-day window) runs
+2. **Bay artifact sweep** (`baySweep`, default off) runs `bay sweep --all`
+   before store GC. `suremac` enables a 14-day idle window. Bay owns the
+   artifact allowlist and preserves main, current, recent, external, and unsafe
+   workspace paths. Repository failures do not block subsequent reclaimers and
+   are logged as a completed warned attempt rather than triggering rapid retries.
+3. **Nix profile retention and store GC** (`nixGc`, default on, 7-day window) runs
    `nix-collect-garbage --delete-older-than 7d` unprivileged. This only deletes
    *user* profile generations (home-manager, `nix profile`) older than the
    window; root-owned system generations under `/nix/var/nix/profiles` are
    never removed, and every store path referenced by a remaining generation is
    a GC root, so the current and immediately previous system profiles always
-   remain rollback targets.
-3. **Root GC reminder** (`nixGc.rootGcReminder`, macOS only). Unprivileged GC
+   remain rollback targets. `nix-collect-garbage` also performs the store GC,
+   including when no profile generation was old enough, so paths unrooted by
+   the preceding Bay sweep are reclaimed without a redundant second pass.
+4. **Root GC reminder** (`nixGc.rootGcReminder`, macOS only). Unprivileged GC
    cannot trim darwin system generations, so the job posts a macOS
    notification when more than `maxSystemGenerations` (default 10)
    accumulate. Handle it manually with:
@@ -223,7 +230,7 @@ Each full cleanup run:
    previous darwin profile is never lost. On NixOS hosts system generations
    are trimmed by normal `nixos-rebuild` retention/boot-menu management or a
    system-level `nix.gc` if configured.
-4. **Cargo sweep** (`cargoSweep`, default on, 7-day staleness) runs
+5. **Cargo sweep** (`cargoSweep`, default on, 7-day staleness) runs
    `cargo-sweep sweep --recursive --time 7` over each directory in
    `cargoSweep.roots` (default `~/projects`). Unlike `cargo clean`, this
    deletes individual `target/` artifacts not used within the window and keeps
@@ -232,18 +239,19 @@ Each full cleanup run:
    `~/projects/ws/<repo>/<workspace>` and `~/sureapp/ws/<repo>/<workspace>`
    (hidden directories like `.git` are skipped). Worst case, swept artifacts
    are recompiled on the next build, mostly restored from sccache.
-5. **Docker/OrbStack pruning** (`docker.enable`, default on) prunes builder
+6. **Docker/OrbStack pruning** (`docker.enable`, default on) prunes builder
     cache older than `docker.retention` while keeping it under
     `docker.builderMaxUsedSpace`, plus stopped containers, dangling images, and
     unused networks; `docker.pruneVolumes` optionally prunes unused volumes.
     Skips gracefully when no Docker-compatible daemon is running (e.g. podman
     hosts without the docker socket). Set `docker.enable = false` to drop the
     phase and the Docker CLI entirely.
-6. **Low-disk pressure cleanup** (`cleanup.lowDisk`, default off). On hosts
+7. **Low-disk pressure cleanup** (`cleanup.lowDisk`, default off). On hosts
    that opt in, after the normal phases, if `/` still has less than
    `cleanup.lowDisk.minFreeGiB` available, the job escalates:
-   - runs `nix-collect-garbage -d` to remove old user profile rollback
-     generations, then `nix store gc` for unreferenced store paths;
+   - re-runs Bay sweep with `baySweep.pressureIdle` (3 days on `suremac`), then
+      runs `nix-collect-garbage -d` to remove old user profile rollback
+      generations and collect unreferenced store paths in one pass;
    - re-runs `cargo-sweep` with the tighter
      `cleanup.lowDisk.cargoSweepStaleDays` window;
    - prunes Docker/OrbStack builder cache with the tighter
@@ -256,6 +264,12 @@ When enabled, the separate low-disk checker runs every
 the full cleanup when `/` is already below `cleanup.lowDisk.minFreeGiB` (30 GiB
 by default). The full cleanup also uses a simple lock so the periodic and
 low-disk triggers do not overlap.
+
+A completed cleanup attempt is timestamped even when Bay discovery,
+configuration, a repository, or another reclaimer logged a warning, preventing
+persistent configuration-shaped failures from causing five-minute full-cleanup
+retry loops on `suremac`. Only lock deferral exit 75 remains unstamped;
+readiness deferrals occur before an attempt starts.
 
 The cleanup helpers are installed in the user profile for manual use:
 

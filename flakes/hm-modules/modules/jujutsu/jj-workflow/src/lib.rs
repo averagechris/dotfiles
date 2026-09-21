@@ -9192,6 +9192,18 @@ tests = []
         assert!(ws.join("target/pkg/blob").exists());
         assert!(ws.join(".devenv").exists());
         assert!(ws.join("result-2").exists());
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            fs::set_permissions(&ws, fs::Permissions::from_mode(0o555)).unwrap();
+            let error = run_ws(vec!["sweep".into(), "--idle".into(), "0h".into()]).unwrap_err();
+            fs::set_permissions(&ws, fs::Permissions::from_mode(0o755)).unwrap();
+            assert!(error.to_string().contains("failed to remove"), "{error:#}");
+            // Failure of one artifact must not short-circuit attempts on later ones.
+            assert!(error.to_string().contains("artifact path"), "{error:#}");
+            assert!(ws.join("result-2").exists());
+            assert!(ws.join("result-docs").exists());
+        }
         run_ws(vec!["sweep".into(), "--idle".into(), "0h".into()]).unwrap();
         assert!(!ws.join("target").exists());
         assert!(!ws.join(".devenv").exists());

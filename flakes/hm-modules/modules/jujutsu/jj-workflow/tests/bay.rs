@@ -253,6 +253,69 @@ fn maintenance_is_scoped_to_the_selected_repository() {
     assert!(beta_work.join("target/artifact").exists());
 }
 
+#[test]
+fn sweep_all_is_device_wide_deduplicated_and_preserves_main() {
+    let home = home("sweep-all");
+    for (group, repo) in [("one", "alpha"), ("two", "beta")] {
+        let main = home.join(group).join(repo);
+        init_repo(&main);
+        fs::create_dir(main.join("target")).unwrap();
+        fs::write(main.join("target/keep"), "main").unwrap();
+        let output = bay(&home).args(["add", &format!("{repo}/old"), "-r", "@", "-q"]).output().unwrap();
+        assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+        let work = home.join(group).join("ws").join(repo).join("old");
+        fs::create_dir_all(work.join("target")).unwrap();
+        fs::write(work.join("target/remove"), repo).unwrap();
+    }
+    // Each repository now has both a main and managed-workspace anchor for the
+    // same store. Device-wide discovery must invoke the repository sweep once.
+    let (path, count) = counting_path(&home);
+    let output = bay(&home).current_dir(&home).env("PATH", path).args(["sweep", "--all", "--idle", "0h"]).output().unwrap();
+    assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("repositories=2 succeeded=2 failed=0"), "{stdout}");
+    // One authoritative discovery query and one sweep query per store. The
+    // secondary workspace anchors must not add more sweep invocations.
+    assert_eq!(query_count(&count), 4);
+    assert!(!home.join("one/ws/alpha/old/target").exists());
+    assert!(!home.join("two/ws/beta/old/target").exists());
+    assert!(home.join("one/alpha/target/keep").exists());
+    assert!(home.join("two/beta/target/keep").exists());
+}
+
+#[test]
+fn sweep_all_rejects_selector_and_continues_past_stale_candidates() {
+    let home = home("sweep-all-stale");
+    let repo = home.join("one/alpha");
+    init_repo(&repo);
+    let stale = home.join("two/stale/.jj");
+    fs::create_dir_all(&stale).unwrap();
+    fs::write(stale.join("repo"), "missing-store").unwrap();
+    let output = bay(&home).current_dir(&home).args(["sweep", "--all", "--idle", "0h", "--dry-run"]).output().unwrap();
+    assert!(output.status.success());
+    assert!(String::from_utf8_lossy(&output.stdout).contains("repositories=1 succeeded=1 failed=0"));
+    assert!(String::from_utf8_lossy(&output.stderr).contains("skipping stale repository candidate"));
+
+    let rejected = bay(&home).args(["sweep", "alpha", "--all"]).output().unwrap();
+    assert_eq!(rejected.status.code(), Some(2));
+    assert!(String::from_utf8_lossy(&rejected.stderr).contains("mutually exclusive"));
+}
+
+#[test]
+fn sweep_all_aggregates_repository_failures_as_completed_warnings() {
+    let home = home("sweep-all-failures");
+    init_repo(&home.join("one/alpha"));
+    init_repo(&home.join("two/beta"));
+    let output = bay(&home)
+        .current_dir(&home)
+        .args(["sweep", "--all", "--idle", "invalid"])
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+    assert!(String::from_utf8_lossy(&output.stdout).contains("repositories=2 succeeded=0 failed=2"));
+    assert!(String::from_utf8_lossy(&output.stderr).contains("2 repository sweep(s) failed"));
+}
+
 fn counting_path(home:&PathBuf)->(String,PathBuf){let real=which::which("jj").unwrap();let bin=home.join("counter-bin");fs::create_dir_all(&bin).unwrap();let count=home.join("query-count");fs::write(bin.join("jj"),format!("#!/bin/sh\nprintf '%s\\n' \"$*\" | grep -q 'workspace list' && echo x >> {:?}\nexec {:?} \"$@\"\n",count,real)).unwrap();#[cfg(unix)]{use std::os::unix::fs::PermissionsExt;fs::set_permissions(bin.join("jj"),fs::Permissions::from_mode(0o755)).unwrap();}(format!("{}:{}",bin.display(),std::env::var("PATH").unwrap()),count)}
 fn query_count(path:&PathBuf)->usize{fs::read_to_string(path).unwrap_or_default().lines().count()}
 

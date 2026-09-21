@@ -521,6 +521,11 @@ in {
         };
       };
       nixGc.olderThanDays = 3;
+      baySweep = {
+        enable = true;
+        idle = "14d";
+        pressureIdle = "3d";
+      };
       # --recursive picks up nested checkouts too, including managed jj
       # workspaces under ~/projects/ws/<repo>/* and ~/sureapp/ws/<repo>/*.
       cargoSweep = {

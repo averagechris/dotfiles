@@ -26,7 +26,7 @@
 #   ./scripts/setup-darwin-determinate-nix.sh
 #
 # Verify after running:
-#   nix config show | rg '^(substituters|trusted-public-keys|trusted-users|fsync-metadata)'
+#   nix config show | rg '^(substituters|trusted-public-keys|trusted-users|fsync-metadata|min-free|max-free)'
 
 set -euo pipefail
 
@@ -78,20 +78,29 @@ trap 'rm -f "$TMP_CONF"' EXIT
 mkdir -p "$NIX_DIR"
 if [[ -f "$NIX_CUSTOM" ]]; then
   # Remove existing lines for the settings we manage to avoid duplicates
-  awk 'BEGIN{IGNORECASE=1} !($0 ~ /^(substituters|trusted-public-keys|trusted-users|fsync-metadata)[[:space:]]*=/) {print}' "$NIX_CUSTOM" > "$TMP_CONF"
+  awk 'BEGIN{IGNORECASE=1; managed=0}
+    /^# BEGIN managed by setup-darwin-determinate-nix.sh$/ {managed=1; next}
+    /^# END managed by setup-darwin-determinate-nix.sh$/ {managed=0; next}
+    managed {next}
+    $0 ~ /^# Managed by setup-darwin-determinate-nix.sh$/ {next}
+    !($0 ~ /^(substituters|trusted-public-keys|trusted-users|fsync-metadata|min-free|max-free|min-free-check-interval)[[:space:]]*=/) {print}' "$NIX_CUSTOM" > "$TMP_CONF"
 else
   : > "$TMP_CONF"
 fi
 {
-  echo "# Managed by setup-darwin-determinate-nix.sh"
-  echo "# See https://docs.determinate.systems/determinate-nix for details"
   cat "$TMP_CONF"
+  echo "# BEGIN managed by setup-darwin-determinate-nix.sh"
+  echo "# See https://docs.determinate.systems/determinate-nix for details"
   echo "substituters = ${SUBS_STR}"
   echo "trusted-public-keys = ${KEYS_STR}"
   echo "trusted-users = ${USERS_STR}"
   echo "# Avoid F_FULLFSYNC per nix-db write on APFS; reduces SQLite lock"
   echo "# contention under parallel agents. See docs/suremac.md."
   echo "fsync-metadata = false"
+  echo "# Emergency low-space fallback; scheduled Bay sweep and store GC remain primary."
+  echo "min-free = 10737418240"
+  echo "max-free = 32212254720"
+  echo "# END managed by setup-darwin-determinate-nix.sh"
 } > "$NIX_CUSTOM"
 # Restart the daemon so daemon-side settings (fsync-metadata, trusted-users)
 # take effect now. This also checkpoints and truncates the SQLite WAL file
@@ -103,7 +112,7 @@ ROOT
 echo
 echo "Effective settings (filtered):"
 # grep, not rg: this runs on freshly bootstrapped machines with no tools yet
-nix config show | grep -E '^(substituters|trusted-public-keys|trusted-users|fsync-metadata)'
+nix config show | grep -E '^(substituters|trusted-public-keys|trusted-users|fsync-metadata|min-free|max-free)'
 
 echo
 echo "Done. Substituters are trusted and nix-db writes skip F_FULLFSYNC."

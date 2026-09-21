@@ -104,7 +104,7 @@ fn run(mut args: Vec<OsString>) -> Result<()> {
     }
 }
 fn usage() -> &'static str {
-    "Usage: bay list|ls [REPO] [--json]\n       bay repo find <query> [--owner LOGIN] [--limit N] [--json]\n       bay repo clone <input> [--group PATH] [--as NAME] [--protocol ssh|https] [--depth N] [--json]\n       bay path <selector>\n       bay root [REPO]\n       bay add [<repo>/]<name> [-r REV] [--repo PATH] [--at DIR] [--json]\n       bay rm|forget <selector> [jj ws forget options]\n       bay prune [REPO] [--dry-run] [--delete] [--pick] [--yes]\n       bay gc [REPO] [--older-than DUR] [--dry-run]\n       bay du [REPO]\n       bay sweep [REPO] [--idle DUR] [--dry-run]"
+    "Usage: bay list|ls [REPO] [--json]\n       bay repo find <query> [--owner LOGIN] [--limit N] [--json]\n       bay repo clone <input> [--group PATH] [--as NAME] [--protocol ssh|https] [--depth N] [--json]\n       bay path <selector>\n       bay root [REPO]\n       bay add [<repo>/]<name> [-r REV] [--repo PATH] [--at DIR] [--json]\n       bay rm|forget <selector> [jj ws forget options]\n       bay prune [REPO] [--dry-run] [--delete] [--pick] [--yes]\n       bay gc [REPO] [--older-than DUR] [--dry-run]\n       bay du [REPO]\n       bay sweep [REPO|--all] [--idle DUR] [--dry-run]"
 }
 
 #[derive(Debug, Deserialize)]
@@ -591,6 +591,7 @@ fn with_suppressed_stdout<T>(f: impl FnOnce() -> T) -> Result<T> {
     Ok(out)
 }
 fn maintenance(sub: &str, mut args: Vec<OsString>) -> Result<()> {
+    let all_repositories = sub == "sweep" && take_flag(&mut args, "--all");
     let value_flags: &[&str] = match sub {
         "gc" => &["--older-than"],
         "sweep" => &["--idle"],
@@ -617,6 +618,10 @@ fn maintenance(sub: &str, mut args: Vec<OsString>) -> Result<()> {
         }
         i += 1;
     }
+    if all_repositories && repo_i.is_some() {
+        return Err(err(2, "usage", "bay sweep --all and a repository selector are mutually exclusive"));
+    }
+    if all_repositories { return sweep_all(args); }
     let selected = if let Some(index) = repo_i {
         let selector = args.remove(index);
         let all=discover_selected(&selector.to_string_lossy())?;
@@ -636,6 +641,30 @@ fn maintenance(sub: &str, mut args: Vec<OsString>) -> Result<()> {
         })?
     };
     in_dir(&selected.anchor, || run_ws(prepend(sub, args)))?.map_err(operation_err)
+}
+
+fn sweep_all(args: Vec<OsString>) -> Result<()> {
+    let records = discover_matching(None)?;
+    let mut stores = BTreeMap::new();
+    for record in records {
+        match repo_store(&record.anchor) {
+            Ok(store) => { stores.entry(store).or_insert(record.anchor); }
+            Err(e) => eprintln!("bay: skipping stale repository candidate: {}", e.message),
+        }
+    }
+    let discovered = stores.len();
+    let mut succeeded = 0usize;
+    let mut failed = 0usize;
+    for anchor in stores.into_values() {
+        match in_dir(&anchor, || run_ws(prepend("sweep", args.clone()))) {
+            Ok(Ok(())) => succeeded += 1,
+            Ok(Err(error)) => { failed += 1; eprintln!("bay: sweep failed for {}: {error:#}", anchor.display()); }
+            Err(error) => { failed += 1; eprintln!("bay: sweep failed for {}: {}", anchor.display(), error.message); }
+        }
+    }
+    println!("bay sweep --all: repositories={discovered} succeeded={succeeded} failed={failed}");
+    if failed > 0 { eprintln!("bay: warning: {failed} repository sweep(s) failed after all repositories were attempted"); }
+    Ok(())
 }
 
 fn select_repo(selector: &str, all: &[Record]) -> Result<Record> {
@@ -806,9 +835,7 @@ fn anchors(g: &ProjectGroup) -> Result<Vec<PathBuf>> {
     };
     for e in rd.flatten() {
         let p = e.path();
-        if p.join(".jj").exists() {
-            v.push(p)
-        }
+        if p.join(".jj").exists() { v.push(p) }
     }
     let wr = g.path.join(&g.workspace_dir);
     if let Ok(repos) = fs::read_dir(wr) {
@@ -816,9 +843,7 @@ fn anchors(g: &ProjectGroup) -> Result<Vec<PathBuf>> {
             if let Ok(bays) = fs::read_dir(repo.path()) {
                 for bay in bays.flatten() {
                     let p = bay.path();
-                    if p.join(".jj").exists() {
-                        v.push(p)
-                    }
+                    if p.join(".jj").exists() { v.push(p) }
                 }
             }
         }

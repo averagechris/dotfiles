@@ -50,6 +50,7 @@
         pkgs.nix
         pkgs.sccache
       ]
+      ++ lib.optional cfg.baySweep.enable config.dotfiles.jujutsu.workflowPackage
       ++ lib.optional cfg.docker.enable pkgs.docker-client;
     text = ''
       set -uo pipefail
@@ -156,20 +157,28 @@
       log "sccache stats (server is managed by the supervised sccache-server service)"
       sccache --show-stats || true
 
+      ${lib.optionalString cfg.baySweep.enable ''
+        log "sweeping stale Bay workspace artifacts idle for ${cfg.baySweep.idle}"
+        if ! bay sweep --all --idle ${lib.escapeShellArg cfg.baySweep.idle}; then
+          log "Bay discovery/configuration failed; continuing other reclaimers and completing this attempt with warnings"
+        fi
+      ''}
+
       ${lib.optionalString cfg.nixGc.enable ''
         log "nix store usage before garbage collection"
         df -h /nix || true
 
-        # Running unprivileged, this deletes only *user* profile generations
-        # (home-manager, nix profile) older than the retention window, then
-        # garbage-collects unreferenced store paths through the daemon.
+        # This single command applies user-profile retention and then collects
+        # unrooted store paths. Generation deletion affects only user profiles.
         # Root-owned darwin system profile generations under
         # /nix/var/nix/profiles are never deleted by an unprivileged run, and
         # every store path referenced by any remaining generation is a GC
         # root, so the current and previous darwin system generations always
         # survive this job.
-        log "collecting nix garbage (user profile generations older than ${toString cfg.nixGc.olderThanDays} days)"
-        nix-collect-garbage --delete-older-than ${lib.escapeShellArg "${toString cfg.nixGc.olderThanDays}d"} || true
+        log "deleting user profile generations older than ${toString cfg.nixGc.olderThanDays} days"
+        if ! nix-collect-garbage --delete-older-than ${lib.escapeShellArg "${toString cfg.nixGc.olderThanDays}d"}; then
+          log "user profile generation pruning failed; continuing cleanup"
+        fi
 
         log "nix store usage after garbage collection"
         df -h /nix || true
@@ -239,12 +248,27 @@
 
           ${lib.optionalString cfg.nixGc.enable ''
           log "low-disk: aggressively collecting nix garbage"
-          ${lib.optionalString cfg.cleanup.lowDisk.deleteOldUserGenerations ''
-            log "low-disk: deleting all old user profile generations before store GC"
-            nix-collect-garbage -d || true
+          ${lib.optionalString cfg.baySweep.enable ''
+            log "low-disk: sweeping Bay workspace artifacts idle for ${cfg.baySweep.pressureIdle}"
+            if ! bay sweep --all --idle ${lib.escapeShellArg cfg.baySweep.pressureIdle}; then
+              log "low-disk: Bay discovery/configuration failed; continuing other reclaimers and completing this attempt with warnings"
+            fi
           ''}
-          log "low-disk: collecting unreferenced nix store paths"
-          nix store gc || true
+          ${
+            if cfg.cleanup.lowDisk.deleteOldUserGenerations
+            then ''
+              log "low-disk: deleting all old user profile generations and collecting unrooted store paths"
+              if ! nix-collect-garbage -d; then
+                log "low-disk: user profile generation pruning/store GC failed; continuing cleanup"
+              fi
+            ''
+            else ''
+              log "low-disk: collecting unrooted nix store paths"
+              if ! nix-collect-garbage; then
+                log "low-disk: store GC failed; continuing cleanup"
+              fi
+            ''
+          }
           log "low-disk: nix store usage after aggressive garbage collection"
           df -h /nix || true
         ''}
@@ -325,6 +349,9 @@
       fi
 
       mkdir -p "$state_dir"
+      # Every attempt that acquired the maintenance lock and completed is
+      # stamped, including logged Bay/configuration or reclaimer warnings, to
+      # avoid a rapid retry loop. Exit 75 is the only unstamped lock deferral.
       if ${lib.getExe cleanupScript}; then
         date +%s >"$last_run_file"
       else
@@ -556,8 +583,8 @@ in {
           description = ''
             During low-disk pressure cleanup, run
             <literal>nix-collect-garbage -d</literal> before
-            <literal>nix store gc</literal>. This removes old user profile
-            generations but still cannot remove root-owned darwin system
+            <literal>nix-collect-garbage -d</literal>. This removes old user
+            profile generations while collecting the store, but still cannot remove root-owned darwin system
             generations from an unprivileged job.
           '';
         };
@@ -605,8 +632,9 @@ in {
         type = lib.types.bool;
         default = true;
         description = ''
-          Run `nix-collect-garbage --delete-older-than <olderThanDays>d` as part
-          of the periodic cleanup job. Unprivileged runs only delete user
+          Run `nix-collect-garbage --delete-older-than <olderThanDays>d` to
+          delete old user profile generations and collect unrooted store paths.
+          Unprivileged generation deletion only affects user
           profile generations (home-manager, `nix profile`); root-owned darwin
           system generations are never removed, so the current and previous
           system profiles always remain rollback targets.
@@ -643,6 +671,24 @@ in {
             this threshold.
           '';
         };
+      };
+    };
+
+    baySweep = {
+      enable = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "Sweep stale generated artifacts in all configured Bay repositories before Nix store GC.";
+      };
+      idle = lib.mkOption {
+        type = lib.types.nonEmptyStr;
+        default = "14d";
+        description = "Bay workspace idle duration used by scheduled cleanup.";
+      };
+      pressureIdle = lib.mkOption {
+        type = lib.types.nonEmptyStr;
+        default = "3d";
+        description = "More aggressive Bay workspace idle duration used under low-disk pressure.";
       };
     };
 

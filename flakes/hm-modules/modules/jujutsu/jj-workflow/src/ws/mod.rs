@@ -2233,6 +2233,7 @@ pub(crate) fn ws_sweep(args: Vec<OsString>) -> Result<()> {
     let now = SystemTime::now();
     let mut total_bytes = 0u64;
     let mut total_removed = 0usize;
+    let mut removal_failures = 0usize;
     for (_, path, _) in candidates {
         let (usage, last_touched) = scan_workspace(&path, &config.sweep_artifacts)?;
         let Some(last_touched) = last_touched else {
@@ -2253,6 +2254,7 @@ pub(crate) fn ws_sweep(args: Vec<OsString>) -> Result<()> {
                         total_removed += 1;
                     }
                     Err(err) => {
+                        removal_failures += 1;
                         eprintln!(
                             "warning: failed to remove {}: {err}",
                             artifact_path.display()
@@ -2264,6 +2266,9 @@ pub(crate) fn ws_sweep(args: Vec<OsString>) -> Result<()> {
     }
     if !parsed.dry_run {
         println!("swept {total_bytes} bytes from {total_removed} artifact directories");
+    }
+    if removal_failures > 0 {
+        bail!("failed to remove {removal_failures} artifact path(s) after continuing the sweep");
     }
     Ok(())
 }

@@ -22,9 +22,13 @@ nix run .#setup-darwin-determinate-substituters
 ```
 
 The script is idempotent, needs sudo once, and manages `substituters`,
-`trusted-public-keys`, `trusted-users`, and `fsync-metadata`, then restarts the
-daemon (`launchctl kickstart -k system/systems.determinate.nix-daemon`) so
-daemon-side settings apply immediately.
+`trusted-public-keys`, `trusted-users`, `fsync-metadata`, and the emergency
+low-space settings `min-free = 10737418240` and `max-free = 32212254720`. It
+then restarts the daemon (`launchctl
+kickstart -k system/systems.determinate.nix-daemon`) so daemon-side settings
+apply immediately. These thresholds are an emergency fallback, not a
+replacement for scheduled Bay sweep plus store GC. They do not alter APFS
+reserves.
 
 ### `fsync-metadata = false` and parallel agents
 
@@ -457,7 +461,8 @@ Host specifics:
   conflicting-client check every 5 minutes so sleep or heavy work only defers it;
 - a low-disk checker runs every 15 minutes and starts cleanup when `/` has less
   than 10 GiB free;
-- the pressure cleanup phase runs `nix-collect-garbage -d` plus `nix store gc`,
+- the pressure cleanup phase runs the tighter Bay sweep before a single
+  `nix-collect-garbage -d` generation-and-store collection pass,
   tightens Cargo sweeping to artifacts untouched for 1 day, and trims
   OrbStack/Docker builder cache to 10GB when free space is still below the
   threshold;
