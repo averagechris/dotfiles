@@ -283,6 +283,11 @@
         self.outputs.packages.${system}.agenix
         deploy-rs.packages.${system}.deploy-rs
       ];
+      ciDevPackages = with pkgs; [
+        alejandra
+        shellcheck
+        statix
+      ];
       rustDevPackages = with pkgs; [
         cargo
         rustc
@@ -431,6 +436,10 @@
       # Development shell
       devShells.default = pkgs.mkShell {
         packages = commonDevPackages;
+      };
+
+      devShells.ci = pkgs.mkShell {
+        packages = ciDevPackages;
       };
 
       devShells.rust = pkgs.mkShell {

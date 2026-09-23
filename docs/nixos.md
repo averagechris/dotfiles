@@ -47,7 +47,7 @@ deliberately when host behavior or fleet coverage matters:
 GitHub Actions mirrors those tiers with three bounded jobs on pull requests and
 pushes to `main`:
 
-- `fast` runs `scripts/ci-check-tiers.sh fast` inside the repository dev shell:
+- `fast` runs `scripts/ci-check-tiers.sh fast` inside the minimal `.#ci` dev shell:
   formatting,
   Statix, ShellCheck, and shared flake eval-only checks.
 - `active-host-evals` runs `scripts/ci-check-tiers.sh

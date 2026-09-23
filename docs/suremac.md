@@ -295,6 +295,16 @@ the clone to `origin/main`, builds
 to `/run/current-system`. If the paths match, it exits quietly without a
 notification or password prompt.
 
+Existing installations need a one-time bootstrap because the already-installed
+older updater still knows only the former SourceHut URL. Activating a
+configuration containing this updater teaches future runs to rewrite the
+dedicated clone's `origin` to GitHub before fetching. Until that activation,
+either leave automatic updates paused or manually run
+`git -C ~/.local/state/dotfiles-self-update/repo remote set-url origin
+https://github.com/averagechris/dotfiles`. Merely changing this repository does
+not update the installed launchd job; no activation is performed as part of the
+repository migration.
+
 The readiness gate is checked before fetching, immediately before building, and
 again before an interactive activation. If the machine becomes loaded during a
 build, its completed out-link remains rooted and activation waits for the next

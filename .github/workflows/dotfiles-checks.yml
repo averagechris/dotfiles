@@ -17,8 +17,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v31
+      - uses: cachix/cachix-action@v15
+        with:
+          name: averagechris-dotfiles
       - name: Run fast checks
-        run: nix develop --command scripts/ci-check-tiers.sh fast
+        run: nix develop .#ci --command scripts/ci-check-tiers.sh fast
 
   active-host-evals:
     name: Active host evals
@@ -26,6 +29,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v31
+      - uses: cachix/cachix-action@v15
+        with:
+          name: averagechris-dotfiles
       - name: Evaluate active NixOS hosts
         run: scripts/ci-check-tiers.sh active-host-evals
 
@@ -35,5 +41,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v31
+      - uses: cachix/cachix-action@v15
+        with:
+          name: averagechris-dotfiles
       - name: Run coverage checks
         run: scripts/ci-check-tiers.sh coverage-checks

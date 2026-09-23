@@ -140,7 +140,8 @@ this.
 `.github/workflows/dotfiles-checks.yml` runs three bounded jobs for pull requests
 and pushes to `main`:
 
-- `fast`: formatting, Statix, ShellCheck, and shared flake eval-only checks.
+- `fast`: formatting, Statix, ShellCheck, and shared flake eval-only checks in
+  the minimal `.#ci` development shell.
 - `active-host-evals`: evaluates active NixOS host drvPaths for `trap`,
   `thorny`, `tom`, `cruber`, `tater`, and `trainwreck` sequentially in separate
   Nix processes with no builds, no lock writes, and eval cache disabled. The
@@ -150,11 +151,12 @@ and pushes to `main`:
   selected high-signal tater/thorny desktop check derivations on x86_64 Linux.
   It does not try to realize a Darwin closure on Linux.
 
-The workflow has read-only repository permissions and neither uses secrets nor
-pushes to a cache. Full-fleet checks, native trainwreck builds, and trap
-disk/cache diagnostics remain explicit local operations via
-`scripts/ci-check-tiers.sh`; they are not automatic hosted jobs. Thorny remains
-the operational full-closure builder/cache warmer.
+The workflow has read-only repository permissions, configures the public
+`averagechris-dotfiles` Cachix cache without authentication, and never pushes to
+it. Full-fleet checks and native trainwreck builds remain explicit local tiers
+in `scripts/ci-check-tiers.sh`; trap disk/cache diagnostics remain manual
+commands used only for a specific investigation. None are automatic hosted
+jobs. Thorny remains the operational full-closure builder/cache warmer.
 
 ### Adding a New Host
 
