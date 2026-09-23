@@ -13,16 +13,14 @@ SourceHut project input, without contacting SourceHut?
 
 GitHub repositories under `averagechris` were verified with GitHub API queries on
 2026-09-23. The table records the direct mirror and the revision to carry into a
-future lock update. For 12 projects, the current lock revision resolves in the
-GitHub repository. The current gander SourceHut revision does not resolve in its
-GitHub repository, so the current GitHub `main` SHA is recorded as a candidate
-that needs compatibility review during rollout. This is a pin-mapping result,
-not an authorization to update the locks.
+future lock update. The current revision selected for each of the 13 direct
+projects is available from GitHub. This records the mapping; the lock update is
+specified separately in [Fourteen-lock rollout and checks](04-fourteen-lock-rollout.md).
 
-| Project | GitHub mirror | Verified pin candidate | Notes |
+| Project | GitHub mirror | Selected pin | Notes |
 | --- | --- | --- | --- |
 | `ctx` | [`averagechris/ctx`](https://github.com/averagechris/ctx) | `75d4622ef7941a9d23b196d06d29a3d6c7f883cd` | Current lock revision exists on GitHub `main`. |
-| `gander` | [`averagechris/gander`](https://github.com/averagechris/gander) | `68aec4ebf0b6882e1d01e1b11f6a10a66f668d00` | Current GitHub `main`; the current lock revision `3c3d674fa4eeab7c47085e9e7617231183d415a8` was not found. |
+| `gander` | [`averagechris/gander`](https://github.com/averagechris/gander) | `3c3d674fa4eeab7c47085e9e7617231183d415a8` | Current lock revision exists in the GitHub repository. |
 | `granola-cli` | [`averagechris/granola-cli`](https://github.com/averagechris/granola-cli) | `3e92e7fae73e6bf6cbdabe1ef73f035b0f02884b` | Current lock revision exists on GitHub `main`. |
 | `hister` | [`averagechris/hister`](https://github.com/averagechris/hister) | `94f4a98d98ba66c28b79ab310780360d533423a2` | Current lock revision exists on GitHub `main`. |
 | `linear-cli` | [`averagechris/linear-cli`](https://github.com/averagechris/linear-cli) | `67d9eb1a91525ba4e3fc919dc661b1bfd3fa0bff` | Current lock revision exists on GitHub `main`. |
@@ -31,17 +29,16 @@ not an authorization to update the locks.
 | `rdny` | [`averagechris/rdny`](https://github.com/averagechris/rdny) | `2a558f6dbe30b05c04ed2a141958901f07ef3b85` | Current lock revision exists on GitHub `main`. |
 | `sideshow` | [`averagechris/sideshow`](https://github.com/averagechris/sideshow) | `78b05ba424bd82595464e3d71ff3aed7af721817` | Current lock revision exists on GitHub `main`. |
 | `slack` | [`averagechris/slack`](https://github.com/averagechris/slack) | `faa6651e1ad3d97810148236136392a415a0962b` | Current lock revision exists on GitHub `main`. |
-| `srht` | [`averagechris/srht`](https://github.com/averagechris/srht) | `125f982de6fe846c55896cec9b5de746596b872b` | Root current lock revision exists on GitHub `main`; older standalone lock revisions need explicit rollout handling. Preserve the package/module interface. |
+| `srht` | [`averagechris/srht`](https://github.com/averagechris/srht) | `125f982de6fe846c55896cec9b5de746596b872b` | Root current lock revision exists in the GitHub repository. Preserve the package/module interface. |
 | `starship-jj` | [`averagechris/starship-jj`](https://github.com/averagechris/starship-jj) | `9181170ac714dc32764243a0a888c9a6a07a022f` | Current lock revision exists on GitHub `main`. |
 | `titlecase` | [`averagechris/titlecase`](https://github.com/averagechris/titlecase) | `11e70c1f1d5796c5f7d2930df53cfaa9a1fc2200` | Current lock revision exists on GitHub `main`. |
 
 The map deliberately excludes `averagechris.srht.site`/`fleet` from this direct
-set. That is a transitive input with a separate unresolved source and behavior
-question in [Transitive fleet/site source](03-transitive-fleet-site.md).
+set. That is a transitive input covered by the chosen source and follows
+topology in [Transitive fleet/site source](03-transitive-fleet-site.md).
 
-`srht` needs extra care across the lock set. Besides the root's `125f...`
-revision, existing standalone locks contain the SourceHut git revisions
-`a5a05d...`, `de37fe...` (`v0.9.0`), and `5f11c3...` (`v0.8.1`). Those older
-objects were not found through the GitHub commit API during this check. The
-rollout decision must choose compatible GitHub refs rather than silently
-pretending that every old lock revision has an identical GitHub object.
+The standalone locks do not need separate historical `srht` mappings. Their
+older `srht` nodes disappear when the child flakes follow the shared root
+`srht` input. The rollout must preserve the package/module interface while
+regenerating those locks; it does not depend on claiming that every older
+object is present or absent in the GitHub repository.

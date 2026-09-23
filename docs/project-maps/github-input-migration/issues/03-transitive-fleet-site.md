@@ -1,27 +1,48 @@
 # Transitive fleet/site source
 
 Type: research
-Status: open
+Status: resolved
 Blocked by: [Direct mirror and SHA map](02-direct-mirror-sha-map.md)
 
 ## Question
 
-Should the flake inputs currently resolved from `averagechris.srht.site` be
-mapped to `averagechris/fleet`, and if so, must that pinned GitHub source first
-stop fetching SourceHut through its own `srht` input and release backend?
+What GitHub source and follows topology should replace the flake inputs currently
+resolved from `averagechris.srht.site`, while keeping the existing interfaces and
+avoiding SourceHut retrieval?
 
 ## Answer
 
+Use the canonical GitHub site repository
+[`averagechris/averagechris.github.io`](https://github.com/averagechris/averagechris.github.io)
+as the shared `fleet` input, pinned to commit
+`19416e3fc0c0415e39104476565ec0c375bce69b`. Use
+[`averagechris/srht`](https://github.com/averagechris/srht) as the shared
+`srht` input, pinned to `125f982de6fe846c55896cec9b5de746596b872b`.
+
+The root `fleet` and `srht` inputs retain their mutual follows. Every child
+flake's `fleet` input follows the shared root `fleet`, so lock regeneration does
+not create one site node per child. The 13 direct project inputs use floating
+GitHub owner/name URLs in the flake declarations. The lock update overrides
+those inputs to the chosen historical revisions instead of putting revisions in
+the source URLs. That keeps the normal `update-flakes` behavior available.
+
+This answer chooses the site repository directly. It does not add a separate
+`averagechris/fleet` source. A disposable prototype used gander at `3c3d674`,
+the site at `19416e3`, `srht` at `de37fe`, and a separate fleet revision at
+`56cce9`. With the follows broken, that prototype still locked and evaluated
+offline with zero SourceHut URLs. The later separate fleet revision was judged
+unnecessary drift, so it is not part of this plan.
+
+Removing the `srht` CLI or changing the fleet release backend is a separate
+decision. This input migration keeps the existing package and module interfaces.
+
 ## Evidence
 
-- The root and host locks contain many `fleet` nodes whose locked source is the
-  site repository, rather than one of the 13 direct project mirrors.
-- GitHub has an `averagechris/fleet` repository. Its current `main` revision was
-  `b10d6f06310828a22f9c12f0a431e5cde412039e` when checked on 2026-09-23.
-- The GitHub fleet flake still declares an `srht` input and uses it for the
-  default release backend, its `srht` app, and the `srht` package. A pinned
-  GitHub fleet source therefore still fetches SourceHut today.
-- The GitHub repository is a plausible candidate for the site repository, but no
-  human answer has been recorded that it may replace the site input. Likewise,
-  no answer has been recorded to remove the `srht` CLI or change fleet's release
-  backend.
+- The root and host locks contain `fleet` nodes whose locked source is the site
+  repository, rather than one of the 13 direct project mirrors.
+- GitHub API verification found the canonical site commit
+  `19416e3fc0c0415e39104476565ec0c375bce69b` and the root `srht` commit
+  `125f982de6fe846c55896cec9b5de746596b872b`.
+- The disposable prototype locked and evaluated offline without SourceHut URLs.
+  It tested the follows break and the historical gander/site pins, but the
+  separate fleet pin was not needed for the chosen topology.
