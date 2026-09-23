@@ -286,7 +286,8 @@ window instead of waiting until the following day. The always-resident
 daemon, so it runs in the Aqua login session and can display macOS notifications
 and password dialogs.
 
-The job keeps a dedicated public HTTPS clone of the canonical dotfiles remote at
+The job keeps a dedicated public HTTPS clone of the canonical GitHub
+`averagechris/dotfiles` remote at
 `~/.local/state/dotfiles-self-update/repo`. Each run fetches `main`, hard-resets
 the clone to `origin/main`, builds
 `darwinConfigurations.suremac.system` with an out-link at
@@ -336,7 +337,7 @@ symlink never triggers it.
 
 Trust model: the job builds and activates whatever `origin/main` points at,
 without commit signature verification, gated only by the sudo password dialog.
-Anyone who can push to the SourceHut repo can therefore change this host at the
+Anyone who can push to the GitHub repo can therefore change this host at the
 next daily window. This matches the posture of the NixOS `selfDeploy` module;
 revisit (for example with `git verify-commit` against a pinned key) if push
 access to the repo ever broadens.

@@ -7,7 +7,7 @@ Usage: host-build-cache-benchmark --rev REV [--repo-url URL] [--runs N]
 
 Compare the five x86_64-linux host installables used by thorny's
 dotfiles-host-build-cache warmer as separate sequential Nix invocations versus
-one multi-installable invocation at the same revision-pinned SourceHut flake URL.
+one multi-installable invocation at the same revision-pinned GitHub flake URL.
 
 This uses nix build --dry-run with the evaluation cache disabled, so it plans
 builds/substitutions but does not realize closures or mutate result links. Runs
@@ -19,7 +19,7 @@ USAGE
 
 die() { printf 'error: %s\n' "$*" >&2; exit 2; }
 
-repo_url="https://git.sr.ht/~averagechris/dotfiles"
+repo_url="https://github.com/averagechris/dotfiles"
 rev=""
 runs=4
 

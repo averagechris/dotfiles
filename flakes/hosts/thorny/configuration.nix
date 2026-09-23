@@ -278,7 +278,7 @@
       log_dir="$state_dir/logs"
       lock_file="$state_dir/build.lock"
       rev_file="$state_dir/last-successful-rev"
-      repo_url="https://git.sr.ht/~averagechris/dotfiles"
+      repo_url="https://github.com/averagechris/dotfiles"
 
       mkdir -p "$result_dir" "$revision_dir" "$log_dir"
 
@@ -290,7 +290,7 @@
 
       rev=$(git ls-remote "$repo_url" refs/heads/main | cut -f1)
       if ! [[ "$rev" =~ ^[0-9a-f]{40}$ ]]; then
-        echo "Failed to resolve a valid 40-character SourceHut main revision for $repo_url: $rev" >&2
+        echo "Failed to resolve a valid 40-character GitHub main revision for $repo_url: $rev" >&2
         exit 1
       fi
       flake_ref="git+$repo_url?rev=$rev"

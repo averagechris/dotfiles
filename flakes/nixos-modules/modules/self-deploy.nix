@@ -164,7 +164,7 @@ in {
 
     flakeRef = lib.mkOption {
       type = lib.types.str;
-      default = "git+https://git.sr.ht/~averagechris/dotfiles?ref=main";
+      default = "git+https://github.com/averagechris/dotfiles?ref=main";
       description = "Flake reference to deploy from.";
     };
 

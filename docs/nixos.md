@@ -444,7 +444,7 @@ mount /dev/nixos-vg/root /mnt
 After installation, clone the dotfiles repo and apply:
 
 ```bash
-git clone https://git.sr.ht/~averagechris/dotfiles ~/dotfiles
+git clone https://github.com/averagechris/dotfiles ~/dotfiles
 cd ~/dotfiles
 nixos-rebuild switch --use-remote-sudo --flake .#HOSTNAME
 ```

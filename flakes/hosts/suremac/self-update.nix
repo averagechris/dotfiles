@@ -10,7 +10,7 @@
   outLink = "${stateDir}/result";
   markerPath = "${stateDir}/pending-activation";
   logPath = "/Users/${user}/Library/Logs/dotfiles-self-update.log";
-  flakeUrl = "https://git.sr.ht/~averagechris/dotfiles";
+  flakeUrl = "https://github.com/averagechris/dotfiles";
   branch = "main";
   # Attempt at most one update per day, but wake cheaply every five minutes so
   # a missed or busy window can use the next period with CPU headroom.
