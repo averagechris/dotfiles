@@ -9,7 +9,7 @@
 
   # Mirrors the CLI config dir resolution in ./default.nix (dirs::config_dir()).
   cliConfigDir =
-    if pkgs.stdenv.isDarwin
+    if pkgs.stdenv.hostPlatform.isDarwin
     then "${config.home.homeDirectory}/Library/Application Support/linear-cli"
     else "${config.xdg.configHome}/linear-cli";
   artifactPath = "${cliConfigDir}/state/${acfg.profile}/hygiene-last-run.json";
@@ -530,7 +530,7 @@ in {
   config = lib.mkIf (cfg.enable && acfg.enable) {
     assertions = [
       {
-        assertion = pkgs.stdenv.isDarwin;
+        assertion = pkgs.stdenv.hostPlatform.isDarwin;
         message = "dotfiles.linearCli.hygieneAutomation is currently supported only on Darwin (launchd + osascript).";
       }
     ];

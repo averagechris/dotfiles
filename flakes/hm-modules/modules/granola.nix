@@ -86,14 +86,14 @@ in {
         message = "dotfiles.granola.enable requires dotfiles.granola.package or an inputs.granola-cli flake input.";
       }
       {
-        assertion = !cfg.sync.enable || pkgs.stdenv.isDarwin;
+        assertion = !cfg.sync.enable || pkgs.stdenv.hostPlatform.isDarwin;
         message = "dotfiles.granola.sync.enable is currently supported only on Darwin via launchd.";
       }
     ];
 
     home.packages = [cfg.package] ++ lib.optional cfg.completions.enable granolaCompletions;
 
-    launchd.agents.granola-sync = lib.mkIf (cfg.sync.enable && pkgs.stdenv.isDarwin) {
+    launchd.agents.granola-sync = lib.mkIf (cfg.sync.enable && pkgs.stdenv.hostPlatform.isDarwin) {
       enable = true;
       config = {
         ProgramArguments = [

@@ -54,7 +54,7 @@
   # $XDG_CONFIG_HOME/linear-cli on Linux. Writing to ~/.config on Darwin
   # produces files the CLI never reads.
   cliConfigDir =
-    if pkgs.stdenv.isDarwin
+    if pkgs.stdenv.hostPlatform.isDarwin
     then "${config.home.homeDirectory}/Library/Application Support/linear-cli"
     else "${config.xdg.configHome}/linear-cli";
   contextConfigPath = "${cliConfigDir}/config.toml";
@@ -600,7 +600,7 @@ in {
         message = "dotfiles.linearCli.enable requires dotfiles.linearCli.package or an inputs.linear-cli flake input.";
       }
       {
-        assertion = !cfg.cacheRefresh.enable || pkgs.stdenv.isDarwin;
+        assertion = !cfg.cacheRefresh.enable || pkgs.stdenv.hostPlatform.isDarwin;
         message = "dotfiles.linearCli.cacheRefresh.enable is currently supported only on Darwin via launchd.";
       }
     ];
@@ -616,11 +616,11 @@ in {
     # hygiene.toml is read-only for the CLI (snoozes and run artifacts live in
     # the state dir), so a store symlink into its config dir is safe.
     home.file."Library/Application Support/linear-cli/hygiene.toml" =
-      lib.mkIf (pkgs.stdenv.isDarwin && cfg.hygiene != null) {source = hygieneToml;};
+      lib.mkIf (pkgs.stdenv.hostPlatform.isDarwin && cfg.hygiene != null) {source = hygieneToml;};
     xdg.configFile."linear-cli/hygiene.toml" =
-      lib.mkIf (!pkgs.stdenv.isDarwin && cfg.hygiene != null) {source = hygieneToml;};
+      lib.mkIf (!pkgs.stdenv.hostPlatform.isDarwin && cfg.hygiene != null) {source = hygieneToml;};
 
-    launchd.agents.linear-cli-context-refresh = lib.mkIf (cfg.cacheRefresh.enable && pkgs.stdenv.isDarwin) {
+    launchd.agents.linear-cli-context-refresh = lib.mkIf (cfg.cacheRefresh.enable && pkgs.stdenv.hostPlatform.isDarwin) {
       enable = true;
       config = {
         ProgramArguments =

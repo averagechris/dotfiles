@@ -302,7 +302,7 @@ in {
     };
   };
 
-  config = lib.mkIf (config.programs.opencode.enable && cfg.enable && pkgs.stdenv.isDarwin) {
+  config = lib.mkIf (config.programs.opencode.enable && cfg.enable && pkgs.stdenv.hostPlatform.isDarwin) {
     home.packages = [cleanupScript];
     launchd.agents.opencode-session-cleanup = {
       enable = true;
