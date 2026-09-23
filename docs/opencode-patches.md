@@ -12,23 +12,18 @@ whether each patch is needed, stale because upstream contains it, or broken by
 upstream drift. Applicability is not behavior evidence. Run the focused upstream
 test carried by a patch and build the patched Home Manager package.
 
-## Active patch
+## Active patches
 
-`opencode-strip-env-assignments.patch` ports the v1 environment-assignment
-normalization to v2's legacy shell scanner in
-`packages/core/src/shell/parse.ts`. Static prefixes such as
-`SERVICE_PORT=51820 just test` authorize the `just test` resource and therefore
-match normal `just *` policy. Prefixes containing command or process
-substitutions remain part of the permission resource. The scanner also emits the
-nested command as a separate resource, so `TOKEN=$(curl example.test) just test`
-cannot inherit a plain `just *` approval.
+There are no active patches.
 
-The patch includes focused `packages/core/test/shell-parse.test.ts` cases for
-static assignments, `$()` substitutions, backticks, and process substitutions.
-The experimental portable shell scanner has its own parser and does not use this
-normalization. Remove the patch when upstream normalizes safe assignments in
-both scanners, or port the same safety rule before enabling the portable scanner
-in this repository.
+The retired environment-assignment patch stripped static assignment prefixes
+from permission resources produced by the legacy shell scanner. OpenCode's
+compatibility contract instead requires the legacy and portable scanners to
+produce the same raw resource, including the assignment prefix. The patch broke
+that parity. It could also expose commands that run during assignment expansion
+before the named executable, including Bash prompt and arithmetic expansions,
+to a rule intended only for that executable. The module now keeps upstream's
+raw permission resource and does not normalize environment-prefixed commands.
 
 ## Retired v1 patches
 

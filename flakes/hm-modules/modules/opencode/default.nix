@@ -73,34 +73,23 @@
         # The direct-to-output tree hash depends on the nixpkgs-provided Bun.
         outputHash = "sha256-KoF/h/bKsu2WzCxNXnchVwgoiBI4WVNE5uGSxcvkk9A=";
       });
-  # Patches applied on top of the upstream opencode source (built from the
-  # `github:anomalyco/opencode/v2` flake input). Each patch targets a specific
-  # upstream gap; when upstream incorporates the fix, the patch becomes a
-  # no-op and should be removed. Detect stale/broken patches with:
-  #   scripts/check-opencode-patches.sh
-  # See docs/opencode-patches.md for the patch lifecycle.
-  patchedOpencode = pkgs.opencode.overrideAttrs (old: {
+  opencodeWithOptimizedNodeModules = pkgs.opencode.overrideAttrs (_: {
     node_modules = optimizedNodeModules;
-    patches =
-      (old.patches or [])
-      ++ [
-        ./patches/opencode-strip-env-assignments.patch
-      ];
   });
   opencodePackage =
     if pkgs.stdenv.hostPlatform.isLinux
     then
       pkgs.symlinkJoin {
-        inherit (patchedOpencode) meta;
-        name = "${lib.getName patchedOpencode}-wrapped-${lib.getVersion patchedOpencode}";
-        paths = [patchedOpencode];
+        inherit (opencodeWithOptimizedNodeModules) meta;
+        name = "${lib.getName opencodeWithOptimizedNodeModules}-wrapped-${lib.getVersion opencodeWithOptimizedNodeModules}";
+        paths = [opencodeWithOptimizedNodeModules];
         nativeBuildInputs = [pkgs.makeWrapper];
         postBuild = ''
           wrapProgram $out/bin/opencode \
             --prefix LD_LIBRARY_PATH : ${lib.makeLibraryPath [pkgs.stdenv.cc.cc.lib]}
         '';
       }
-    else patchedOpencode;
+    else opencodeWithOptimizedNodeModules;
   renderToolNote = tool:
     if tool.description == null
     then tool.name
@@ -124,7 +113,7 @@
     runtime = pkgs.callPackage ./plugin-runtime {};
   in
     assert lib.assertMsg
-    (lib.hasPrefix runtime.version (lib.getVersion patchedOpencode))
+    (lib.hasPrefix runtime.version (lib.getVersion opencodeWithOptimizedNodeModules))
     "Update the locked @opencode/plugin runtime with the pinned OpenCode V2 package"; runtime;
   bundledBayWorktreesPlugin =
     pkgs.runCommand "dotfiles-bay-worktrees-bundled.js" {
