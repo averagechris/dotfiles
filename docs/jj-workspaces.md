@@ -10,6 +10,9 @@ temporary jj repositories, and push to a local bare Git remote. The package's
 check phase therefore provides those tools explicitly and sets an isolated
 `HOME`/`XDG_CONFIG_HOME` with test-only jj user identity so builds do not depend
 on the invoking user's configuration or Nix's default `/homeless-shelter` home.
+The Nix check phase runs Rust tests serially because several tests temporarily
+change the process-global current directory; child commands also receive an
+explicit stable working directory when the scenario does not test cwd behavior.
 
 ## Help and errors
 

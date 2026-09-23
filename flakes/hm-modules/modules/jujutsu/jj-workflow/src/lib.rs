@@ -6854,12 +6854,14 @@ aliases = ["sammy", "Sam Smith"]
         fs::create_dir_all(&main).unwrap();
         fs::create_dir_all(external.parent().unwrap()).unwrap();
         let status = Command::new("jj")
+            .current_dir(&root)
             .args(["git", "init"])
             .arg(&main)
             .status()
             .unwrap();
         assert!(status.success());
         let status = Command::new("jj")
+            .current_dir(&root)
             .arg("-R")
             .arg(&main)
             .args(["workspace", "add", "--name", "raw"])
@@ -6870,6 +6872,7 @@ aliases = ["sammy", "Sam Smith"]
         let config = test_config(&group);
         let op_count = || {
             let output = Command::new("jj")
+                .current_dir(&root)
                 .arg("-R")
                 .arg(&main)
                 .args([
