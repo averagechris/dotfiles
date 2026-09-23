@@ -4,11 +4,15 @@ This repository contains NixOS and nix-darwin configurations for all machines in
 
 ## Issue Tracking
 
-Repository work is tracked in the
-[SourceHut projects tracker](https://todo.sr.ht/~averagechris/projects). This is
-an umbrella tracker shared by several repositories; dotfiles tickets carry the
-`repo:dotfiles` label. See [docs/srht.md](docs/srht.md#repository-issue-tracker)
-for the CLI workflow.
+Repository work is tracked in [GitHub Issues for
+`averagechris/dotfiles`](https://github.com/averagechris/dotfiles/issues). Use
+the GitHub CLI for common issue operations:
+
+```bash
+gh issue list
+gh issue view NUMBER
+gh issue create --title "..." --body "..."
+```
 
 ## Quick Start
 

@@ -3,26 +3,15 @@
 The `dotfiles.srht` Home Manager module installs `srht`, the SourceHut CLI for
 builds, git, todo, lists, pages, paste, hub, webhooks, and GraphQL workflows.
 
-## Repository issue tracker
+## Dotfiles issue tracking
 
-Dotfiles work is tracked in the
-[SourceHut projects tracker](https://todo.sr.ht/~averagechris/projects). The
-tracker is shared across repositories, and dotfiles tickets are scoped with the
-`repo:dotfiles` label.
+Current dotfiles tickets live in [GitHub Issues for
+`averagechris/dotfiles`](https://github.com/averagechris/dotfiles/issues). Do not
+use `todo.sr.ht` for current dotfiles issue work.
 
-From this checkout, pass the tracker explicitly when auto-detection has not yet
-been configured:
-
-```bash
-srht --json todo list -t '~averagechris/projects'
-srht --json todo show 169 -t '~averagechris/projects'
-srht --json todo start 169 -t '~averagechris/projects'
-```
-
-The CLI automatically narrows umbrella-tracker reads to `repo:dotfiles` when it
-can identify the checkout. Use `--all-repos` only when intentionally searching
-across the whole tracker. Agents should load the `srht-issues` skill before
-reading or changing tickets.
+The [SourceHut projects tracker](https://todo.sr.ht/~averagechris/projects) is
+retained here as a historical reference to the previous dotfiles workflow. The
+`srht` todo workflow remains documented below for other SourceHut projects.
 
 ## Package source
 
@@ -63,11 +52,12 @@ programs.srht.instances = [
 No token value option exists in either module. The generated document contains
 only `token-keyring` or `token-cmd` when explicitly requested.
 
-### Shared `work` profile
+### Shared `work` profile for SourceHut projects
 
-Enabling `dotfiles.srht` defines `programs.srht.profiles.work` and exports
-`SRHT_PROFILE=work`. Profiles are explicitly selected bundles, not repository
-matchers. The shared profile contains:
+For SourceHut-hosted projects other than dotfiles, enabling `dotfiles.srht`
+defines `programs.srht.profiles.work` and exports `SRHT_PROFILE=work`. Profiles
+are explicitly selected bundles, not repository matchers. The shared profile
+contains:
 
 - the `sr.ht` instance;
 - tracker and project `~averagechris/projects`;
@@ -109,8 +99,8 @@ exposing credentials:
 
 ```bash
 srht --profile work --json config check
-srht --profile work --json todo context --repo '~averagechris/dotfiles' --explain
-srht --profile work --json todo list --repo '~averagechris/dotfiles' --offline
+srht --profile work --json todo context --repo '~averagechris/other-project' --explain
+srht --profile work --json todo list --repo '~averagechris/other-project' --offline
 ```
 
 The offline read requires a previously synchronized snapshot. The focused
@@ -127,7 +117,7 @@ Manager profile for the configured shells.
 The srht module registers all bundled skills from the selected package's source
 with the shared `dotfiles.agentSkills` renderer. All three are enabled by default:
 
-- `srht-issues` - todo.sr.ht issue workflows
+- `srht-issues` - todo.sr.ht issue workflows for SourceHut projects
 - `srht-ci` - builds.sr.ht CI submission, following, multi-job waiting, and logs
 - `srht-setup` - auth, config, repository init, and cache refresh setup
 

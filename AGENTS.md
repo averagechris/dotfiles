@@ -8,8 +8,9 @@ Keep this file minimal. Put durable topic guidance in `docs/`.
   read `docs/README.md` and the most relevant topic doc.
 - If no relevant doc exists, create one or add durable notes to the closest
   existing doc.
-- Repository tickets live in the SourceHut projects tracker under the
-  `repo:dotfiles` label; see `docs/srht.md` for the issue workflow.
+- Current dotfiles tickets live in GitHub Issues for `averagechris/dotfiles`:
+  <https://github.com/averagechris/dotfiles/issues>. Use `gh issue` for the
+  issue workflow.
 
 ## Non-negotiable rules
 

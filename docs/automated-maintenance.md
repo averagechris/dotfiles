@@ -201,8 +201,10 @@ big shell script.
 
 - `workctl` owns the project registry, per-project policies, check commands,
   checkout locations, and current maintenance state.
-- The SourceHut CLI fork grows the pieces needed to create/update lightweight
-  todos, tickets, build links, or patch artifacts when automation stops.
+- GitHub Issues owns dotfiles maintenance tickets and automation handoffs. For
+  other SourceHut-hosted projects, the SourceHut CLI fork grows the pieces needed
+  to create/update lightweight todos, tickets, build links, or patch artifacts
+  when automation stops.
 - Thorny runs scheduled maintenance rounds and records structured outcomes:
   updated, no-op, failed-update, failed-check, failed-push, or needs-human.
 - Agents can pick up `needs-human` work from the structured state, inspect logs,

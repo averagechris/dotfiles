@@ -73,8 +73,9 @@ after `srht auth login`: generic password `service = srht`, `account = sr.ht`.
   SourceHut Pages token command to read the `srht` Keychain item, and exposes
   `sideshow` to OpenCode agents.
 - `tater` enables `dotfiles.sideshow` with the default Tailwind configuration and
-  exposes `sideshow` to OpenCode agents. Its story evidence gathering is centered
-  on `srht` and the todo.sr.ht tracker rather than Linear.
+  exposes `sideshow` to OpenCode agents. For dotfiles, its story evidence uses
+  GitHub Issues and GitHub PRs; other projects retain their existing tracker
+  workflows.
 
 The module registers two skills with the shared `dotfiles.agentSkills` renderer.
 The selected Sideshow package's upstream source provides
