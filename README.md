@@ -9,9 +9,9 @@ Repository work is tracked in [GitHub Issues for
 the GitHub CLI for common issue operations:
 
 ```bash
-gh issue list
-gh issue view NUMBER
-gh issue create --title "..." --body "..."
+gh issue list -R averagechris/dotfiles
+gh issue view NUMBER -R averagechris/dotfiles
+gh issue create -R averagechris/dotfiles --title "..." --body "..."
 ```
 
 ## Quick Start

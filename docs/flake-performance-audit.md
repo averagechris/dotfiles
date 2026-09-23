@@ -89,7 +89,7 @@ for larger/recovered runners.
 ## Thorny warmer update from #121
 
 The `dotfiles-host-build-cache` service on thorny is now revision-aware. It
-resolves SourceHut `main` once per service run, validates the 40-character Git
+resolves GitHub `main` once per service run, validates the 40-character Git
 revision, builds all active NixOS hosts from that revision-pinned flake URL, and
 records `last-successful-rev` atomically only after all six hosts succeed. A
 subsequent timer run for the same revision skips before any Nix evaluation.
@@ -106,7 +106,7 @@ the actual build result.
 For reproducible local exploration without triggering huge builds, use:
 
 ```bash
-nix run .#host-build-cache-benchmark -- --rev <40-char-sourcehut-main-rev>
+nix run .#host-build-cache-benchmark -- --rev <github-main>
 ```
 
 The harness compares the complete five-host sequential x86 loop with one
