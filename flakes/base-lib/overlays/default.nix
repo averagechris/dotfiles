@@ -26,7 +26,12 @@
       if opencode != null && builtins.hasAttr prev.stdenv.hostPlatform.system opencode.packages
       then let
         rev = opencode.shortRev or opencode.dirtyShortRev or "dirty";
-        node_modules = final.callPackage "${opencode}/nix/node_modules.nix" {inherit rev;};
+        node_modules = final.callPackage "${opencode}/nix/node_modules.nix" (
+          {inherit rev;}
+          // final.lib.optionalAttrs (final.stdenv.hostPlatform.system == "aarch64-darwin") {
+            hash = "sha256-KoF/h/bKsu2WzCxNXnchVwgoiBI4WVNE5uGSxcvkk9A=";
+          }
+        );
       in
         final.callPackage "${opencode}/nix/opencode.nix" {
           inherit node_modules;

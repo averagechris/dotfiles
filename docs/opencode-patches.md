@@ -2,7 +2,7 @@
 
 The Home Manager OpenCode module applies repository-owned patches to the source
 from the pinned `github:anomalyco/opencode/v2` flake input. The package is pinned
-at revision `76594882b4a9a6a14dd4f99b515d4aba2d5e6f16`, OpenCode 2.0.3. The patch
+at revision `b1860465cd13d186e69a911642d098a10cef0b49`, OpenCode 2.0.8. The patch
 list lives in `flakes/hm-modules/modules/opencode/default.nix`, and patch files
 live beside the module under `patches/`.
 
@@ -69,7 +69,8 @@ The direct-to-output tree can hash differently when the shared nixpkgs input
 changes the Bun used to build it. The module therefore overrides `outputHash`
 on Darwin with the hash verified for the pinned OpenCode revision and shared
 nixpkgs revision. Linux keeps the upstream hash and remains unverified by the
-Darwin package build.
+Darwin package build. The verified aarch64-darwin hash for the current pin is
+`sha256-KoF/h/bKsu2WzCxNXnchVwgoiBI4WVNE5uGSxcvkk9A=`.
 
 Remove the Darwin hash override when upstream's install produces the same fixed
 output across supported nixpkgs revisions, or when the direct-to-output

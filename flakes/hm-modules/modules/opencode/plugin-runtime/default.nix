@@ -1,9 +1,9 @@
 {buildNpmPackage}:
 buildNpmPackage {
   pname = "dotfiles-opencode-plugin-runtime";
-  version = "2.0.3";
+  version = "2.0.8";
   src = ./.;
-  npmDepsHash = "sha256-kbSSzb2eJkFLN163JFSAy3soSzng0BTYKaImYVpRvH4=";
+  npmDepsHash = "sha256-78C5J37FGp718XLKTl22sgapkzBLR8U//b3q0udMWYY=";
   dontNpmBuild = true;
   installPhase = ''
     runHook preInstall

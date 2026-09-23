@@ -71,7 +71,7 @@
       }
       // lib.optionalAttrs pkgs.stdenv.hostPlatform.isDarwin {
         # The direct-to-output tree hash depends on the nixpkgs-provided Bun.
-        outputHash = "sha256-eIwNRF/JuyXDKE0/1BBCykBObai//jFg5OyZuYp5Bmg=";
+        outputHash = "sha256-KoF/h/bKsu2WzCxNXnchVwgoiBI4WVNE5uGSxcvkk9A=";
       });
   # Patches applied on top of the upstream opencode source (built from the
   # `github:anomalyco/opencode/v2` flake input). Each patch targets a specific
