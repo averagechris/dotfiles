@@ -65,9 +65,22 @@ an executable fixture. Remove the override once upstream installs directly into
 the output, or once an upstream replacement passes the same output-equivalence
 check.
 
-The old per-revision node-module hashes and ghostty lockfile fix are gone. V2's
-`nix/hashes.json` supplies the aarch64-darwin hash for this revision and the
-package builds without either override.
+The direct-to-output tree can hash differently when the shared nixpkgs input
+changes the Bun used to build it. The module therefore overrides `outputHash`
+on Darwin with the hash verified for the pinned OpenCode revision and shared
+nixpkgs revision. Linux keeps the upstream hash and remains unverified by the
+Darwin package build.
+
+Remove the Darwin hash override when upstream's install produces the same fixed
+output across supported nixpkgs revisions, or when the direct-to-output
+workaround can be removed. After either change, build the isolated package and
+confirm that the upstream hash succeeds rather than copying a hash from another
+OpenCode revision:
+
+```sh
+HOME="$(mktemp -d)" nix build \
+  '.#darwinConfigurations.suremac.config.home-manager.users.chris.programs.opencode.package'
+```
 
 ## Update checklist
 

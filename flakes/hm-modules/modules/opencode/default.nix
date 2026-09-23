@@ -48,26 +48,31 @@
   in
     assert lib.assertMsg (builtins.length markerParts == 2) ''
       OpenCode node_modules buildPhase marker drifted; update the direct-to-output injection
-    ''; {
-      buildPhase =
-        lib.replaceString buildSetupMarker ''
-          ${buildSetupMarker}
-          mkdir -p "$out"
-          cp -R . "$out"
-          cd "$out"
-        ''
-        old.buildPhase;
-      installPhase = ''
-        runHook preInstall
+    '';
+      {
+        buildPhase =
+          lib.replaceString buildSetupMarker ''
+            ${buildSetupMarker}
+            mkdir -p "$out"
+            cp -R . "$out"
+            cd "$out"
+          ''
+          old.buildPhase;
+        installPhase = ''
+          runHook preInstall
 
-        find "$out" -depth -mindepth 1 \
-          ! -path '*/node_modules' \
-          ! -path '*/node_modules/*' \
-          \( ! -type d -o -empty \) \
-          -delete
-        runHook postInstall
-      '';
-    });
+          find "$out" -depth -mindepth 1 \
+            ! -path '*/node_modules' \
+            ! -path '*/node_modules/*' \
+            \( ! -type d -o -empty \) \
+            -delete
+          runHook postInstall
+        '';
+      }
+      // lib.optionalAttrs pkgs.stdenv.hostPlatform.isDarwin {
+        # The direct-to-output tree hash depends on the nixpkgs-provided Bun.
+        outputHash = "sha256-eIwNRF/JuyXDKE0/1BBCykBObai//jFg5OyZuYp5Bmg=";
+      });
   # Patches applied on top of the upstream opencode source (built from the
   # `github:anomalyco/opencode/v2` flake input). Each patch targets a specific
   # upstream gap; when upstream incorporates the fix, the patch becomes a
