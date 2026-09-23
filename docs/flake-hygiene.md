@@ -59,6 +59,17 @@ After input updates, remove stale overrides when Nix warns that an upstream inpu
 no longer exists. Keep any still-valid nested overrides; for example, `rdny`
 currently exposes `fleet` but no longer exposes a direct `srht` input, so only
 `rdny.inputs.fleet.inputs.srht` should follow the shared root.
+For a deliberate intermediate nixpkgs pin, override the revision while retaining
+`original.ref = "nixos-unstable"`; do not run the normal updater, which advances to
+HEAD. Apply and validate the resolved `nodes.nixpkgs.locked` object in every
+standalone shared-module and host lock as well as the root lock.
+
+GitHub Actions checks that all 14 canonical locks share the root nixpkgs revision
+and retain the `nixos-unstable` ref. It also evaluates the flake and rebuilds the
+OpenCode `node_modules` fixed-output derivation on x86_64 and ARM64 Linux. After a
+merge, rerun **Nix shared pin** with `workflow_dispatch` if either architecture had
+an infrastructure failure; do not treat a passing job on only one architecture as
+sufficient.
 
 The root development shells are split so everyday checks do not require IDE and
 Rust toolchain closures:

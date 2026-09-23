@@ -72,6 +72,11 @@
       inputs.fleet.inputs.nixpkgs.follows = "nixpkgs";
       inputs.fleet.inputs.srht.follows = "srht";
     };
+    t3-code-nix = {
+      url = "github:averagechris/t3-code-nix/opencode-v2-pin";
+      inputs.home-manager.follows = "home-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = inputs @ {

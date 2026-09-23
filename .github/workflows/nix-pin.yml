@@ -1,0 +1,88 @@
+name: Nix shared pin
+
+on:
+  pull_request:
+    paths:
+      - "**/flake.lock"
+      - "flakes/hm-modules/modules/opencode/**"
+      - "flakes/hosts/suremac/**"
+      - ".github/workflows/nix-pin.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "**/flake.lock"
+      - "flakes/hm-modules/modules/opencode/**"
+      - "flakes/hosts/suremac/**"
+      - ".github/workflows/nix-pin.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check-locks:
+    name: Check flake and shared pin
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+      - name: Check flake evaluation
+        run: nix flake check --no-build --no-write-lock-file
+      - name: Check canonical nixpkgs pins
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          lock_files=(
+            flake.lock
+            flakes/base-lib/flake.lock
+            flakes/darwin-modules/flake.lock
+            flakes/hm-modules/flake.lock
+            flakes/hosts/cruber/flake.lock
+            flakes/hosts/suremac/flake.lock
+            flakes/hosts/tater/flake.lock
+            flakes/hosts/taz/flake.lock
+            flakes/hosts/thorny/flake.lock
+            flakes/hosts/tom/flake.lock
+            flakes/hosts/tootsie/flake.lock
+            flakes/hosts/trainwreck/flake.lock
+            flakes/hosts/trap/flake.lock
+            flakes/nixos-modules/flake.lock
+          )
+          root_rev="$(jq -er '.nodes.nixpkgs.locked.rev' flake.lock)"
+
+          for lock_file in "${lock_files[@]}"; do
+            jq -e --arg rev "$root_rev" '
+              .nodes.nixpkgs.locked.rev == $rev
+              and .nodes.nixpkgs.original.ref == "nixos-unstable"
+            ' "$lock_file" >/dev/null
+          done
+
+          jq -e '.nodes["t3-code-nix"].inputs.nixpkgs == ["nixpkgs"]' \
+            flake.lock >/dev/null
+
+  build-opencode-node-modules:
+    name: Build OpenCode node_modules (${{ matrix.system }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - system: x86_64-linux
+            runner: ubuntu-24.04
+            host: thorny
+          - system: aarch64-linux
+            runner: ubuntu-24.04-arm
+            host: trainwreck
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+      - name: Build fixed-output node_modules derivation
+        shell: bash
+        run: |
+          set -euo pipefail
+          drv="$(nix eval --raw \
+            ".#nixosConfigurations.${{ matrix.host }}.pkgs.opencode.node_modules.drvPath" \
+            --no-write-lock-file)"
+          nix build --no-link --rebuild "$drv"
