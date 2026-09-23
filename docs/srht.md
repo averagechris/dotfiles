@@ -145,20 +145,12 @@ The module does not copy the skill text into this repository or run the mutable
 `srht skills install` command during activation. After bumping `inputs.srht`, the
 next Home Manager build links the upstream package source's updated skill text.
 
-## Agent-facing CI additions
+## Dotfiles CI
 
-Manual manifests under `.srht/` are intentionally outside the auto-submitted
-`.builds/` directory. `.srht/trainwreck-build.yml` preserves the native aarch64
-trainwreck host build for manual retries with `srht ci .srht/trainwreck-build.yml --secrets`; hosted ARM startup failed twice before tasks, so it is not an
-auto-submitted manifest until SourceHut ARM capacity is reliable.
-
-`.srht/trap-diagnostics.yml` is a non-realizing trap host diagnostic: it uses
-the standard Cachix secret/setup path,
-prints effective Nix caches/builders, records disk and inode state, runs GC
-root/dead-path reporting without deletion, times trap `drvPath` evaluation, and
-compares trap build dry-runs with configured caches versus the official cache.
-Submit it manually with `srht ci .srht/trap-diagnostics.yml --secrets`; it must
-not mutate lock files or realize the trap closure.
+The dotfiles repository no longer carries builds.sr.ht manifests. Routine checks
+run in GitHub Actions, while full-fleet, native trainwreck, and trap diagnostic
+work remains manual and local. The `srht` package, flake input, issue workflow,
+and CI tooling for other SourceHut projects remain supported.
 
 `srht` v0.4 expands builds.sr.ht support for agents and polling automation:
 

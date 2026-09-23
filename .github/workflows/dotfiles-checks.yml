@@ -1,0 +1,39 @@
+name: Dotfiles checks
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fast:
+    name: Fast lint and shared evals
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+      - name: Run fast checks
+        run: nix develop --command scripts/ci-check-tiers.sh fast
+
+  active-host-evals:
+    name: Active host evals
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+      - name: Evaluate active NixOS hosts
+        run: scripts/ci-check-tiers.sh active-host-evals
+
+  coverage-checks:
+    name: Suremac eval and selected checks
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+      - name: Run coverage checks
+        run: scripts/ci-check-tiers.sh coverage-checks
