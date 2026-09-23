@@ -4,7 +4,7 @@ This repository manages OpenCode through the Home Manager module at
 `flakes/hm-modules/modules/opencode/`.
 
 OpenCode itself comes from the upstream `github:anomalyco/opencode/v2` flake
-input, not from nixpkgs. The current pin reports version `2.0.3`; the exact
+input, not from nixpkgs. The current pin reports version `2.0.8`; the exact
 revision and package lifecycle live in [OpenCode patch lifecycle](opencode-patches.md).
 The upstream flake builds its `packages/cli` package. `flakes/base-lib/` exposes
 that package through the shared overlay as `pkgs.opencode`, and
@@ -570,36 +570,28 @@ the intent is to interrupt anything in that command family.
 ### Env-prefixed runner commands
 
 OpenCode V2's legacy shell scanner evaluates shell permission rules against the
-command source it extracts from the shell AST. For inline environment
-assignments, that source can include the assignments, so a command such as:
+raw command source it extracts from the shell AST. Inline environment
+assignments remain in that resource, so a command such as:
 
 ```bash
 SERVICE_REDIS_PORT=51820 SERVICE_POSTGRES_PORT=51821 just test ...
 ```
 
-does not match the existing `"just *": "allow"` rule. The prompt may still offer
-an "always" approval for `just *`, but that session approval does not cover the
-next env-prefixed invocation because the evaluated pattern still starts with the
-assignment prefix.
+does not match a command-specific `"just *": "allow"` rule. OpenCode saves and
+evaluates the full resource, including the assignment prefix. It does not
+normalize the resource to `just test ...`.
 
-This module patches `pkgs.opencode`, which is supplied by the upstream OpenCode
-flake overlay, with module-local patches under
-`flakes/hm-modules/modules/opencode/patches/`.
+The coding-agent shell catch-all currently allows the full env-prefixed resource.
+Plan agents deny shell commands by design. A policy can add an explicit rule for
+a known assignment and command shape, but OpenCode's `*` wildcard spans spaces.
+Broad patterns such as `*=* just *` can match unrelated command text. Environment
+variables can also redirect executable lookup or affect code that runs during
+shell expansion before `just` starts, so the module does not add a general
+env-prefix allow rule.
 
-The v1 nested-prompt, Bun, and old-Drizzle patches are retired in V2. See
-[OpenCode patch lifecycle](opencode-patches.md) for the active patch inventory,
-validation workflow, and removal criteria.
-
-`opencode-strip-env-assignments.patch` normalizes shell permission patterns by
-stripping safe leading inline environment assignments before permission
-matching. With the example above, OpenCode authorizes `just test ...`, so the
-existing `just` and `just *` allow rules work across projects no matter what
-service-specific environment prefix they use.
-
-The patch deliberately does not strip assignments containing command
-substitution, such as `FOO=$(curl example.com) just test` or backticks. Those
-assignments can execute code before `just` starts and therefore are not rewritten
-for command-specific matching; the coding-agent catch-all still allows them.
+The v1 nested-prompt, Bun, old-Drizzle, and environment-assignment patches are
+retired in V2. See [OpenCode patch lifecycle](opencode-patches.md) for the patch
+inventory and validation workflow.
 
 The upstream V2 flake builds a fixed-output `opencode-node_modules`
 derivation for `packages/cli`. Its install phase still recursively copies the
@@ -610,11 +602,6 @@ instead of silently dropping changed build steps. Remove this temporary
 workaround once upstream installs directly into the output, or an equivalent
 replacement passes the output-equivalence check. See [OpenCode patch
 lifecycle](opencode-patches.md) for the fixture and exact removal criterion.
-
-Prefer this normalization patch over broad config patterns such as `*=* just *`.
-OpenCode permission wildcards are anchored but simple (`*` and `?` only), so a
-broad assignment-style pattern can accidentally match unrelated commands that
-merely contain `=... just ...` in their arguments.
 
 Agent-exposed tools and MCPs are configured separately:
 

@@ -60,8 +60,8 @@ ROOT="$(repo_root)"
 PATCHES_DIR="$ROOT/flakes/hm-modules/modules/opencode/patches"
 
 if [[ ! -d "$PATCHES_DIR" ]]; then
-  echo "Patches directory not found: $PATCHES_DIR" >&2
-  exit 2
+  echo "No patches found in $PATCHES_DIR"
+  exit 0
 fi
 
 shopt -s nullglob

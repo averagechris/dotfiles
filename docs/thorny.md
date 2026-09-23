@@ -23,8 +23,9 @@ used locally.
   about 11.8 GiB to 10.9 GiB after disabling those apps and making the generated
   Hyprland config avoid retaining Signal when `programs.signal.enable = false`.
 - Hourly scheduler for the homepage metadata refresh build on builds.sr.ht.
-- Build-cache maintainer for active NixOS host system closures from dotfiles
-  `main`, so client host switches can reuse work already realized by `thorny`.
+- Build-cache maintainer for active NixOS host system closures from the GitHub
+  dotfiles `main`, so client host switches can reuse work already realized by
+  `thorny`.
 - Cache warmer for fleet CI closures, pushing sourcehut `main` build outputs to
   the `averagechris-dotfiles` cachix cache so builds.sr.ht jobs substitute
   instead of building.
@@ -100,7 +101,7 @@ journalctl -u averagechris-site-refresh.service
 
 `thorny` runs `dotfiles-host-build-cache.timer` every six hours, with a 30-minute
 randomized delay and persistent catch-up after downtime. The service builds the
-current `main` branch of `~averagechris/dotfiles` for the active NixOS hosts:
+current GitHub `main` branch of `averagechris/dotfiles` for the active NixOS hosts:
 
 - `trap`
 - `thorny`
@@ -109,8 +110,8 @@ current `main` branch of `~averagechris/dotfiles` for the active NixOS hosts:
 - `tater`
 - `trainwreck`
 
-At the start of each run, before any Nix evaluation, the script resolves
-SourceHut `main` exactly once with `git ls-remote`, validates that it is a
+At the start of each run, before any Nix evaluation, the script resolves GitHub
+`main` exactly once with `git ls-remote`, validates that it is a
 40-character Git revision, and uses that revision-pinned flake URL for every
 host build. If `/var/lib/dotfiles-host-build-cache/last-successful-rev` already
 matches that revision, the service exits immediately without evaluating Nix.
@@ -142,7 +143,7 @@ invocation at a pinned revision, run the focused harness outside normal service
 execution:
 
 ```bash
-nix run .#host-build-cache-benchmark -- --rev <40-char-sourcehut-main-rev>
+nix run .#host-build-cache-benchmark -- --rev <40-char-github-main-rev>
 ```
 
 The harness uses `nix build --dry-run` with the evaluation cache disabled for the
@@ -220,11 +221,11 @@ ls -l /var/lib/fleet-cache-warmer
 `thorny` runs `dotfiles-thorny-self-deploy.timer` every two hours, with a
 15-minute randomized delay and persistent catch-up after downtime. The service is
 provided by the shared `dotfiles.selfDeploy` module. It checks latest `main` from
-`~averagechris/dotfiles`; if that revision has not already been successfully
+the GitHub `averagechris/dotfiles` repository; if that revision has not already been successfully
 deployed, it builds:
 
 ```text
-git+https://git.sr.ht/~averagechris/dotfiles?ref=main#nixosConfigurations.thorny.config.system.build.toplevel
+git+https://github.com/averagechris/dotfiles?ref=main#nixosConfigurations.thorny.config.system.build.toplevel
 ```
 
 The service records the previous `/run/current-system`, activates the new system

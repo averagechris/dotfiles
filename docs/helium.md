@@ -1,6 +1,7 @@
 # Helium browser
 
 This repository packages the upstream Helium Linux binary tarball for NixOS via Home Manager.
+The current package version is 0.17.2.1.
 The package derivation lives at `flakes/base-lib/packages/helium-bin.nix` and is
 exposed as `pkgs.helium-bin` by the shared base-lib overlay.
 

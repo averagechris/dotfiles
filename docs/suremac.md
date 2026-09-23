@@ -286,13 +286,24 @@ window instead of waiting until the following day. The always-resident
 daemon, so it runs in the Aqua login session and can display macOS notifications
 and password dialogs.
 
-The job keeps a dedicated public HTTPS clone of the canonical dotfiles remote at
+The job keeps a dedicated public HTTPS clone of the canonical GitHub
+`averagechris/dotfiles` remote at
 `~/.local/state/dotfiles-self-update/repo`. Each run fetches `main`, hard-resets
 the clone to `origin/main`, builds
 `darwinConfigurations.suremac.system` with an out-link at
 `~/.local/state/dotfiles-self-update/result`, and compares the built store path
 to `/run/current-system`. If the paths match, it exits quietly without a
 notification or password prompt.
+
+Existing installations need a one-time bootstrap because the already-installed
+older updater still knows only the former SourceHut URL. Activating a
+configuration containing this updater teaches future runs to rewrite the
+dedicated clone's `origin` to GitHub before fetching. Until that activation,
+either leave automatic updates paused or manually run
+`git -C ~/.local/state/dotfiles-self-update/repo remote set-url origin
+https://github.com/averagechris/dotfiles`. Merely changing this repository does
+not update the installed launchd job; no activation is performed as part of the
+repository migration.
 
 The readiness gate is checked before fetching, immediately before building, and
 again before an interactive activation. If the machine becomes loaded during a
@@ -336,7 +347,7 @@ symlink never triggers it.
 
 Trust model: the job builds and activates whatever `origin/main` points at,
 without commit signature verification, gated only by the sudo password dialog.
-Anyone who can push to the SourceHut repo can therefore change this host at the
+Anyone who can push to the GitHub repo can therefore change this host at the
 next daily window. This matches the posture of the NixOS `selfDeploy` module;
 revisit (for example with `git verify-commit` against a pinned key) if push
 access to the repo ever broadens.

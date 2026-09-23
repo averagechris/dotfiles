@@ -118,7 +118,12 @@
             inherit (prev.stdenv.hostPlatform) system;
             opencodeInput = inputs.opencode;
             rev = opencodeInput.shortRev or opencodeInput.dirtyShortRev or "dirty";
-            node_modules = final.callPackage "${opencodeInput}/nix/node_modules.nix" {inherit rev;};
+            node_modules = final.callPackage "${opencodeInput}/nix/node_modules.nix" (
+              {inherit rev;}
+              // final.lib.optionalAttrs (final.stdenv.hostPlatform.system == "aarch64-darwin") {
+                hash = "sha256-KoF/h/bKsu2WzCxNXnchVwgoiBI4WVNE5uGSxcvkk9A=";
+              }
+            );
           in {
             titlecase = base-lib.inputs.titlecase.packages.${system}.default;
             pi-coding-agent = final.callPackage ../base-lib/packages/pi-coding-agent.nix {};
@@ -135,7 +140,7 @@
           })
         ];
       };
-      inherit (pkgs.stdenv) isLinux;
+      inherit (pkgs.stdenv.hostPlatform) isLinux;
       # Provide dotfiles_lib that modules expect (normally provided by base-lib)
       dotfiles_lib = {
         options = with nixpkgs.lib; {

@@ -44,43 +44,37 @@ deliberately when host behavior or fleet coverage matters:
   the root. It evaluates and builds the aggregate fleet checks, which is too
   expensive for the ordinary CI path.
 
-SourceHut is the repository's only CI system and mirrors those tiers. git.sr.ht
-auto-submits exactly three bounded `.builds/*.yml` manifests on push:
+GitHub Actions mirrors those tiers with three bounded jobs on pull requests and
+pushes to `main`:
 
-- `.builds/lint-check.yml` runs `scripts/ci-check-tiers.sh fast`: formatting,
+- `fast` runs `scripts/ci-check-tiers.sh fast` inside the minimal `.#ci` dev shell:
+  formatting,
   Statix, ShellCheck, and shared flake eval-only checks.
-- `.builds/active-host-evals.yml` runs `scripts/ci-check-tiers.sh
+- `active-host-evals` runs `scripts/ci-check-tiers.sh
   active-host-evals`: active NixOS hosts `trap`, `thorny`, `tom`, `cruber`,
   `tater`, and `trainwreck` evaluate drvPaths sequentially in separate Nix
-  processes with no builds, no lock writes, and eval cache disabled. Hosted
-  SourceHut does not realize full host closures because the #121 trap diagnostic
-  showed the 16G runner cannot safely fit trap's planned 13.2G unpacked closure
-  plus build temp space. Inactive `taz` and `tootsie` are excluded.
-- `.builds/coverage-checks.yml` runs `coverage-checks` on x86_64 Linux: it
+  processes with no builds, no lock writes, and eval cache disabled. Routine CI
+  does not realize full host closures because they exceed practical hosted
+  runner disk headroom. Inactive `taz` and `tootsie` are excluded.
+- `coverage-checks` runs on x86_64 Linux: it
   evaluates suremac's Darwin system only and builds selected high-signal desktop
   check derivations for tater and thorny. suremac remains eval-only because
   realizing the Darwin closure on Linux is not useful CI coverage for this repo.
 
-Manual manifests under `.srht/` cover heavyweight or diagnostic paths: full root
-flake check, native aarch64 trainwreck build retry, and trap disk/cache
-diagnostics. Thorny remains the operational full-closure builder/cache warmer.
+Heavyweight or diagnostic paths remain manual local commands: run
+`scripts/ci-check-tiers.sh full-fleet`, run `trainwreck-build` natively on
+aarch64 Linux, and perform trap disk/cache diagnostics only when investigating a
+specific problem. Thorny remains the operational full-closure builder/cache warmer.
 See [cache policy](/docs/cache-policy.md) for the per-environment cache/key/
-builder matrix, SourceHut pull-only publication policy, and diagnostic fields.
+builder matrix and publication policy.
 
 Every CI Nix command passes `--no-write-lock-file`; eval-only commands use
 `--raw` and disable the eval cache where that keeps repeated host evaluation
-comparable. The full root check lives at `.srht/full-fleet.yml` outside the
-auto-submit pattern and is manual via `srht ci .srht/full-fleet.yml --secrets` or
-an external schedule with equivalent secret exposure. `--secrets` is needed
-because `scripts/ci-setup.sh` expects the Cachix token at
-`~/.ci_secrets/cachix_token`, and srht CLI noninteractive submissions withhold
-manifest secrets unless explicitly enabled. It may still fail on the hosted
-SourceHut VM because manifests expose image/architecture but no public per-job
-RAM/CPU size selector. The fast path runs ShellCheck over tracked `*.sh` files
-reported by jj when available, with Git as the CI checkout fallback; it does not
-invoke `jj lint` directly because the SourceHut checkout does not declare jj as a
-CI dependency, but it covers the important shell-script linting that `jj lint`
-also runs locally.
+comparable. The GitHub workflow has read-only repository permissions, uses no
+secrets, and does not push cache outputs. The fast path runs ShellCheck over
+tracked `*.sh` files reported by jj when available, with Git as the CI checkout
+fallback; it does not invoke `jj lint` directly, but covers the important
+shell-script linting that `jj lint` also runs locally.
 
 For captured/noninteractive logs, use `nh -q --no-nom` commands, such as
 `nh os build -q --no-nom . --hostname tater`, so the `nom` clock/progress
@@ -444,7 +438,7 @@ mount /dev/nixos-vg/root /mnt
 After installation, clone the dotfiles repo and apply:
 
 ```bash
-git clone https://git.sr.ht/~averagechris/dotfiles ~/dotfiles
+git clone https://github.com/averagechris/dotfiles ~/dotfiles
 cd ~/dotfiles
 nixos-rebuild switch --use-remote-sudo --flake .#HOSTNAME
 ```

@@ -4,11 +4,15 @@ This repository contains NixOS and nix-darwin configurations for all machines in
 
 ## Issue Tracking
 
-Repository work is tracked in the
-[SourceHut projects tracker](https://todo.sr.ht/~averagechris/projects). This is
-an umbrella tracker shared by several repositories; dotfiles tickets carry the
-`repo:dotfiles` label. See [docs/srht.md](docs/srht.md#repository-issue-tracker)
-for the CLI workflow.
+Repository work is tracked in [GitHub Issues for
+`averagechris/dotfiles`](https://github.com/averagechris/dotfiles/issues). Use
+the GitHub CLI for common issue operations:
+
+```bash
+gh issue list -R averagechris/dotfiles
+gh issue view NUMBER -R averagechris/dotfiles
+gh issue create -R averagechris/dotfiles --title "..." --body "..."
+```
 
 ## Quick Start
 
@@ -131,29 +135,28 @@ In automation, add `--no-write-lock-file` to Nix eval/check/build commands so
 validation cannot mutate lock files. The repository CI tier script already does
 this.
 
-### SourceHut CI
+### GitHub Actions CI
 
-SourceHut is the only CI system. git.sr.ht auto-submits exactly three bounded
-manifests under `.builds/` on every push:
+`.github/workflows/dotfiles-checks.yml` runs three bounded jobs for pull requests
+and pushes to `main`:
 
-- `lint-check.yml`: fast formatting, Statix, ShellCheck, and shared flake
-  eval-only checks.
-- `active-host-evals.yml`: evaluates active NixOS host drvPaths for `trap`,
+- `fast`: formatting, Statix, ShellCheck, and shared flake eval-only checks in
+  the minimal `.#ci` development shell.
+- `active-host-evals`: evaluates active NixOS host drvPaths for `trap`,
   `thorny`, `tom`, `cruber`, `tater`, and `trainwreck` sequentially in separate
   Nix processes with no builds, no lock writes, and eval cache disabled. The
-  historical filename remains, but the hosted job is eval-only because complete
-  host closures exceed hosted SourceHut runner disk headroom. Inactive `taz` and
-  `tootsie` are excluded.
-- `coverage-checks.yml`: evaluates suremac's Darwin system only and builds the
+  hosted job is eval-only because complete host closures are too heavy for
+  routine CI. Inactive `taz` and `tootsie` are excluded.
+- `coverage-checks`: evaluates suremac's Darwin system only and builds the
   selected high-signal tater/thorny desktop check derivations on x86_64 Linux.
   It does not try to realize a Darwin closure on Linux.
 
-Manual manifests live under `.srht/` and require explicit submission with
-`--secrets` when they use the shared Cachix setup: `.srht/full-fleet.yml` for
-root `nix flake check`, `.srht/trainwreck-build.yml` for retrying native aarch64
-trainwreck builds after hosted ARM capacity recovers, and
-`.srht/trap-diagnostics.yml` for the non-realizing trap disk/cache diagnostic.
-Thorny remains the operational full-closure builder/cache warmer.
+The workflow has read-only repository permissions, configures the public
+`averagechris-dotfiles` Cachix cache without authentication, and never pushes to
+it. Full-fleet checks and native trainwreck builds remain explicit local tiers
+in `scripts/ci-check-tiers.sh`; trap disk/cache diagnostics remain manual
+commands used only for a specific investigation. None are automatic hosted
+jobs. Thorny remains the operational full-closure builder/cache warmer.
 
 ### Adding a New Host
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared SourceHut CI check tiers for this repository.
+# Shared CI check tiers for local and hosted automation.
 
 set -euo pipefail
 

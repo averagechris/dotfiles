@@ -52,7 +52,7 @@ in {
 
     home.packages = [cfg.package];
 
-    launchd.agents.ctx-index = lib.mkIf (cfg.index.enable && pkgs.stdenv.isDarwin) {
+    launchd.agents.ctx-index = lib.mkIf (cfg.index.enable && pkgs.stdenv.hostPlatform.isDarwin) {
       enable = true;
       config = {
         ProgramArguments = [
@@ -67,7 +67,7 @@ in {
       };
     };
 
-    systemd.user.services.ctx-index = lib.mkIf (cfg.index.enable && pkgs.stdenv.isLinux) {
+    systemd.user.services.ctx-index = lib.mkIf (cfg.index.enable && pkgs.stdenv.hostPlatform.isLinux) {
       Unit = {
         Description = "Refresh ctx local agent-history index";
       };
@@ -79,7 +79,7 @@ in {
       };
     };
 
-    systemd.user.timers.ctx-index = lib.mkIf (cfg.index.enable && pkgs.stdenv.isLinux) {
+    systemd.user.timers.ctx-index = lib.mkIf (cfg.index.enable && pkgs.stdenv.hostPlatform.isLinux) {
       Unit = {
         Description = "Refresh ctx local agent-history index frequently";
       };

@@ -2,7 +2,7 @@
 
 The Home Manager OpenCode module applies repository-owned patches to the source
 from the pinned `github:anomalyco/opencode/v2` flake input. The package is pinned
-at revision `76594882b4a9a6a14dd4f99b515d4aba2d5e6f16`, OpenCode 2.0.3. The patch
+at revision `b1860465cd13d186e69a911642d098a10cef0b49`, OpenCode 2.0.8. The patch
 list lives in `flakes/hm-modules/modules/opencode/default.nix`, and patch files
 live beside the module under `patches/`.
 
@@ -12,23 +12,18 @@ whether each patch is needed, stale because upstream contains it, or broken by
 upstream drift. Applicability is not behavior evidence. Run the focused upstream
 test carried by a patch and build the patched Home Manager package.
 
-## Active patch
+## Active patches
 
-`opencode-strip-env-assignments.patch` ports the v1 environment-assignment
-normalization to v2's legacy shell scanner in
-`packages/core/src/shell/parse.ts`. Static prefixes such as
-`SERVICE_PORT=51820 just test` authorize the `just test` resource and therefore
-match normal `just *` policy. Prefixes containing command or process
-substitutions remain part of the permission resource. The scanner also emits the
-nested command as a separate resource, so `TOKEN=$(curl example.test) just test`
-cannot inherit a plain `just *` approval.
+There are no active patches.
 
-The patch includes focused `packages/core/test/shell-parse.test.ts` cases for
-static assignments, `$()` substitutions, backticks, and process substitutions.
-The experimental portable shell scanner has its own parser and does not use this
-normalization. Remove the patch when upstream normalizes safe assignments in
-both scanners, or port the same safety rule before enabling the portable scanner
-in this repository.
+The retired environment-assignment patch stripped static assignment prefixes
+from permission resources produced by the legacy shell scanner. OpenCode's
+compatibility contract instead requires the legacy and portable scanners to
+produce the same raw resource, including the assignment prefix. The patch broke
+that parity. It could also expose commands that run during assignment expansion
+before the named executable, including Bash prompt and arithmetic expansions,
+to a rule intended only for that executable. The module now keeps upstream's
+raw permission resource and does not normalize environment-prefixed commands.
 
 ## Retired v1 patches
 
@@ -69,7 +64,8 @@ The direct-to-output tree can hash differently when the shared nixpkgs input
 changes the Bun used to build it. The module therefore overrides `outputHash`
 on Darwin with the hash verified for the pinned OpenCode revision and shared
 nixpkgs revision. Linux keeps the upstream hash and remains unverified by the
-Darwin package build.
+Darwin package build. The verified aarch64-darwin hash for the current pin is
+`sha256-KoF/h/bKsu2WzCxNXnchVwgoiBI4WVNE5uGSxcvkk9A=`.
 
 Remove the Darwin hash override when upstream's install produces the same fixed
 output across supported nixpkgs revisions, or when the direct-to-output
