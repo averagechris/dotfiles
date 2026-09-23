@@ -1112,6 +1112,26 @@
         "type": "github"
       }
     },
+    "memo": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1790199106,
+        "narHash": "sha256-sjNVOemwyhLYBOk+CC9kGing5ZcKZv6rlDquYJ6n0G8=",
+        "owner": "averagechris",
+        "repo": "memo",
+        "rev": "c7261dbd1db31f9947e2efc16e65cb43ed05389a",
+        "type": "github"
+      },
+      "original": {
+        "owner": "averagechris",
+        "repo": "memo",
+        "type": "github"
+      }
+    },
     "nitter-link": {
       "inputs": {
         "flake-utils": [
@@ -1358,6 +1378,7 @@
         ],
         "hypridle": "hypridle",
         "hyprland": "hyprland",
+        "memo": "memo",
         "nitter-link": "nitter-link",
         "nixos-hardware": "nixos-hardware",
         "nixos-modules": "nixos-modules",

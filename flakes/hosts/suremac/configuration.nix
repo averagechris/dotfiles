@@ -710,7 +710,13 @@ in {
     '';
     dotfiles.srht.enable = true;
     dotfiles.opencode.agentSupportPackages = [];
+    dotfiles.agentSkills.memo.source = inputs.memo + "/skills/memo";
     dotfiles.opencode.agentTools = with pkgs; [
+      {
+        package = inputs.memo.packages.${pkgs.stdenv.hostPlatform.system}.memo;
+        name = "memo";
+        description = "remember lasting workflow context";
+      }
       {
         package = awscli2;
         name = "aws";

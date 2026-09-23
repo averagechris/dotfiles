@@ -652,7 +652,7 @@ module combines those with the built-in default tool list.
 Use `dotfiles.opencode.agentTools` for tools that should only be available to
 agents on particular hosts. For example, `suremac` adds the AWS CLI, Ctx,
 Kubernetes CLI, Datadog Pup CLI, Sentry CLI, GitHub CLI, rdny, Showboat,
-Granola, Sideshow, and the Linear CLI. On Darwin, this host-specific list avoids
+Granola, Sideshow, the Linear CLI, and Memo. `tater` also adds Memo. On Darwin, this host-specific list avoids
 relying on unrelated system packages for agent workflows:
 
 ```nix
@@ -701,7 +701,8 @@ example:
 > history search CLI), kubectl (Kubernetes CLI), pup
 > (Datadog CLI), sentry (Sentry CLI), ntn (Notion CLI), gh (GitHub CLI), showboat
 > (work documentation CLI), linear (Linear CLI), granola (Granola meeting notes
-> CLI), sideshow (HTML slide deck CLI), rdny (browser automation CLI). The
+> CLI), sideshow (HTML slide deck CLI), rdny (browser automation CLI), memo
+> (remember lasting workflow context). The
 > project local dev shell may provide additional tooling.
 
 The runtime note also appends a concise Nix usage rule telling agents to prefer
@@ -822,6 +823,10 @@ build time. Current examples include:
   registry; `dotfiles.devCache` appends host-specific sccache guidance so
   agents keep cargo output concise and never clear `RUSTC_WRAPPER`)
 - `sure-stack-context` (suremac only)
+- `memo` (suremac and tater), sourced directly from Memo's bundled skill
+
+Memo's data store is local to each machine. The suremac and tater configurations
+do not initialize or synchronize memory between hosts.
 
 Home Manager activation removes files left by the retired OpenCode PR-review
 tools from `~/.config/opencode/tools/`.
