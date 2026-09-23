@@ -367,7 +367,7 @@ impl DestinationClaim {
 #[cfg(unix)]
 fn open_lock_nofollow(lock_dir:&Path,path:&Path)->Result<fs::File> {
     use std::ffi::CString;
-    use std::os::fd::{AsRawFd,FromRawFd};
+    use std::os::fd::AsRawFd;
     use std::os::unix::ffi::OsStrExt;
     use std::os::unix::fs::{MetadataExt,OpenOptionsExt};
     // Pin the real directory first. openat then cannot be redirected if its name
@@ -378,12 +378,20 @@ fn open_lock_nofollow(lock_dir:&Path,path:&Path)->Result<fs::File> {
     let named=fs::symlink_metadata(lock_dir).map_err(|e|err(1,"clone_failed",format!("cannot inspect clone lock directory path: {e}")))?;
     if named.file_type().is_symlink() || opened.dev()!=named.dev() || opened.ino()!=named.ino() { return Err(err(3,"collision","clone lock directory changed while opening")); }
     let name=CString::new(path.file_name().expect("lock path has filename").as_bytes()).expect("hashed lock filename has no NUL");
-    // SAFETY: directory is an owned, open directory fd; name is NUL-terminated
-    // and contains no slash; successful fd ownership is transferred exactly once.
-    let fd=unsafe { libc::openat(directory.as_raw_fd(),name.as_ptr(),libc::O_RDWR|libc::O_CREAT|libc::O_NOFOLLOW|libc::O_CLOEXEC,0o600) };
+    open_or_create_lock_at(directory.as_raw_fd(),&name).map_err(|error|if error.raw_os_error()==Some(libc::ELOOP) { err(3,"collision","unsafe clone lock symlink") } else { err(1,"clone_failed",format!("cannot safely open clone lock: {error}")) })
+}
+
+#[cfg(unix)]
+fn open_or_create_lock_at(directory_fd:std::os::fd::RawFd,name:&std::ffi::CStr)->std::io::Result<fs::File> {
+    use std::os::fd::FromRawFd;
+    // O_EXCL gives concurrent creators an unambiguous winner. Only EEXIST may
+    // fall through to opening the persistent file; every other error fails closed.
+    let mut fd=unsafe { libc::openat(directory_fd,name.as_ptr(),libc::O_RDWR|libc::O_CREAT|libc::O_EXCL|libc::O_NOFOLLOW|libc::O_CLOEXEC,0o600) };
     if fd<0 {
         let error=std::io::Error::last_os_error();
-        return Err(if error.raw_os_error()==Some(libc::ELOOP) { err(3,"collision","unsafe clone lock symlink") } else { err(1,"clone_failed",format!("cannot safely open clone lock: {error}")) });
+        if error.raw_os_error()!=Some(libc::EEXIST) { return Err(error); }
+        fd=unsafe { libc::openat(directory_fd,name.as_ptr(),libc::O_RDWR|libc::O_NOFOLLOW|libc::O_CLOEXEC,0) };
+        if fd<0 { return Err(std::io::Error::last_os_error()); }
     }
     // SAFETY: openat returned a new owned descriptor and no other File owns it.
     Ok(unsafe { fs::File::from_raw_fd(fd) })
@@ -964,5 +972,32 @@ mod tests {
         let result = in_dir(Path::new("/definitely/missing/bay-anchor"), || ran = true);
         assert!(result.is_err());
         assert!(!ran);
+    }
+
+    #[cfg(target_os="macos")]
+    #[test]
+    fn concurrent_lock_creators_open_the_same_inode() {
+        use std::ffi::CString;
+        use std::os::fd::AsRawFd;
+        use std::os::unix::fs::{MetadataExt,OpenOptionsExt};
+        use std::sync::{Arc,Barrier};
+
+        let root=std::env::temp_dir().join(format!("bay-lock-race-{}-{:?}",std::process::id(),std::thread::current().id()));
+        fs::create_dir(&root).unwrap();
+        let directory=fs::OpenOptions::new().read(true).custom_flags(libc::O_DIRECTORY|libc::O_NOFOLLOW|libc::O_CLOEXEC).open(&root).unwrap();
+        for round in 0..64 {
+            let name=CString::new(format!("{round}.lock")).unwrap();
+            let barrier=Arc::new(Barrier::new(2));
+            let (first,second)=std::thread::scope(|scope| {
+                let run=|barrier:Arc<Barrier>| { barrier.wait(); open_or_create_lock_at(directory.as_raw_fd(),&name).unwrap() };
+                let first=scope.spawn({ let barrier=Arc::clone(&barrier); move || run(barrier) });
+                let second=scope.spawn(move || run(barrier));
+                (first.join().unwrap(),second.join().unwrap())
+            });
+            let first=first.metadata().unwrap();
+            let second=second.metadata().unwrap();
+            assert_eq!((first.dev(),first.ino()),(second.dev(),second.ino()));
+        }
+        fs::remove_dir_all(root).unwrap();
     }
 }
