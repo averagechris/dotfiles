@@ -1,6 +1,6 @@
 # Gander
 
-[`gander`](https://git.sr.ht/~averagechris/gander) is a terminal UI and CLI for
+[`gander`](https://github.com/averagechris/gander) is a terminal UI and CLI for
 reviewing `jj` changes, keeping durable comments and action items, building
 walkthroughs, and exporting human or agent review artifacts. The pinned v0.8.1
 package is exposed through the Gander flake input and installed by the Home

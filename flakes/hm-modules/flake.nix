@@ -11,41 +11,49 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     starship-jj = {
-      url = "sourcehut:~averagechris/starship-jj";
+      url = "github:averagechris/starship-jj";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
       inputs.systems.follows = "flake-utils/systems";
+      inputs.fleet.follows = "fleet";
     };
     linear-cli = {
-      url = "sourcehut:~averagechris/linear-cli";
+      url = "github:averagechris/linear-cli";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
+      inputs.fleet.follows = "fleet";
+    };
+    fleet = {
+      url = "github:averagechris/averagechris.github.io";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.srht.follows = "srht";
     };
     srht = {
-      url = "sourcehut:~averagechris/srht";
+      url = "github:averagechris/srht";
       inputs.nixpkgs.follows = "nixpkgs";
+      inputs.fleet.follows = "fleet";
     };
     gander = {
-      url = "sourcehut:~averagechris/gander";
+      url = "github:averagechris/gander";
       inputs.nixpkgs.follows = "nixpkgs";
+      inputs.fleet.follows = "fleet";
     };
     sideshow = {
-      url = "sourcehut:~averagechris/sideshow";
+      url = "github:averagechris/sideshow";
       inputs.nixpkgs.follows = "nixpkgs";
+      inputs.fleet.follows = "fleet";
     };
     rdny = {
-      url = "sourcehut:~averagechris/rdny";
+      url = "github:averagechris/rdny";
       inputs.nixpkgs.follows = "nixpkgs";
-      inputs.fleet.inputs.nixpkgs.follows = "nixpkgs";
-      inputs.fleet.inputs.srht.follows = "srht";
+      inputs.fleet.follows = "fleet";
     };
     nitter-link = {
-      url = "git+https://git.sr.ht/~averagechris/nitter-link?ref=refs/tags/v0.1.4";
+      url = "github:averagechris/nitter-link/v0.1.4";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
       inputs.treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
-      inputs.fleet.inputs.nixpkgs.follows = "nixpkgs";
-      inputs.fleet.inputs.srht.follows = "srht";
+      inputs.fleet.follows = "fleet";
     };
     opencode.follows = "base-lib/opencode";
   };

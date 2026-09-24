@@ -7,11 +7,11 @@ screenshots, record short videos, and attach to manually launched browsers.
 
 ## Package source
 
-Hosts get rdny from the personal rolling SourceHut flake input, with locks
-advanced to the v0.3.0 release revision:
+Hosts get rdny from the personal rolling GitHub flake input, with locks advanced
+to the v0.3.0 release revision:
 
 ```nix
-inputs.rdny.url = "sourcehut:~averagechris/rdny";
+inputs.rdny.url = "github:averagechris/rdny";
 ```
 
 The Home Manager module defaults `dotfiles.rdny.package` to

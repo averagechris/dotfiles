@@ -27,7 +27,7 @@
       inputs.systems.follows = "systems";
     };
     titlecase = {
-      url = "sourcehut:~averagechris/titlecase";
+      url = "github:averagechris/titlecase";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };

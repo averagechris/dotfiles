@@ -311,15 +311,15 @@
       "locked": {
         "lastModified": 1720672215,
         "narHash": "sha256-7KAvLuIQ1lNuoSHqPyjD/wREqX9Qv0phD6261wElD8k=",
-        "owner": "~averagechris",
+        "owner": "averagechris",
         "repo": "titlecase",
         "rev": "11e70c1f1d5796c5f7d2930df53cfaa9a1fc2200",
-        "type": "sourcehut"
+        "type": "github"
       },
       "original": {
-        "owner": "~averagechris",
+        "owner": "averagechris",
         "repo": "titlecase",
-        "type": "sourcehut"
+        "type": "github"
       }
     }
   },

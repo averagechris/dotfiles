@@ -23,7 +23,7 @@ The module currently:
 ## Simple PiP Helper extension
 
 The `tater` and `thorny` host flakes include the Simple PiP Helper Chromium
-extension from <https://git.sr.ht/~averagechris/pip-chrome-extension> and import
+extension from <https://github.com/averagechris/pip-chrome-extension> and import
 its Home Manager module next to the shared dotfiles module:
 
 ```nix
@@ -45,7 +45,7 @@ later Home Manager rebuilds.
 ## nitter-link extension
 
 The reusable `programs.nitter-link` Home Manager module pins
-<https://git.sr.ht/~averagechris/nitter-link> at `v0.1.4` and consumes its
+<https://github.com/averagechris/nitter-link> at `v0.1.4` and consumes its
 reproducible flake package outputs (`chrome-extension` and `firefox-extension`).
 Those packages install browser-loadable unpacked trees below
 `$out/share/nitter-link/chrome` and `$out/share/nitter-link/firefox`; the module

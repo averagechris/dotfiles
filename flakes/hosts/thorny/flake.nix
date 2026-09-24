@@ -17,6 +17,8 @@
       inputs.flake-utils.follows = "flake-utils";
       inputs.home-manager.follows = "home-manager";
       inputs.opencode.follows = "base-lib/opencode";
+      inputs.fleet.follows = "fleet";
+      inputs.srht.follows = "srht";
     };
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
     home-manager.follows = "base-lib/home-manager";
@@ -28,9 +30,15 @@
     helix.follows = "hm-modules/helix";
     starship-jj.follows = "hm-modules/starship-jj";
     gander.follows = "hm-modules/gander";
-    srht = {
-      url = "sourcehut:~averagechris/srht";
+    fleet = {
+      url = "github:averagechris/averagechris.github.io";
       inputs.nixpkgs.follows = "nixpkgs";
+      inputs.srht.follows = "srht";
+    };
+    srht = {
+      url = "github:averagechris/srht";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.fleet.follows = "fleet";
     };
     hyprland = {
       # Match tater's pinned Hyprland so the shared workstation config and
@@ -55,11 +63,11 @@
       inputs.systems.follows = "systems";
     };
     pip-chrome-extension = {
-      url = "git+https://git.sr.ht/~averagechris/pip-chrome-extension";
+      url = "github:averagechris/pip-chrome-extension";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     hister = {
-      url = "git+https://git.sr.ht/~averagechris/hister";
+      url = "github:averagechris/hister";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
