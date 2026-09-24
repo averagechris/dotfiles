@@ -13,10 +13,10 @@ built HTML.
 
 ## Package source
 
-Hosts get the package from the upstream flake input:
+Hosts get the package from the upstream GitHub flake input:
 
 ```nix
-inputs.sideshow.url = "sourcehut:~averagechris/sideshow";
+inputs.sideshow.url = "github:averagechris/sideshow";
 ```
 
 The Home Manager module defaults `dotfiles.sideshow.package` to
