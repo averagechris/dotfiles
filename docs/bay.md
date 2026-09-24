@@ -78,6 +78,8 @@ Bay chooses HTTPS for public repositories when GitHub reports read-only, triage,
 
 Clone is idempotent when the destination already identifies the same GitHub repository. It reports `exists` instead of cloning again. A nonempty non-repository path or a checkout for another repository reports `collision` without changing the path.
 
+Concurrent clones of the same destination serialize through a persistent advisory lock. Bay atomically creates or opens that lock relative to a pinned lock-directory descriptor; lock-file or lock-directory symlinks fail closed as collisions rather than being followed.
+
 For scripts and agents, read the absolute path from the JSON result of `bay add` and use it for every later command and file operation.
 
 ## Output and failures

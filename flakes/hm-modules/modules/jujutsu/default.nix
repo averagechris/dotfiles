@@ -66,6 +66,7 @@
     preCheck = ''
       export HOME="$TMPDIR/home"
       export XDG_CONFIG_HOME="$HOME/.config"
+      export RUST_TEST_THREADS=1
       mkdir -p "$XDG_CONFIG_HOME"
       jj config set --user user.name jj-workflow-tests
       jj config set --user user.email jj-workflow-tests@example.invalid

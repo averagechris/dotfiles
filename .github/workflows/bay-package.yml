@@ -1,0 +1,34 @@
+name: Bay package
+
+on:
+  pull_request:
+    paths:
+      - "flakes/hm-modules/modules/jujutsu/**"
+      - ".github/workflows/bay-package.yml"
+      - "docs/bay.md"
+      - "docs/jj-workspaces.md"
+  push:
+    branches:
+      - main
+    paths:
+      - "flakes/hm-modules/modules/jujutsu/**"
+      - ".github/workflows/bay-package.yml"
+      - "docs/bay.md"
+      - "docs/jj-workspaces.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build jj-workflow package
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+      - uses: cachix/cachix-action@v15
+        with:
+          name: averagechris-dotfiles
+      - name: Build jj-workflow package
+        run: nix build --no-link --no-write-lock-file '.#darwinConfigurations.suremac.config.home-manager.users.chris.dotfiles.jujutsu.workflowPackage'
