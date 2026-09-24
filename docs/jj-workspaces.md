@@ -13,6 +13,9 @@ on the invoking user's configuration or Nix's default `/homeless-shelter` home.
 The Nix check phase runs Rust tests serially because several tests temporarily
 change the process-global current directory; child commands also receive an
 explicit stable working directory when the scenario does not test cwd behavior.
+GitHub Actions also runs a path-targeted package check on a native `macos-14`
+runner when the helper, its module, the workflow, or the relevant Bay docs
+change.
 
 ## Help and errors
 
