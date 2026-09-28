@@ -868,7 +868,13 @@ in {
         targets.helium = "127.0.0.1:9333";
       };
     };
+    dotfiles.agentSkills.memo.source = inputs.memo + "/skills/memo";
     dotfiles.opencode.agentTools = [
+      {
+        package = inputs.memo.packages.${pkgs.stdenv.hostPlatform.system}.memo;
+        name = "memo";
+        description = "remember lasting workflow context";
+      }
       {
         package = inputs.srht.packages.${pkgs.stdenv.hostPlatform.system}.srht;
         name = "srht";

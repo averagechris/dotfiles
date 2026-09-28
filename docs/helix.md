@@ -6,6 +6,13 @@ The module installs Helix with a curated tree-sitter runtime instead of the full
 upstream grammar set. This keeps daily language support while avoiding hundreds
 of rarely used grammar outputs in host closures.
 
+The module passes `grammarPackageNames` to Helix's `includeGrammarIf` package
+option. Helix filters its grammar definitions before it fetches or builds their
+sources, so unselected grammars do not become evaluation-time fetches or build
+dependencies. The module then copies those same named grammar libraries into a
+curated runtime and makes `hx` use it through `HELIX_RUNTIME`. Runtime assembly
+fails if any configured grammar is missing rather than silently dropping it.
+
 Default grammar coverage focuses on:
 
 - Rust, Python, Nix, Gleam, and shell scripts;

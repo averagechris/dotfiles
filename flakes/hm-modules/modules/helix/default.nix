@@ -7,7 +7,9 @@
   ...
 }: let
   cfg = config.programs.helix;
-  baseHelixPackage = inputs.helix.packages.${system}.default;
+  baseHelixPackage = inputs.helix.packages.${system}.default.override {
+    includeGrammarIf = grammar: lib.elem grammar.name cfg.grammarPackageNames;
+  };
   baseHelixRuntime = baseHelixPackage.HELIX_DEFAULT_RUNTIME;
   helixGrammarExtension = pkgs.stdenv.hostPlatform.extensions.sharedLibrary;
   trimmedHelixRuntime = pkgs.runCommand "helix-runtime-curated-grammars" {} ''
