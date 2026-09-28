@@ -51,4 +51,9 @@ in {
   # Hister: contains HISTER__SERVER__OAUTH__GITHUB__CLIENT_SECRET for the
   # GitHub OAuth app.
   "thorny/hister-env.age".publicKeys = systems-keys ++ [suremac-key];
+
+  # ZeroClaw household assistant environment file (systemd EnvironmentFile):
+  # BOT_TOKEN, KAGI_API_KEY, TG_OWNER_ID, TG_PARTNER_ID, TG_HOUSEHOLD_CHAT_ID.
+  # The Telegram IDs live here so this public repo carries only placeholders.
+  "thorny/zeroclaw-env.age".publicKeys = systems-keys ++ [suremac-key];
 }
