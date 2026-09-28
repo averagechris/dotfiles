@@ -13,6 +13,7 @@
       inputs.gander.follows = "hm-modules/gander";
       inputs.sideshow.follows = "sideshow";
       inputs.srht.follows = "srht";
+      inputs.fleet.follows = "fleet";
       inputs.ctx.follows = "ctx";
       inputs.rdny.follows = "rdny";
       inputs.nitter-link.follows = "nitter-link";
@@ -38,6 +39,7 @@
       inputs.starship-jj.follows = "hm-modules/starship-jj";
       inputs.gander.follows = "hm-modules/gander";
       inputs.srht.follows = "srht";
+      inputs.fleet.follows = "fleet";
       inputs.hyprland.follows = "hyprland";
       inputs.Hyprspace.follows = "Hyprspace";
       inputs.hypridle.follows = "hypridle";
@@ -74,6 +76,7 @@
       inputs.gander.follows = "hm-modules/gander";
       inputs.sideshow.follows = "sideshow";
       inputs.srht.follows = "srht";
+      inputs.fleet.follows = "fleet";
       inputs.hyprland.follows = "hyprland";
       inputs.Hyprspace.follows = "Hyprspace";
       inputs.hypridle.follows = "hypridle";
@@ -128,6 +131,8 @@
       inputs.home-manager.follows = "base-lib/home-manager";
       inputs.opencode.follows = "base-lib/opencode";
       inputs.nitter-link.follows = "nitter-link";
+      inputs.fleet.follows = "fleet";
+      inputs.srht.follows = "srht";
     };
     darwin-modules = {
       url = "path:./flakes/darwin-modules";
@@ -151,23 +156,30 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     ctx = {
-      url = "sourcehut:~averagechris/ctx/75d4622ef7941a9d23b196d06d29a3d6c7f883cd";
+      url = "github:averagechris/ctx";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
+      inputs.fleet.follows = "fleet";
+    };
+    fleet = {
+      url = "github:averagechris/averagechris.github.io";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.srht.follows = "srht";
     };
     srht = {
-      url = "sourcehut:~averagechris/srht";
+      url = "github:averagechris/srht";
       inputs.nixpkgs.follows = "nixpkgs";
+      inputs.fleet.follows = "fleet";
     };
     sideshow = {
-      url = "sourcehut:~averagechris/sideshow";
+      url = "github:averagechris/sideshow";
       inputs.nixpkgs.follows = "nixpkgs";
+      inputs.fleet.follows = "fleet";
     };
     rdny = {
-      url = "sourcehut:~averagechris/rdny";
+      url = "github:averagechris/rdny";
       inputs.nixpkgs.follows = "nixpkgs";
-      inputs.fleet.inputs.nixpkgs.follows = "nixpkgs";
-      inputs.fleet.inputs.srht.follows = "srht";
+      inputs.fleet.follows = "fleet";
     };
     systems.url = "github:nix-systems/default-linux";
     hyprland = {
@@ -193,16 +205,15 @@
       inputs.systems.follows = "systems";
     };
     pip-chrome-extension = {
-      url = "git+https://git.sr.ht/~averagechris/pip-chrome-extension";
+      url = "github:averagechris/pip-chrome-extension";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nitter-link = {
-      url = "git+https://git.sr.ht/~averagechris/nitter-link?ref=refs/tags/v0.1.4";
+      url = "github:averagechris/nitter-link/v0.1.4";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
       inputs.treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
-      inputs.fleet.inputs.nixpkgs.follows = "nixpkgs";
-      inputs.fleet.inputs.srht.follows = "srht";
+      inputs.fleet.follows = "fleet";
     };
     t3-code-nix = {
       url = "github:averagechris/t3-code-nix/opencode-v2-pin";

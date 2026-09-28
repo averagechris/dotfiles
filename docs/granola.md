@@ -5,10 +5,10 @@ Granola meeting notes, folders, transcripts, and exports.
 
 ## Package source
 
-`suremac` provides the package from the upstream SourceHut flake:
+`suremac` provides the package from the upstream GitHub flake:
 
 ```nix
-inputs.granola-cli.url = "sourcehut:~averagechris/granola-cli";
+inputs.granola-cli.url = "github:averagechris/granola-cli";
 ```
 
 The module defaults `dotfiles.granola.package` to

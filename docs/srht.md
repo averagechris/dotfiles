@@ -15,10 +15,10 @@ retained here as a historical reference to the previous dotfiles workflow. The
 
 ## Package source
 
-The package comes from the upstream SourceHut flake:
+The package comes from the upstream GitHub flake:
 
 ```nix
-inputs.srht.url = "sourcehut:~averagechris/srht";
+inputs.srht.url = "github:averagechris/srht";
 ```
 
 The module defaults `dotfiles.srht.package` to

@@ -45,20 +45,42 @@ use `nix-systems/default-linux`, also root a shared `systems` input and make eac
 consumer follow it. This keeps standalone host flakes usable while avoiding
 duplicate transitive lock graphs in the root flake.
 
+The shared `fleet` and `srht` inputs follow each other at the root. Their names
+describe the projects, not their current source authority: both are GitHub
+inputs. Keep consumers on the rooted nodes with `inputs.fleet.follows = "fleet"`
+and `inputs.srht.follows = "srht"` where those inputs are declared. A child
+flake such as `rdny` currently exposes `fleet` but no direct `srht` input, so use
+`rdny.inputs.fleet.follows = "fleet"` when rooting it; do not invent a stale
+`rdny.inputs.srht` override. The `srht` CLI and service documentation is a
+separate concern and is not removed by changing these flake sources.
+
 One intentional exception is `suremac/helix`: it keeps Helix's own `nixpkgs` so
 the cached upstream Helix runtime can be fetched from `helix.cachix.org` instead
 of building Darwin grammars locally. The Home Manager module trims that runtime
 in the final profile closure.
 
-After changing input topology, run `nix flake lock` and sanity-check the lock for
-duplicate local graphs. Large repeated groups of `base-lib_*`, `hm-modules_*`,
-`nixos-modules_*`, `home-manager_*`, or `opencode_*` nodes usually mean a new path
-input is not following the root graph.
+After changing input topology, regenerate locks from leaves toward the root with
+`nix flake update <path-input-name>` for the direct path inputs of the flake being
+updated. Use an offline `--flake path:<repo>?dir=<subflake>` invocation and an
+approved temporary output lock, then validate it before replacing that flake's
+`flake.lock`. For example:
+
+```text
+nix flake update hm-modules --offline \
+  --flake 'path:/absolute/repo?dir=flakes/hosts/suremac' \
+  --output-lock-file /approved/tmp/suremac-flake.lock
+```
+
+Do not use a bare `nix flake lock` for this migration. Bare locking can lazily
+retain path parents and leave the old graph in place. Large repeated groups of
+`base-lib_*`, `hm-modules_*`, `nixos-modules_*`, `home-manager_*`, or `opencode_*`
+nodes usually mean a new path input is not following the root graph.
 
 After input updates, remove stale overrides when Nix warns that an upstream input
-no longer exists. Keep any still-valid nested overrides; for example, `rdny`
-currently exposes `fleet` but no longer exposes a direct `srht` input, so only
-`rdny.inputs.fleet.inputs.srht` should follow the shared root.
+no longer exists. Keep any still-valid nested overrides. For example, `rdny`
+currently exposes `fleet` but no longer exposes a direct `srht` input, so make
+`rdny.inputs.fleet.follows = "fleet"` the only nested override and do not add an
+`rdny.inputs.srht` override.
 For a deliberate intermediate nixpkgs pin, override the revision while retaining
 `original.ref = "nixos-unstable"`; do not run the normal updater, which advances to
 HEAD. Apply and validate the resolved `nodes.nixpkgs.locked` object in every

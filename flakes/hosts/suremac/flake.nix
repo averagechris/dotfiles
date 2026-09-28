@@ -12,6 +12,8 @@
       inputs.home-manager.follows = "home-manager";
       inputs.opencode.follows = "base-lib/opencode";
       inputs.nitter-link.follows = "nitter-link";
+      inputs.fleet.follows = "fleet";
+      inputs.srht.follows = "srht";
     };
     darwin-modules = {
       url = "path:../../darwin-modules";
@@ -35,42 +37,50 @@
     starship-jj.follows = "hm-modules/starship-jj";
     linear-cli.follows = "hm-modules/linear-cli";
     gander.follows = "hm-modules/gander";
-    srht = {
-      url = "sourcehut:~averagechris/srht";
+    fleet = {
+      url = "github:averagechris/averagechris.github.io";
       inputs.nixpkgs.follows = "nixpkgs";
+      inputs.srht.follows = "srht";
+    };
+    srht = {
+      url = "github:averagechris/srht";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.fleet.follows = "fleet";
     };
     granola-cli = {
-      url = "sourcehut:~averagechris/granola-cli";
+      url = "github:averagechris/granola-cli";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
+      inputs.fleet.follows = "fleet";
     };
     sideshow = {
-      url = "sourcehut:~averagechris/sideshow";
+      url = "github:averagechris/sideshow";
       inputs.nixpkgs.follows = "nixpkgs";
+      inputs.fleet.follows = "fleet";
     };
     rdny = {
-      url = "sourcehut:~averagechris/rdny";
+      url = "github:averagechris/rdny";
       inputs.nixpkgs.follows = "nixpkgs";
-      inputs.fleet.inputs.nixpkgs.follows = "nixpkgs";
-      inputs.fleet.inputs.srht.follows = "srht";
+      inputs.fleet.follows = "fleet";
     };
     slack = {
-      url = "sourcehut:~averagechris/slack";
+      url = "github:averagechris/slack";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
+      inputs.fleet.follows = "fleet";
     };
     ctx = {
-      url = "sourcehut:~averagechris/ctx";
+      url = "github:averagechris/ctx";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
+      inputs.fleet.follows = "fleet";
     };
     nitter-link = {
-      url = "git+https://git.sr.ht/~averagechris/nitter-link?ref=refs/tags/v0.1.4";
+      url = "github:averagechris/nitter-link/v0.1.4";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
       inputs.treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
-      inputs.fleet.inputs.nixpkgs.follows = "nixpkgs";
-      inputs.fleet.inputs.srht.follows = "srht";
+      inputs.fleet.follows = "fleet";
     };
     t3-code-nix = {
       url = "github:averagechris/t3-code-nix/opencode-v2-pin";

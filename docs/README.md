@@ -34,6 +34,7 @@
 - [gpg-signing](/docs/gpg-signing.md) - GPG signing setup for git and jj commits with agenix
 - [graphical NixOS VM test](/docs/graphical-vm-test.md) - Apple Silicon graphical Hyprland/ReGreet VM smoke test and interactive driver workflow
 - [flake hygiene](/docs/flake-hygiene.md) - Top-level flake input following, lock de-duplication, and Darwin closure-size checks
+- [GitHub input migration](project-maps/github-input-migration/map.md) - Discovery map for replacing the remaining SourceHut flake inputs with pinned GitHub sources
 - [shell](/docs/shell.md) - Shell module configuration and PATH precedence
 - [sentry-cli](/docs/sentry-cli.md) - New `sentry` CLI package, suremac OpenCode integration, module decision, and update notes
 - [sideshow](/docs/sideshow.md) - Sideshow slide-deck CLI package, Home Manager module, config file, host enablement, and OpenCode skill

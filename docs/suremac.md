@@ -375,16 +375,16 @@ nix-darwin activation may load it again.
 `environment.systemPackages` and exposes it to OpenCode agents as a host-specific
 tool. See [`docs/notion-cli.md`](/docs/notion-cli.md) for usage and update notes.
 
-## Personal SourceHut CLIs
+## Personal GitHub CLIs
 
-`suremac` installs personal CLIs from SourceHut flake inputs:
+`suremac` installs personal CLIs from GitHub flake inputs:
 
-- `slack` (`sourcehut:~averagechris/slack`) - Slack CLI, installed in Home
+- `slack` (`github:averagechris/slack`) - Slack CLI, installed in Home
   Manager `home.packages`
-- `ctx` (`sourcehut:~averagechris/ctx`) - agentic context CLI for indexing and
+- `ctx` (`github:averagechris/ctx`) - agentic context CLI for indexing and
   searching coding-agent session history, exposed to OpenCode agents via
   `dotfiles.opencode.agentTools` (also installed on `tater`)
-- `rdny` (`sourcehut:~averagechris/rdny`) - browser automation CLI, installed via
+- `rdny` (`github:averagechris/rdny`) - browser automation CLI, installed via
   `dotfiles.rdny` and exposed to OpenCode agents (also installed on `tater`)
 
 These follow the host flake's `nixpkgs`; `slack` and `ctx` also follow
