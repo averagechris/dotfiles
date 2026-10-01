@@ -33,8 +33,8 @@ Resume from the map's low-resolution view, then open only the relevant child fil
 
 Use each child's compatibility `Type` as follows:
 
-- `research`: focused Explore or a relevant domain/tool skill. Use `why`
-  specifically for rationale questions. Independent research may run in parallel.
+- `research`: focused exploration or a relevant domain/tool skill. Use `why`
+  for rationale questions when available. Independent research may run in parallel.
 - `prototype`: a cheap throwaway artifact in a temporary or disposable workspace, using the current project's available tooling. Bounded research, disposable prototypes, and supporting artifacts are allowed during discovery when explicitly requested or approved. Do not turn them into the final delivered result or execution work.
 - `grilling`: a short human decision exchange. Serialize coupled human choices enough to prevent contradictory answers.
 - `task`: prerequisite work only when completing it unblocks a decision.
@@ -59,8 +59,8 @@ Edit a decision in place when its old answer has not created meaningful external
 
 The map always owns questions, rationale, fog, and decision dependencies. If the project documents a delivery tracker, that tracker may own organization-visible execution units, ownership, progress, links, execution dependencies, and required compliance evidence. Projects without a tracker still work. External work items need a concrete outcome and should follow the project's own completion and review conventions; do not require a particular change shape. The relationship is many-to-many. One decision may inform several delivery items, and one delivery item may implement several decisions. Never require one tracker item per map item. Translate dependencies from the actual execution order rather than copying decision blockers.
 
-When the way is clear, invoke `architect` only for costly design choices when
-that skill's trigger applies, and invoke `technical-writing` only for a
+When the way is clear, use an available `architect` skill for costly design choices when
+its trigger applies, and invoke `technical-writing` only for a
 substantive spec or design artifact when its trigger applies. Otherwise follow
 the project's artifact conventions. If the user explicitly asks or approves
 it, discovery may establish backlinks among the canonical map,

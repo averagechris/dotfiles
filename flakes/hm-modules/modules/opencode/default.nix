@@ -143,6 +143,8 @@
     })
     config.dotfiles.jujutsu.workspaces.projectGroups);
 in {
+  imports = [../agent-workflows.nix];
+
   options.dotfiles.opencode = {
     openrouterApiKeyFile = lib.mkOption {
       type = lib.types.nullOr lib.types.path;
@@ -261,7 +263,14 @@ in {
         # SKILLS - Reusable knowledge for agents
         # ============================================================================
 
-        skills = import ./skills.nix;
+        skills = builtins.removeAttrs (import ./skills.nix) [
+          "conventional-commits"
+          "test-curation"
+          "teach"
+          "project-map"
+          "impactful-writing"
+          "technical-writing"
+        ];
 
         # ============================================================================
         # SETTINGS - OpenCode configuration (written to config.json)
@@ -275,10 +284,9 @@ in {
         settings = import ./settings.nix {inherit lib pkgs managedJjWorkspaceExternalDirectories;};
       };
 
-      # Registered through the shared skill registry (rather than skills.nix)
-      # so other modules can extend it: dev-cache appends host-specific
-      # sccache guidance via extraText when enabled.
-      dotfiles.agentSkills.rust-cargo.source = lib.mkDefault ./skills/rust-cargo/SKILL.md;
+      # OpenCode-specific CLI knowledge uses the shared registry.
+      # Portable workflows (including rust-cargo) are registered independently
+      # by agent-workflows.nix.
       dotfiles.agentSkills.databricks-cli.source = lib.mkDefault ./skills/databricks-cli;
 
       home.packages =

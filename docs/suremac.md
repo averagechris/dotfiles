@@ -517,3 +517,10 @@ generations are never garbage collected automatically; the job posts a macOS
 notification when they pile up, and the manual command it suggests keeps the
 most recent generations so the immediately previous darwin profile always
 remains a rollback target.
+
+## Codex
+
+`suremac` enables `dotfiles.codex` for the desktop app. It shares portable skills
+and concise agent guidance with OpenCode while preserving writable desktop
+configuration and native Git worktrees. See [Codex](codex.md) for settings,
+per-client skill targets, environment setup, and activation.

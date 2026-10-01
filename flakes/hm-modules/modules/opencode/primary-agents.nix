@@ -295,6 +295,8 @@ in {
 
     ${runtimeNote}
 
+    ${builtins.readFile ../agent-guidance.md}
+
     ## Your role
     - invest in task definition and decomposition; hand Minion clear implementation packets with scope, context, constraints, acceptance criteria, and checks that would fail if the claimed behavior were false. proving setup ran is not verification, and a fix is incomplete until the original failure is explained
     - delegate implementation and logistics; delegate review according to the policy below

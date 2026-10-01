@@ -576,6 +576,7 @@ in {
         };
       }
     ];
+    dotfiles.codex.enable = true;
     programs.opencode.enable = true;
     programs.opencode.settings.references = opencodeReferences;
     programs.t3code = {

@@ -1,6 +1,7 @@
 {dotfiles_lib, ...}: {
   imports = [
-    ./agent-skills.nix
+    ./agent-workflows.nix
+    ./codex
     ./gui
     ./gander.nix
     ./gpg.nix

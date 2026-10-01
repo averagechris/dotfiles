@@ -6,6 +6,7 @@
 - [automated maintenance](/docs/automated-maintenance.md) - Thorny-driven daily update automation plan, short-term safeguards, and long-term project fleet vision
 - [audio](/docs/audio.md) - PipeWire/WirePlumber output priority, helper commands, and Eww controls
 - [cache policy](/docs/cache-policy.md) - Nix cache/key/builder matrix, CI pull/publish policy, and observability fields
+- [codex](/docs/codex.md) - Codex Home Manager module, shared guidance and skills, and preserved desktop configuration
 - [ctx](/docs/ctx.md) - Ctx local agent-history search CLI package and frequent background indexing job
 - [deploy](/docs/deploy.md) - deploy-rs, quiet deploy wrapper, Darwin switch notes, and activation wrapper architecture
 - [flake performance audit](/docs/flake-performance-audit.md) - 2026-07-09

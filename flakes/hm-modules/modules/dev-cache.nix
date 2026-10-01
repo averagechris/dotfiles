@@ -768,7 +768,7 @@ in {
 
   config = lib.mkIf cfg.enable {
     # Host-specific appendix for the base rust-cargo skill registered by the
-    # OpenCode module; installed only when OpenCode is enabled on the host.
+    # shared agent-workflows module; deployed to each enabled client target.
     dotfiles.agentSkills.rust-cargo.extraText = ''
       ## This host: managed sccache (dotfiles.devCache)
 
@@ -782,9 +782,9 @@ in {
         `launchctl kickstart gui/$(id -u)/org.nix-community.home.sccache-server`
         (macOS) or `systemctl --user restart sccache-server` (Linux).
       ${lib.optionalString cfg.sccache.disableOpencodeIncremental ''
-        - Your commands run with `CARGO_INCREMENTAL=0` by design so isolated
+        - OpenCode commands run with `CARGO_INCREMENTAL=0` by design so isolated
           agent workspaces share complete crate outputs through sccache. Do not
-          re-enable it unless a human asks.
+          re-enable it in OpenCode unless a human asks.
       ''}'';
 
     home.packages =

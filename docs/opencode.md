@@ -283,6 +283,14 @@ OpenCode to restate its last message plainly and concisely, and to use the
 
 ## Declarative CLI skills
 
+The portable workflow subset is now registered by `modules/agent-workflows.nix`
+for both OpenCode and Codex. Registry entries have per-client `targets`; existing
+CLI registrations remain OpenCode-only by default. See [Codex](codex.md) for the
+shared set and writable desktop configuration policy. OpenCode no longer
+registers that subset a second time through `programs.opencode.skills`.
+The shared guidance focuses on brevity and design judgment. Portable skills use
+client-independent workflows, including teaching and project discovery.
+
 CLI modules register bundled skills in the shared `dotfiles.agentSkills`
 registry. Every registered skill is enabled by default and Home Manager links
 the rendered result at `~/.config/opencode/skills/<name>/SKILL.md` when OpenCode
