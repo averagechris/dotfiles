@@ -57,22 +57,26 @@ require `granola auth logout --force` before the next activation or a manual
 `granola` to `dotfiles.opencode.agentTools`, so OpenCode primary agents see it
 in their runtime tool note and get the package in their PATH.
 
-`suremac` also installs the repo-managed `granola-meeting-context` OpenCode
-skill. The skill is intentionally minimal: it tells agents to use
-`granola notes search`, `granola digest`, and bounded/redacted `granola context`
-bundles when meeting notes may help with requirements, decisions, follow-ups, or
-project history. It also documents the useful SQLite FTS search fields
-(`title:`, `attendees:`, `summary_text:`, `summary_markdown:`, `folders:`, and
-`transcript:`) for quickly finding relevant meetings. Granola CLI v0.7 removed
-the top-level `search`, `show`, and `open` aliases, so use the `notes search`,
-`notes get`, and `notes open` subcommands. `notes get-many`, `sync`, and
-`context` use the singular `--include-transcript` flag, and `context` /
-`notes get-many` must be given an explicit selector such as note IDs/URLs,
-`--notes-file`, `--stdin`, list filters, or `--all`. Granola CLI v0.8 added
-`granola notes fields [list|search|get]` for field discovery, `--output text`
-and single-field plain-text row output for pipelines, `notes search --redact`,
-and transcript-aware `notes get --fields transcript` fetching. Use
-`granola export note NOTE --format text` for single-note text exports.
+`suremac` installs two repo-managed OpenCode skills:
+
+- `granola-meeting-context` retrieves relevant past meetings with bounded
+  searches, minimal context, redaction, and evidence citations. CLI mechanics
+  come from `granola agent --output json-compact` and command `--help`.
+- `live-meeting-feedback` uses fresh raw transcripts for live interpretation,
+  question phrasing, quiet watching, and a final debrief. Start with “Be my
+  sounding board for [link]. My goal is [goal]. Watch quietly.” Watching refreshes
+  about every 20–30 seconds while the agent is actively running; it does not
+  continue after the agent stops. Ask questions directly, say “pause” or “stop”
+  to stop watching, and “call ended” for a final read and debrief. Feedback stays
+  in the chat unless you explicitly request an external action.
+
+For a meeting still in progress, Granola may not expose **Copy link** yet.
+Start the note, stop transcription, choose **Generate notes**, copy the link
+at the top right, and resume transcription on the same note. This pauses
+Granola transcription; the call can continue. The CLI's public API exposes
+notes after a summary and transcript have been generated. Live reads use
+`granola notes get LINK --fields transcript --output text --no-cache`; verify
+that text grows after recording resumes, since API updates can lag.
 
 `suremac` also enables `dotfiles.granola.sync.enable`, which creates a user
 LaunchAgent that runs the following command every hour:
