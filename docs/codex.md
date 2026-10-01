@@ -23,7 +23,8 @@ dotfiles.codex = {
 
 `modules/agent-guidance.md` supplies concise explanations, smaller changes,
 behavioral checks, and design judgment to Codex and the OpenCode orchestrator.
-Codex adds a command for loading direnv project environments in desktop sessions.
+Codex adds model-selection guidance and a command for loading direnv project
+environments in desktop sessions.
 Home Manager combines these files and `extraInstructions` into the global
 `AGENTS.md`. The shared skills carry topic-specific workflows and use the same
 sources in both clients. Their detailed teaching, writing, testing, and discovery
@@ -54,6 +55,27 @@ Bay/jj workspace management, and ctx history assumptions. These need explicit
 adaptation before opting into Codex. Host CLI skills remain OpenCode-only unless
 a host adds Codex to their targets. Private skill appendices are not migrated;
 never place decrypted material in Nix settings, prompt strings, or sources.
+
+## Model selection and outside feedback
+
+The global guidance prioritizes budget efficiency. Sol at high reasoning chooses
+approaches and plans, then delegates clear implementation tasks to Luna. Routine
+work can start with Luna. Astra is reserved for consequential uncertainty that
+Sol at high reasoning cannot resolve.
+
+For occasional outside-model feedback, agents can use
+`opencode run --model <provider/model#variant>`. Rare Wise-level consultations
+favor Fable 5.1 or Opus 5.5 for taste judgments about coherence, simplicity,
+wording, and user experience. The example uses
+`openrouter/anthropic/claude-fable-5.1#high` with a compact decision packet and
+analysis-only instructions. Sol retains planning and Luna handles clear
+implementation tasks. The documented example
+uses `--standalone` for a private server and `--file` to attach the packet.
+These calls use the host's OpenCode provider credentials and billing.
+
+This is selection guidance for agents, not a change to the desktop model picker
+or enforced TOML model defaults. The OpenCode CLI syntax was checked with the
+installed `opencode run --help`; no paid model call was needed for validation.
 
 ## Writable configuration
 
