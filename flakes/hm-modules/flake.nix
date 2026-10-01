@@ -69,6 +69,7 @@
       homeManagerModules = {
         default = ./modules/default.nix;
         agentSkills = ./modules/agent-skills.nix;
+        codex = ./modules/codex;
         shell = ./modules/shell.nix;
         helix = ./modules/helix/default.nix;
         opencode = ./modules/opencode/default.nix;
@@ -164,6 +165,7 @@
       opencodePluginRuntime = pkgs.callPackage ./modules/opencode/plugin-runtime {};
     in {
       checks = {
+        codex-module = import ./modules/codex/check.nix {inherit pkgs home-manager;};
         agent-skills-directory-source = let
           testConfig = home-manager.lib.homeManagerConfiguration {
             inherit pkgs;

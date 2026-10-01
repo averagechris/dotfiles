@@ -768,7 +768,7 @@ in {
 
   config = lib.mkIf cfg.enable {
     # Host-specific appendix for the base rust-cargo skill registered by the
-    # OpenCode module; installed only when OpenCode is enabled on the host.
+    # shared agent-workflows module; deployed to each enabled client target.
     dotfiles.agentSkills.rust-cargo.extraText = ''
       ## This host: managed sccache (dotfiles.devCache)
 

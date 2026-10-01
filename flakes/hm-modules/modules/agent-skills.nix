@@ -12,7 +12,13 @@
       enable = lib.mkOption {
         type = lib.types.bool;
         default = true;
-        description = "Link this Agent Skill into OpenCode's skill directory.";
+        description = "Deploy this Agent Skill to its enabled client targets.";
+      };
+
+      targets = lib.mkOption {
+        type = lib.types.listOf (lib.types.enum ["opencode" "codex"]);
+        default = ["opencode"];
+        description = "Clients that receive this skill when enabled; Codex is opt-in.";
       };
 
       source = lib.mkOption {
@@ -64,12 +70,21 @@
         cat ${extraText} >> "$out/SKILL.md"
       ''}
     '';
+  renderedSkills = lib.mapAttrs renderSkill enabledSkills;
+  forTarget = target: lib.filterAttrs (_: skill: builtins.elem target skill.targets) enabledSkills;
   skillFiles = lib.mapAttrs' (name: skill:
     lib.nameValuePair "opencode/skills/${name}" {
-      source = renderSkill name skill;
+      source = renderedSkills.${name};
       recursive = true;
     })
-  enabledSkills;
+  (forTarget "opencode");
+  codexSkillFiles = lib.mapAttrs' (name: skill:
+    lib.nameValuePair ".agents/skills/${name}" {
+      source = renderedSkills.${name};
+      recursive = true;
+    })
+  (forTarget "codex");
+  anyClientEnabled = config.programs.opencode.enable || config.programs.codex.enable;
   bundleAssertions = lib.concatMap (bundleName: let
     bundle = bundles.${bundleName};
     audit = agentSkillsLib.auditBundle bundle;
@@ -132,7 +147,7 @@ in {
 
   config = lib.mkMerge [
     {assertions = bundleAssertions;}
-    (lib.mkIf config.programs.opencode.enable {
+    (lib.mkIf anyClientEnabled {
       assertions =
         lib.mapAttrsToList (name: skill: {
           assertion = builtins.match "^[a-z0-9]+(-[a-z0-9]+)*$" name != null;
@@ -155,8 +170,8 @@ in {
           message = "dotfiles.agentSkills.${name}.source directory must contain SKILL.md.";
         })
         cfg;
-
-      xdg.configFile = skillFiles;
     })
+    (lib.mkIf config.programs.opencode.enable {xdg.configFile = skillFiles;})
+    (lib.mkIf config.programs.codex.enable {home.file = codexSkillFiles;})
   ];
 }
