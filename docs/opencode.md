@@ -288,7 +288,8 @@ for both OpenCode and Codex. Registry entries have per-client `targets`; existin
 CLI registrations remain OpenCode-only by default. See [Codex](codex.md) for the
 shared set and writable desktop configuration policy. OpenCode no longer
 registers that subset a second time through `programs.opencode.skills`.
-
+The shared guidance focuses on brevity and design judgment. Portable skills use
+client-independent workflows, including teaching and project discovery.
 
 CLI modules register bundled skills in the shared `dotfiles.agentSkills`
 registry. Every registered skill is enabled by default and Home Manager links

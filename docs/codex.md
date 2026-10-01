@@ -15,18 +15,18 @@ dotfiles.codex = {
     # Declare only defaults you want enforced at Home Manager activation:
     # model_reasoning_effort = "medium";
   };
-  extraInstructions = "Use this host's repository setup instructions.";
+  # extraInstructions = "<additional host-specific guidance>";
 };
 ```
 
 ## Shared guidance and skills
 
-`modules/agent-guidance.md` supplies shared autonomy, brevity, verification,
-review, and design judgment guidance to Codex and the OpenCode orchestrator.
-Codex adds its own instructions for native subagents, Git worktrees, built-in
-tools, and explicit dev-shell setup. It does not impose jj globally. Repository
-VCS instructions still apply, and spawned subagents do not automatically have
-isolated checkouts.
+`modules/agent-guidance.md` supplies concise explanations, smaller changes,
+behavioral checks, and design judgment to Codex and the OpenCode orchestrator.
+Codex adds a command for loading direnv project environments in desktop sessions.
+Home Manager combines these files and `extraInstructions` into the global
+`AGENTS.md`. The shared skills carry topic-specific workflows and use the same
+sources in both clients.
 
 `modules/agent-workflows.nix` registers seven portable skills independently of
 OpenCode: conventional-commits, test-curation, teach, project-map,
@@ -83,10 +83,9 @@ secrets in their runtime credential stores.
 
 ## Environment and activation
 
-Desktop sessions are not assumed to inherit the interactive shell's direnv
-state. Codex guidance asks agents to use repository/local-environment setup or
-`direnv exec <workdir> <command>` for an already allowed environment. This module
-does not port OpenCode's per-command direnv or Rust environment hooks.
+The Codex guidance uses `direnv exec <workdir> <command>` to load project
+environments for shell commands in desktop sessions. The Rust skill documents
+the host's compiler cache and service recovery commands.
 
 Build and review before switching:
 

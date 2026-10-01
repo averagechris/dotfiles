@@ -53,7 +53,7 @@ in
       test -f ${rendered}/references/companion.md
         grep -Fqx 'description: Patched fixture description.' ${rendered}/SKILL.md
         grep -Fqx 'Shared fixture guidance.' ${rendered}/SKILL.md
-        grep -Fq 'Delegate independent' ${both.home.file.".codex/AGENTS.md".source}
+        grep -Fq 'direnv exec <workdir> <command>' ${both.home.file.".codex/AGENTS.md".source}
         cp ${./merge-settings.py} merge-settings.py
         cp ${./test-merge-settings.py} test-merge-settings.py
         python3 test-merge-settings.py
