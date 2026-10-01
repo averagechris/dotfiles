@@ -770,17 +770,22 @@ in {
     # Host-specific appendix for the base rust-cargo skill registered by the
     # shared agent-workflows module; deployed to each enabled client target.
     dotfiles.agentSkills.rust-cargo.extraText = ''
-      ## This host's sccache service
+      ## This host: managed sccache (dotfiles.devCache)
 
-      `~/.cargo/config.toml` sets `rustc-wrapper = sccache`. A user service runs
-      the shared cache server.
-
-      If a reported sccache failure persists after the diagnostic retry, restart
-      the service with `sccache --stop-server || true`, then use the host command:
-
-      - macOS: `launchctl kickstart gui/$(id -u)/org.nix-community.home.sccache-server`
-      - Linux: `systemctl --user restart sccache-server`
-    '';
+      - `~/.cargo/config.toml` sets `rustc-wrapper = sccache` and a supervised
+        server runs as a user service; treat the cache as always-on.
+      - Never clear `RUSTC_WRAPPER`. Slow or timed-out builds are not sccache
+        failures; re-run with a larger tool timeout instead.
+      - Only after an error that explicitly implicates sccache: retry once with
+        `SCCACHE_DISABLE=1 cargo ...` and report the failure. If it persists,
+        restart the managed server: `sccache --stop-server || true`, then
+        `launchctl kickstart gui/$(id -u)/org.nix-community.home.sccache-server`
+        (macOS) or `systemctl --user restart sccache-server` (Linux).
+      ${lib.optionalString cfg.sccache.disableOpencodeIncremental ''
+        - OpenCode commands run with `CARGO_INCREMENTAL=0` by design so isolated
+          agent workspaces share complete crate outputs through sccache. Do not
+          re-enable it in OpenCode unless a human asks.
+      ''}'';
 
     home.packages =
       [

@@ -5,19 +5,37 @@ description: Use only for substantive engineer-facing artifacts such as docs, RF
 
 # Technical writing
 
-Apply `impactful-writing`. Keep reference material neutral and distinguish evidence from opinion.
+Load `impactful-writing` before drafting or reviewing. Apply its general prose filter where it fits the artifact. The artifact rules here win when they conflict: reference material stays neutral, document structure stays deliberate, and opinion belongs only in explanation or clearly marked commentary. Do not reproduce the general writing catalog here.
 
-## Draft around the reader's task
+This skill adds control over document purpose, audience, engineering truth, navigability, procedures, reference completeness, durable structure, and ambiguity.
 
-Read [document modes](references/document-modes.md). Choose the mode that fits the reader's question or task. Organize around what they need to do or look up.
+## Start with purpose and evidence
 
-Check the current code, configuration, and tests before describing behavior. Use exact names, paths, flags, defaults, and measured values. Include a command to regenerate derived tables or counts.
+1. Name the audience, the task or question, and the concrete outcome.
+2. Choose the document mode before drafting. Read [document modes](references/document-modes.md). Split mixed modes into linked sections or documents when the reader's task changes.
+3. Inspect the current code, configuration, tests, and related docs. Treat the repository as the source of names and behavior.
+4. Outline around reader tasks and lookup needs, not the order in which the system was built.
+5. Draft, then apply the [engineering doc checklist](references/engineering-doc-checklist.md).
 
-Put prerequisites before procedures. Give runnable commands, expected results, and useful recovery steps. Use consistent terms and descriptive links.
+## Write what the system does
 
-For design documents, explain the problem, constraints, proposed behavior, alternatives, and tradeoffs. Cover migration, failure handling, and rollout where they affect the decision. Distinguish facts, assumptions, open questions, and commitments.
+- Use exact symbols, paths, flags, commands, configuration keys, and measured values.
+- Verify every technical claim against the code and current repository state. Do not fill gaps with plausible behavior.
+- For generated counts, trees, or tables, include the command that regenerates them.
+- Put prerequisites and conditions before actions. Name expected results and add failure or recovery notes when they help the reader proceed.
+- Use useful headings and descriptive links so readers can scan, navigate, and return for lookup.
+- Use one term per concept. Rewrite ambiguous pronouns, dense noun strings, and unclear placement of `only` or `not`.
 
-Review with the [engineering doc checklist](references/engineering-doc-checklist.md). Use the artifact's existing format when it fits the task.
+## Respect artifact boundaries
+
+- PRDs and roadmaps separate facts, decisions, assumptions, open questions, owners, dates, and success measures. Do not invent certainty or commitments.
+- Blog posts and explanations may take a position, but identify what is evidence and what is opinion.
+- RFCs, ADRs, and design docs state goals, non-goals, constraints, the proposed design, alternatives and rationale, consequences, and unresolved risks. Cover migration, compatibility, security, failure handling, observability, testing, rollout, and rollback when they matter.
+- READMEs, how-tos, and tutorials provide runnable procedures and expected results.
+
+Routine PR descriptions and commit messages need only `impactful-writing`. Use this skill for them only when the user asks for substantive document-like treatment.
+
+Use the artifact's existing format when it already captures these facts. Do not turn a focused document into a template exercise.
 
 ## Source traditions
 

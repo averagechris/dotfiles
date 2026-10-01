@@ -26,7 +26,9 @@ behavioral checks, and design judgment to Codex and the OpenCode orchestrator.
 Codex adds a command for loading direnv project environments in desktop sessions.
 Home Manager combines these files and `extraInstructions` into the global
 `AGENTS.md`. The shared skills carry topic-specific workflows and use the same
-sources in both clients.
+sources in both clients. Their detailed teaching, writing, testing, and discovery
+guidance is retained. References to optional exploration and architecture skills
+apply when those skills are available.
 
 `modules/agent-workflows.nix` registers seven portable skills independently of
 OpenCode: conventional-commits, test-curation, teach, project-map,

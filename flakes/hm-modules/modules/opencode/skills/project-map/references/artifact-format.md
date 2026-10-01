@@ -1,6 +1,6 @@
 # Project-map artifact format
 
-Use these headings and fields for maps and child decisions.
+Keep these headings and fields so stock Wayfinder users can navigate the artifacts without translation.
 
 ## Map
 
@@ -54,13 +54,13 @@ Blocked by: <named relative links, or "none">
 
 ## Artifacts
 
-- Proposal: [Boundary options](../artifacts/boundary-options.md), compares the
+- Proposal: [Boundary options](../artifacts/boundary-options.md) — compares the
   alternatives for this decision
-- Prototype: [Interaction demo](../artifacts/interaction-demo/), tests the
+- Prototype: [Interaction demo](../artifacts/interaction-demo/) — tests the
   proposed behavior
-- Review: [Review notes](../artifacts/review-notes.md), input awaiting
+- Review: [Review notes](../artifacts/review-notes.md) — input awaiting
   reconciliation into this decision
-- Verified result: [Delivered behavior](../artifacts/verified-result.md), checks
+- Verified result: [Delivered behavior](../artifacts/verified-result.md) — checks
   the resolved answer against the delivered state
 
 ## Delivery links
@@ -74,4 +74,4 @@ Artifacts are projections or evidence, not a second decision record. Reconcile a
 
 `Delivery links` is optional and may be empty. It records named external tracker links, not a one-to-one mapping. One decision may inform several delivery issues, and one delivery issue may implement several decisions. External delivery issues link back to the canonical map and the relevant named decisions.
 
-Retain additional metadata required by the repository's map or tracker format.
+When an existing Wayfinder or tracker contract adds required metadata, retain it. Do not rename the fields or headings above.
