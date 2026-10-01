@@ -845,9 +845,11 @@ top-level `databricks sql` subcommand in the current official CLI. Agents
 should use `queries`, `query-history`, `warehouses`, `psql`, or `databricks api`
 depending on the task.
 
-`suremac` additionally configures the `granola-meeting-context` skill so agents can pull
-concise, redacted meeting-note context with the host-specific `granola` CLI when
-relevant. The host-specific `pup-cli` skill gives agents compact Datadog CLI
+`suremac` additionally configures `granola-meeting-context` for concise,
+redacted historical meeting evidence and `live-meeting-feedback` for fresh
+transcript coaching, quiet watching, and debriefs. The live skill includes the
+stop/generate/copy-link/resume workaround; see [Granola](granola.md). The
+host-specific `pup-cli` skill gives agents compact Datadog CLI
 patterns centered on `--read-only`, `--no-agent`, `--jq`, bounded queries, and
 CSV/JSON output selection. `suremac` also installs `sure-stack-context`, a
 Sure-specific investigation skill that routes between Datadog, Sentry, and

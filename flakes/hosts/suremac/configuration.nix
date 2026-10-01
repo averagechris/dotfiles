@@ -615,6 +615,7 @@ in {
     '';
     dotfiles.opencode.sessionCleanup.enable = true;
     programs.opencode.skills.granola-meeting-context = builtins.readFile ../../hm-modules/modules/opencode/skills/granola-meeting-context/SKILL.md;
+    programs.opencode.skills.live-meeting-feedback = builtins.readFile ../../hm-modules/modules/opencode/skills/live-meeting-feedback/SKILL.md;
     programs.opencode.skills.pup-cli = builtins.readFile ../../hm-modules/modules/opencode/skills/pup-cli/SKILL.md;
     programs.opencode.skills.sentry-cli = builtins.readFile ../../hm-modules/modules/opencode/skills/sentry-cli/SKILL.md;
     programs.opencode.skills.suremac-jj-pr = builtins.readFile ../../hm-modules/modules/opencode/skills/suremac-jj-pr/SKILL.md;
