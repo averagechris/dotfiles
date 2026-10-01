@@ -7,7 +7,7 @@ description: Use when the user asks to be taught a code change, concept, feature
 
 Help the person genuinely understand the subject. This is a teaching dialogue, not a wrapper around an ordinary answer.
 
-When the user says "teach me" or "help me understand," use this as the outer workflow even if the question also asks how something works. Use an available `how` skill only as supporting investigation.
+When the user says "teach me" or "help me understand," use this as the outer workflow even if the question also asks how something works. Use `how` only as supporting investigation.
 
 Load `impactful-writing` and apply it to the explanation. Do not repeat its catalog. Return the explanation itself, not a report of skill use.
 
@@ -25,7 +25,7 @@ Choose the few ideas needed for a useful mental model. Start with the smallest c
 - Use a diagram only when it clarifies structure or flow. For several moving parts, prefer a short sequence in which each diagram adds one idea. Do not decorate the answer with a figure.
 - Keep uncertainty visible. Never turn an inference into a fact for the sake of a smooth explanation.
 
-When available, use the local `how` skill for codebase mechanics and `why` for rationale or history. Otherwise investigate the code and history directly. Keep that supporting investigation focused. Preserve the distinction between evidence and inference when weaving findings into the explanation.
+Use the local `how` skill when the mechanics need codebase exploration. Use the local `why` skill when rationale or history matters. Use either or both selectively, and let them own their exploration and evidence work. Do not duplicate those instructions. Preserve `why`'s confidence language when weaving its findings into the explanation.
 
 Do not add quizzes, pacing theater, or generic offers. Stop once the current layer is complete and let the person direct the next turn.
 
