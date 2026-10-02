@@ -81,7 +81,7 @@
   codexSkillFiles = lib.mapAttrs' (name: skill:
     lib.nameValuePair ".agents/skills/${name}" {
       source = renderedSkills.${name};
-      recursive = true;
+      recursive = false;
     })
   (forTarget "codex");
   anyClientEnabled = config.programs.opencode.enable || config.programs.codex.enable;
