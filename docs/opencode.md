@@ -828,7 +828,7 @@ build time. Current examples include:
 - `srht-issues`, `srht-ci`, and `srht-setup` (registered by `dotfiles.srht`)
 - `databricks-cli` (registered globally, currently disabled on `suremac`)
 - `pup-cli`
-- `rust-cargo` (registered by the OpenCode module through the shared skill
+- `rust-cargo` (registered by `agent-workflows.nix` through the shared skill
   registry; `dotfiles.devCache` appends host-specific sccache guidance so
   agents keep cargo output concise and never clear `RUSTC_WRAPPER`)
 - `sure-stack-context` (suremac only)
