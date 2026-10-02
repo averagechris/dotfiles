@@ -42,6 +42,8 @@ in
   assert !(both.home.file ? ".agents/skills/teach");
   assert !(both.home.file ? ".agents/skills/project-map");
   assert both.xdg.configFile."opencode/skills/directory-fixture".source == rendered;
+  assert !both.home.file.".agents/skills/directory-fixture".recursive;
+  assert both.xdg.configFile."opencode/skills/directory-fixture".recursive;
   assert codexOnly.home.file ? ".agents/skills/test-curation";
   assert !(codexOnly.xdg.configFile ? "opencode/skills/test-curation");
   assert !(disabled.home.file ? ".agents/skills/test-curation");

@@ -43,6 +43,12 @@ Every registry entry has a `targets` list. Existing registrations default to
 Each client receives its targets only while `programs.<client>.enable` is true.
 Codex skills deploy to `~/.agents/skills/<name>` using the current documented
 personal skill directory. OpenCode skills retain their existing XDG paths.
+Codex links each complete skill directory into `~/.agents/skills`
+(`recursive = false`). In ChatGPT desktop 26.928.40906, a directory-level
+symlink made an otherwise identical skill appear in the Skills picker;
+Home Manager's recursive file-level symlinks did not. OpenCode retains its
+existing recursive deployment, and both clients use the same rendered contents.
+
 Unmanaged skills can coexist. For example:
 
 ```nix
