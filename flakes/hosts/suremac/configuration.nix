@@ -577,6 +577,8 @@ in {
       }
     ];
     dotfiles.codex.enable = true;
+    # Reference only. Adoption requires a separate request after review and merge.
+    xdg.configFile."grem/PREFERENCES.md".source = ./grem/PREFERENCES.md;
     programs.opencode.enable = true;
     programs.opencode.settings.references = opencodeReferences;
     programs.t3code = {
