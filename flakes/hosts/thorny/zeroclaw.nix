@@ -29,12 +29,22 @@
   # Stage 2 of the runbook: flip after the stage 1 isolation checks pass.
   kagiEnabled = false;
 
-  # Stage 1 grants the built-in memory tools only.
+  # Memory and reactions confined to the current conversation.
   memoryTools = ["memory_recall" "memory_store" "memory_forget"];
   searchTools = lib.optional kagiEnabled "web_search_tool";
-  allowedTools = memoryTools ++ searchTools;
+  allowedTools = memoryTools ++ ["reaction"] ++ searchTools;
   # auto_approve replaces the default list, so name every unprompted tool.
-  autoApprove = ["memory_recall" "memory_store"] ++ searchTools;
+  autoApprove = ["memory_recall" "memory_store" "reaction"] ++ searchTools;
+
+  # One public personality, inherited by invited agents, with private memory
+  # left in each agent's own workspace. These files are the authoring source.
+  michiIdentity = {
+    format = "aieos";
+    aieos_inline = builtins.toJSON {
+      identity.bio = builtins.readFile ./michi/IDENTITY.md;
+      linguistics.style = builtins.readFile ./michi/SOUL.md;
+    };
+  };
 in {
   imports = [inputs.zeroclaw.nixosModules.default];
 
@@ -74,14 +84,17 @@ in {
         owner = {
           model_provider = "openai.codex";
           risk_profile = "owner";
+          identity = michiIdentity;
         };
         guest_template = {
           model_provider = "openai.codex";
           risk_profile = "guests";
+          identity = michiIdentity;
         };
         group_template = {
           model_provider = "openai.codex";
           risk_profile = "guests";
+          identity = michiIdentity;
         };
       };
 
@@ -110,6 +123,8 @@ in {
         # One shared group session; DMs are unaffected.
         per_user_session = false;
         stream_mode = "partial";
+        # Reactions should be chosen for the conversation, not sent on every receipt.
+        ack_reactions = false;
         # The owner retains a fixed agent. Invites create isolated identities
         # from the templates without writing them into this Nix-owned TOML.
         routes."$TG_OWNER_ID" = "owner";
