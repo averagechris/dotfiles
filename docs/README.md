@@ -13,6 +13,7 @@
   flake performance findings, benchmark caveats, and SourceHut burn-down
 - [gander](/docs/gander.md) - Gander jj review TUI Home Manager module, package input, and Colemak keybindings
 - [granola](/docs/granola.md) - Granola CLI Home Manager module, shell completions, agenix token seeding, suremac note sync, and historical/live meeting skills
+- [grem](grem.md) - Work preferences reference, Michi-derived draft, and explicit review and adoption process
 - [helium](/docs/helium.md) - Helium browser packaging and configuration on NixOS
 - [helix](/docs/helix.md) - Helix editor configuration and curated tree-sitter grammar runtime
 - [hyprland](/docs/hyprland.md) - Hyprland window manager configuration, keybindings, and features
