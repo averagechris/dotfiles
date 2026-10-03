@@ -19,6 +19,18 @@ git clone that cannot run inside the Nix sandbox.
 
 Only hyprpm consumes glaze; the compositor itself does not.
 
+## Keep the portal on the patched package
+
+The portal package also takes Hyprland as an input: it wraps
+`hyprland-share-picker` with Hyprland's `bin` directory on `PATH`. If a host
+lists the raw `xdg-desktop-portal-hyprland` flake output in
+`xdg.portal.extraPortals`, that portal derivation retains the raw Hyprland
+package and can reintroduce the FetchContent failure even when
+`programs.hyprland.package` uses the host's patched package. Set
+`programs.hyprland.portalPackage` to the portal output overridden with the
+patched Hyprland package, then reference `config.programs.hyprland.portalPackage`
+from `xdg.portal.extraPortals`. Thorny does this in its host configuration.
+
 ## The fix
 
 `flakes/base-lib/packages/glaze-v7.nix` packages glaze 7.x from a fixed upstream

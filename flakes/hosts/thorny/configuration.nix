@@ -24,6 +24,9 @@
         GIT_TAG = "v${lib.removeSuffix "\n" (builtins.readFile "${inputs.hyprland}/VERSION")}";
       };
   });
+  hyprlandPortalPackage = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland.override {
+    hyprland = hyprlandPackage;
+  };
 
   thornyStatus = pkgs.writeShellApplication {
     name = "thorny-status";
@@ -563,8 +566,9 @@ in {
 
   dotfiles.hyprland-desktop.enable = true;
   programs.hyprland.package = hyprlandPackage;
+  programs.hyprland.portalPackage = hyprlandPortalPackage;
   xdg.portal.extraPortals = lib.mkForce [
-    inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland
+    config.programs.hyprland.portalPackage
     pkgs.xdg-desktop-portal-gtk
   ];
 
