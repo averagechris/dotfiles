@@ -66,6 +66,30 @@ tater's `system.tater` host key; see [LAN SSH](/docs/lan-ssh.md) for the
 DHCP-friendly `dotfiles-lan-hosts`, `ssh-lan`, and `ssh-suremac-lan` helpers and
 for the current key-trust caveat around a future dedicated `chris@tater` user key.
 
+## Sleep on AC power
+
+`suremac` disables automatic idle system sleep on AC power so local coding
+agents can keep working while the display is asleep. The host's existing
+`system.activationScripts.extraActivation` fragment applies
+`/usr/bin/pmset -c sleep 0` on each Darwin activation. The pinned nix-darwin
+`power.sleep.computer` option has no AC/battery selector, so it is intentionally
+left unset.
+
+This changes only the AC system-sleep timer. It preserves the current AC display
+sleep timer (10 minutes) and battery policy. Display sleep and screen locking do
+not stop local work; actual system sleep does. Manual sleep and lid closure can
+still suspend work, so use an open lid or a supported powered external-display
+setup. Keeping the machine awake between tasks consumes more electricity.
+
+Verify after activation with `pmset -g custom`: AC Power should show `sleep 0`
+and `displaysleep 10`. Inspect `pmset -g assertions` when diagnosing active
+sleep prevention. The ChatGPT app also offers **Settings → General → Prevent
+sleep while running**, but its UI preference remains app-owned.
+
+Removing the activation command alone does not reset macOS's persisted setting.
+To restore the previous AC idle policy, change it to `pmset -c sleep 10` and
+activate that revision before removing management.
+
 ## Time zone
 
 `suremac` does not pin `time.timeZone` to a fixed IANA zone. Instead, the host
