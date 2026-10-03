@@ -19,6 +19,8 @@
     ];
   };
 
+  memoPackage = inputs.memo.packages.${pkgs.stdenv.hostPlatform.system}.default;
+
   # Keep the parent path valid in a clean checkout. A missing path literal is
   # rejected during Nix evaluation before pathExists can disable the feature.
   secretsDir = ../../../secrets;
@@ -30,19 +32,19 @@
   kagiEnabled = true;
 
   # Memory and reactions confined to the current conversation.
-  memoryTools = ["memory_recall" "memory_store" "memory_forget"];
+  memoryTools = ["memo"];
   searchTools = lib.optional kagiEnabled "web_search_tool";
   allowedTools = memoryTools ++ ["reaction" "image_gen"] ++ searchTools;
   # auto_approve replaces the default list, so name every unprompted tool.
-  autoApprove = ["memory_recall" "memory_store" "reaction" "image_gen"] ++ searchTools;
+  autoApprove = memoryTools ++ ["reaction" "image_gen"] ++ searchTools;
 
   # One public personality, inherited by invited agents, with private memory
   # left in each agent's own workspace. These files are the authoring source.
-  michiIdentity = {
+  michiIdentity = extraInstructions: {
     format = "aieos";
     aieos_inline = builtins.toJSON {
       identity.bio = builtins.readFile ./michi/IDENTITY.md;
-      linguistics.style = builtins.readFile ./michi/SOUL.md;
+      linguistics.style = builtins.readFile ./michi/SOUL.md + extraInstructions;
     };
   };
 in {
@@ -66,7 +68,7 @@ in {
 
   services.zeroclaw.instances.home = lib.mkIf secretExists {
     package = zeroclawPackage;
-    extraPackages = [pkgs.ffmpeg];
+    extraPackages = [pkgs.ffmpeg memoPackage];
     environmentFile = config.age.secrets.zeroclaw-env.path;
 
     settings = {
@@ -128,31 +130,73 @@ in {
         default_model = "gpt-image-2";
       };
 
+      memo = {
+        enabled = true;
+        executable = "${memoPackage}/bin/memo";
+        wake_lines = 96;
+      };
+
+      # Memo owns durable memory. Preserve old SQLite files for rollback.
+      memory = {
+        backend = "none";
+        auto_save = false;
+        hygiene_enabled = false;
+      };
+
       agents = {
         owner = {
           model_provider = "openai.codex";
           risk_profile = "owner";
-          identity = michiIdentity;
+          identity = michiIdentity ("\n" + builtins.readFile ./michi/OWNER_TOOLS.md);
           transcription_provider = "opencode_go.michi";
         };
         guest_template = {
           model_provider = "openai.codex";
           risk_profile = "guests";
-          identity = michiIdentity;
+          identity = michiIdentity "";
           transcription_provider = "opencode_go.michi";
         };
         group_template = {
           model_provider = "openai.codex";
           risk_profile = "guests";
-          identity = michiIdentity;
+          identity = michiIdentity "";
           transcription_provider = "opencode_go.michi";
         };
       };
 
       risk_profiles = {
         owner = {
-          allowed_tools = allowedTools;
-          auto_approve = autoApprove;
+          allowed_tools = allowedTools ++ ["shell"];
+          auto_approve = autoApprove ++ ["shell"];
+          require_approval_for_medium_risk = false;
+          workspace_only = true;
+          allowed_commands = [
+            "git"
+            "npm"
+            "cargo"
+            "ls"
+            "cat"
+            "grep"
+            "find"
+            "echo"
+            "pwd"
+            "wc"
+            "head"
+            "tail"
+            "date"
+            "df"
+            "du"
+            "uname"
+            "uptime"
+            "hostname"
+            "python"
+            "python3"
+            "pip"
+            "node"
+            "free"
+            "ffmpeg"
+            "ffprobe"
+          ];
         };
         guests = {
           allowed_tools = allowedTools;

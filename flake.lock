@@ -2350,6 +2350,9 @@
         "hyprland": [
           "hyprland"
         ],
+        "memo": [
+          "memo"
+        ],
         "nixos-hardware": [
           "nixos-hardware"
         ],
@@ -2745,17 +2748,17 @@
         ]
       },
       "locked": {
-        "lastModified": 1791063602,
-        "narHash": "sha256-bCHaWr0LxwwfohaD2jFNR9vr8sKbB+0bcSt4cJlLqZ4=",
+        "lastModified": 1791071342,
+        "narHash": "sha256-kkkmLngJzuLHrhQkxcR5yl34/LRhXWwq+f6NCrEZeQw=",
         "owner": "averagechris",
         "repo": "zeroclaw",
-        "rev": "08fb12855248b3d65c9851d7fc77d433835e4a9e",
+        "rev": "e9e065fbef8a2b73430efc4f766c070d0361697f",
         "type": "github"
       },
       "original": {
         "owner": "averagechris",
         "repo": "zeroclaw",
-        "rev": "08fb12855248b3d65c9851d7fc77d433835e4a9e",
+        "rev": "e9e065fbef8a2b73430efc4f766c070d0361697f",
         "type": "github"
       }
     }
