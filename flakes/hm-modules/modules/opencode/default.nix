@@ -72,6 +72,11 @@
       // lib.optionalAttrs pkgs.stdenv.hostPlatform.isDarwin {
         # The direct-to-output tree hash depends on the nixpkgs-provided Bun.
         outputHash = "sha256-KoF/h/bKsu2WzCxNXnchVwgoiBI4WVNE5uGSxcvkk9A=";
+      }
+      // lib.optionalAttrs (pkgs.stdenv.hostPlatform.system == "x86_64-linux") {
+        # Verified on the pinned Thorny nixpkgs/OpenCode inputs. Keep this
+        # architecture-specific because native optional dependencies can differ.
+        outputHash = "sha256-bLZ6VYSGlDIBOyPSKL//dlWOGmdhNIPzvmBcDLmZXKs=";
       });
   opencodeWithOptimizedNodeModules = pkgs.opencode.overrideAttrs (_: {
     node_modules = optimizedNodeModules;

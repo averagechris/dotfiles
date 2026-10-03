@@ -61,17 +61,29 @@ the output, or once an upstream replacement passes the same output-equivalence
 check.
 
 The direct-to-output tree can hash differently when the shared nixpkgs input
-changes the Bun used to build it. The module therefore overrides `outputHash`
-on Darwin with the hash verified for the pinned OpenCode revision and shared
-nixpkgs revision. Linux keeps the upstream hash and remains unverified by the
-Darwin package build. The verified aarch64-darwin hash for the current pin is
-`sha256-KoF/h/bKsu2WzCxNXnchVwgoiBI4WVNE5uGSxcvkk9A=`.
+changes the Bun used to build it. The module overrides `outputHash` per platform
+with the hash verified for the pinned OpenCode revision and shared nixpkgs
+revision. For OpenCode `b1860465cd13d186e69a911642d098a10cef0b49` and nixpkgs
+`e554fab72f81915600f3f449b786fd9af40439a5`, the verified hashes are
+`sha256-KoF/h/bKsu2WzCxNXnchVwgoiBI4WVNE5uGSxcvkk9A=` on aarch64-darwin and
+`sha256-bLZ6VYSGlDIBOyPSKL//dlWOGmdhNIPzvmBcDLmZXKs=` on x86_64-linux. The
+x86_64-linux hash differs from nixpkgs' upstream install hash because this
+module copies the generated tree directly into the fixed output. Other Linux
+architectures retain the upstream hash until their outputs are verified.
 
-Remove the Darwin hash override when upstream's install produces the same fixed
-output across supported nixpkgs revisions, or when the direct-to-output
+Remove the platform hash overrides when upstream's install produces the same
+fixed output across supported nixpkgs revisions, or when the direct-to-output
 workaround can be removed. After either change, build the isolated package and
 confirm that the upstream hash succeeds rather than copying a hash from another
-OpenCode revision:
+OpenCode revision. To verify the Linux derivation without building the host
+system closure:
+
+```sh
+direnv exec . nix build \
+  '.#nixosConfigurations.thorny.config.home-manager.users.chris.programs.opencode.package'
+```
+
+The Darwin package can be checked separately:
 
 ```sh
 HOME="$(mktemp -d)" nix build \
