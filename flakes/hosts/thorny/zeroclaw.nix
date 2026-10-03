@@ -59,11 +59,13 @@ in {
     environmentFile = config.age.secrets.zeroclaw-env.path;
 
     settings = {
+      # These tables already use the current aliased schema; do not migrate them.
+      schema_version = 3;
       # ChatGPT/Codex subscription auth; no api_key. The daemon reads the
       # auth profile from /var/lib/zeroclaw-home. Confirm the served model ID
       # against the Codex catalog after logging in.
       providers.models.openai.codex = {
-        model = "gpt-5.4";
+        model = "gpt-6-luna";
         wire_api = "responses";
         requires_openai_auth = true;
       };

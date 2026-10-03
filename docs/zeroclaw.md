@@ -7,6 +7,9 @@ approved groups with one shared memory per group.
 
 The host builds the agent runtime, Telegram channel, and schema commands only.
 Other channel integrations are excluded from this service package.
+The generated configuration explicitly sets `schema_version = 3`; leaving it
+unset invokes legacy migration and loses the aliased provider and Telegram
+settings. The Codex model is `gpt-6-luna`, verified with a live request after login.
 
 When the agenix ciphertext is absent, ZeroClaw's CLI is available for setup, but there is no
 `zeroclaw-home` service, user/state declaration, or age secret until the tracked
@@ -73,8 +76,8 @@ After deployment and Codex login:
 
 These commands use the revision pinned for
 [the fork's Telegram invitations change](https://github.com/averagechris/zeroclaw/pull/7).
-Keep that revision until the change is merged; updating to an earlier main
-revision would disable invitation routing.
+The change is merged; the pinned revision has the same contents as fork main
+at that merge. Updating to an earlier revision would disable invitation routing.
 Enrollment survives restarts and Nix rebuilds in
 `/var/lib/zeroclaw-home/telegram-memberships/home.sqlite3`. Back up the entire
 state directory. Keep the channel alias `home` stable. Converting a group to a
