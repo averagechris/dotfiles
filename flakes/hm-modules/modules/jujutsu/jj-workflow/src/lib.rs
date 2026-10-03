@@ -16,6 +16,9 @@ pub mod bay;
 mod bay_repo;
 pub mod ws;
 #[cfg(test)]
+#[path = "../tests/support/cow.rs"]
+mod cow;
+#[cfg(test)]
 use ws::*;
 use ws::{
     discover_workspaces, jj_config_bool, jj_config_string, run_ws, ws_config, WorkspaceKind,
@@ -7366,6 +7369,7 @@ aliases = ["sammy", "Sam Smith"]
         let root = named_tempdir("artifact-walk");
         let src = root.join("src");
         let dest = root.join("dest");
+        let cow_supported = super::cow::strict_cow_clone_supported(&root);
         for dir in [
             "target",
             "packages/a/node_modules/dep",
@@ -7377,6 +7381,7 @@ aliases = ["sammy", "Sam Smith"]
         }
         fs::write(src.join("target/marker.txt"), "root\n").unwrap();
         fs::write(src.join("packages/a/node_modules/index.js"), "x\n").unwrap();
+        fs::write(src.join("unrelated/target/marker.txt"), "nested\n").unwrap();
         // A nested `target` inside a selected artifact dir must not be cloned.
         fs::write(src.join("target/nested/deep.txt"), "deep\n").unwrap();
         fs::create_dir_all(dest.join("target")).unwrap();
@@ -7385,17 +7390,26 @@ aliases = ["sammy", "Sam Smith"]
         let cloned =
             clone_artifact_dirs(&src, &dest, &strings(&["target", "node_modules", ".venv"]));
 
-        assert_eq!(cloned, 2, "root target skipped (exists), two dirs cloned");
+        assert_eq!(
+            cloned,
+            if cow_supported { 2 } else { 0 },
+            "root target is skipped (exists); selected dirs clone only when strict CoW is available"
+        );
         assert_eq!(
             fs::read_to_string(dest.join("target/existing.txt")).unwrap(),
             "keep\n",
             "existing destination must be left untouched"
         );
         assert!(!dest.join("target/marker.txt").exists());
-        assert!(dest.join("packages/a/node_modules/index.js").exists());
-        assert!(
-            dest.join("unrelated/target").exists(),
-            "nested basenames are matched while walking"
+        assert_eq!(
+            dest.join("packages/a/node_modules/index.js").exists(),
+            cow_supported,
+            "nested matching artifact is cloned only when strict CoW is available"
+        );
+        assert_eq!(
+            dest.join("unrelated/target/marker.txt").exists(),
+            cow_supported,
+            "nested basenames are matched while walking even on filesystems without CoW"
         );
         assert!(!dest.join("target/nested").exists());
         let _ = fs::remove_dir_all(&root);
@@ -7409,6 +7423,7 @@ aliases = ["sammy", "Sam Smith"]
         let src = root.join("src");
         let dest = root.join("dest");
         let outside = root.join("outside");
+        let cow_supported = super::cow::strict_cow_clone_supported(&root);
         fs::create_dir_all(src.join("real")).unwrap();
         fs::create_dir_all(outside.join("target")).unwrap();
         fs::write(outside.join("target/leak.txt"), "leak\n").unwrap();
@@ -7423,12 +7438,19 @@ aliases = ["sammy", "Sam Smith"]
 
         let cloned = clone_artifact_dirs(&src, &dest, &strings(&["target"]));
 
-        assert_eq!(cloned, 1, "only the real nested target is cloned");
+        assert_eq!(
+            cloned,
+            usize::from(cow_supported),
+            "only the real nested target may clone, and only with strict CoW support"
+        );
         assert!(
             !dest.join("target").exists(),
             "symlinked artifact is skipped"
         );
-        assert!(dest.join("nested/target/marker.txt").exists());
+        assert_eq!(
+            dest.join("nested/target/marker.txt").exists(),
+            cow_supported
+        );
         assert!(!dest.join("loop").exists(), "symlink cycle is not followed");
         assert!(!dest.join("real").exists());
         let _ = fs::remove_dir_all(&root);
@@ -9237,6 +9259,7 @@ tests = []
     fn integration_copies_untracked_envrc_and_forgets_workspace() {
         let _guard = INTEGRATION_LOCK.lock().unwrap();
         let root = named_tempdir("envrc-forget");
+        let cow_supported = super::cow::strict_cow_clone_supported(&root);
         let group = root.join("projects");
         let repo = group.join("demo");
         fs::create_dir_all(&group).unwrap();
@@ -9299,14 +9322,21 @@ tests = []
             fs::read_to_string(ws.join(".jj-lint.toml")).unwrap(),
             "lints = [\"true\"]\n"
         );
-        assert!(!fs::symlink_metadata(ws.join(".venv"))
-            .unwrap()
-            .file_type()
-            .is_symlink());
-        let dest_venv = fs::canonicalize(&ws).unwrap().join(".venv");
-        let copied_tool = fs::read_to_string(ws.join(".venv/bin/tool")).unwrap();
-        assert!(copied_tool.contains(&dest_venv.to_string_lossy().to_string()));
-        assert!(!copied_tool.contains(&source_venv.to_string_lossy().to_string()));
+        if cow_supported {
+            assert!(!fs::symlink_metadata(ws.join(".venv"))
+                .unwrap()
+                .file_type()
+                .is_symlink());
+            let dest_venv = fs::canonicalize(&ws).unwrap().join(".venv");
+            let copied_tool = fs::read_to_string(ws.join(".venv/bin/tool")).unwrap();
+            assert!(copied_tool.contains(&dest_venv.to_string_lossy().to_string()));
+            assert!(!copied_tool.contains(&source_venv.to_string_lossy().to_string()));
+        } else {
+            assert!(
+                !ws.join(".venv").exists(),
+                "unsupported strict CoW must leave no partial virtualenv behind"
+            );
+        }
         run_ws(vec![
             "forget".into(),
             "scratch".into(),
@@ -9501,6 +9531,7 @@ tests = []
     fn integration_clones_build_artifacts_and_respects_no_clone_flag() {
         let _guard = INTEGRATION_LOCK.lock().unwrap();
         let root = named_tempdir("clone-artifacts");
+        let cow_supported = super::cow::strict_cow_clone_supported(&root);
         let group = root.join("projects");
         let repo = group.join("demo");
         fs::create_dir_all(&group).unwrap();
@@ -9555,20 +9586,31 @@ tests = []
         env::set_current_dir(&old).unwrap();
 
         let cow = group.join("ws/demo/cow");
-        assert_eq!(
-            fs::read_to_string(cow.join("target/marker.txt")).unwrap(),
-            "source\n"
-        );
-        assert_eq!(
-            fs::read_to_string(cow.join("packages/a/node_modules/index.js")).unwrap(),
-            "module\n"
-        );
-        // CoW semantics: editing the destination leaves the source untouched.
-        fs::write(cow.join("target/marker.txt"), "edited\n").unwrap();
-        assert_eq!(
-            fs::read_to_string(repo.join("target/marker.txt")).unwrap(),
-            "source\n"
-        );
+        if cow_supported {
+            assert_eq!(
+                fs::read_to_string(cow.join("target/marker.txt")).unwrap(),
+                "source\n"
+            );
+            assert_eq!(
+                fs::read_to_string(cow.join("packages/a/node_modules/index.js")).unwrap(),
+                "module\n"
+            );
+            // CoW semantics: editing the destination leaves the source untouched.
+            fs::write(cow.join("target/marker.txt"), "edited\n").unwrap();
+            assert_eq!(
+                fs::read_to_string(repo.join("target/marker.txt")).unwrap(),
+                "source\n"
+            );
+        } else {
+            assert!(
+                !cow.join("target").exists(),
+                "failed strict clone must clean the partial target destination"
+            );
+            assert!(
+                !cow.join("packages/a/node_modules").exists(),
+                "failed strict clone must clean the partial node_modules destination"
+            );
+        }
 
         let cold = group.join("ws/demo/cold");
         assert!(!cold.join("target").exists());
