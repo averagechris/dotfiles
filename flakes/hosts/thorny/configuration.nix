@@ -550,6 +550,7 @@ in {
     inputs.nixos-modules.nixosModules.hyprlandDesktop
     inputs.hister.nixosModules.hister
     ./hardware.nix
+    ./zeroclaw.nix
     inputs.agenix.nixosModules.default
     inputs.nixos-hardware.nixosModules.system76
     inputs.nixos-hardware.nixosModules.common-cpu-amd

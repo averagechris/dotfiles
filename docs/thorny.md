@@ -29,6 +29,8 @@ used locally.
 - Cache warmer for fleet CI closures, pushing sourcehut `main` build outputs to
   the `averagechris-dotfiles` cachix cache so builds.sr.ht jobs substitute
   instead of building.
+- Host for the household ZeroClaw Telegram assistant, `zeroclaw-home.service`;
+  see [zeroclaw](/docs/zeroclaw.md).
 - Pull-based self-deployer for `thorny` itself, with post-activation health
   checks and automatic rollback to the previous running system on failure. The
   same reusable self-deploy module is used by enrolled server hosts such as

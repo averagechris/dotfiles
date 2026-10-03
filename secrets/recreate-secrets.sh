@@ -27,6 +27,7 @@ SECRETS=(
   "gpg-key-id.age"
   "granola-token.age"
   "cachix-auth-token.age"
+  "thorny/zeroclaw-env.age"
   "trainwreck/telegram-bot-token.age"
   "trainwreck/telegram-bot-token-staging.age"
   "trainwreck/telegram-user-ids.age"
