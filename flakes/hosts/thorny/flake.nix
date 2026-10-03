@@ -70,10 +70,10 @@
       url = "github:averagechris/hister";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    # Maintained ZeroClaw fork: one-bot Telegram route table, Kagi search,
-    # and persistent Telegram invitations (fork PR #7). See zeroclaw.nix.
+    # Maintained ZeroClaw fork: isolated invitations, contextual reactions,
+    # smoother Telegram streaming, and plain prompt instructions. See zeroclaw.nix.
     zeroclaw = {
-      url = "github:averagechris/zeroclaw/7a65c79942a2ab7d145bb9c9f8d5d1371cf3ecb5";
+      url = "github:averagechris/zeroclaw/5e5cbef992375bfb5744dccc6722e5ccd5f534e4";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };

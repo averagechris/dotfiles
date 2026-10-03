@@ -10,6 +10,9 @@ Other channel integrations are excluded from this service package.
 The generated configuration explicitly sets `schema_version = 3`; leaving it
 unset invokes legacy migration and loses the aliased provider and Telegram
 settings. The Codex model is `gpt-6-luna`, verified with a live request after login.
+Automatic acknowledgment reactions are disabled; typing indicates that Michi
+is working on a reply. The model can choose a contextual reaction, which the
+runtime confines to the current channel and conversation.
 
 When the agenix ciphertext is absent, ZeroClaw's CLI is available for setup, but there is no
 `zeroclaw-home` service, user/state declaration, or age secret until the tracked
@@ -19,9 +22,23 @@ workflow. The enablement check uses the source path before copying the secret
 into the store, so it also works during flake checks with `--no-build`.
 
 - Config: `flakes/hosts/thorny/zeroclaw.nix`
+- Personality: `flakes/hosts/thorny/michi/SOUL.md` and `IDENTITY.md`
 - Upstream runbook: `docs/project-maps/telegram-assistant/setup.md` in the fork
 - State: `/var/lib/zeroclaw-home` (service user `zeroclaw-home`), including
   `.secret_key`, the Codex auth profile, sessions, and memory. Back it up.
+
+## Personality
+
+Michi is a helpful kitten with an evil-mastermind reputation and a small smug
+grin. Mischief stays in the wording; the work stays accurate. The soul file
+defines the tone, bilingual conversation, contextual reactions, and plain
+writing rules, including no em dashes. The identity file defines the character.
+
+The host reads these two Markdown files into the existing inline identity
+configuration for the owner, guest template, and group template. Invited agents
+inherit that public personality. Their workspaces, history, and memories remain
+separate. No personality file contains personal information about the owner or
+friends. Edit the source files and redeploy to change the voice reproducibly.
 
 ## Secret and owner identity
 
@@ -119,7 +136,7 @@ service user's saved profile.
 
 ## Stages
 
-1. Owner routing, invitations, and isolated memory, with memory tools only.
+1. Owner routing, invitations, isolated memory, and contextual reactions.
 2. Kagi search: set `kagiEnabled = true` in `zeroclaw.nix` once the stage 1
    checks in the runbook pass. `KAGI_API_KEY` must already be in the secret.
 3. Owner shell: not configured. Needs stage 1 to have held up in real use.
