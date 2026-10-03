@@ -70,10 +70,10 @@
       url = "github:averagechris/hister";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    # Maintained ZeroClaw fork: isolated invitations, contextual reactions,
-    # smoother Telegram streaming, and plain prompt instructions. See zeroclaw.nix.
+    # Maintained ZeroClaw fork: isolated Telegram chats, bounded media processing,
+    # Go transcription, Kagi search, and Codex images. See zeroclaw.nix.
     zeroclaw = {
-      url = "github:averagechris/zeroclaw/5e5cbef992375bfb5744dccc6722e5ccd5f534e4";
+      url = "github:averagechris/zeroclaw/08fb12855248b3d65c9851d7fc77d433835e4a9e";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };

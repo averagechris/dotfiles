@@ -26,15 +26,15 @@
   zeroclawEnvSecret = secretsDir + "/thorny/zeroclaw-env.age";
   secretExists = builtins.pathExists zeroclawEnvSecret;
 
-  # Stage 2 of the runbook: flip after the stage 1 isolation checks pass.
-  kagiEnabled = false;
+  # Kagi search and page extraction use the encrypted environment key.
+  kagiEnabled = true;
 
   # Memory and reactions confined to the current conversation.
   memoryTools = ["memory_recall" "memory_store" "memory_forget"];
   searchTools = lib.optional kagiEnabled "web_search_tool";
-  allowedTools = memoryTools ++ ["reaction"] ++ searchTools;
+  allowedTools = memoryTools ++ ["reaction" "image_gen"] ++ searchTools;
   # auto_approve replaces the default list, so name every unprompted tool.
-  autoApprove = ["memory_recall" "memory_store" "reaction"] ++ searchTools;
+  autoApprove = ["memory_recall" "memory_store" "reaction" "image_gen"] ++ searchTools;
 
   # One public personality, inherited by invited agents, with private memory
   # left in each agent's own workspace. These files are the authoring source.
@@ -66,6 +66,7 @@ in {
 
   services.zeroclaw.instances.home = lib.mkIf secretExists {
     package = zeroclawPackage;
+    extraPackages = [pkgs.ffmpeg];
     environmentFile = config.age.secrets.zeroclaw-env.path;
 
     settings = {
@@ -80,21 +81,71 @@ in {
         requires_openai_auth = true;
       };
 
+      # Runtime effort is explicit; the Codex adapter otherwise defaults to xhigh.
+      runtime.reasoning_effort = "medium";
+      providers.models.openai.sol = {
+        model = "gpt-6.1-sol";
+        wire_api = "responses";
+        requires_openai_auth = true;
+      };
+      providers.models.openai.astra = {
+        model = "gpt-6-astra";
+        wire_api = "responses";
+        requires_openai_auth = true;
+      };
+      model_routes = [
+        {
+          hint = "Luna";
+          model_provider = "openai.codex";
+          model = "gpt-6-luna";
+        }
+        {
+          hint = "Sol";
+          model_provider = "openai.sol";
+          model = "gpt-6.1-sol";
+        }
+        {
+          hint = "Astra";
+          model_provider = "openai.astra";
+          model = "gpt-6-astra";
+        }
+      ];
+
+      providers.transcription.opencode_go.michi = {
+        api_key = "$OPENCODE_GO_API_KEY";
+        model = "mimo-v2.6-flash";
+      };
+      transcription.enabled = true;
+      media_pipeline = {
+        enabled = true;
+        describe_images = true;
+        transcribe_audio = true;
+        summarize_video = true;
+      };
+      image_gen = {
+        enabled = true;
+        provider = "openai_codex";
+        default_model = "gpt-image-2";
+      };
+
       agents = {
         owner = {
           model_provider = "openai.codex";
           risk_profile = "owner";
           identity = michiIdentity;
+          transcription_provider = "opencode_go.michi";
         };
         guest_template = {
           model_provider = "openai.codex";
           risk_profile = "guests";
           identity = michiIdentity;
+          transcription_provider = "opencode_go.michi";
         };
         group_template = {
           model_provider = "openai.codex";
           risk_profile = "guests";
           identity = michiIdentity;
+          transcription_provider = "opencode_go.michi";
         };
       };
 
