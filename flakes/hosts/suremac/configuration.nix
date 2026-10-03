@@ -812,6 +812,10 @@ in {
   system.activationScripts.extraActivation.text = lib.mkAfter ''
     echo "configuring location-aware time..." >&2
     systemsetup -setusingnetworktime on >/dev/null 2>&1 || true
+
+    # Keep local work running on AC while allowing the display to sleep.
+    # nix-darwin power.sleep.computer does not distinguish AC from battery.
+    /usr/bin/pmset -c sleep 0
   '';
 
   homebrew = {
