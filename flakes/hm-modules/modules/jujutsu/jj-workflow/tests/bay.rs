@@ -3,6 +3,9 @@ use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
 
+#[path = "support/cow.rs"]
+mod cow;
+
 fn home(name: &str) -> PathBuf {
     let root = fs::canonicalize(std::env::temp_dir()).unwrap().join(format!("bay-bin-{}-{name}", std::process::id()));
     let _ = fs::remove_dir_all(&root);
@@ -39,6 +42,7 @@ fn init_repo(path: &PathBuf) {
 fn add_json_is_one_value_despite_noisy_setup_and_hook_stdout() {
     use std::os::unix::fs::PermissionsExt;
     let home = home("json-noise");
+    let cow_supported = cow::strict_cow_clone_supported(&home);
     let repo = home.join("one/demo");
     init_repo(&repo);
     fs::write(repo.join(".envrc"), "export BAY_TEST=1\n").unwrap();
@@ -71,7 +75,14 @@ fn add_json_is_one_value_despite_noisy_setup_and_hook_stdout() {
     assert!(!String::from_utf8_lossy(&output.stdout).contains("noisy hook"));
     assert!(!String::from_utf8_lossy(&output.stdout).contains("noisy direnv"));
     let workspace = home.join("one/ws/demo/noisy");
-    assert!(workspace.join(".opencode/node_modules/package/artifact").exists());
+    if cow_supported {
+        assert!(workspace.join(".opencode/node_modules/package/artifact").exists());
+    } else {
+        assert!(
+            !workspace.join(".opencode/node_modules").exists(),
+            "unsupported strict CoW must leave no partial node_modules clone behind"
+        );
+    }
     let status = Command::new("jj").current_dir(&workspace).args(["diff", "--summary", "--no-pager"]).output().unwrap();
     assert!(status.status.success());
     assert!(status.stdout.is_empty(), "{}", String::from_utf8_lossy(&status.stdout));

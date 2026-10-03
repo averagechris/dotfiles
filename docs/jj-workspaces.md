@@ -198,6 +198,10 @@ infinite recursion. Unreadable directories print a warning and are skipped.
 `--no-clone-artifacts` skips every artifact, including `.venv`; an explicit
 empty `clone-artifacts = []` disables cloning entirely.
 
+The clone tests probe strict CoW support with a nonempty fixture and exercise
+both supported and unsupported outcomes; symlink exclusion and partial-clone
+cleanup remain asserted in either case.
+
 If the source checkout has an untracked `.venv` with a usable `.venv/bin/python`,
 `jj ws add` copies it into the workspace by default through the same artifact
 clone mechanism. After copying, the helper repairs common virtualenv path
