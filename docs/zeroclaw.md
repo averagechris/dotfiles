@@ -9,7 +9,8 @@ The host builds the agent runtime, Telegram channel, and schema commands only.
 Other channel integrations are excluded from this service package.
 The generated configuration explicitly sets `schema_version = 3`; leaving it
 unset invokes legacy migration and loses the aliased provider and Telegram
-settings. The Codex model is `gpt-6-luna`, verified with a live request after login.
+settings. The default is `gpt-6-luna` with medium reasoning. `/model` also
+offers `gpt-6.1-sol` and `gpt-6-astra`; each passed a live account check.
 Automatic acknowledgment reactions are disabled; typing indicates that Michi
 is working on a reply. The model can choose a contextual reaction, which the
 runtime confines to the current channel and conversation.
@@ -52,6 +53,8 @@ The encrypted `secrets/thorny/zeroclaw-env.age` file contains:
 ```sh
 BOT_TOKEN=<complete integer:random-token string from BotFather>
 TG_OWNER_ID=<positive owner user ID>
+KAGI_API_KEY=<Kagi Search and Extract API key>
+OPENCODE_GO_API_KEY=<OpenCode Go API key for voice transcription>
 ```
 
 Provision or edit it from the repo's `secrets/` directory:
@@ -63,8 +66,12 @@ direnv exec .. agenix -e thorny/zeroclaw-env.age
 ```
 
 Track the ciphertext for pure flake evaluation. Never put the plaintext token
-in Git or paste it into chat. Kagi remains disabled; add `KAGI_API_KEY` later
-when enabling search.
+in Git or paste it into chat. Kagi search and page extraction use
+`KAGI_API_KEY`. Voice transcription uses the OpenCode Go subscription through
+`OPENCODE_GO_API_KEY`. Image generation and editing reuse the existing Codex
+login and its included usage. `OPENAI_API_KEY` can remain in the secret, but
+the active configuration does not use it. OpenRouter is not configured for
+automatic fallback.
 
 Only the owner needs a preconfigured Telegram ID. Keep it in the encrypted
 secret alongside the token so the host configuration remains reproducible
@@ -91,10 +98,10 @@ After deployment and Codex login:
    access. Revocation preserves memory; re-enrollment restores the same
    chat's identity. A turn already running may finish.
 
-These commands use the revision pinned for
-[the fork's Telegram invitations change](https://github.com/averagechris/zeroclaw/pull/7).
-The change is merged; the pinned revision has the same contents as fork main
-at that merge. Updating to an earlier revision would disable invitation routing.
+These commands require
+[the fork's Telegram invitations change](https://github.com/averagechris/zeroclaw/pull/7),
+which is included in the pinned revision. Updating to a revision before that
+change would disable invitation routing.
 Enrollment survives restarts and Nix rebuilds in
 `/var/lib/zeroclaw-home/telegram-memberships/home.sqlite3`. Back up the entire
 state directory. Keep the channel alias `home` stable. Converting a group to a
@@ -134,12 +141,52 @@ above; provisioning the ciphertext alone does not create the service user's
 auth profile. Restart the service after login so the daemon picks up the
 service user's saved profile.
 
-## Stages
+## Capabilities
 
-1. Owner routing, invitations, isolated memory, and contextual reactions.
-2. Kagi search: set `kagiEnabled = true` in `zeroclaw.nix` once the stage 1
-   checks in the runbook pass. `KAGI_API_KEY` must already be in the secret.
-3. Owner shell: not configured. Needs stage 1 to have held up in real use.
+Owner chats, invited friends, and approved groups can use Kagi search and
+single-page extraction. Search uses Kagi's default results unless a request
+specifies a lens. Extraction accepts one public HTTPS page per call. Search
+failures do not silently switch providers.
+
+Sent photos are passed to the chat's model for vision and saved in that chat's
+workspace for later edits. Local image references from messages, history, or
+tool results can only load files inside that chat's workspace. Telegram reply
+attachments use the same workspace boundary. Voice memos are transcribed with
+OpenCode Go's `mimo-v2.6-flash`, with reasoning disabled, before the model
+responds. Admission and routing happen before any media download,
+transcription, or workspace write. If transcription
+fails, Michi asks for text rather than guessing what was said.
+
+Short videos are inspected using up to four frames spread across the clip,
+plus a transcript when an audio track is present. Clips must be at most 20 MiB
+and 120 seconds. Frames fit within 640 by 640 pixels. MP4, MOV, MKV, and WebM
+containers are supported. Video members of an album remain context-only;
+send a video separately when you want Michi to inspect it. Temporary source
+files are removed after processing; retained frames stay in that chat's
+workspace for follow-up questions or image edits. Michi can make a still meme
+from a video frame. Editing or exporting a video clip needs a separate tool.
+
+`image_gen` creates and edits images through the existing Codex login using
+`gpt-image-2`. Each call returns one image; references must be in the current
+chat's workspace. Editing accepts up to four PNG, JPEG, or WebP images totaling
+20 MiB, and generated images are limited to 20 MiB. The model can choose a
+transparent background for stickers or cutouts. Files remain available for
+follow-up edits.
+
+Host shell access remains unconfigured.
+
+## Follow-up
+
+Add video editing after choosing the first supported operation with Chris.
+Start with a short clip to check the output and processing cost.
+
+Keep Kagi on its default search for now. Revisit lenses with Chris: explain how
+they filter results, then help create lenses for his recurring searches.
+
+Install the ChatGPT desktop app on Thorny and sign in with Chris's ChatGPT
+subscription. Then connect Michi to Codex and remote computer use. Check Linux
+support, the desktop session, and authentication first; design permissions for
+owner access while preserving invited friends' and groups' isolation.
 
 ## Operations
 
@@ -153,5 +200,8 @@ The daemon boots even when config validation fails and only logs
 `invalid Telegram route table`, which means the bot answers nobody. Owner routing and templates are read at startup, so restart after changing
 those or the secret. Invitations and group approvals apply immediately.
 
-To update the fork: `nix flake update zeroclaw --flake ./flakes/hosts/thorny`,
-then `nix flake update thorny` at the root.
+To update the fork, first set the merged revision in
+`flakes/hosts/thorny/flake.nix`. Run
+`nix flake update zeroclaw --flake ./flakes/hosts/thorny`, then
+`nix flake update thorny` at the root. Keep the source URL and both lock files
+on the same revision.

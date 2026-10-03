@@ -49,7 +49,7 @@
 - [thorny / thelio-nixos](/docs/thorny.md) - System76 Thelio remote builder, Hyprland workstation, homepage refresh scheduler, dotfiles build-cache, and self-deploy notes
 - [tom](/docs/tom.md) - Home Assistant and Calibre-Web host deployment notes
 - [trainwreck](/docs/trainwreck.md) - trainwreck VPS role, deployment, and self-deploy notes
-- [zeroclaw](/docs/zeroclaw.md) - Thorny's one-bot ZeroClaw Telegram assistant: personality and writing rules, token provisioning, persistent invitations, isolated chat memory, and Codex login
+- [zeroclaw](/docs/zeroclaw.md) - Thorny's one-bot ZeroClaw Telegram assistant: personality, invitations, isolated chat memory, media, Kagi search, image editing, and Codex login
 - [yazi](/docs/yazi.md) - Yazi Home Manager module, Colemak keybindings, wrapper name, and filetype theme rule schema
 
 ## Troubleshooting
