@@ -1382,6 +1382,10 @@
           "nixpkgs"
         ],
         "pip-chrome-extension": "pip-chrome-extension",
+        "rdny": [
+          "hm-modules",
+          "rdny"
+        ],
         "srht": "srht",
         "starship-jj": [
           "hm-modules",

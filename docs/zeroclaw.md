@@ -57,6 +57,7 @@ BOT_TOKEN=<complete integer:random-token string from BotFather>
 TG_OWNER_ID=<positive owner user ID>
 KAGI_API_KEY=<Kagi Search and Extract API key>
 OPENCODE_GO_API_KEY=<OpenCode Go API key for voice transcription>
+GH_TOKEN=<GitHub token limited to selected personal repositories>
 ```
 
 Provision or edit it from the repo's `secrets/` directory:
@@ -115,6 +116,10 @@ state directory. Keep the channel alias `home` stable. Converting a group to a
 supergroup creates a new ID; activate it again to start its new memory.
 
 ## Codex login
+
+Thorny will use its own ChatGPT/Codex account, separate from work. The current
+login stays active until that account is ready. Use the same service-user login
+flow to replace it; do not copy workstation credentials or work sessions.
 
 The agents use the ChatGPT/Codex subscription. Log in once as the service
 user, after the first deploy:
@@ -186,13 +191,42 @@ Venue shares also include the place name and address. Replies to a pin retain
 that location in the quoted context. An initial live location is a snapshot;
 later movement updates are not consumed.
 
-## Owner shell and video editing
+## Owner shell, browser, and GitHub
 
 Only the owner DM has `shell`. Invited DMs and groups exclude it, including
 when the owner speaks in a group. Ordinary permitted commands run without an
 approval prompt. Workspace checks, forbidden paths, high-risk command blocking,
 and the service's existing systemd sandbox remain enabled. Shell subprocesses
-receive no credential environment passthrough.
+receive only `GH_TOKEN` as credential environment passthrough, and only for the
+owner profile. The token comes from agenix; other provider keys remain excluded.
+GitHub recommends a fine-grained token restricted to selected repositories and
+needed permissions. See [token setup](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens).
+GitHub CLI uses [GH_TOKEN](https://cli.github.com/manual/gh_help_environment)
+without a copied workstation login. Token scope controls which operations work.
+
+The service PATH includes `gh`, `jj`, `git`, `rg`, `jq`, `fd`, and `curl`.
+Use an explicit GitHub repository, especially from jj workspaces. Repository
+clones and edited files belong inside the owner's workspace. For authenticated
+Git operations, `gh auth setup-git` can configure the service user's Git helper.
+No work credentials or workstation sessions are imported.
+
+`rdny` controls a private headless Chromium browser through an authenticated Unix
+broker. Its wrapper fixes the browser executable, ffmpeg executable, home, and
+state directory to the owner workspace. Browser lifecycle is managed by
+`michi-browser.service`; normal navigation and inspection use the existing
+session. Do not start, stop, or attach a separate browser from the bot. Screenshots
+can be returned with `[IMAGE:/absolute/path.png]` inside the owner's workspace.
+
+Chromium runs in a separate service because it needs namespace creation and
+JavaScript JIT, which the bot unit denies. The browser unit retains Chromium's
+sandbox, private devices and temporary files, no new privileges, a read-only
+system, and owner-workspace-only writes. It receives no agenix environment file.
+The browser joins the bot's user namespace through a root-owned runtime link,
+so rdny can verify the broker's process identity. It starts after the bot and
+restarts with it. A small privileged lifecycle helper publishes only that link;
+it does not expose a general privileged command. The bot unit's existing
+protections remain unchanged. Neither service controls
+an interactive desktop or an everyday browser profile.
 
 FFmpeg and ffprobe are available for trimming, cropping, captions, and GIFs.
 Michi can use the saved source clip rather than asking for a still image.
@@ -247,10 +281,11 @@ Cross-chat memory sharing is outside this trial.
 Keep Kagi on its default search for now. Revisit lenses with Chris: explain how
 they filter results, then help create lenses for his recurring searches.
 
-Install the ChatGPT desktop app on Thorny and sign in with Chris's ChatGPT
-subscription. Then connect Michi to Codex and remote computer use. Check Linux
-support, the desktop session, and authentication first; design permissions for
-owner access while preserving invited friends' and groups' isolation.
+Use rdny for browser automation and shell for other owner host work. Codex task
+orchestration and native desktop control are deferred. Keep Thorny's separate
+ChatGPT/Codex account and browser profile independent of work. Linear, Granola,
+and Slack are not part of the personal assistant. Consider ctx only for Michi's
+own coding history, and sideshow if slide creation becomes useful.
 
 ## Operations
 
