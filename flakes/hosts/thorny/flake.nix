@@ -70,10 +70,14 @@
       url = "github:averagechris/hister";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    memo = {
+      url = "github:averagechris/memo/c7261dbd1db31f9947e2efc16e65cb43ed05389a";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     # Maintained ZeroClaw fork: isolated Telegram chats, bounded media processing,
     # Go transcription, Kagi search, and Codex images. See zeroclaw.nix.
     zeroclaw = {
-      url = "github:averagechris/zeroclaw/08fb12855248b3d65c9851d7fc77d433835e4a9e";
+      url = "github:averagechris/zeroclaw/e9e065fbef8a2b73430efc4f766c070d0361697f";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };

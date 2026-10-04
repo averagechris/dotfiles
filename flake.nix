@@ -47,6 +47,7 @@
       inputs.anyrun.follows = "anyrun";
       inputs.pip-chrome-extension.follows = "pip-chrome-extension";
       inputs.systems.follows = "systems";
+      inputs.memo.follows = "memo";
     };
     tom = {
       url = "path:./flakes/hosts/tom";

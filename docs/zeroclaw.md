@@ -39,7 +39,9 @@ The host reads these two Markdown files into the existing inline identity
 configuration for the owner, guest template, and group template. Invited agents
 inherit that public personality. Their workspaces, history, and memories remain
 separate. No personality file contains personal information about the owner or
-friends. Edit the source files and redeploy to change the voice reproducibly.
+friends. The owner also gets `OWNER_TOOLS.md` with shell and video delivery
+instructions. Guests and groups do not inherit those instructions. Edit the
+source files and redeploy to change the voice reproducibly.
 
 ## Secret and owner identity
 
@@ -161,10 +163,11 @@ Short videos are inspected using up to four frames spread across the clip,
 plus a transcript when an audio track is present. Clips must be at most 20 MiB
 and 120 seconds. Frames fit within 640 by 640 pixels. MP4, MOV, MKV, and WebM
 containers are supported. Video members of an album remain context-only;
-send a video separately when you want Michi to inspect it. Temporary source
-files are removed after processing; retained frames stay in that chat's
-workspace for follow-up questions or image edits. Michi can make a still meme
-from a video frame. Editing or exporting a video clip needs a separate tool.
+send a video separately when you want Michi to inspect it. Accepted clips and
+extracted frames stay in that chat's workspace for follow-up edits. Each frame includes its saved
+path in the model's text context, so Michi can pass it to `image_gen` as a
+reference when making a meme or editing a still from the clip. Editing or
+exporting a video clip is available through the owner DM's shell tool.
 
 `image_gen` creates and edits images through the existing Codex login using
 `gpt-image-2`. Each call returns one image; references must be in the current
@@ -173,12 +176,53 @@ chat's workspace. Editing accepts up to four PNG, JPEG, or WebP images totaling
 transparent background for stickers or cutouts. Files remain available for
 follow-up edits.
 
-Host shell access remains unconfigured.
+## Owner shell and video editing
+
+Only the owner DM has `shell`. Invited DMs and groups exclude it, including
+when the owner speaks in a group. Ordinary permitted commands run without an
+approval prompt. Workspace checks, forbidden paths, high-risk command blocking,
+and the service's existing systemd sandbox remain enabled. Shell subprocesses
+receive no credential environment passthrough.
+
+FFmpeg and ffprobe are available for trimming, cropping, captions, and GIFs.
+Michi can use the saved source clip rather than asking for a still image.
+Edited files stay inside the owner's workspace and are returned using Telegram's
+video or document attachment markers. This does not add a paid video
+service or access to the desktop session.
+
+## Memo trial
+
+`memo` replaces the built-in durable memory tools. The native backend is `none`,
+auto-save is off, and hygiene is off. Existing SQLite files remain untouched for
+rollback, but the trial starts with empty memo stores. Conversation history,
+Codex authentication, and invitation memberships are separate from durable
+memory and remain intact.
+
+Each routed agent uses its own workspace's `memo` directory with the explicit
+`default` store. Telegram invitation routing assigns a separate agent to each
+invited DM and approved group. The tool accepts no store or filesystem selector,
+so a model cannot choose another chat's memory.
+
+Memo keeps append-only notes of at most 280 UTF-8 bytes on one line. Michi reads
+a bounded `wake` at the start of a turn, records lasting facts with `note`, and
+supplies faithful summaries with `nap` when memo requests them. A pending summary
+must be completed before retrying an incomplete wake. Memo does not perform
+keyword search or delete individual notes. Correct a fact with a new note;
+reset a store from the host when needed. Do not write secrets into memory.
+
+To inspect a store, run the pinned memo executable as `zeroclaw-home` with
+`--data-dir <agent workspace>/memo --store default -o json wake --lines 96`.
+An incomplete wake exits with a structured pending range; Michi completes that
+workflow through its tool. Avoid adding test notes to a real store.
+
+To reset one store, stop `zeroclaw-home`, move that agent's `memo` directory
+aside, and start the service again. To roll back the trial, restore the prior
+host revision and deploy it. Its native memory files remain available. Memo
+notes are not imported into the prior backend.
+
+Cross-chat memory sharing is outside this trial.
 
 ## Follow-up
-
-Add video editing after choosing the first supported operation with Chris.
-Start with a short clip to check the output and processing cost.
 
 Keep Kagi on its default search for now. Revisit lenses with Chris: explain how
 they filter results, then help create lenses for his recurring searches.
