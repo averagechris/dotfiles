@@ -133,7 +133,7 @@ in {
       memo = {
         enabled = true;
         executable = "${memoPackage}/bin/memo";
-        wake_lines = 96;
+        wake_lines = 256;
       };
 
       # Memo owns durable memory. Preserve old SQLite files for rollback.
@@ -166,6 +166,8 @@ in {
 
       risk_profiles = {
         owner = {
+          # Preserve a full 256-line memo wake, including JSON escaping.
+          max_tool_result_chars = 524288;
           allowed_tools = allowedTools ++ ["shell"];
           auto_approve = autoApprove ++ ["shell"];
           require_approval_for_medium_risk = false;
@@ -199,6 +201,7 @@ in {
           ];
         };
         guests = {
+          max_tool_result_chars = 524288;
           allowed_tools = allowedTools;
           excluded_tools = ["shell"];
           auto_approve = autoApprove;

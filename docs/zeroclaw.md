@@ -89,23 +89,28 @@ groups do not need IDs collected or stored in configuration.
 
 After deployment and Codex login:
 
-1. DM `/invite` to the bot from the configured owner account. Send the returned
-   link to one friend. It expires in 24 hours and can be used once.
+1. DM `/invite @their_handle` from the configured owner account. Send the
+   returned link to that person. Their handle is preapproved for 24 hours;
+   opening the link and pressing Start claims the approval for their current
+   numeric Telegram ID. Later handle changes do not transfer access.
+   For someone without a handle, use `/invite` for a single-use private link
+   that also expires in 24 hours.
 2. The friend opens it and presses Start. Their subsequent conversation has
    its own private memory, separate from yours and every other friend.
 3. Add the bot to a group, then send `/activate@your_bot` there from your owner
    account. Everyone in that group can interact; its memory stays separate
    from private chats and other groups.
-4. DM `/guests` to list active chat IDs, and `/revoke <chat-id>` to remove
-   access. Revocation preserves memory; re-enrollment restores the same
-   chat's identity. A turn already running may finish.
+4. DM `/guests` to list active chat IDs and pending handles. Use
+   `/revoke @their_handle` to cancel an unused approval, or `/revoke <chat-id>`
+   to remove enrolled access. Revocation preserves memory; re-enrollment
+   restores the same chat's identity. A turn already running may finish.
 
-These commands require
-[the fork's Telegram invitations change](https://github.com/averagechris/zeroclaw/pull/7),
-which is included in the pinned revision. Updating to a revision before that
-change would disable invitation routing.
+These commands use
+[the fork's Telegram invitations](https://github.com/averagechris/zeroclaw/pull/7)
+and [handle approvals](https://github.com/averagechris/zeroclaw/pull/26), both
+included in the pinned revision. Older revisions may lack these commands.
 Enrollment survives restarts and Nix rebuilds in
-`/var/lib/zeroclaw-home/telegram-memberships/home.sqlite3`. Back up the entire
+`/var/lib/zeroclaw-home/data/telegram-memberships/home.sqlite3`. Back up the entire
 state directory. Keep the channel alias `home` stable. Converting a group to a
 supergroup creates a new ID; activate it again to start its new memory.
 
@@ -176,6 +181,11 @@ chat's workspace. Editing accepts up to four PNG, JPEG, or WebP images totaling
 transparent background for stickers or cutouts. Files remain available for
 follow-up edits.
 
+Telegram location pins supply coordinates and optional accuracy to the model.
+Venue shares also include the place name and address. Replies to a pin retain
+that location in the quoted context. An initial live location is a snapshot;
+later movement updates are not consumed.
+
 ## Owner shell and video editing
 
 Only the owner DM has `shell`. Invited DMs and groups exclude it, including
@@ -204,14 +214,24 @@ invited DM and approved group. The tool accepts no store or filesystem selector,
 so a model cannot choose another chat's memory.
 
 Memo keeps append-only notes of at most 280 UTF-8 bytes on one line. Michi reads
-a bounded `wake` at the start of a turn, records lasting facts with `note`, and
-supplies faithful summaries with `nap` when memo requests them. A pending summary
-must be completed before retrying an incomplete wake. Memo does not perform
+a `wake` of up to 256 lines at the start of a turn and records lasting facts with
+`note`. It supplies faithful summaries with `nap` when memo requests them. Complete
+a pending summary before retrying an incomplete wake. Memo does not perform
 keyword search or delete individual notes. Correct a fact with a new note;
 reset a store from the host when needed. Do not write secrets into memory.
+Both risk profiles allow 524,288 characters per tool result so the full wake
+survives runtime result trimming, including JSON escaping. Individual tools
+retain their own output limits; memo's CLI output stays capped at 512 KiB.
+
+The shared soul prompt tells Michi to save useful preferences, personal
+background, recurring needs, and ongoing plans proactively. Routine saves and
+summary work stay out of its replies. It preserves uncertainty, avoids guesses
+and duplicates, and asks only when ambiguity would materially misrepresent
+someone. An explicit request to inspect memory gets a plain answer; a failed
+explicit save gets reported.
 
 To inspect a store, run the pinned memo executable as `zeroclaw-home` with
-`--data-dir <agent workspace>/memo --store default -o json wake --lines 96`.
+`--data-dir <agent workspace>/memo --store default -o json wake --lines 256`.
 An incomplete wake exits with a structured pending range; Michi completes that
 workflow through its tool. Avoid adding test notes to a real store.
 
