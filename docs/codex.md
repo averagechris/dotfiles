@@ -4,7 +4,9 @@ The Home Manager module at `flakes/hm-modules/modules/codex/` wraps the pinned
 upstream `programs.codex` module. It is exported as
 `homeManagerModules.codex`, imported by the default module, and enabled on
 `suremac`. It configures the existing desktop installation without installing a
-second CLI or changing model and permission defaults.
+second CLI. The suremac host declares `model = "gpt-6.1-sol"` and
+`model_reasoning_effort = "low"` through `dotfiles.codex.settings`; permission
+defaults remain unchanged.
 
 ```nix
 dotfiles.codex = {
@@ -79,8 +81,20 @@ implementation tasks. The documented example
 uses `--standalone` for a private server and `--file` to attach the packet.
 These calls use the host's OpenCode provider credentials and billing.
 
-This is selection guidance for agents, not a change to the desktop model picker
-or enforced TOML model defaults. The OpenCode CLI syntax was checked with the
+Routing guidance is distinct from fallback defaults. The suremac TOML defaults
+are Sol 6.1 with low reasoning after activation. Explicit task model and reasoning
+selections implement the routing policy and take priority over fallback values.
+
+The official [configuration documentation](https://learn.chatgpt.com/docs/config-file/config-basic)
+documents user TOML defaults for the CLI and IDE, with higher-priority overrides.
+It does not establish that these defaults replace the desktop's saved selections
+when grem launches a task with omitted selections. Those launches use saved
+desktop defaults. Verify a fresh launch before claiming the live desktop fallback
+matches the Nix declaration. Do not rewrite opaque desktop state to force it.
+
+Editing Nix does not activate settings. A full Darwin activation may apply other
+pending changes, so review the complete activation separately. A PR alone does
+not change the live TOML or desktop picker. The OpenCode CLI syntax was checked with the
 installed `opencode run --help`; no paid model call was needed for validation.
 
 ## Writable configuration
