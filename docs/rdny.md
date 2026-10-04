@@ -1,6 +1,6 @@
 # rdny
 
-rdny is the Rust browser automation CLI used on `suremac` and `tater`. It drives
+rdny is the Rust browser automation CLI used on `suremac`, `tater`, and Michi on `thorny`. It drives
 Chrome-family browsers through the Chrome DevTools Protocol and keeps session
 state between commands so agents can navigate, inspect, interact, capture
 screenshots, record short videos, and attach to manually launched browsers.
@@ -102,6 +102,12 @@ be mistaken for the interactive Helium app, while the Nix-managed Helium path on
 - `tater` enables rdny, points `[binaries].chrome` at the Home Manager Helium
   package, enables ffmpeg, configures the same `helium` connect target, and
   exposes rdny plus the `rdny-browser` skill to OpenCode agents.
+
+- `thorny` supplies rdny to Michi's owner shell, using a dedicated headless
+  ungoogled Chromium browser in `michi-browser.service`. The authenticated Unix
+  broker and profile live inside the owner workspace, separate from desktop
+  browser profiles. The bot unit keeps its existing sandbox. Invited chats and
+  groups have no shell access. See [Michi's runbook](/docs/zeroclaw.md).
 
 ### suremac visible Helium workflow
 

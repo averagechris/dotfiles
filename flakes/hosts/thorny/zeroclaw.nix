@@ -20,6 +20,43 @@
   };
 
   memoPackage = inputs.memo.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  rdnyPackage = inputs.rdny.packages.${pkgs.stdenv.hostPlatform.system}.rdny;
+  ownerWorkspace = "/var/lib/zeroclaw-home/agents/owner/workspace";
+  rdnyOwnerWrapper = pkgs.writeShellScriptBin "rdny" ''
+    export RDNY_CHROME="${lib.getExe pkgs.ungoogled-chromium}"
+    export RDNY_FFMPEG="${lib.getExe pkgs.ffmpeg}"
+    export HOME="${ownerWorkspace}"
+    export RDNY_STATE_DIR="${ownerWorkspace}/.rdny"
+    exec ${lib.getExe rdnyPackage} "$@"
+  '';
+  publishBrowserNamespace = pkgs.writeShellApplication {
+    name = "michi-browser-namespace";
+    runtimeInputs = [pkgs.coreutils];
+    text = ''
+      test "''${MAINPID:-0}" -gt 1
+      ln -sfn "/proc/''${MAINPID}/ns/user" /run/zeroclaw-home-browser-userns
+    '';
+  };
+  browserStart = pkgs.writeShellApplication {
+    name = "michi-browser-start";
+    runtimeInputs = [rdnyOwnerWrapper pkgs.jq];
+    text = ''
+      rdny cleanup
+      rdny start --label michi
+      jq -er '.endpoint.broker_pid | select(type == "number" and . > 0)' \
+        "${ownerWorkspace}/.rdny/state.json" > /run/michi-browser/broker.pid
+    '';
+  };
+  ownerShellPackages = with pkgs; [
+    gh
+    jujutsu
+    git
+    ripgrep
+    jq
+    curl
+    fd
+    rdnyOwnerWrapper
+  ];
 
   # Keep the parent path valid in a clean checkout. A missing path literal is
   # rejected during Nix evaluation before pathExists can disable the feature.
@@ -66,9 +103,63 @@ in {
   # user with the same build as the unit (runbook step 5).
   environment.systemPackages = [zeroclawPackage];
 
+  # Chromium needs its own namespaces and JavaScript JIT. Keep those outside
+  # the bot unit; rdny clients use its private authenticated Unix broker.
+  systemd.tmpfiles.rules = lib.mkIf secretExists [
+    "d ${ownerWorkspace} 0700 zeroclaw-home zeroclaw-home -"
+  ];
+  systemd.services.michi-browser = lib.mkIf secretExists {
+    description = "Michi private rdny browser";
+    wantedBy = ["zeroclaw-home.service"];
+    after = ["network-online.target" "zeroclaw-home.service"];
+    bindsTo = ["zeroclaw-home.service"];
+    partOf = ["zeroclaw-home.service"];
+    wants = ["network-online.target"];
+    serviceConfig = {
+      Type = "forking";
+      User = "zeroclaw-home";
+      Group = "zeroclaw-home";
+      WorkingDirectory = ownerWorkspace;
+      RuntimeDirectory = "michi-browser";
+      RuntimeDirectoryMode = "0700";
+      PIDFile = "/run/michi-browser/broker.pid";
+      ExecStart = lib.getExe browserStart;
+      ExecStop = "${lib.getExe rdnyOwnerWrapper} stop";
+      Restart = "always";
+      RestartSec = "5s";
+      TimeoutStartSec = "60s";
+      TimeoutStopSec = "15s";
+      UMask = "0077";
+      NoNewPrivileges = true;
+      PrivateTmp = true;
+      PrivateDevices = true;
+      UserNamespacePath = "/run/zeroclaw-home-browser-userns";
+      ProtectSystem = "strict";
+      ProtectHome = true;
+      ProtectKernelTunables = true;
+      ProtectKernelModules = true;
+      ProtectKernelLogs = true;
+      ProtectControlGroups = true;
+      ProtectProc = "invisible";
+      RestrictNamespaces = ["user" "pid" "net" "ipc" "mnt" "uts"];
+      RestrictAddressFamilies = ["AF_INET" "AF_INET6" "AF_UNIX"];
+      RestrictSUIDSGID = true;
+      LockPersonality = true;
+      CapabilityBoundingSet = "";
+      ReadWritePaths = [ownerWorkspace];
+    };
+  };
+
+  # rdny validates process identity through /proc. Sharing only the bot's user
+  # namespace permits that check without granting the client namespace creation.
+  systemd.services.zeroclaw-home.serviceConfig = lib.mkIf secretExists {
+    ExecStartPost = ["+${lib.getExe publishBrowserNamespace}"];
+    ExecStopPost = ["+${pkgs.coreutils}/bin/rm -f /run/zeroclaw-home-browser-userns"];
+  };
+
   services.zeroclaw.instances.home = lib.mkIf secretExists {
     package = zeroclawPackage;
-    extraPackages = [pkgs.ffmpeg memoPackage];
+    extraPackages = [pkgs.ffmpeg memoPackage] ++ ownerShellPackages;
     environmentFile = config.age.secrets.zeroclaw-env.path;
 
     settings = {
@@ -172,8 +263,16 @@ in {
           auto_approve = autoApprove ++ ["shell"];
           require_approval_for_medium_risk = false;
           workspace_only = true;
+          shell_env_passthrough = ["GH_TOKEN"];
           allowed_commands = [
             "git"
+            "gh"
+            "jj"
+            "rg"
+            "jq"
+            "curl"
+            "fd"
+            "rdny"
             "npm"
             "cargo"
             "ls"

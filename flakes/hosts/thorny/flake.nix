@@ -74,6 +74,7 @@
       url = "github:averagechris/memo/c7261dbd1db31f9947e2efc16e65cb43ed05389a";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    rdny.follows = "hm-modules/rdny";
     # Maintained ZeroClaw fork: isolated Telegram chats, bounded media processing,
     # Go transcription, Kagi search, and Codex images. See zeroclaw.nix.
     zeroclaw = {
