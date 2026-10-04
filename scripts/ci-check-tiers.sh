@@ -8,6 +8,7 @@ tier="${1:-}"
 active_nixos_hosts=(trap thorny tom cruber tater trainwreck)
 shared_flakes=(base-lib nixos-modules hm-modules darwin-modules)
 explicit_checks=(
+  ".#checks.x86_64-linux.michi-codex"
   ".#checks.x86_64-linux.tater-desktop-static"
   ".#checks.x86_64-linux.tater-hyprland-greeter-config"
   ".#checks.x86_64-linux.tater-hyprland-home-config"

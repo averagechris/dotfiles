@@ -29,6 +29,29 @@
     export RDNY_STATE_DIR="${ownerWorkspace}/.rdny"
     exec ${lib.getExe rdnyPackage} "$@"
   '';
+  codexJobScript = ../../../scripts/michi-codex.py;
+  codexOwnerWrapper = pkgs.writeShellScriptBin "michi-codex" ''
+    export MICHI_CODEX_ROOT="${ownerWorkspace}"
+    export MICHI_CODEX_BINARY="${lib.getExe pkgs.codex}"
+    exec ${lib.getExe pkgs.python3} ${codexJobScript} "$@"
+  '';
+  codexTokenScript = pkgs.writeText "michi-codex-token.py" ''
+    import os, pathlib, re, tempfile
+    lines = pathlib.Path("${config.age.secrets.zeroclaw-env.path}").read_text().splitlines()
+    values = [line.split("=", 1)[1].strip() for line in lines if line.startswith("GH_TOKEN=")]
+    token = values[-1].strip("\"'") if values else ""
+    if not re.fullmatch(r"[A-Za-z0-9_]+", token):
+        raise SystemExit("GH_TOKEN is missing or malformed")
+    fd, path = tempfile.mkstemp(prefix=".michi-codex-gh-", dir="/run")
+    try:
+        os.fchmod(fd, 0o400)
+        with os.fdopen(fd, "w") as output:
+            output.write("GH_TOKEN=" + token + "\n")
+        os.replace(path, "/run/michi-codex-gh.env")
+    finally:
+        if os.path.exists(path):
+            os.unlink(path)
+  '';
   publishBrowserNamespace = pkgs.writeShellApplication {
     name = "michi-browser-namespace";
     runtimeInputs = [pkgs.coreutils];
@@ -56,6 +79,7 @@
     curl
     fd
     rdnyOwnerWrapper
+    codexOwnerWrapper
   ];
 
   # Keep the parent path valid in a clean checkout. A missing path literal is
@@ -101,12 +125,15 @@ in {
 
   # `zeroclaw auth login` for the Codex subscription must run as the service
   # user with the same build as the unit (runbook step 5).
-  environment.systemPackages = [zeroclawPackage];
+  environment.systemPackages = [zeroclawPackage pkgs.codex codexOwnerWrapper];
 
   # Chromium needs its own namespaces and JavaScript JIT. Keep those outside
   # the bot unit; rdny clients use its private authenticated Unix broker.
   systemd.tmpfiles.rules = lib.mkIf secretExists [
     "d ${ownerWorkspace} 0700 zeroclaw-home zeroclaw-home -"
+    "d ${ownerWorkspace}/.codex 0700 zeroclaw-home zeroclaw-home -"
+    "d ${ownerWorkspace}/.codex-jobs 0700 zeroclaw-home zeroclaw-home -"
+    "d ${ownerWorkspace}/.codex-jobs/pending 0700 zeroclaw-home zeroclaw-home -"
   ];
   systemd.services.michi-browser = lib.mkIf secretExists {
     description = "Michi private rdny browser";
@@ -146,6 +173,60 @@ in {
       RestrictSUIDSGID = true;
       LockPersonality = true;
       CapabilityBoundingSet = "";
+      ReadWritePaths = [ownerWorkspace];
+    };
+  };
+
+  # File requests keep coding work outside the bot's 60-second shell timeout.
+  systemd.paths.michi-codex = lib.mkIf secretExists {
+    wantedBy = ["multi-user.target"];
+    pathConfig = {
+      DirectoryNotEmpty = "${ownerWorkspace}/.codex-jobs/pending";
+      Unit = "michi-codex-worker.service";
+    };
+  };
+  systemd.services.michi-codex-worker = lib.mkIf secretExists {
+    description = "Michi owner Codex jobs";
+    after = ["network-online.target"];
+    wants = ["network-online.target"];
+    path = ownerShellPackages ++ [pkgs.codex pkgs.bubblewrap pkgs.nix pkgs.direnv pkgs.nodejs pkgs.python3];
+    environment = {
+      HOME = ownerWorkspace;
+      SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
+    };
+    serviceConfig = {
+      Type = "oneshot";
+      User = "zeroclaw-home";
+      Group = "zeroclaw-home";
+      WorkingDirectory = ownerWorkspace;
+      ExecStartPre = "+${lib.getExe pkgs.python3} ${codexTokenScript}";
+      ExecStart = "${lib.getExe codexOwnerWrapper} _worker";
+      ExecStopPost = "+${pkgs.coreutils}/bin/rm -f /run/michi-codex-gh.env";
+      EnvironmentFile = "-/run/michi-codex-gh.env";
+      TimeoutStartSec = "infinity";
+      TimeoutStopSec = "15s";
+      KillMode = "control-group";
+      UMask = "0077";
+      NoNewPrivileges = true;
+      PrivateUsers = true;
+      PrivateTmp = true;
+      PrivateDevices = true;
+      ProtectSystem = "strict";
+      ProtectHome = true;
+      ProtectKernelModules = true;
+      ProtectControlGroups = true;
+      # bwrap mounts a new /proc; outer proc submount locks prevent that.
+      # Leave ProcSubset, ProtectKernelTunables, and ProtectKernelLogs unset
+      # here. The bot retains all three; this worker has no host capabilities.
+      ProtectProc = "invisible";
+      RestrictNamespaces = ["user" "pid" "net" "ipc" "mnt" "uts"];
+      RestrictAddressFamilies = ["AF_INET" "AF_INET6" "AF_UNIX"];
+      RestrictSUIDSGID = true;
+      LockPersonality = true;
+      CapabilityBoundingSet = "";
+      # Expose only the owner's workspace from the shared bot state tree.
+      TemporaryFileSystem = ["/var/lib/zeroclaw-home:ro"];
+      BindPaths = [ownerWorkspace];
       ReadWritePaths = [ownerWorkspace];
     };
   };
@@ -273,6 +354,7 @@ in {
             "curl"
             "fd"
             "rdny"
+            "michi-codex"
             "npm"
             "cargo"
             "ls"

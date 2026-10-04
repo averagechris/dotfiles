@@ -158,3 +158,12 @@ Codex chat to pick up global guidance. Existing local config is preserved.
   documents `~/.agents/skills` and symlink support. The upstream Home Manager
   skills option currently uses `CODEX_HOME/skills`; this registry uses the
   documented shared personal directory directly.
+
+
+## Michi on Thorny
+
+Michi's owner DM uses the pinned Codex CLI through a queued `michi-codex`
+command. This is a service-user installation with its own ChatGPT login and
+owner workspace, independent of the workstation's Home Manager configuration.
+See [the ZeroClaw runbook](zeroclaw.md#codex-coding-jobs) for login, execution,
+job results, and the worker's isolation from other chats.
