@@ -576,7 +576,13 @@ in {
         };
       }
     ];
-    dotfiles.codex.enable = true;
+    dotfiles.codex = {
+      enable = true;
+      settings = {
+        model = "gpt-6.1-sol";
+        model_reasoning_effort = "low";
+      };
+    };
     # Reference only. Adoption requires a separate request after review and merge.
     xdg.configFile."grem/PREFERENCES.md".source = ./grem/PREFERENCES.md;
     programs.opencode.enable = true;

@@ -24,6 +24,20 @@ in [Codex](codex.md). It is not an auto-loaded `AGENTS.md`, a skill, or executab
 policy. The configuration does not add its contents to Codex context or
 `extraInstructions`, and it does not change OpenCode or Michi.
 
+## Task routing and fallback
+
+The preferences reference the "Model selection" section of
+[`modules/codex/AGENTS.md`](../flakes/hm-modules/modules/codex/AGENTS.md)
+as the single routing policy source. They do not copy the policy or import
+OpenCode's named agent roster. Launch tasks with explicit model and reasoning
+selections when applying that policy.
+
+Suremac declares Sol 6.1 with low reasoning through `dotfiles.codex.settings`.
+This is an activation-time TOML fallback, separate from intentional task routing.
+Omitted desktop task selections use saved desktop defaults. Their relationship
+to TOML must be verified before reporting that the live desktop fallback changed.
+See [Codex](codex.md) for precedence and activation limits.
+
 ## Review and adoption
 
 1. Edit the canonical source and review the diff with Chris.
