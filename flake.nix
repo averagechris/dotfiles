@@ -329,6 +329,17 @@
       # manually. Strict duplicates (same value under the same name) are kept
       # once; name collisions with different values throw.
       checks = lib.mergeFlakeChecks [
+        {
+          michi-codex =
+            pkgs.runCommand "michi-codex-tests" {
+              nativeBuildInputs = [pkgs.python3];
+            } ''
+              export PYTHONDONTWRITEBYTECODE=1
+              cd ${self}
+              python3 -m unittest discover -s tests -p test_michi_codex.py
+              touch "$out"
+            '';
+        }
         suremac.checks.${system} or {}
         trap.checks.${system} or {}
         thorny.checks.${system} or {}

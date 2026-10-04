@@ -281,11 +281,66 @@ Cross-chat memory sharing is outside this trial.
 Keep Kagi on its default search for now. Revisit lenses with Chris: explain how
 they filter results, then help create lenses for his recurring searches.
 
-Use rdny for browser automation and shell for other owner host work. Codex task
-orchestration and native desktop control are deferred. Keep Thorny's separate
+Use rdny for browser automation and shell for other owner host work. Native desktop control and a richer
+Codex task interface are deferred. Keep Thorny's separate
 ChatGPT/Codex account and browser profile independent of work. Linear, Granola,
 and Slack are not part of the personal assistant. Consider ctx only for Michi's
 own coding history, and sideshow if slide creation becomes useful.
+
+## Codex coding jobs
+
+Owner coding requests go through `michi-codex`, backed by the pinned Nixpkgs
+Codex CLI. Invited DMs and groups have no access to this command. Michi submits
+a task, waits for its result, and summarizes the actual change and checks.
+Luna with medium reasoning is the default; `--model sol` uses Sol 6.1 with high
+reasoning. A follow-up uses an explicit job ID with `--resume`, never the latest
+session from an unrelated request.
+
+The command writes private requests and results below the owner workspace's
+`.codex-jobs`. A systemd path unit starts `michi-codex-worker.service` when requests
+arrive. The worker processes them sequentially, outside the bot shell's
+60-second deadline. `status`, `wait`, `result`, and `cancel` take a job ID.
+Results remain on disk when a Telegram reply truncates them. `wait` defaults to
+10 seconds and accepts at most 20. `result` displays up to 12,000 characters
+and reports the full result path. A job has a two-hour runtime limit. A worker restart
+interrupts active work; it does not silently restart the coding task.
+
+The worker exposes only the owner workspace from the shared bot state tree.
+Other agents' state and the bot configuration are hidden. It retains filesystem,
+home, device, user, and privilege restrictions. It permits namespaces and JIT
+needed by Codex and coding tools, while the bot service keeps its original
+restrictions. The worker leaves `ProcSubset`, `ProtectKernelTunables`, and
+`ProtectKernelLogs` unset because their process-filesystem restrictions prevent
+bubblewrap from mounting its own `/proc`. The worker has no host capabilities;
+the bot retains these settings. Codex runs with its native workspace-write sandbox, network
+access for repository work, and no interactive approval prompts. The worker
+forwards only `GH_TOKEN` among the provider credentials in agenix.
+
+Codex has separate authentication under the owner's `.codex` directory. It does
+not import the existing ZeroClaw login or workstation credentials. After
+installation, sign in to Thorny's separate ChatGPT account from SSH:
+
+```sh
+sudo -u zeroclaw-home env \
+  HOME=/var/lib/zeroclaw-home/agents/owner/workspace \
+  CODEX_HOME=/var/lib/zeroclaw-home/agents/owner/workspace/.codex \
+  /run/current-system/sw/bin/codex -c cli_auth_credentials_store='"file"' login --device-auth
+```
+
+Use the displayed URL and code yourself. Check `michi-codex auth-status` as the
+service user afterward. The [official authentication guide](https://learn.chatgpt.com/docs/auth)
+describes headless login. [Non-interactive mode](https://learn.chatgpt.com/docs/non-interactive-mode)
+describes execution, JSON events, and explicit session resumption.
+
+The worker PATH includes GitHub and repository tools, Node.js, Python, Nix, and direnv.
+Use each project's declared development environment for its other dependencies.
+No API-key fallback or work account integration is configured.
+
+Check the worker and queue watcher with `systemctl status michi-codex-worker
+michi-codex.path`. Use `journalctl -u michi-codex-worker` for startup errors;
+Codex events and its final message stay in the private job directory. Run the
+offline job-control checks with `nix build .#checks.x86_64-linux.michi-codex`.
+These checks are also part of the CI coverage tier.
 
 ## Operations
 
