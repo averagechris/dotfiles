@@ -111,7 +111,7 @@ in
 
       datadog = {
         type = "remote";
-        url = "https://mcp.datadoghq.com/api/unstable/mcp-server/mcp?toolsets=all";
+        url = "https://mcp.datadoghq.com/v1/mcp?toolsets=all";
         disabled = true;
       };
 

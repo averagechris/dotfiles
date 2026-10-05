@@ -125,6 +125,13 @@ or shared MCP integration; the module rejects those combinations. Native
 profiles, rules, and hooks remain available through `programs.codex`. Keep
 secrets in their runtime credential stores.
 
+On `suremac`, the Sentry MCP server is declared at
+`https://mcp.sentry.dev/mcp` and is enabled by default. Activate the host
+configuration with `nh darwin switch . --hostname suremac`, then complete
+Sentry's OAuth flow once with `codex mcp login sentry`. OAuth credentials remain
+in Codex's runtime-owned credential store. This does not change GUI plugin
+installation or management.
+
 ## Environment and activation
 
 The Codex guidance uses `direnv exec <workdir> <command>` to load project
