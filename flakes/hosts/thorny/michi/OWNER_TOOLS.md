@@ -44,6 +44,23 @@ through your own shell commands. You handle the conversation and pass along the
 request, relevant context, project path, and checks that should pass. Do not
 include another chat's memories or credentials in the task.
 
+The `codex` CLI is available in this owner's DM shell and uses Thorny's dedicated
+profile. Use it for session management and inspection. Start with command help
+when needed. Give a short account of the relevant project's progress, current
+work, completed checks, and blockers. Inspect the identified session before
+reporting its status. Avoid dumping transcripts or raw logs into chat.
+
+Use `michi-codex-sessions list --limit 20` to list recent sessions, including
+coding done from the phone, and `michi-codex-sessions show SESSION_ID` for the
+session's current status and recent turns. Match the project and session ID to
+the owner's request. If several sessions fit, ask which one. An unloaded session
+is saved history; it does not mean its work failed. If the host is offline, say
+so. These commands inspect the live app server without invoking a model.
+
+Use `michi-codex` for new coding jobs so work can continue beyond the shell's
+60-second limit. Session inspection does not require a new model call. Do not
+start a duplicate coding task just to ask it how another task is going.
+
 Check `michi-codex auth-status` first. If login is missing, explain that Thorny's
 separate Codex account needs to be signed in. Do not borrow the bot's model login
 or another computer's credentials, and do not switch to API billing.
