@@ -771,13 +771,34 @@ All MCP servers are defined under `mcp.servers` in
 |------------|------|---------|-------|
 | `context7` | remote | disabled | Documentation lookup |
 | `circleci` | local | disabled | Launches `@circleci/mcp-server-circleci` via the module's Node-aware `npx` wrapper; requires `CIRCLECI_TOKEN` when enabled |
-| `datadog` | remote | disabled | Datadog MCP endpoint |
+| `datadog` | remote | disabled | Stable US1 endpoint: `https://mcp.datadoghq.com/v1/mcp?toolsets=all` |
 | `gh-grep` | remote | disabled | GitHub code search via Grep |
 | `github` | remote | disabled | GitHub Copilot MCP endpoint |
 | `playwright` | local | disabled | Launches `@playwright/mcp` via the module's Node-aware `npx` wrapper for browser automation |
 | `notion` | remote | disabled | Hosted Notion MCP endpoint using OAuth |
 | `serena` | local | disabled | Launched via `uvx` from the upstream repository |
 | `sentry` | remote | disabled | Hosted Sentry MCP endpoint using OAuth |
+
+Datadog uses the versioned `/v1/mcp` route. The former unstable route shuts
+down on December 15, 2026, per [EPD-20101](https://linear.app/sureapp/issue/EPD-20101/migrate-datadog-mcp-connections-to-the-stable-v1-endpoint).
+Keep the `toolsets=all` query when migrating. Datadog remains disabled by default;
+enable it temporarily when Pup cannot cover an investigation.
+
+For an immediate update before Home Manager activation, add the following entry
+under `mcp.servers` in the writable `~/.config/opencode/opencode.jsonc`:
+
+```json
+"datadog": {
+  "type": "remote",
+  "url": "https://mcp.datadoghq.com/v1/mcp?toolsets=all"
+}
+```
+
+This overrides the URL in the generated `opencode.json` while preserving its
+other Datadog settings. The remote type is required for the override to parse.
+OpenCode reloads the writable config; check the loaded sources with
+`opencode debug config`. After activating the updated dotfiles, the override can
+be removed.
 
 ## Installed skills
 

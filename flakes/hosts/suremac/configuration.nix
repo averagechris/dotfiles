@@ -581,6 +581,10 @@ in {
       settings = {
         model = "gpt-6.1-sol";
         model_reasoning_effort = "low";
+        mcp_servers.sentry = {
+          url = "https://mcp.sentry.dev/mcp";
+          enabled = true;
+        };
       };
     };
     # Reference only. Adoption requires a separate request after review and merge.
