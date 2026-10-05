@@ -111,6 +111,55 @@
     deploy.nodes.thorny = lib.mkDeploy self.nixosConfigurations.thorny;
 
     checks.${system} = {
+      thorny-personal-codex = let
+        personal = import ./personal-codex.nix {
+          inherit inputs;
+          inherit (thornySystem) pkgs;
+          ownerWorkspace = "/var/lib/zeroclaw-home/agents/owner/workspace";
+        };
+        expectedSkills = [
+          "conventional-commits"
+          "how"
+          "impactful-writing"
+          "memo"
+          "project-map"
+          "rdny-browser"
+          "rust-cargo"
+          "srht-ci"
+          "srht-issues"
+          "srht-setup"
+          "teach"
+          "technical-writing"
+          "test-curation"
+          "why"
+        ];
+        manifest = pkgs.writeText "thorny-codex-skills.json" (builtins.toJSON
+          (pkgs.lib.mapAttrsToList (name: source: {
+              destination = ".agents/skills/${name}";
+              inherit source;
+            })
+            personal.skills));
+      in
+        assert builtins.attrNames personal.skills == expectedSkills;
+          pkgs.runCommand "thorny-personal-codex" {
+            nativeBuildInputs = [(pkgs.python3.withPackages (ps: [ps.pyyaml]))] ++ personal.packages;
+          } ''
+            python3 ${../../hm-modules/modules/opencode/tests/check-deployed-skills.py} ${manifest}
+            memo --help > /dev/null
+            srht --help > /dev/null
+            showboat --help > /dev/null
+            grep -Fq '## Coding models' ${personal.instructions}
+            grep -Fq 'direnv exec <workdir> <command>' ${personal.instructions}
+            grep -Fq -- '--store default' ${personal.instructions}
+            if grep -Rq 'subagent-selection' ${personal.skills.how} ${personal.skills.why}; then
+              echo "OpenCode agent selection leaked into Codex skills" >&2
+              exit 1
+            fi
+            mkdir -p "$out"
+            cp ${manifest} "$out/skills.json"
+            cp ${personal.instructions} "$out/AGENTS.md"
+          '';
+
       thorny-hyprland-greeter-config = lib.mkHyprlandConfigCheck {
         name = "thorny-hyprland-greeter-config";
         hyprlandPackage = cfg.programs.hyprland.package;
