@@ -57,11 +57,10 @@
         if os.path.exists(path):
             os.unlink(path)
   '';
-  codexInstructions = pkgs.writeText "michi-codex-AGENTS.md" (
-    builtins.readFile ../../hm-modules/modules/agent-guidance.md
-    + "\n"
-    + builtins.readFile ./michi/CODING.md
-  );
+  personalCodex = import ./personal-codex.nix {
+    inherit inputs pkgs ownerWorkspace;
+  };
+  codexInstructions = personalCodex.instructions;
   codexOwnerWrapper = pkgs.writeShellScriptBin "michi-codex" ''
     export MICHI_CODEX_ROOT="${ownerWorkspace}"
     export MICHI_CODEX_BINARY="${lib.getExe codexPackage}"
@@ -140,19 +139,21 @@
         "${ownerWorkspace}/.rdny/state.json" > /run/michi-browser/broker.pid
     '';
   };
-  ownerShellPackages = with pkgs; [
-    gh
-    jujutsu
-    git
-    ripgrep
-    jq
-    curl
-    fd
-    rdnyOwnerWrapper
-    codexOwnerWrapper
-    codexOwnerCli
-    codexSessions
-  ];
+  ownerShellPackages = with pkgs;
+    [
+      gh
+      jujutsu
+      git
+      ripgrep
+      jq
+      curl
+      fd
+      rdnyOwnerWrapper
+      codexOwnerWrapper
+      codexOwnerCli
+      codexSessions
+    ]
+    ++ personalCodex.packages;
 
   # Keep the parent path valid in a clean checkout. A missing path literal is
   # rejected during Nix evaluation before pathExists can disable the feature.
@@ -201,13 +202,19 @@ in {
 
   # Chromium needs its own namespaces and JavaScript JIT. Keep those outside
   # the bot unit; rdny clients use its private authenticated Unix broker.
-  systemd.tmpfiles.rules = lib.mkIf secretExists [
-    "d ${ownerWorkspace} 0700 zeroclaw-home zeroclaw-home -"
-    "d ${ownerWorkspace}/.codex 0700 zeroclaw-home zeroclaw-home -"
-    "L+ ${ownerWorkspace}/.codex/AGENTS.md - - - - ${codexInstructions}"
-    "d ${ownerWorkspace}/.codex-jobs 0700 zeroclaw-home zeroclaw-home -"
-    "d ${ownerWorkspace}/.codex-jobs/pending 0700 zeroclaw-home zeroclaw-home -"
-  ];
+  systemd.tmpfiles.rules = lib.mkIf secretExists ([
+      "d ${ownerWorkspace} 0700 zeroclaw-home zeroclaw-home -"
+      "d ${ownerWorkspace}/.codex 0700 zeroclaw-home zeroclaw-home -"
+      "L+ ${ownerWorkspace}/.codex/AGENTS.md - - - - ${codexInstructions}"
+      "d ${ownerWorkspace}/.codex-jobs 0700 zeroclaw-home zeroclaw-home -"
+      "d ${ownerWorkspace}/.codex-jobs/pending 0700 zeroclaw-home zeroclaw-home -"
+      "d ${ownerWorkspace}/.agents 0700 zeroclaw-home zeroclaw-home -"
+      "d ${ownerWorkspace}/.agents/skills 0700 zeroclaw-home zeroclaw-home -"
+    ]
+    ++ lib.mapAttrsToList (
+      name: source: "L+ ${ownerWorkspace}/.agents/skills/${name} - - - - ${source}"
+    )
+    personalCodex.skills);
   systemd.services.michi-browser = lib.mkIf secretExists {
     description = "Michi private rdny browser";
     wantedBy = ["zeroclaw-home.service"];

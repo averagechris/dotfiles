@@ -165,5 +165,37 @@ Codex chat to pick up global guidance. Existing local config is preserved.
 Michi's owner DM uses the pinned Codex CLI through a queued `michi-codex`
 command. This is a service-user installation with its own ChatGPT login and
 owner workspace, independent of the workstation's Home Manager configuration.
+`flakes/hosts/thorny/personal-codex.nix` reuses the shared skill registry and
+renderer for this service account. NixOS links complete skill directories into
+its `~/.agents/skills` directory: the seven portable skills, `how`, `why`,
+`memo`, `rdny-browser`, and the three SourceHut skills. Its instructions retain
+Thorny's Codex model and sub-agent guidance. The `how` and `why` helpers use
+Codex delegation and omit work-specific source playbooks.
+The owner shell, queued worker, and remote Codex server receive the personal
+`memo`, `srht`, and `showboat` CLIs alongside the existing coding and browser
+tools. History remains available through `michi-codex-sessions`.
+Codex is encouraged to use `memo` quietly and selectively for durable project
+learnings and decision history. Memo is an append-only note history with an
+aligned summary tree. `wake` covers the whole selected history within its line
+budget, not keyword search results. When `wake` or `note` requests a summary,
+the agent summarizes the two supplied sources and submits the result with the
+printed, store-pinned `nap` command. Repeat an incomplete wake until complete.
+Memo makes no model calls; bare `nap` prints the next eligible request.
+Notes are single lines of at most 280 UTF-8 bytes;
+correct an old note by appending one that identifies what it supersedes.
+
+Run memo from a project repository to use its project store; worktrees share
+that store. Keep `--data-dir <owner workspace>/memo` explicit. Use the `default`
+store only for cross-project preferences and Michi's personal context. Memo
+does not combine project and default stores into one wake. Check each separately
+when both are relevant. Routine reads, notes, and maintenance stay quiet, with
+no usage reports or reminders. Notes are leads to verify against current code.
+
+This profile excludes Linear, Datadog, Sentry, AWS/Kubernetes tools, work meeting
+integrations, and private Sure stack context. SourceHut authentication must be
+configured for the service account separately; workstation credentials are not
+copied. No Codex config, plugins, or login files are replaced.
+NixOS activation applies these links and service PATH changes; editing the
+module alone does not update a running Codex session.
 See [the ZeroClaw runbook](zeroclaw.md#codex-coding-jobs) for login, execution,
 job results, and the worker's isolation from other chats.

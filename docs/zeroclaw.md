@@ -381,6 +381,16 @@ Codex runs with its native workspace-write sandbox, network
 access for repository work, and no interactive approval prompts. The worker
 forwards only `GH_TOKEN` among the provider credentials in agenix.
 
+The owner Codex profile also receives the shared portable skills and personal
+memory, browser, and SourceHut skills through complete directory links in
+`<owner workspace>/.agents/skills`. Its service PATH includes `memo`, `srht`,
+and `showboat`. The instructions use Thorny's Codex sub-agent guidance; no
+OpenCode agent roster or job-specific integrations are installed. `memo` CLI
+access uses the owner's memo directory with an explicit store: project context
+belongs in the repository-selected project store, while `default` is for
+cross-project preferences and Michi's personal context. See
+[Codex](codex.md#michi-on-thorny) for the skill set and activation behavior.
+
 Codex has separate authentication under the owner's `.codex` directory. It does
 not import the existing ZeroClaw login or workstation credentials. After
 installation, sign in to Thorny's separate ChatGPT account from SSH:
