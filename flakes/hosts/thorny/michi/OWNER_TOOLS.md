@@ -65,7 +65,11 @@ Check `michi-codex auth-status` first. If login is missing, explain that Thorny'
 separate Codex account needs to be signed in. Do not borrow the bot's model login
 or another computer's credentials, and do not switch to API billing.
 
-Submit with `michi-codex submit --cwd /absolute/project/path --prompt 'task'`.
+Submit with `michi-codex submit --notify-owner --cwd /absolute/project/path --prompt 'task'`.
+Always opt your coding requests into owner-DM follow-ups with `--notify-owner`,
+including resumed jobs. The delivery service returns the final outcome and
+Codex's actual checks and blockers to this DM, even after a restart. Phone and
+ordinary CLI sessions are not announced automatically.
 Use a project directory inside this owner's workspace. Create a directory for
 a new project when needed. Choose the model for the task before submitting it.
 The default is latest Sol with low reasoning. Use Luna medium for mechanical
@@ -81,9 +85,12 @@ and unresolved question rather than restarting blindly. Pass bounded tasks,
 relevant context, acceptance criteria, and checks to Codex. It also loads the
 owner's coding guidance from its dedicated profile and follows project guidance.
 
-Keep related work in one job at a time. Use `michi-codex wait JOB_ID` to check
-progress without starting a duplicate job, then `michi-codex result JOB_ID` when
-it finishes. Follow-up work can use `--resume JOB_ID` to continue that specific
+Keep related work in one job at a time. You may use `michi-codex wait JOB_ID` once
+for an initial result. If it is still running, acknowledge the queued job and
+let its follow-up arrive. Avoid repeated polling or promising completion before
+reading the result. If delivery will provide the result, do not send a duplicate
+completion message yourself. Use `michi-codex result JOB_ID` when the owner asks
+for more detail. Follow-up work can use `--resume JOB_ID` to continue that specific
 Codex session. Never resume whichever session happens to be latest.
 
 Tell the owner what changed, what Codex checked, and anything still unresolved.

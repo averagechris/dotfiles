@@ -212,6 +212,7 @@ def submit(
     model: str,
     resume_id: str | None,
     reasoning: str | None = None,
+    notify_owner: bool = False,
 ) -> str:
     if not prompt.strip():
         raise JobError("prompt must not be empty")
@@ -226,6 +227,11 @@ def submit(
         raise JobError("reasoning must be low, medium, high, xhigh, max, or ultra for Sol and Astra")
     resume_from = job_id(resume_id) if resume_id else None
     session_id = session_for_job(root, resume_from, cwd) if resume_from else None
+    owner_id = None
+    if notify_owner:
+        owner_id = os.environ.get("TG_OWNER_ID", "")
+        if not owner_id.isascii() or not owner_id.isdecimal() or int(owner_id) <= 0:
+            raise JobError("TG_OWNER_ID must be a positive integer for owner follow-ups")
     authenticated, message = auth_check(root, binary)
     if not authenticated:
         raise JobError(message)
@@ -242,11 +248,24 @@ def submit(
         "model": model,
         "reasoning": effort,
         "resume_from": resume_from,
-        "session_id": None,
+        "session_id": session_id,
         "exit_code": None,
         "error": None,
     }
+    if notify_owner:
+        atomic_json(directory / "followup.json", {
+            "version": 1,
+            "destination": "owner",
+            "owner_id": str(int(owner_id)),
+            "created_at": int(time.time()),
+        })
     write_state(directory, state)
+    if notify_owner:
+        prompt += (
+            "\n\nFor this Michi follow-up job, end your final response with exactly one final line: "
+            "Outcome: complete, Outcome: needs_input, or Outcome: failed. Use needs_input when "
+            "the owner must answer or unblock the work. Report actual changes, checks, and unresolved issues."
+        )
     atomic_json(directory / "request.json", {
         "id": value,
         "cwd": str(cwd),
@@ -290,6 +309,7 @@ def mark_orphaned_jobs(root: Path) -> None:
         except JobError:
             continue
         if state.get("status") == "running":
+            recover_session(directory, state)
             state["status"] = "interrupted"
             state["error"] = "Codex worker restarted while this job was running."
             state["finished_at"] = int(time.time())
@@ -343,6 +363,24 @@ def session_from_jsonl(path: Path) -> str | None:
     return None
 
 
+def recover_session(directory: Path, state: dict[str, Any]) -> bool:
+    session = state.get("session_id") or session_from_jsonl(directory / "events.jsonl")
+    if isinstance(session, str) and SESSION_UUID_RE.fullmatch(session):
+        changed = state.get("session_id") != session
+        state["session_id"] = session
+        return changed
+    return False
+
+
+def outcome_from_result(path: Path) -> str | None:
+    try:
+        tail = path.read_text(encoding="utf-8", errors="replace")[-1000:]
+    except OSError:
+        return None
+    match = re.search(r"(?:^|\n)Outcome: (complete|needs_input|failed)\s*$", tail)
+    return match.group(1) if match else None
+
+
 def terminate_group(process: subprocess.Popen[bytes]) -> None:
     try:
         os.killpg(process.pid, signal.SIGTERM)
@@ -373,7 +411,7 @@ def execute_job(root: Path, binary: str, value: str) -> None:
     if request.get("session_id") is not None and not SESSION_UUID_RE.fullmatch(str(request["session_id"])):
         raise JobError("queued job has invalid Codex session ID")
     state = read_json(directory / "state.json")
-    if state.get("status") in {"cancelled", "complete", "failed", "interrupted"}:
+    if state.get("status") in {"cancelled", "complete", "needs_input", "failed", "interrupted"}:
         return
     state.update(model_name=model_name, reasoning=reasoning)
     if (directory / "cancel.flag").exists():
@@ -413,23 +451,32 @@ def execute_job(root: Path, binary: str, value: str) -> None:
             write_state(directory, state)
             deadline = time.monotonic() + JOB_TIMEOUT_SECONDS
             while process.poll() is None:
+                if recover_session(directory, state):
+                    write_state(directory, state)
                 if (directory / "cancel.flag").exists():
                     terminate_group(process)
+                    recover_session(directory, state)
                     state.update(status="cancelled", error=None, finished_at=int(time.time()))
                     write_state(directory, state)
                     return
                 if time.monotonic() >= deadline:
                     terminate_group(process)
+                    recover_session(directory, state)
                     state.update(status="failed", error="Codex job exceeded the two-hour limit.", finished_at=int(time.time()))
                     write_state(directory, state)
                     return
                 time.sleep(POLL_SECONDS)
             exit_code = process.returncode
-        state["session_id"] = session_from_jsonl(stdout_path) or request.get("session_id")
+        state["session_id"] = session_from_jsonl(stdout_path) or state.get("session_id") or request.get("session_id")
+        if (directory / "cancel.flag").exists():
+            state.update(status="cancelled", error=None, finished_at=int(time.time()))
+            write_state(directory, state)
+            return
         state["exit_code"] = exit_code
         state["finished_at"] = int(time.time())
         if exit_code == 0:
-            state.update(status="complete", error=None)
+            outcome = outcome_from_result(directory / "result.txt") if (directory / "followup.json").is_file() else None
+            state.update(status=outcome or "complete", error=None)
         else:
             state.update(status="failed", error=f"Codex exited with status {exit_code}.")
         write_state(directory, state)
@@ -471,7 +518,7 @@ def run_worker(root: Path, binary: str) -> None:
                 execute_job(root, binary, value)
             except Exception as exc:
                 state = read_json(directory / "state.json")
-                if state.get("status") not in {"cancelled", "complete", "failed", "interrupted"}:
+                if state.get("status") not in {"cancelled", "complete", "needs_input", "failed", "interrupted"}:
                     state.update(status="failed", error=f"Invalid queued job: {type(exc).__name__}.", finished_at=int(time.time()))
                     write_state(directory, state)
 
@@ -502,11 +549,15 @@ def command_status(root: Path, value: str, wait_seconds: int = 0) -> str:
     if state.get("status") == "running":
         lock = acquire_worker_lock(root)
         if lock is not None:
-            lock.close()
-            state["status"] = "interrupted"
-            state["error"] = "Codex worker is no longer running."
-            state["finished_at"] = int(time.time())
-            write_state(directory, state)
+            with lock:
+                # The worker may have finished after the first state read.
+                state = read_json(directory / "state.json")
+                if state.get("status") == "running":
+                    recover_session(directory, state)
+                    state["status"] = "interrupted"
+                    state["error"] = "Codex worker is no longer running."
+                    state["finished_at"] = int(time.time())
+                    write_state(directory, state)
     return state_summary(state)
 
 
@@ -549,6 +600,7 @@ def parser() -> argparse.ArgumentParser:
         choices=("low", "medium", "high", "xhigh", "max", "ultra"),
     )
     submit_cmd.add_argument("--resume")
+    submit_cmd.add_argument("--notify-owner", action="store_true")
     for name in ("status", "result", "cancel"):
         sub = commands.add_parser(name)
         sub.add_argument("id")
@@ -570,7 +622,7 @@ def main(argv: list[str] | None = None) -> int:
             print(message)
             return 0 if authenticated else 1
         if args.command == "submit":
-            value = submit(root, binary, args.cwd, args.prompt, args.model, args.resume, args.reasoning)
+            value = submit(root, binary, args.cwd, args.prompt, args.model, args.resume, args.reasoning, args.notify_owner)
             print(f"Queued Codex job {value}. Use michi-codex status {value} to check progress.")
             return 0
         if args.command == "status":
