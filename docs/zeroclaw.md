@@ -327,6 +327,46 @@ Results remain on disk when a Telegram reply truncates them. `wait` defaults to
 and reports the full result path. A job has a two-hour runtime limit. A worker restart
 interrupts active work; it does not silently restart the coding task.
 
+Michi submits coding requests with `submit --notify-owner`. This opts that
+specific job into a durable follow-up to the configured owner's private DM.
+The owner shell receives `TG_OWNER_ID` to record the originating DM at
+submission. Delivery must match that saved ID to the current encrypted
+`TG_OWNER_ID`; it refuses to reroute old jobs if the owner configuration changes.
+Requests cannot choose another chat. Phone sessions, ordinary CLI jobs, and jobs
+created before this feature remain quiet. Resumed jobs opt in separately.
+Neither guests nor groups receive the submit command, including when the owner
+speaks in a group.
+
+`michi-codex-notify.service` checks opted-in jobs every 30 seconds through a
+systemd timer. It makes no model calls and never restarts coding work. It sends
+one bounded plain-text message with the terminal status, job ID, and Codex's
+final account of changes, checks, and unresolved issues. Full results remain on
+disk. A successful Codex exit is not proof that the requested work succeeded;
+opted-in prompts ask for an explicit outcome, including `needs_input` when
+blocked. Cancellation and interrupted work also receive follow-ups. Session
+IDs are saved during execution so interruption does not lose the association.
+
+Private per-job delivery records survive service restarts. Acknowledged
+deliveries are not repeated. Transient network, server, and rate-limit failures
+retry with bounded backoff; permanent Telegram rejection stops retrying. If
+Telegram accepted a message but its response was lost, retry can produce a
+duplicate. Telegram's send API has no idempotency key, so exactly-once delivery
+is not promised. No receipt placeholders or periodic progress messages are sent.
+
+Only the delivery service receives `BOT_TOKEN` and `TG_OWNER_ID`, extracted by a
+root pre-start helper into a private temporary environment file. That file is
+removed on stop. The coding worker still receives only its existing GitHub
+credential. Delivery retains the owner workspace mount and service restrictions
+and cannot read guest workspaces. Inspect failures through per-job delivery
+records without printing credentials or raw HTTP errors.
+
+Check this feature with `python3 -m unittest discover -s tests -p
+'test_michi_codex*.py'` inside the project environment, or build
+`.#checks.x86_64-linux.michi-codex`. Tests use temporary job stores and fake
+Codex/Telegram endpoints, including restart and delivery failure cases. They do
+not write memo notes or remove saved sessions. Roll back by reverting the
+follow-up change and redeploying; job results and session history remain intact.
+
 The worker exposes only the owner workspace from the shared bot state tree.
 Other agents' state and the bot configuration are hidden. It retains filesystem,
 home, device, user, and privilege restrictions. It permits namespaces and JIT

@@ -31,6 +31,32 @@
     exec ${lib.getExe rdnyPackage} "$@"
   '';
   codexJobScript = ../../../scripts/michi-codex.py;
+  codexNotify = pkgs.writeShellScriptBin "michi-codex-notify" ''
+    export MICHI_CODEX_ROOT="${ownerWorkspace}"
+    exec ${lib.getExe pkgs.python3} ${../../../scripts/michi-codex-notify.py}
+  '';
+  codexNotifyTokenScript = pkgs.writeText "michi-codex-notify-token.py" ''
+    import os, pathlib, re, sys, tempfile
+    values = {}
+    for line in pathlib.Path("${config.age.secrets.zeroclaw-env.path}").read_text().splitlines():
+        key, separator, value = line.partition("=")
+        if separator and key in {"BOT_TOKEN", "TG_OWNER_ID"}:
+            values[key] = value.strip().strip("\"'")
+    if not re.fullmatch(r"[0-9]+:[A-Za-z0-9_-]+", values.get("BOT_TOKEN", "")):
+        raise SystemExit("BOT_TOKEN is missing or malformed")
+    if not re.fullmatch(r"[1-9][0-9]*", values.get("TG_OWNER_ID", "")):
+        raise SystemExit("TG_OWNER_ID is missing or malformed")
+    fd, path = tempfile.mkstemp(prefix=".michi-codex-notify-", dir="/run")
+    try:
+        os.fchmod(fd, 0o400)
+        with os.fdopen(fd, "w") as output:
+            for key, value in values.items():
+                output.write(key + "=" + value + "\n")
+        os.replace(path, sys.argv[1])
+    finally:
+        if os.path.exists(path):
+            os.unlink(path)
+  '';
   codexInstructions = pkgs.writeText "michi-codex-AGENTS.md" (
     builtins.readFile ../../hm-modules/modules/agent-guidance.md
     + "\n"
@@ -258,6 +284,38 @@ in {
       };
   };
 
+  # Delivery has its own credentials and lifetime. It never starts Codex.
+  systemd.timers.michi-codex-notify = lib.mkIf secretExists {
+    wantedBy = ["timers.target"];
+    timerConfig = {
+      OnBootSec = "30s";
+      OnUnitInactiveSec = "30s";
+      AccuracySec = "5s";
+      Unit = "michi-codex-notify.service";
+    };
+  };
+  systemd.services.michi-codex-notify = lib.mkIf secretExists {
+    description = "Deliver Michi owner Codex follow-ups";
+    after = ["network-online.target"];
+    wants = ["network-online.target"];
+    environment.SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
+    serviceConfig =
+      codexSandbox
+      // {
+        Type = "oneshot";
+        User = "zeroclaw-home";
+        Group = "zeroclaw-home";
+        WorkingDirectory = ownerWorkspace;
+        ExecStartPre = "+${lib.getExe pkgs.python3} ${codexNotifyTokenScript} /run/michi-codex-notify.env";
+        ExecStart = lib.getExe codexNotify;
+        ExecStopPost = "+${pkgs.coreutils}/bin/rm -f /run/michi-codex-notify.env";
+        EnvironmentFile = "-/run/michi-codex-notify.env";
+        RestrictNamespaces = true;
+        RestrictAddressFamilies = ["AF_INET" "AF_INET6" "AF_UNIX"];
+        TimeoutStartSec = "5min";
+      };
+  };
+
   systemd.services.michi-codex-remote = lib.mkIf secretExists {
     description = "Thorny Codex phone host";
     wantedBy = ["multi-user.target"];
@@ -433,7 +491,7 @@ in {
           auto_approve = autoApprove ++ ["shell"];
           require_approval_for_medium_risk = false;
           workspace_only = true;
-          shell_env_passthrough = ["GH_TOKEN"];
+          shell_env_passthrough = ["GH_TOKEN" "TG_OWNER_ID"];
           allowed_commands = [
             "git"
             "gh"

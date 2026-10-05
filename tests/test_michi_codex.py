@@ -7,6 +7,8 @@ import sys
 import tempfile
 import threading
 import time
+import urllib.error
+from http.server import BaseHTTPRequestHandler, HTTPServer
 import unittest
 from unittest import mock
 from pathlib import Path
@@ -21,6 +23,11 @@ SESSIONS_SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "michi-codex
 SESSIONS_SPEC = importlib.util.spec_from_file_location("michi_codex_sessions", SESSIONS_SCRIPT)
 sessions = importlib.util.module_from_spec(SESSIONS_SPEC)
 SESSIONS_SPEC.loader.exec_module(sessions)
+
+NOTIFY_SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "michi-codex-notify.py"
+NOTIFY_SPEC = importlib.util.spec_from_file_location("michi_codex_notify", NOTIFY_SCRIPT)
+notifier = importlib.util.module_from_spec(NOTIFY_SPEC)
+NOTIFY_SPEC.loader.exec_module(notifier)
 
 
 FAKE_CODEX = r'''#!__PYTHON__
@@ -45,7 +52,11 @@ prompt = sys.stdin.read()
 print(json.dumps({"type": "thread.started", "thread_id": "123e4567-e89b-12d3-a456-426614174000"}), flush=True)
 if prompt.startswith("sleep:"):
     time.sleep(float(prompt.split(":", 1)[1]))
-last_message.write_text("Codex result: " + prompt, encoding="utf-8")
+if prompt.startswith("outcome:"):
+    outcome = prompt.split(":", 1)[1].splitlines()[0]
+    last_message.write_text("Implemented the requested change.\nChecks: unit suite passed.\nOutcome: " + outcome, encoding="utf-8")
+else:
+    last_message.write_text("Codex result: " + prompt, encoding="utf-8")
 if prompt.startswith("fail:"):
     raise SystemExit(int(prompt.split(":", 1)[1]))
 '''
@@ -72,6 +83,8 @@ class MichiCodexTests(unittest.TestCase):
         os.environ["PATH"] = self.old_env.get("PATH", os.defpath)
         os.environ["LANG"] = "C.UTF-8"
         os.environ["GH_TOKEN"] = "test-token"
+        os.environ["TG_OWNER_ID"] = "123456789"
+        os.environ["BOT_TOKEN"] = "synthetic-bot-secret"
         os.environ["OPENAI_API_KEY"] = "must-not-reach-codex"
 
     def tearDown(self):
@@ -79,7 +92,7 @@ class MichiCodexTests(unittest.TestCase):
         os.environ.update(self.old_env)
         self.temp.cleanup()
 
-    def submit(self, prompt, model="sol", resume=None, cwd=None, reasoning=None):
+    def submit(self, prompt, model="sol", resume=None, cwd=None, reasoning=None, notify_owner=False):
         return michi.submit(
             self.root,
             str(self.binary),
@@ -88,6 +101,7 @@ class MichiCodexTests(unittest.TestCase):
             model,
             resume,
             reasoning,
+            notify_owner,
         )
 
     def run_worker(self):
@@ -116,6 +130,7 @@ class MichiCodexTests(unittest.TestCase):
         job = self.submit("change the project")
         directory, state = michi.load_state(self.root, job)
         self.assertEqual(state["status"], "queued")
+        self.assertFalse((michi.job_dir(self.root, job) / "followup.json").exists())
         self.assertEqual(state["model"], "sol")
         self.assertEqual(state["reasoning"], "low")
         request = michi.read_json(directory / "request.json")
@@ -191,6 +206,8 @@ class MichiCodexTests(unittest.TestCase):
         self.assertIn("--skip-git-repo-check", call["args"])
         self.assertEqual(call["env"].get("GH_TOKEN"), "test-token")
         self.assertNotIn("OPENAI_API_KEY", call["env"])
+        self.assertNotIn("BOT_TOKEN", call["env"])
+        self.assertNotIn("TG_OWNER_ID", call["env"])
         self.assertEqual(call["env"]["CODEX_HOME"], str(self.root / ".codex"))
 
     def test_resume_requires_session_and_passes_recorded_session(self):
@@ -203,6 +220,8 @@ class MichiCodexTests(unittest.TestCase):
         with self.assertRaisesRegex(michi.JobError, "same working directory"):
             self.submit("switch project", resume=first, cwd=elsewhere)
         second = self.submit("continue the work", resume=first)
+        self.assertEqual(michi.load_state(self.root, second)[1]["session_id"],
+                         "123e4567-e89b-12d3-a456-426614174000")
         thread, errors = self.run_worker()
         thread.join(timeout=5)
         self.assertEqual(errors, [])
@@ -271,6 +290,259 @@ class MichiCodexTests(unittest.TestCase):
             for item in map(json.loads, self.record.read_text(encoding="utf-8").splitlines())
         ]
         self.assertFalse(any(args[:1] == ["exec"] for args in calls))
+
+    def test_followup_opt_in_worker_delivery_and_restart_do_not_repeat_acknowledged_send(self):
+        job = self.submit("outcome:complete", notify_owner=True)
+        directory, _ = michi.load_state(self.root, job)
+        followup = michi.read_json(directory / "followup.json")
+        self.assertEqual(followup["destination"], "owner")
+        self.assertEqual(followup["owner_id"], "123456789")
+        prompt = michi.read_json(directory / "request.json")["prompt"]
+        self.assertIn("Outcome: needs_input", prompt)
+        self.assertIn("actual changes, checks, and unresolved issues", prompt)
+
+        thread, errors = self.run_worker()
+        thread.join(timeout=5)
+        self.assertEqual(errors, [])
+        _, state = michi.load_state(self.root, job)
+        self.assertEqual(state["status"], "complete")
+        self.assertEqual(state["session_id"], "123e4567-e89b-12d3-a456-426614174000")
+
+        server, received = self.telegram_server([{"status": 200, "body": {"ok": True, "result": {"message_id": 91}}}])
+        try:
+            with mock.patch.object(notifier, "API_URL", self.server_url(server)):
+                self.assertEqual(notifier.notify_once(self.root, "bot-secret", "123456789", now=100), 1)
+                self.assertEqual(notifier.notify_once(self.root, "bot-secret", "123456789", now=101), 0)
+            self.assertEqual(len(received), 1)
+            payload = received[0][1]
+            self.assertEqual(payload["chat_id"], "123456789")
+            self.assertIn(job, payload["text"])
+            self.assertIn("Checks: unit suite passed", payload["text"])
+            self.assertNotIn("Outcome: complete", payload["text"])
+            notification = michi.read_json(directory / "notification.json")
+            self.assertEqual(notification["status"], "sent")
+            self.assertEqual(notification["message_id"], 91)
+            self.assertEqual(notification["session_id"], state["session_id"])
+            self.assertNotIn("bot-secret", (directory / "notification.json").read_text())
+        finally:
+            server.shutdown()
+            server.server_close()
+
+    def test_followup_429_retry_is_durable_and_non_owner_id_is_rejected(self):
+        job = self.submit("outcome:needs_input", notify_owner=True)
+        thread, errors = self.run_worker()
+        thread.join(timeout=5)
+        self.assertEqual(errors, [])
+        directory, state = michi.load_state(self.root, job)
+        self.assertEqual(state["status"], "needs_input")
+
+        server, received = self.telegram_server([
+            {"status": 500, "body": {"ok": False}},
+            {"status": 429, "body": {"ok": False, "parameters": {"retry_after": 7}}},
+            {"status": 200, "body": {"ok": True, "result": {"message_id": 92}}},
+        ])
+        try:
+            with mock.patch.object(notifier, "API_URL", self.server_url(server)):
+                self.assertEqual(notifier.notify_once(self.root, "bot-secret", "123456789", now=100), 0)
+                pending = michi.read_json(directory / "notification.json")
+                self.assertEqual((pending["status"], pending["retry_at"]), ("pending", 115))
+                self.assertEqual(notifier.notify_once(self.root, "bot-secret", "123456789", now=114), 0)
+                self.assertEqual(notifier.notify_once(self.root, "bot-secret", "123456789", now=115), 0)
+                pending = michi.read_json(directory / "notification.json")
+                self.assertEqual((pending["status"], pending["retry_at"]), ("pending", 122))
+                self.assertEqual(notifier.notify_once(self.root, "bot-secret", "123456789", now=122), 1)
+            self.assertEqual(len(received), 3)
+            self.assertIn("needs your input", received[2][1]["text"])
+            self.assertNotIn("Outcome: needs_input", received[2][1]["text"])
+        finally:
+            server.shutdown()
+            server.server_close()
+        with mock.patch.dict(os.environ, {"BOT_TOKEN": "x", "TG_OWNER_ID": "-1", "MICHI_CODEX_ROOT": str(self.root)}):
+            with self.assertRaisesRegex(notifier.NotifyError, "positive integer"):
+                notifier.configuration()
+
+    def test_followup_cancel_failure_and_stale_running_are_terminal_notifications(self):
+        failed = self.submit("fail:7", notify_owner=True)
+        thread, errors = self.run_worker()
+        thread.join(timeout=5)
+        self.assertEqual(errors, [])
+        _, failed_state = michi.load_state(self.root, failed)
+        self.assertEqual(failed_state["status"], "failed")
+
+        cancelled = self.submit("sleep:30", notify_owner=True)
+        thread, errors = self.run_worker()
+        self.wait_for_status(cancelled, "running")
+        michi.command_cancel(self.root, cancelled)
+        thread.join(timeout=5)
+        self.assertEqual(errors, [])
+        _, cancelled_state = michi.load_state(self.root, cancelled)
+        self.assertEqual(cancelled_state["status"], "cancelled", cancelled_state)
+        self.assertEqual(cancelled_state["session_id"], "123e4567-e89b-12d3-a456-426614174000")
+
+        orphan = self.submit("outcome:complete", notify_owner=True)
+        orphan_dir, orphan_state = michi.load_state(self.root, orphan)
+        orphan_state.update(status="running", session_id=None)
+        michi.write_state(orphan_dir, orphan_state)
+        (orphan_dir / "events.jsonl").write_text(json.dumps({
+            "type": "thread.started", "thread_id": "123e4567-e89b-12d3-a456-426614174000",
+        }) + "\n")
+        server, received = self.telegram_server([
+            {"status": 200, "body": {"ok": True, "result": {"message_id": 93}}},
+            {"status": 200, "body": {"ok": True, "result": {"message_id": 94}}},
+            {"status": 200, "body": {"ok": True, "result": {"message_id": 95}}},
+        ])
+        try:
+            with mock.patch.object(notifier, "API_URL", self.server_url(server)):
+                self.assertEqual(notifier.notify_once(self.root, "bot-secret", "123456789", now=200), 3)
+            _, orphan_state = michi.load_state(self.root, orphan)
+            self.assertEqual(orphan_state["status"], "interrupted")
+            self.assertEqual(orphan_state["session_id"], "123e4567-e89b-12d3-a456-426614174000")
+            messages = [entry[1]["text"] for entry in received]
+            self.assertTrue(any(f"Codex job {failed} failed" in text for text in messages))
+            self.assertTrue(any(f"Codex job {cancelled} was cancelled" in text for text in messages))
+            self.assertTrue(any(f"Codex job {orphan} was interrupted" in text for text in messages))
+        finally:
+            server.shutdown()
+            server.server_close()
+
+    def test_changed_owner_configuration_never_reroutes_existing_followup(self):
+        job = self.submit("outcome:complete", notify_owner=True)
+        thread, errors = self.run_worker()
+        thread.join(timeout=5)
+        self.assertEqual(errors, [])
+        directory = michi.job_dir(self.root, job)
+        server, received = self.telegram_server([])
+        try:
+            with mock.patch.object(notifier, "API_URL", self.server_url(server)):
+                self.assertEqual(notifier.notify_once(self.root, "bot-secret", "999", now=10), 0)
+            self.assertEqual(received, [])
+            record = michi.read_json(directory / "notification.json")
+            self.assertEqual(record["status"], "halted")
+            self.assertNotIn("999", json.dumps(record))
+        finally:
+            server.shutdown()
+            server.server_close()
+
+    def test_completed_followup_is_delivered_while_worker_lock_is_busy(self):
+        job = self.submit("outcome:complete", notify_owner=True)
+        thread, errors = self.run_worker()
+        thread.join(timeout=5)
+        self.assertEqual(errors, [])
+        worker_lock = michi.acquire_worker_lock(self.root)
+        self.assertIsNotNone(worker_lock)
+        server, received = self.telegram_server([
+            {"status": 200, "body": {"ok": True, "result": {"message_id": 96}}},
+        ])
+        try:
+            with mock.patch.object(notifier, "API_URL", self.server_url(server)):
+                self.assertEqual(notifier.notify_once(self.root, "bot-secret", "123456789", now=12), 1)
+            self.assertEqual(len(received), 1)
+            self.assertIn(job, received[0][1]["text"])
+        finally:
+            worker_lock.close()
+            server.shutdown()
+            server.server_close()
+
+    def test_telegram_text_limit_counts_utf16_code_units(self):
+        job = "a" * 32
+        directory = Path(self.temp.name)
+        (directory / "result.txt").write_text("🐈" * 5000, encoding="utf-8")
+        message = notifier.message_for(job, {"status": "complete"}, directory)
+        self.assertLessEqual(notifier.utf16_length(message), 4096)
+        self.assertIn("[Result shortened for Telegram.]", message)
+
+    def test_network_failure_survives_restart_and_retries_successfully(self):
+        job = self.submit("outcome:complete", notify_owner=True)
+        thread, errors = self.run_worker()
+        thread.join(timeout=5)
+        self.assertEqual(errors, [])
+        directory = michi.job_dir(self.root, job)
+        with mock.patch.object(notifier.urllib.request, "urlopen", side_effect=urllib.error.URLError("private network detail")):
+            self.assertEqual(notifier.notify_once(self.root, "bot-secret", "123456789", now=50), 0)
+        retry = michi.read_json(directory / "notification.json")
+        self.assertEqual((retry["status"], retry["retry_at"]), ("pending", 65))
+        self.assertNotIn("private network detail", json.dumps(retry))
+
+        server, received = self.telegram_server([
+            {"status": 200, "body": {"ok": True, "result": {"message_id": 97}}},
+        ])
+        try:
+            with mock.patch.object(notifier, "API_URL", self.server_url(server)):
+                self.assertEqual(notifier.notify_once(self.root, "bot-secret", "123456789", now=65), 1)
+            self.assertEqual(len(received), 1)
+            self.assertEqual(michi.read_json(directory / "notification.json")["status"], "sent")
+        finally:
+            server.shutdown()
+            server.server_close()
+
+    def test_permanent_telegram_rejection_is_recorded_without_repeating(self):
+        job = self.submit("outcome:complete", notify_owner=True)
+        thread, errors = self.run_worker()
+        thread.join(timeout=5)
+        self.assertEqual(errors, [])
+        server, received = self.telegram_server([
+            {"status": 403, "body": {"ok": False, "description": "private rejection reason"}},
+        ])
+        try:
+            with mock.patch.object(notifier, "API_URL", self.server_url(server)):
+                self.assertEqual(notifier.notify_once(self.root, "bot-secret", "123456789", now=80), 0)
+                self.assertEqual(notifier.notify_once(self.root, "bot-secret", "123456789", now=81), 0)
+            self.assertEqual(len(received), 1)
+            record = michi.read_json(michi.job_dir(self.root, job) / "notification.json")
+            self.assertEqual(record["status"], "halted")
+            self.assertNotIn("private rejection reason", json.dumps(record))
+        finally:
+            server.shutdown()
+            server.server_close()
+
+    def test_invalid_owner_submission_creates_no_job_or_pending_request(self):
+        with mock.patch.dict(os.environ, {"TG_OWNER_ID": "0"}):
+            with self.assertRaisesRegex(michi.JobError, "positive integer"):
+                self.submit("should not queue", notify_owner=True)
+        jobs_root = self.root / ".codex-jobs"
+        self.assertFalse(jobs_root.exists())
+
+    def telegram_server(self, responses):
+        received = []
+        class Handler(BaseHTTPRequestHandler):
+            queue = list(responses)
+            records = received
+            def do_POST(self):
+                size = int(self.headers.get("Content-Length", "0"))
+                self.records.append((self.path, json.loads(self.rfile.read(size))))
+                response = self.queue.pop(0)
+                body = json.dumps(response["body"]).encode()
+                self.send_response(response["status"])
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+            def log_message(self, *_args):
+                pass
+        server = HTTPServer(("127.0.0.1", 0), Handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        return server, received
+
+    @staticmethod
+    def server_url(server):
+        return f"http://127.0.0.1:{server.server_port}"
+
+    def test_status_does_not_overwrite_completion_after_a_stale_read(self):
+        job = self.submit("bounded task")
+        directory, state = michi.load_state(self.root, job)
+        state["status"] = "running"
+        michi.write_state(directory, state)
+        acquire = michi.acquire_worker_lock
+
+        def finish_then_acquire(root):
+            state["status"] = "complete"
+            michi.write_state(directory, state)
+            return acquire(root)
+
+        with mock.patch.object(michi, "acquire_worker_lock", side_effect=finish_then_acquire):
+            self.assertIn("complete", michi.command_status(self.root, job))
+        self.assertEqual(michi.load_state(self.root, job)[1]["status"], "complete")
 
     def test_invalid_job_ids_are_rejected(self):
         with self.assertRaisesRegex(michi.JobError, "job ID"):

@@ -336,7 +336,7 @@
             } ''
               export PYTHONDONTWRITEBYTECODE=1
               cd ${self}
-              python3 -m unittest discover -s tests -p test_michi_codex.py
+              python3 -m unittest discover -s tests -p 'test_michi_codex*.py'
               touch "$out"
             '';
         }
