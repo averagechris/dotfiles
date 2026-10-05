@@ -72,7 +72,7 @@ class MichiCodexTests(unittest.TestCase):
         os.environ.update(self.old_env)
         self.temp.cleanup()
 
-    def submit(self, prompt, model="luna", resume=None, cwd=None):
+    def submit(self, prompt, model="sol", resume=None, cwd=None, reasoning=None):
         return michi.submit(
             self.root,
             str(self.binary),
@@ -80,6 +80,7 @@ class MichiCodexTests(unittest.TestCase):
             prompt,
             model,
             resume,
+            reasoning,
         )
 
     def run_worker(self):
@@ -108,6 +109,11 @@ class MichiCodexTests(unittest.TestCase):
         job = self.submit("change the project")
         directory, state = michi.load_state(self.root, job)
         self.assertEqual(state["status"], "queued")
+        self.assertEqual(state["model"], "sol")
+        self.assertEqual(state["reasoning"], "low")
+        request = michi.read_json(directory / "request.json")
+        self.assertEqual((request["model"], request["reasoning"]), ("sol", "low"))
+        self.assertIn("gpt-6.1-sol (low reasoning)", michi.state_summary(state))
         self.assertEqual(stat.S_IMODE(directory.stat().st_mode), 0o700)
         self.assertEqual(stat.S_IMODE((directory / "request.json").stat().st_mode), 0o600)
         self.assertEqual(stat.S_IMODE((michi.paths(self.root)["pending"] / f"{job}.json").stat().st_mode), 0o600)
@@ -119,6 +125,20 @@ class MichiCodexTests(unittest.TestCase):
             blocked.mkdir(exist_ok=True)
             with self.assertRaisesRegex(michi.JobError, "cannot be inside"):
                 self.submit("bad cwd", cwd=blocked)
+
+    def test_model_defaults_and_invalid_reasoning(self):
+        luna = self.submit("bounded task", model="luna")
+        _, luna_state = michi.load_state(self.root, luna)
+        self.assertEqual((luna_state["model"], luna_state["reasoning"]), ("luna", "medium"))
+        self.assertIn("gpt-6-luna (medium reasoning)", michi.state_summary(luna_state))
+
+        sol_override = self.submit("use more reasoning", reasoning="high")
+        _, sol_state = michi.load_state(self.root, sol_override)
+        self.assertEqual((sol_state["model"], sol_state["reasoning"]), ("sol", "high"))
+
+        with self.assertRaisesRegex(michi.JobError, "Luna does not support ultra"):
+            self.submit("unsupported effort", model="luna", reasoning="ultra")
+        self.assertEqual(len(list(michi.paths(self.root)["jobs"].iterdir())), 2)
 
     def test_auth_check_requires_the_dedicated_chatgpt_profile(self):
         authenticated, message = michi.auth_check(self.root, str(self.binary))
@@ -160,7 +180,7 @@ class MichiCodexTests(unittest.TestCase):
             if item["args"][:1] == ["exec"]
         )
         self.assertIn("gpt-6.1-sol", call["args"])
-        self.assertIn('model_reasoning_effort="high"', call["args"])
+        self.assertIn('model_reasoning_effort="low"', call["args"])
         self.assertIn("--skip-git-repo-check", call["args"])
         self.assertEqual(call["env"].get("GH_TOKEN"), "test-token")
         self.assertNotIn("OPENAI_API_KEY", call["env"])

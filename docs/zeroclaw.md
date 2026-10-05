@@ -289,12 +289,34 @@ own coding history, and sideshow if slide creation becomes useful.
 
 ## Codex coding jobs
 
-Owner coding requests go through `michi-codex`, backed by the pinned Nixpkgs
-Codex CLI. Invited DMs and groups have no access to this command. Michi submits
+Owner coding requests go through `michi-codex`, backed by Thorny's host-scoped
+OpenAI Codex CLI `0.160.0` package. It uses the official
+`x86_64-unknown-linux-musl` release archive, including its code-mode host and
+bundled resources. Invited DMs and groups have no access to this command. Michi submits
 a task, waits for its result, and summarizes the actual change and checks.
-Luna with medium reasoning is the default; `--model sol` uses Sol 6.1 with high
-reasoning. A follow-up uses an explicit job ID with `--resume`, never the latest
-session from an unrelated request.
+The coding fallback is latest Sol at low reasoning, currently Sol 6.1.
+Michi chooses Luna medium for mechanical work, Luna high for modest complexity,
+and higher Sol reasoning for difficult planning, diagnosis, or review. Astra is
+reserved for rare, very complex tasks where Sol at high reasoning leaves
+consequential uncertainty unresolved. `submit --model luna --reasoning high`
+selects an explicit pair. Available model choices are `sol`, `luna`, and `astra`;
+reasoning can be `low`, `medium`, `high`, `xhigh`, `max`, or `ultra`. Luna does not
+support `ultra`. Without an explicit effort, Sol and Astra use low, and Luna uses
+medium. Job status reports the actual model and effort. Michi's conversation
+default remains Luna medium.
+
+Nix installs the shared working-style guidance and Michi's coding policy into
+the dedicated profile's `.codex/AGENTS.md`. Codex follows each project's own
+instructions too. Clear, independent implementation can use Luna subagents,
+which default to medium reasoning. Escalation carries the failed check and
+unresolved question back to Sol. A follow-up uses an explicit job ID with
+`--resume`, never the latest session from an unrelated request.
+
+This is a temporary host-scoped pin because Nixpkgs Codex `0.154.0` rejects
+the live account's `gpt-6-luna` model. The archive SHA-256 is
+`4fcc47ab57f52ff75363951a8761146cd10c8288bd86fed45487dbb204a16b71`.
+Remove the package and restore `pkgs.codex` in the Thorny module once Nixpkgs
+provides `0.160.0` or newer and the live account accepts the configured models.
 
 The command writes private requests and results below the owner workspace's
 `.codex-jobs`. A systemd path unit starts `michi-codex-worker.service` when requests
@@ -312,7 +334,10 @@ needed by Codex and coding tools, while the bot service keeps its original
 restrictions. The worker leaves `ProcSubset`, `ProtectKernelTunables`, and
 `ProtectKernelLogs` unset because their process-filesystem restrictions prevent
 bubblewrap from mounting its own `/proc`. The worker has no host capabilities;
-the bot retains these settings. Codex runs with its native workspace-write sandbox, network
+the bot retains these settings. The worker permits `AF_NETLINK` so bubblewrap
+can set up loopback in the patch tool's offline sandbox. A live patch-only probe
+verified that this fixes patch writes without a shell fallback.
+Codex runs with its native workspace-write sandbox, network
 access for repository work, and no interactive approval prompts. The worker
 forwards only `GH_TOKEN` among the provider credentials in agenix.
 
@@ -333,6 +358,7 @@ describes headless login. [Non-interactive mode](https://learn.chatgpt.com/docs/
 describes execution, JSON events, and explicit session resumption.
 
 The worker PATH includes GitHub and repository tools, Node.js, Python, Nix, and direnv.
+Codex uses non-login shells so profile startup cannot replace that PATH.
 Use each project's declared development environment for its other dependencies.
 No API-key fallback or work account integration is configured.
 

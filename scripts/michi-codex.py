@@ -27,8 +27,9 @@ SESSION_UUID_RE = re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
 )
 MODELS = {
-    "luna": ("gpt-6-luna", "medium"),
-    "sol": ("gpt-6.1-sol", "high"),
+    "luna": ("gpt-6-luna", "medium", {"low", "medium", "high", "xhigh", "max"}),
+    "sol": ("gpt-6.1-sol", "low", {"low", "medium", "high", "xhigh", "max", "ultra"}),
+    "astra": ("gpt-6-astra", "low", {"low", "medium", "high", "xhigh", "max", "ultra"}),
 }
 
 
@@ -210,12 +211,19 @@ def submit(
     prompt: str,
     model: str,
     resume_id: str | None,
+    reasoning: str | None = None,
 ) -> str:
     if not prompt.strip():
         raise JobError("prompt must not be empty")
     cwd = validate_cwd(root, cwd_value)
     if model not in MODELS:
-        raise JobError("model must be luna or sol")
+        raise JobError("model must be luna, sol, or astra")
+    _, default_reasoning, supported_reasoning = MODELS[model]
+    effort = reasoning or default_reasoning
+    if effort not in supported_reasoning:
+        if effort == "ultra" and model == "luna":
+            raise JobError("Luna does not support ultra reasoning")
+        raise JobError("reasoning must be low, medium, high, xhigh, max, or ultra for Sol and Astra")
     resume_from = job_id(resume_id) if resume_id else None
     session_id = session_for_job(root, resume_from, cwd) if resume_from else None
     authenticated, message = auth_check(root, binary)
@@ -232,6 +240,7 @@ def submit(
         "created_at": int(time.time()),
         "cwd": str(cwd),
         "model": model,
+        "reasoning": effort,
         "resume_from": resume_from,
         "session_id": None,
         "exit_code": None,
@@ -243,6 +252,7 @@ def submit(
         "cwd": str(cwd),
         "prompt": prompt,
         "model": model,
+        "reasoning": effort,
         "session_id": session_id,
     })
     pending_path = layout["pending"] / f"{value}.json"
@@ -287,7 +297,8 @@ def mark_orphaned_jobs(root: Path) -> None:
 
 
 def codex_command(binary: str, request: dict[str, Any], directory: Path) -> list[str]:
-    model_name, effort = MODELS[request["model"]]
+    model_name = MODELS[request["model"]][0]
+    effort = request.get("reasoning", MODELS[request["model"]][1])
     cmd = [binary, "exec", "--color", "never"]
     if request.get("session_id"):
         cmd.append("resume")
@@ -297,8 +308,11 @@ def codex_command(binary: str, request: dict[str, Any], directory: Path) -> list
         "-c", 'cli_auth_credentials_store="file"',
         "-c", 'approval_policy="never"',
         "-c", 'sandbox_mode="workspace-write"',
+        "-c", 'allow_login_shell=false',
         "-c", "sandbox_workspace_write.network_access=true",
         "-c", "shell_environment_policy.ignore_default_excludes=true",
+        "-c", 'agents.default_subagent_model="gpt-6-luna"',
+        "-c", 'agents.default_subagent_reasoning_effort="medium"',
         "-m", model_name,
         "-c", f'model_reasoning_effort="{effort}"',
         "--skip-git-repo-check",
@@ -352,11 +366,16 @@ def execute_job(root: Path, binary: str, value: str) -> None:
     cwd = validate_cwd(root, request.get("cwd", ""))
     if request.get("model") not in MODELS:
         raise JobError("queued job has invalid model")
+    model_name, default_reasoning, supported_reasoning = MODELS[request["model"]]
+    reasoning = request.get("reasoning", default_reasoning)
+    if reasoning not in supported_reasoning:
+        raise JobError("queued job has invalid reasoning effort")
     if request.get("session_id") is not None and not SESSION_UUID_RE.fullmatch(str(request["session_id"])):
         raise JobError("queued job has invalid Codex session ID")
     state = read_json(directory / "state.json")
     if state.get("status") in {"cancelled", "complete", "failed", "interrupted"}:
         return
+    state.update(model_name=model_name, reasoning=reasoning)
     if (directory / "cancel.flag").exists():
         state.update(status="cancelled", finished_at=int(time.time()))
         write_state(directory, state)
@@ -461,7 +480,10 @@ def state_summary(state: dict[str, Any]) -> str:
     status = state.get("status", "unknown")
     lines = [f"Job {state.get('id', '?')}: {status}"]
     if state.get("model"):
-        lines.append(f"Model: {state['model']}")
+        model_name = state.get("model_name") or MODELS.get(state["model"], (state["model"],))[0]
+        reasoning = state.get("reasoning")
+        suffix = f" ({reasoning} reasoning)" if reasoning else ""
+        lines.append(f"Model: {model_name}{suffix}")
     if state.get("session_id"):
         lines.append(f"Codex session: {state['session_id']}")
     if state.get("exit_code") is not None:
@@ -521,7 +543,11 @@ def parser() -> argparse.ArgumentParser:
     submit_cmd = commands.add_parser("submit")
     submit_cmd.add_argument("--cwd", required=True)
     submit_cmd.add_argument("--prompt", required=True)
-    submit_cmd.add_argument("--model", choices=sorted(MODELS), default="luna")
+    submit_cmd.add_argument("--model", choices=sorted(MODELS), default="sol")
+    submit_cmd.add_argument(
+        "--reasoning",
+        choices=("low", "medium", "high", "xhigh", "max", "ultra"),
+    )
     submit_cmd.add_argument("--resume")
     for name in ("status", "result", "cancel"):
         sub = commands.add_parser(name)
@@ -544,7 +570,7 @@ def main(argv: list[str] | None = None) -> int:
             print(message)
             return 0 if authenticated else 1
         if args.command == "submit":
-            value = submit(root, binary, args.cwd, args.prompt, args.model, args.resume)
+            value = submit(root, binary, args.cwd, args.prompt, args.model, args.resume, args.reasoning)
             print(f"Queued Codex job {value}. Use michi-codex status {value} to check progress.")
             return 0
         if args.command == "status":

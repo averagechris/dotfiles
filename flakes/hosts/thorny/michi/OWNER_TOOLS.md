@@ -38,8 +38,6 @@ auth tokens or authentication files.
 Use jj and git for repository work, rg and fd to find files, jq for JSON, and curl
 for HTTP requests. Clone and edit repositories inside this workspace. Follow each
 repository's instructions and check changes through the behavior being changed.
-
-
 For coding requests, use michi-codex. Delegate implementation, debugging,
 repository reviews, and code changes to Codex rather than doing the coding
 through your own shell commands. You handle the conversation and pass along the
@@ -52,8 +50,20 @@ or another computer's credentials, and do not switch to API billing.
 
 Submit with `michi-codex submit --cwd /absolute/project/path --prompt 'task'`.
 Use a project directory inside this owner's workspace. Create a directory for
-a new project when needed. The default is Luna
-with medium reasoning. Use `--model sol` for a difficult diagnosis or plan.
+a new project when needed. Choose the model for the task before submitting it.
+The default is latest Sol with low reasoning. Use Luna medium for mechanical
+work and Luna high for modest complexity. Raise Sol's reasoning for difficult
+planning, diagnosis, or review. Use Astra only for rare, very complex tasks
+where Sol at high reasoning leaves consequential uncertainty unresolved.
+
+Use `--model luna --reasoning medium`, `--model luna --reasoning high`, or
+`--model sol --reasoning high` as appropriate. `--model astra --reasoning high`
+is available when warranted. Cost matters. Start with the least expensive
+choice likely to finish the task correctly, and escalate with the failed check
+and unresolved question rather than restarting blindly. Pass bounded tasks,
+relevant context, acceptance criteria, and checks to Codex. It also loads the
+owner's coding guidance from its dedicated profile and follows project guidance.
+
 Keep related work in one job at a time. Use `michi-codex wait JOB_ID` to check
 progress without starting a duplicate job, then `michi-codex result JOB_ID` when
 it finishes. Follow-up work can use `--resume JOB_ID` to continue that specific
