@@ -9,6 +9,7 @@
   pkgs,
   ...
 }: let
+  codexPackage = import ./packages/codex.nix {inherit pkgs;};
   zeroclawPackage = inputs.zeroclaw.packages.${pkgs.stdenv.hostPlatform.system}.zeroclaw.overrideAttrs {
     cargoBuildFlags = [
       "-p"
@@ -30,9 +31,14 @@
     exec ${lib.getExe rdnyPackage} "$@"
   '';
   codexJobScript = ../../../scripts/michi-codex.py;
+  codexInstructions = pkgs.writeText "michi-codex-AGENTS.md" (
+    builtins.readFile ../../hm-modules/modules/agent-guidance.md
+    + "\n"
+    + builtins.readFile ./michi/CODING.md
+  );
   codexOwnerWrapper = pkgs.writeShellScriptBin "michi-codex" ''
     export MICHI_CODEX_ROOT="${ownerWorkspace}"
-    export MICHI_CODEX_BINARY="${lib.getExe pkgs.codex}"
+    export MICHI_CODEX_BINARY="${lib.getExe codexPackage}"
     exec ${lib.getExe pkgs.python3} ${codexJobScript} "$@"
   '';
   codexTokenScript = pkgs.writeText "michi-codex-token.py" ''
@@ -125,13 +131,14 @@ in {
 
   # `zeroclaw auth login` for the Codex subscription must run as the service
   # user with the same build as the unit (runbook step 5).
-  environment.systemPackages = [zeroclawPackage pkgs.codex codexOwnerWrapper];
+  environment.systemPackages = [zeroclawPackage codexPackage codexOwnerWrapper];
 
   # Chromium needs its own namespaces and JavaScript JIT. Keep those outside
   # the bot unit; rdny clients use its private authenticated Unix broker.
   systemd.tmpfiles.rules = lib.mkIf secretExists [
     "d ${ownerWorkspace} 0700 zeroclaw-home zeroclaw-home -"
     "d ${ownerWorkspace}/.codex 0700 zeroclaw-home zeroclaw-home -"
+    "L+ ${ownerWorkspace}/.codex/AGENTS.md - - - - ${codexInstructions}"
     "d ${ownerWorkspace}/.codex-jobs 0700 zeroclaw-home zeroclaw-home -"
     "d ${ownerWorkspace}/.codex-jobs/pending 0700 zeroclaw-home zeroclaw-home -"
   ];
@@ -189,7 +196,7 @@ in {
     description = "Michi owner Codex jobs";
     after = ["network-online.target"];
     wants = ["network-online.target"];
-    path = ownerShellPackages ++ [pkgs.codex pkgs.bubblewrap pkgs.nix pkgs.direnv pkgs.nodejs pkgs.python3];
+    path = ownerShellPackages ++ [codexPackage pkgs.bubblewrap pkgs.nix pkgs.direnv pkgs.nodejs pkgs.python3];
     environment = {
       HOME = ownerWorkspace;
       SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
@@ -220,7 +227,8 @@ in {
       # here. The bot retains all three; this worker has no host capabilities.
       ProtectProc = "invisible";
       RestrictNamespaces = ["user" "pid" "net" "ipc" "mnt" "uts"];
-      RestrictAddressFamilies = ["AF_INET" "AF_INET6" "AF_UNIX"];
+      # Offline patch sandboxes need route sockets to set up their loopback.
+      RestrictAddressFamilies = ["AF_INET" "AF_INET6" "AF_UNIX" "AF_NETLINK"];
       RestrictSUIDSGID = true;
       LockPersonality = true;
       CapabilityBoundingSet = "";
