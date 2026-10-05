@@ -3,6 +3,7 @@ import json
 import os
 import stat
 import socket
+import subprocess
 import sys
 import tempfile
 import threading
@@ -86,6 +87,12 @@ class MichiCodexTests(unittest.TestCase):
         os.environ["TG_OWNER_ID"] = "123456789"
         os.environ["BOT_TOKEN"] = "synthetic-bot-secret"
         os.environ["OPENAI_API_KEY"] = "must-not-reach-codex"
+        os.environ["GIT_CONFIG_COUNT"] = "1"
+        os.environ["GIT_CONFIG_KEY_0"] = "credential.https://github.com.helper"
+        os.environ["GIT_CONFIG_VALUE_0"] = "!unused-gh auth git-credential"
+        os.environ["GIT_CONFIG_KEY_1"] = "credential.helper"
+        os.environ["GIT_CONFIG_VALUE_1"] = "!must-not-run"
+        os.environ["WORKTOKEN"] = "must-not-reach-codex"
 
     def tearDown(self):
         os.environ.clear()
@@ -103,6 +110,44 @@ class MichiCodexTests(unittest.TestCase):
             reasoning,
             notify_owner,
         )
+
+    def test_git_credential_environment_is_allowlisted_and_host_scoped(self):
+        helper = Path(self.temp.name) / "fake-gh"
+        helper.write_text("#!/bin/sh\nprintf 'username=synthetic\\npassword=synthetic-token\\n\\n'\n", encoding="utf-8")
+        helper.chmod(0o700)
+        env = michi.safe_environment(self.root)
+        env["GIT_CONFIG_VALUE_0"] = f"!{helper} auth git-credential"
+
+        result = subprocess.run(
+            ["git", "credential", "fill"],
+            input="protocol=https\nhost=github.com\n\n",
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=env,
+            check=True,
+        )
+
+        self.assertIn("username=synthetic", result.stdout)
+        self.assertIn("password=synthetic-token", result.stdout)
+        env["GIT_TERMINAL_PROMPT"] = "0"
+        other_host = subprocess.run(
+            ["git", "credential", "fill"],
+            input="protocol=https\nhost=example.com\n\n",
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=env,
+            check=False,
+        )
+        self.assertNotEqual(other_host.returncode, 0)
+        self.assertNotIn("synthetic-token", other_host.stdout)
+        self.assertEqual(env["GIT_CONFIG_COUNT"], "1")
+        self.assertEqual(env["GIT_CONFIG_KEY_0"], "credential.https://github.com.helper")
+        self.assertNotIn("GIT_CONFIG_KEY_1", env)
+        self.assertNotIn("GIT_CONFIG_VALUE_1", env)
+        self.assertNotIn("WORKTOKEN", env)
+        self.assertEqual(env["GH_TOKEN"], "test-token")
 
     def run_worker(self):
         errors = []

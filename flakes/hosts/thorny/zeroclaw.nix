@@ -23,6 +23,11 @@
   memoPackage = inputs.memo.packages.${pkgs.stdenv.hostPlatform.system}.default;
   rdnyPackage = inputs.rdny.packages.${pkgs.stdenv.hostPlatform.system}.rdny;
   ownerWorkspace = "/var/lib/zeroclaw-home/agents/owner/workspace";
+  gitCredentialEnvironment = {
+    GIT_CONFIG_COUNT = "1";
+    GIT_CONFIG_KEY_0 = "credential.https://github.com.helper";
+    GIT_CONFIG_VALUE_0 = "!${lib.getExe pkgs.gh} auth git-credential";
+  };
   rdnyOwnerWrapper = pkgs.writeShellScriptBin "rdny" ''
     export RDNY_CHROME="${lib.getExe pkgs.ungoogled-chromium}"
     export RDNY_FFMPEG="${lib.getExe pkgs.ffmpeg}"
@@ -69,6 +74,9 @@
   codexOwnerCli = pkgs.writeShellScriptBin "codex" ''
     export HOME="${ownerWorkspace}"
     export CODEX_HOME="${ownerWorkspace}/.codex"
+    export GIT_CONFIG_COUNT="${gitCredentialEnvironment.GIT_CONFIG_COUNT}"
+    export GIT_CONFIG_KEY_0="${gitCredentialEnvironment.GIT_CONFIG_KEY_0}"
+    export GIT_CONFIG_VALUE_0="${gitCredentialEnvironment.GIT_CONFIG_VALUE_0}"
     exec ${lib.getExe codexPackage} \
       -c 'cli_auth_credentials_store="file"' \
       -c 'model="gpt-6.1-sol"' -c 'model_reasoning_effort="low"' \
@@ -270,10 +278,12 @@ in {
     after = ["network-online.target"];
     wants = ["network-online.target"];
     path = ownerShellPackages ++ [codexPackage pkgs.bubblewrap pkgs.nix pkgs.direnv pkgs.nodejs pkgs.python3];
-    environment = {
-      HOME = ownerWorkspace;
-      SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
-    };
+    environment =
+      gitCredentialEnvironment
+      // {
+        HOME = ownerWorkspace;
+        SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
+      };
     serviceConfig =
       codexSandbox
       // {
@@ -330,11 +340,13 @@ in {
     wants = ["network-online.target"];
     unitConfig.ConditionPathExists = "${ownerWorkspace}/.codex/auth.json";
     path = ownerShellPackages ++ [codexPackage pkgs.bubblewrap pkgs.nix pkgs.direnv pkgs.nodejs pkgs.python3];
-    environment = {
-      HOME = ownerWorkspace;
-      CODEX_HOME = "${ownerWorkspace}/.codex";
-      SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
-    };
+    environment =
+      gitCredentialEnvironment
+      // {
+        HOME = ownerWorkspace;
+        CODEX_HOME = "${ownerWorkspace}/.codex";
+        SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
+      };
     serviceConfig =
       codexSandbox
       // {
@@ -391,6 +403,7 @@ in {
     ExecStartPost = ["+${lib.getExe publishBrowserNamespace}"];
     ExecStopPost = ["+${pkgs.coreutils}/bin/rm -f /run/zeroclaw-home-browser-userns"];
   };
+  systemd.services.zeroclaw-home.environment = lib.mkIf secretExists gitCredentialEnvironment;
 
   services.zeroclaw.instances.home = lib.mkIf secretExists {
     package = zeroclawPackage;
@@ -498,7 +511,7 @@ in {
           auto_approve = autoApprove ++ ["shell"];
           require_approval_for_medium_risk = false;
           workspace_only = true;
-          shell_env_passthrough = ["GH_TOKEN" "TG_OWNER_ID"];
+          shell_env_passthrough = ["GH_TOKEN" "TG_OWNER_ID"] ++ builtins.attrNames gitCredentialEnvironment;
           allowed_commands = [
             "git"
             "gh"
