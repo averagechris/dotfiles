@@ -197,18 +197,25 @@ Only the owner DM has `shell`. Invited DMs and groups exclude it, including
 when the owner speaks in a group. Ordinary permitted commands run without an
 approval prompt. Workspace checks, forbidden paths, high-risk command blocking,
 and the service's existing systemd sandbox remain enabled. Shell subprocesses
-receive only `GH_TOKEN` as credential environment passthrough, and only for the
-owner profile. The token comes from agenix; other provider keys remain excluded.
+receive `GH_TOKEN` and three fixed Git configuration variables only for the
+owner profile. They configure `gh auth git-credential` for
+`https://github.com` only, using the token from agenix; other hosts and provider
+keys remain excluded. The same GitHub-only helper is available to the owner
+service, Codex worker, phone host, and direct `codex` CLI. The worker passes
+these three settings to Codex child processes through its environment allowlist.
+No workstation login or credential file is copied.
 GitHub recommends a fine-grained token restricted to selected repositories and
 needed permissions. See [token setup](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens).
 GitHub CLI uses [GH_TOKEN](https://cli.github.com/manual/gh_help_environment)
-without a copied workstation login. Token scope controls which operations work.
+without a copied workstation login. Git uses the scoped helper to ask `gh` for
+credentials when a GitHub HTTPS operation needs them. Token scope controls which
+operations work.
 
 The service PATH includes `gh`, `jj`, `git`, `rg`, `jq`, `fd`, and `curl`.
 Use an explicit GitHub repository, especially from jj workspaces. Repository
-clones and edited files belong inside the owner's workspace. For authenticated
-Git operations, `gh auth setup-git` can configure the service user's Git helper.
-No work credentials or workstation sessions are imported.
+clones and edited files belong inside the owner's workspace. Authenticated
+GitHub HTTPS operations use the managed helper automatically. No `~/.gitconfig`
+changes, work credentials, or workstation sessions are imported.
 
 `rdny` controls a private headless Chromium browser through an authenticated Unix
 broker. Its wrapper fixes the browser executable, ffmpeg executable, home, and

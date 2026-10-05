@@ -140,7 +140,14 @@ def safe_environment(root: Path) -> dict[str, str]:
         "LC_ALL": os.environ.get("LC_ALL", "C.UTF-8"),
         "TERM": "dumb",
     }
-    for name in ("GH_TOKEN", "SSL_CERT_FILE", "NIX_SSL_CERT_FILE"):
+    for name in (
+        "GH_TOKEN",
+        "SSL_CERT_FILE",
+        "NIX_SSL_CERT_FILE",
+        "GIT_CONFIG_COUNT",
+        "GIT_CONFIG_KEY_0",
+        "GIT_CONFIG_VALUE_0",
+    ):
         if os.environ.get(name):
             env[name] = os.environ[name]
     return env
