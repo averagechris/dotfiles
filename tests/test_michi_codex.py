@@ -2,11 +2,13 @@ import importlib.util
 import json
 import os
 import stat
+import socket
 import sys
 import tempfile
 import threading
 import time
 import unittest
+from unittest import mock
 from pathlib import Path
 
 
@@ -14,6 +16,11 @@ SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "michi-codex.py"
 SPEC = importlib.util.spec_from_file_location("michi_codex", SCRIPT)
 michi = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(michi)
+
+SESSIONS_SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "michi-codex-sessions.py"
+SESSIONS_SPEC = importlib.util.spec_from_file_location("michi_codex_sessions", SESSIONS_SCRIPT)
+sessions = importlib.util.module_from_spec(SESSIONS_SPEC)
+SESSIONS_SPEC.loader.exec_module(sessions)
 
 
 FAKE_CODEX = r'''#!__PYTHON__
@@ -292,6 +299,154 @@ class MichiCodexTests(unittest.TestCase):
         self.assertEqual(errors, [])
         _, state = michi.load_state(self.root, job)
         self.assertEqual(state["status"], "complete")
+
+
+class FakeSessionWebSocket:
+    class WebSocketException(Exception):
+        pass
+
+    def __init__(self, messages):
+        self.messages = list(messages)
+        self.sent = []
+        self.closed = False
+
+    def send(self, message):
+        self.sent.append(json.loads(message))
+
+    def recv(self):
+        if not self.messages:
+            raise TimeoutError("no response")
+        return json.dumps(self.messages.pop(0))
+
+    def settimeout(self, timeout):
+        self.timeout = timeout
+
+    def close(self):
+        self.closed = True
+
+
+class FakeSessionClient:
+    def __init__(self, root, responses):
+        self.responses = responses
+        self.requests = []
+
+    def connect(self):
+        pass
+
+    def request(self, method, params):
+        self.requests.append((method, params))
+        return self.responses[method]
+
+    def close(self):
+        pass
+
+
+class MichiCodexSessionsTests(unittest.TestCase):
+    SESSION_ID = "123e4567-e89b-12d3-a456-426614174000"
+
+    def test_rpc_ignores_interleaved_notifications_and_times_out_cleanly(self):
+        client = sessions.AppServerClient(Path("/tmp"), FakeSessionWebSocket.__class__)
+        websocket = FakeSessionWebSocket([
+            {"jsonrpc": "2.0", "method": "event"},
+            {"jsonrpc": "2.0", "id": 1, "result": {"ok": True}},
+        ])
+        client.websocket = websocket
+        client.websocket_module = type("WSModule", (), {"WebSocketException": FakeSessionWebSocket.WebSocketException})
+        self.assertEqual(client.request("thread/list", {}), {"ok": True})
+        self.assertEqual(websocket.sent[0]["method"], "thread/list")
+
+        websocket.messages.clear()
+        with self.assertRaisesRegex(sessions.SessionError, "timed out"):
+            client.request("thread/list", {})
+        client.close()
+        self.assertTrue(websocket.closed)
+
+    def test_running_job_enriches_not_loaded_session_and_list_filters_fields(self):
+        with tempfile.TemporaryDirectory(dir="/tmp", prefix="mcs") as temp:
+            root = Path(temp)
+            older_dir = root / ".codex-jobs" / "jobs" / ("b" * 32)
+            older_dir.mkdir(parents=True)
+            (older_dir / "state.json").write_text(json.dumps({
+                "id": "b" * 32,
+                "status": "complete",
+                "session_id": self.SESSION_ID,
+            }))
+            job_id = "a" * 32
+            job_dir = root / ".codex-jobs" / "jobs" / job_id
+            job_dir.mkdir(parents=True)
+            (job_dir / "state.json").write_text(json.dumps({
+                "id": job_id,
+                "status": "running",
+                "model": "sol",
+                "reasoning": "low",
+                "session_id": None,
+            }))
+            (job_dir / "events.jsonl").write_text(json.dumps({
+                "type": "thread.started", "thread_id": self.SESSION_ID,
+            }) + "\n")
+            fake = FakeSessionClient(root, {"thread/list": {
+                "data": [{
+                    "id": self.SESSION_ID,
+                    "name": "A task",
+                    "status": {"type": "notLoaded"},
+                    "privateTranscript": "must not appear",
+                }],
+                "nextCursor": None,
+            }})
+            with mock.patch.object(sessions, "AppServerClient", return_value=fake):
+                rendered = sessions.list_sessions(root, 10, None)
+            payload = json.loads(rendered)
+            session = payload["sessions"][0]
+            self.assertEqual(session["status"], "notLoaded")
+            self.assertEqual(session["job"]["jobStatus"], "running")
+            self.assertEqual(session["job"]["modelName"], "gpt-6.1-sol")
+            self.assertEqual(session["job"]["codexSessionStatus"], "notLoaded")
+            self.assertNotIn("privateTranscript", rendered)
+            self.assertEqual(fake.requests[0][0], "thread/list")
+            self.assertTrue(fake.requests[0][1]["useStateDbOnly"])
+            self.assertIn("exec", fake.requests[0][1]["sourceKinds"])
+
+    def test_show_returns_bounded_turns_and_preserves_active_status(self):
+        with tempfile.TemporaryDirectory(dir="/tmp", prefix="mcs") as temp:
+            root = Path(temp)
+            fake = FakeSessionClient(root, {
+                "thread/read": {"thread": {
+                    "id": self.SESSION_ID,
+                    "status": {"type": "active", "activeFlags": ["waitingOnApproval", "secret"]},
+                    "privateTranscript": "must not appear",
+                }},
+                "thread/turns/list": {"data": [{
+                    "id": "turn-1", "status": "completed",
+                    "items": [
+                        {"type": "agentMessage", "text": "A" * 2000, "private": "hidden"},
+                        {"type": "unknownTool", "secret": "hidden"},
+                    ] * 3,
+                } for _ in range(20)]},
+            })
+            with mock.patch.object(sessions, "AppServerClient", return_value=fake):
+                rendered = sessions.show_session(root, self.SESSION_ID, 5)
+            self.assertLessEqual(len(rendered), sessions.MAX_OUTPUT_CHARS)
+            payload = json.loads(rendered)
+            self.assertTrue(payload["truncated"])
+            self.assertLess(len(payload["turns"]), 20)
+            self.assertEqual(payload["session"]["status"], {
+                "type": "active", "activeFlags": ["waitingOnApproval"],
+            })
+            self.assertEqual(payload["turns"][0]["items"][0]["type"], "agentMessage")
+            self.assertNotIn("privateTranscript", rendered)
+            self.assertNotIn("hidden", rendered)
+            self.assertEqual([method for method, _ in fake.requests], ["thread/read", "thread/turns/list"])
+
+    def test_invalid_session_and_socket_alias_are_rejected_before_connect(self):
+        with tempfile.TemporaryDirectory(dir="/tmp", prefix="mcs") as temp:
+            root = Path(temp)
+            with self.assertRaisesRegex(sessions.SessionError, "lowercase Codex UUID"):
+                sessions.show_session(root, "../invalid", 1)
+            alias = root / ".codex" / "michi-app-server.sock"
+            alias.parent.mkdir()
+            alias.symlink_to("/tmp/codex-daemon-999999/" + "a" * 64)
+            with self.assertRaisesRegex(sessions.SessionError, "invalid target"):
+                sessions.app_server_socket(root)
 
 
 if __name__ == "__main__":

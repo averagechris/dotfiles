@@ -332,7 +332,7 @@
         {
           michi-codex =
             pkgs.runCommand "michi-codex-tests" {
-              nativeBuildInputs = [pkgs.python3];
+              nativeBuildInputs = [(pkgs.python3.withPackages (ps: [ps.websocket-client]))];
             } ''
               export PYTHONDONTWRITEBYTECODE=1
               cd ${self}

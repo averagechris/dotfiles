@@ -368,6 +368,59 @@ Codex events and its final message stay in the private job directory. Run the
 offline job-control checks with `nix build .#checks.x86_64-linux.michi-codex`.
 These checks are also part of the CI coverage tier.
 
+
+The owner DM also exposes `codex`, with HOME and CODEX_HOME fixed to the dedicated
+profile. `michi-codex-sessions list --limit 20` lists sessions from the phone host;
+`show SESSION_ID` reads status and recent turns. These queries do not call a
+model. Session inspection uses the private local app-server connection. Invited
+DMs and groups retain their shell exclusion and have no Codex command grant.
+
+## Phone access
+
+`michi-codex-remote.service` runs the pinned CLI's foreground remote-control
+host at boot after the dedicated account has logged in. The owner paired an
+iPhone successfully through CLI 0.160.0. ChatGPT required MFA on that account
+before host registration. The service uses the same owner workspace, account,
+coding guidance, tools, and filesystem restrictions as the coding worker.
+It forwards only `GH_TOKEN` from agenix, using a separate runtime credential
+file so worker cleanup cannot remove the host's credentials.
+
+Phone tasks default to Sol 6.1 low, with Luna medium as the subagent default.
+The phone can choose a different model or reasoning effort for a task.
+The foreground app server bypasses the managed daemon's separate auto-updater;
+Nix controls the installed CLI. Restarting it reuses the profile's enrollment.
+The app server reconnected with the paired daemon's host identity.
+Its local socket lives in a private runtime directory shared with the owner
+client. This avoids the CLI's hashed socket alias being hidden in PrivateTmp.
+The resolved Unix socket path stays below Linux's length limit.
+
+Check it with `systemctl status michi-codex-remote` and
+`journalctl -u michi-codex-remote`. Stop it with
+`sudo systemctl stop michi-codex-remote` to disable phone access until the next
+start. Systemd sends SIGINT for the CLI's shutdown handler. The bot and coding
+queue run independently.
+
+For a new phone, stop the foreground service before using the CLI's managed
+pairing flow. Run these commands from SSH under the dedicated profile:
+
+```sh
+sudo systemctl stop michi-codex-remote
+sudo -u zeroclaw-home env \
+  HOME=/var/lib/zeroclaw-home/agents/owner/workspace \
+  CODEX_HOME=/var/lib/zeroclaw-home/agents/owner/workspace/.codex \
+  PATH=/run/current-system/sw/bin \
+  sh -c 'codex remote-control start --json && codex remote-control pair --json'
+```
+
+Enter the short-lived manual code on the phone, signed into the same account
+and workspace. After pairing, stop the managed daemon under the same profile
+with `codex remote-control stop --json`, then restart the foreground service.
+Do not run both hosts together. The [official CLI commands](https://learn.chatgpt.com/docs/developer-commands#codex-remote-control)
+describe the experimental pairing commands. The [Remote guide](https://learn.chatgpt.com/docs/remote-connections)
+still documents desktop hosts on Mac and Windows; this Linux CLI route is a
+verified experimental setup, without a Linux desktop app or desktop computer
+control. Browser work continues through rdny.
+
 ## Operations
 
 ```sh

@@ -41,8 +41,21 @@
     export MICHI_CODEX_BINARY="${lib.getExe codexPackage}"
     exec ${lib.getExe pkgs.python3} ${codexJobScript} "$@"
   '';
+  codexOwnerCli = pkgs.writeShellScriptBin "codex" ''
+    export HOME="${ownerWorkspace}"
+    export CODEX_HOME="${ownerWorkspace}/.codex"
+    exec ${lib.getExe codexPackage} \
+      -c 'cli_auth_credentials_store="file"' \
+      -c 'model="gpt-6.1-sol"' -c 'model_reasoning_effort="low"' \
+      -c 'allow_login_shell=false' "$@"
+  '';
+  codexSessionPython = pkgs.python3.withPackages (ps: [ps.websocket-client]);
+  codexSessions = pkgs.writeShellScriptBin "michi-codex-sessions" ''
+    export MICHI_CODEX_ROOT="${ownerWorkspace}"
+    exec ${lib.getExe codexSessionPython} ${../../../scripts/michi-codex-sessions.py} "$@"
+  '';
   codexTokenScript = pkgs.writeText "michi-codex-token.py" ''
-    import os, pathlib, re, tempfile
+    import os, pathlib, re, sys, tempfile
     lines = pathlib.Path("${config.age.secrets.zeroclaw-env.path}").read_text().splitlines()
     values = [line.split("=", 1)[1].strip() for line in lines if line.startswith("GH_TOKEN=")]
     token = values[-1].strip("\"'") if values else ""
@@ -53,11 +66,36 @@
         os.fchmod(fd, 0o400)
         with os.fdopen(fd, "w") as output:
             output.write("GH_TOKEN=" + token + "\n")
-        os.replace(path, "/run/michi-codex-gh.env")
+        os.replace(path, sys.argv[1])
     finally:
         if os.path.exists(path):
             os.unlink(path)
   '';
+  codexSandbox = {
+    UMask = "0077";
+    NoNewPrivileges = true;
+    PrivateUsers = true;
+    PrivateTmp = true;
+    PrivateDevices = true;
+    ProtectSystem = "strict";
+    ProtectHome = true;
+    ProtectKernelModules = true;
+    ProtectControlGroups = true;
+    # bwrap mounts a new /proc; outer proc submount locks prevent that.
+    # Leave ProcSubset, ProtectKernelTunables, and ProtectKernelLogs unset
+    # here. The bot retains all three; these Codex services have no host capabilities.
+    ProtectProc = "invisible";
+    RestrictNamespaces = ["user" "pid" "net" "ipc" "mnt" "uts"];
+    # Offline patch sandboxes need route sockets to set up their loopback.
+    RestrictAddressFamilies = ["AF_INET" "AF_INET6" "AF_UNIX" "AF_NETLINK"];
+    RestrictSUIDSGID = true;
+    LockPersonality = true;
+    CapabilityBoundingSet = "";
+    # Expose only the owner's workspace from the shared bot state tree.
+    TemporaryFileSystem = ["/var/lib/zeroclaw-home:ro"];
+    BindPaths = [ownerWorkspace];
+    ReadWritePaths = [ownerWorkspace];
+  };
   publishBrowserNamespace = pkgs.writeShellApplication {
     name = "michi-browser-namespace";
     runtimeInputs = [pkgs.coreutils];
@@ -86,6 +124,8 @@
     fd
     rdnyOwnerWrapper
     codexOwnerWrapper
+    codexOwnerCli
+    codexSessions
   ];
 
   # Keep the parent path valid in a clean checkout. A missing path literal is
@@ -201,42 +241,83 @@ in {
       HOME = ownerWorkspace;
       SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
     };
-    serviceConfig = {
-      Type = "oneshot";
-      User = "zeroclaw-home";
-      Group = "zeroclaw-home";
-      WorkingDirectory = ownerWorkspace;
-      ExecStartPre = "+${lib.getExe pkgs.python3} ${codexTokenScript}";
-      ExecStart = "${lib.getExe codexOwnerWrapper} _worker";
-      ExecStopPost = "+${pkgs.coreutils}/bin/rm -f /run/michi-codex-gh.env";
-      EnvironmentFile = "-/run/michi-codex-gh.env";
-      TimeoutStartSec = "infinity";
-      TimeoutStopSec = "15s";
-      KillMode = "control-group";
-      UMask = "0077";
-      NoNewPrivileges = true;
-      PrivateUsers = true;
-      PrivateTmp = true;
-      PrivateDevices = true;
-      ProtectSystem = "strict";
-      ProtectHome = true;
-      ProtectKernelModules = true;
-      ProtectControlGroups = true;
-      # bwrap mounts a new /proc; outer proc submount locks prevent that.
-      # Leave ProcSubset, ProtectKernelTunables, and ProtectKernelLogs unset
-      # here. The bot retains all three; this worker has no host capabilities.
-      ProtectProc = "invisible";
-      RestrictNamespaces = ["user" "pid" "net" "ipc" "mnt" "uts"];
-      # Offline patch sandboxes need route sockets to set up their loopback.
-      RestrictAddressFamilies = ["AF_INET" "AF_INET6" "AF_UNIX" "AF_NETLINK"];
-      RestrictSUIDSGID = true;
-      LockPersonality = true;
-      CapabilityBoundingSet = "";
-      # Expose only the owner's workspace from the shared bot state tree.
-      TemporaryFileSystem = ["/var/lib/zeroclaw-home:ro"];
-      BindPaths = [ownerWorkspace];
-      ReadWritePaths = [ownerWorkspace];
+    serviceConfig =
+      codexSandbox
+      // {
+        Type = "oneshot";
+        User = "zeroclaw-home";
+        Group = "zeroclaw-home";
+        WorkingDirectory = ownerWorkspace;
+        ExecStartPre = "+${lib.getExe pkgs.python3} ${codexTokenScript} /run/michi-codex-gh.env";
+        ExecStart = "${lib.getExe codexOwnerWrapper} _worker";
+        ExecStopPost = "+${pkgs.coreutils}/bin/rm -f /run/michi-codex-gh.env";
+        EnvironmentFile = "-/run/michi-codex-gh.env";
+        TimeoutStartSec = "infinity";
+        TimeoutStopSec = "15s";
+        KillMode = "control-group";
+      };
+  };
+
+  systemd.services.michi-codex-remote = lib.mkIf secretExists {
+    description = "Thorny Codex phone host";
+    wantedBy = ["multi-user.target"];
+    after = ["network-online.target"];
+    wants = ["network-online.target"];
+    unitConfig.ConditionPathExists = "${ownerWorkspace}/.codex/auth.json";
+    path = ownerShellPackages ++ [codexPackage pkgs.bubblewrap pkgs.nix pkgs.direnv pkgs.nodejs pkgs.python3];
+    environment = {
+      HOME = ownerWorkspace;
+      CODEX_HOME = "${ownerWorkspace}/.codex";
+      SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
     };
+    serviceConfig =
+      codexSandbox
+      // {
+        Type = "simple";
+        User = "zeroclaw-home";
+        Group = "zeroclaw-home";
+        WorkingDirectory = ownerWorkspace;
+        ExecStartPre = "+${lib.getExe pkgs.python3} ${codexTokenScript} /run/michi-codex-remote-gh.env";
+        ExecStart = lib.escapeShellArgs [
+          (lib.getExe codexPackage)
+          "-c"
+          ''cli_auth_credentials_store="file"''
+          "-c"
+          ''model="gpt-6.1-sol"''
+          "-c"
+          ''model_reasoning_effort="low"''
+          "-c"
+          ''approval_policy="never"''
+          "-c"
+          ''sandbox_mode="workspace-write"''
+          "-c"
+          "allow_login_shell=false"
+          "-c"
+          "sandbox_workspace_write.network_access=true"
+          "-c"
+          "shell_environment_policy.ignore_default_excludes=true"
+          "-c"
+          ''agents.default_subagent_model="gpt-6-luna"''
+          "-c"
+          ''agents.default_subagent_reasoning_effort="medium"''
+          "app-server"
+          "--remote-control"
+          "--listen"
+          "unix://${ownerWorkspace}/.codex/michi-app-server.sock"
+        ];
+        ExecStopPost = "+${pkgs.coreutils}/bin/rm -f /run/michi-codex-remote-gh.env";
+        EnvironmentFile = "-/run/michi-codex-remote-gh.env";
+        # Codex's socket alias targets /tmp; share only this private runtime
+        # directory with owner clients, keeping the resolved Unix path short.
+        RuntimeDirectory = "michi-codex-remote";
+        RuntimeDirectoryMode = "0700";
+        BindPaths = codexSandbox.BindPaths ++ ["/run/michi-codex-remote:/tmp"];
+        Restart = "on-failure";
+        RestartSec = "10s";
+        KillSignal = "SIGINT";
+        KillMode = "control-group";
+        TimeoutStopSec = "30s";
+      };
   };
 
   # rdny validates process identity through /proc. Sharing only the bot's user
@@ -363,6 +444,8 @@ in {
             "fd"
             "rdny"
             "michi-codex"
+            "codex"
+            "michi-codex-sessions"
             "npm"
             "cargo"
             "ls"
