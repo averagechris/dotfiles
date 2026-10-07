@@ -851,7 +851,6 @@ in {
     dotfiles.shell.yazi.enable = true;
     programs.opencode.enable = true;
     dotfiles.opencode.openrouterApiKeyFile = "/run/agenix/openrouter-api-key";
-    dotfiles.srht.enable = true;
     dotfiles.sideshow.enable = true;
     dotfiles.rdny = {
       enable = true;
@@ -874,11 +873,6 @@ in {
         package = inputs.memo.packages.${pkgs.stdenv.hostPlatform.system}.memo;
         name = "memo";
         description = "remember lasting workflow context";
-      }
-      {
-        package = inputs.srht.packages.${pkgs.stdenv.hostPlatform.system}.srht;
-        name = "srht";
-        description = "SourceHut CLI";
       }
     ];
     dotfiles.ctx = {

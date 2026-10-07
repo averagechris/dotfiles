@@ -19,7 +19,7 @@
       inputs.opencode.follows = "base-lib/opencode";
       inputs.nitter-link.follows = "nitter-link";
       inputs.fleet.follows = "fleet";
-      inputs.srht.follows = "srht";
+      inputs.fleet-srht.follows = "fleet-srht";
     };
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
     home-manager.follows = "base-lib/home-manager";
@@ -34,9 +34,11 @@
     fleet = {
       url = "github:averagechris/averagechris.github.io";
       inputs.nixpkgs.follows = "nixpkgs";
-      inputs.srht.follows = "srht";
+      inputs.srht.follows = "fleet-srht";
     };
-    srht = {
+    # Fleet's publishing/build apps use this package internally; it is not
+    # installed as a host CLI.
+    fleet-srht = {
       url = "github:averagechris/srht";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.fleet.follows = "fleet";

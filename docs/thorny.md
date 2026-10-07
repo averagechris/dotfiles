@@ -180,7 +180,7 @@ cache as a substituter) download instead of rebuilding:
 - `~averagechris/averagechris.srht.site` → `#fleet-ci-closure`, the runtime
   closure of the `build-pages`/`refresh-pages` tooling used by the hourly
   refresh CI job.
-- Each fleet repo (`linear-cli`, `slack`, `granola-cli`, `ctx`, `starship-jj`,
+- Each fleet repo (`linear-cli`, `granola-cli`, `ctx`, `starship-jj`,
   `workctl`, `gander`) → `#release-artifact` for x86_64-linux.
 
 For each target the warmer resolves the current `main` rev with

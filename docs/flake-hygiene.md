@@ -45,15 +45,12 @@ use `nix-systems/default-linux`, also root a shared `systems` input and make eac
 consumer follow it. This keeps standalone host flakes usable while avoiding
 duplicate transitive lock graphs in the root flake.
 
-The shared `fleet` and `srht` inputs follow each other at the root. Their names
-describe the projects, not their current source authority: both are GitHub
-inputs. Keep consumers on the rooted nodes with `inputs.fleet.follows = "fleet"`
-and `inputs.srht.follows = "srht"` where those inputs are declared. A child
-flake such as `rdny` currently exposes `fleet` but no direct `srht` input, so use
-`rdny.inputs.fleet.follows = "fleet"` when rooting it; do not invent a stale
-`rdny.inputs.srht` override. The `srht` CLI and service documentation is a
-separate concern and is not removed by changing these flake sources.
-
+The shared `fleet` input is rooted once in the top-level aggregator and followed
+by consumers. Fleet declares its own pinned `srht` input for internal SourceHut
+publishing and build apps; keep that package dependency on the `fleet-srht`
+alias, separate from host CLI installation. A child flake such as `rdny`
+currently exposes `fleet` but no direct SourceHut CLI input, so root only its
+`fleet` input and do not invent a direct override.
 One intentional exception is `suremac/helix`: it keeps Helix's own `nixpkgs` so
 the cached upstream Helix runtime can be fetched from `helix.cachix.org` instead
 of building Darwin grammars locally. The Home Manager module trims that runtime
@@ -78,9 +75,8 @@ nodes usually mean a new path input is not following the root graph.
 
 After input updates, remove stale overrides when Nix warns that an upstream input
 no longer exists. Keep any still-valid nested overrides. For example, `rdny`
-currently exposes `fleet` but no longer exposes a direct `srht` input, so make
-`rdny.inputs.fleet.follows = "fleet"` the only nested override and do not add an
-`rdny.inputs.srht` override.
+currently exposes `fleet` but no direct SourceHut CLI input, so make
+`rdny.inputs.fleet.follows = "fleet"` its only nested override.
 For a deliberate intermediate nixpkgs pin, override the revision while retaining
 `original.ref = "nixos-unstable"`; do not run the normal updater, which advances to
 HEAD. Apply and validate the resolved `nodes.nixpkgs.locked` object in every

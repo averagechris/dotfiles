@@ -26,9 +26,11 @@
     fleet = {
       url = "github:averagechris/averagechris.github.io";
       inputs.nixpkgs.follows = "nixpkgs";
-      inputs.srht.follows = "srht";
+      inputs.srht.follows = "fleet-srht";
     };
-    srht = {
+    # Fleet's publishing/build apps use this package internally; this is not a
+    # Home Manager CLI module or host installation.
+    fleet-srht = {
       url = "github:averagechris/srht";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.fleet.follows = "fleet";
@@ -80,7 +82,6 @@
         rdny = ./modules/rdny.nix;
         sideshow = ./modules/sideshow.nix;
         linearCli = ./modules/linear-cli;
-        srht = ./modules/srht.nix;
         nitterLink = ./modules/nitter-link.nix;
         ghostty-fix = ./modules/ghostty-fix.nix;
 
@@ -864,89 +865,6 @@
             fi
             test '${testConfig.config.home.sessionVariables.RDNY_MAX_DOWNLOAD_BYTES}' = 1048576
             test '${testConfig.config.home.sessionVariables.RDNY_MAX_RECORDING_SECONDS}' = 120
-            touch $out
-          '';
-
-        srht-config-rendering = let
-          fakeSrht = pkgs.writeShellScriptBin "srht" ''
-            echo "srht test package"
-          '';
-          fakeSrhtSkills = pkgs.runCommand "fake-srht-skills" {} ''
-            mkdir -p "$out"
-            printf 'srht-issues\n' > "$out/srht-issues.md"
-            printf 'srht-ci\n' > "$out/srht-ci.md"
-            printf 'srht-setup\n' > "$out/srht-setup.md"
-          '';
-          testConfig = home-manager.lib.homeManagerConfiguration {
-            inherit pkgs;
-            extraSpecialArgs = {
-              inherit inputs system;
-            };
-            modules = [
-              ./modules/srht.nix
-              {
-                home.username = "test";
-                home.homeDirectory = "/tmp/test-home";
-                home.stateVersion = "26.05";
-                programs.opencode.enable = true;
-                programs.opencode.package = fakeSrht;
-                dotfiles.srht = {
-                  enable = true;
-                  package = fakeSrht;
-                };
-                dotfiles.agentSkills = {
-                  srht-issues = {
-                    enable = false;
-                    source = fakeSrhtSkills + "/srht-issues.md";
-                  };
-                  srht-ci.source = fakeSrhtSkills + "/srht-ci.md";
-                  srht-setup = {
-                    enable = false;
-                    source = fakeSrhtSkills + "/srht-setup.md";
-                  };
-                };
-                dotfiles.agentSkillBundles.srht.sourceDirectory = inputs.srht + "/assets/skills";
-              }
-            ];
-          };
-          rendered = testConfig.config.xdg.configFile."srht/config.toml".source;
-          srhtCiSkill = testConfig.config.xdg.configFile."opencode/skills/srht-ci".source + "/SKILL.md";
-        in
-          pkgs.runCommand "srht-config-rendering-test" {} ''
-            ${pkgs.gnugrep}/bin/grep -q '^ttl-minutes = 30$' ${rendered}
-            ${pkgs.gnugrep}/bin/grep -q '^mode = "error"$' ${rendered}
-            ${pkgs.gnugrep}/bin/grep -q '^\[profiles.work\]$' ${rendered}
-            ${pkgs.gnugrep}/bin/grep -q '^instance = "sr.ht"$' ${rendered}
-            ${pkgs.gnugrep}/bin/grep -q '^tracker = "~averagechris/projects"$' ${rendered}
-            ${pkgs.gnugrep}/bin/grep -q '^project = "~averagechris/projects"$' ${rendered}
-            ${pkgs.gnugrep}/bin/grep -q '^done-resolution = "fixed"$' ${rendered}
-            ${pkgs.gnugrep}/bin/grep -q '^\[\[profiles.work.todo-policy.context-labels\]\]$' ${rendered}
-            ${pkgs.gnugrep}/bin/grep -q '^value = "repo:{repo}"$' ${rendered}
-            ${pkgs.gnugrep}/bin/grep -q '^add-on-create = true$' ${rendered}
-            ${pkgs.gnugrep}/bin/grep -q '^filter-reads = true$' ${rendered}
-            ${pkgs.gnugrep}/bin/grep -q '^require-on-tracker = true$' ${rendered}
-            ${pkgs.gnugrep}/bin/grep -q '^any-label = \["fix", "security"\]$' ${rendered}
-            ${pkgs.gnugrep}/bin/grep -q '^create = "warn"$' ${rendered}
-            ${pkgs.gnugrep}/bin/grep -q '^existing = "off"$' ${rendered}
-            test '${testConfig.config.home.sessionVariables.SRHT_PROFILE}' = work
-            if ${pkgs.gnugrep}/bin/grep -q '^\[\[routes\]\]$' ${rendered}; then
-              echo "profile-only srht config unexpectedly contains routes" >&2
-              exit 1
-            fi
-            if ${pkgs.gnugrep}/bin/grep -q '^token' ${rendered}; then
-              echo "rendered srht config unexpectedly contains token configuration" >&2
-              exit 1
-            fi
-            test "$(cat ${srhtCiSkill})" = srht-ci
-            test ${
-              if builtins.hasAttr "opencode/skills/srht-issues" testConfig.config.xdg.configFile
-              then "1"
-              else "0"
-            } -eq 0
-            if ${pkgs.gnugrep}/bin/grep -q 'install-srht-opencode-skills' ${testConfig.activationPackage}/activate; then
-              echo "srht skills must be linked declaratively" >&2
-              exit 1
-            fi
             touch $out
           '';
 

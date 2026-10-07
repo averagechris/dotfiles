@@ -65,13 +65,9 @@
     vhs = toolPath cfg.tools.vhs;
     aws = toolPath cfg.tools.aws;
   };
-  generatedSettings =
-    lib.optionalAttrs (generatedTools != {}) {
-      tools = generatedTools;
-    }
-    // lib.optionalAttrs (cfg.srht.tokenCommand != null) {
-      srht."token-cmd" = cfg.srht.tokenCommand;
-    };
+  generatedSettings = lib.optionalAttrs (generatedTools != {}) {
+    tools = generatedTools;
+  };
   mergedSettings = lib.recursiveUpdate generatedSettings cfg.settings;
 in {
   imports = [./agent-skills.nix];
@@ -94,7 +90,7 @@ in {
       default = {};
       description = ''
         Extra sideshow user configuration merged into the generated TOML. Values
-        here override module-generated `[tools]` and `[srht]` entries.
+        here override module-generated `[tools]` entries.
       '';
     };
 
@@ -102,8 +98,8 @@ in {
       type = lib.types.bool;
       default = true;
       description = ''
-        Write `~/.config/sideshow/config.toml` with configured tool paths and
-        SourceHut token command settings.
+        Write `~/.config/sideshow/config.toml` with configured tool paths
+        and extra user settings.
       '';
     };
 
@@ -128,17 +124,6 @@ in {
         description = "aws";
         defaultPackage = pkgs.awscli2;
       };
-    };
-
-    srht.tokenCommand = lib.mkOption {
-      type = lib.types.nullOr (lib.types.listOf lib.types.str);
-      default = null;
-      example = ["pass" "show" "srht/pages-token"];
-      description = ''
-        Optional command written as `[srht].token-cmd`. sideshow uses it to get a
-        SourceHut Pages token when `SRHT_TOKEN` is not set. Do not put plaintext
-        tokens in the Nix store; point at a keyring/password-manager command.
-      '';
     };
 
     opencode = {
@@ -195,7 +180,7 @@ in {
         {
           inherit (cfg) package;
           name = "sideshow";
-          description = "HTML slide deck CLI";
+          description = "author, build, preview, and review HTML slide decks";
         }
       ];
     })

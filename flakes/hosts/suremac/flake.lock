@@ -357,7 +357,7 @@
           "nixpkgs"
         ],
         "srht": [
-          "srht"
+          "fleet-srht"
         ]
       },
       "locked": {
@@ -371,6 +371,29 @@
       "original": {
         "owner": "averagechris",
         "repo": "averagechris.github.io",
+        "type": "github"
+      }
+    },
+    "fleet-srht": {
+      "inputs": {
+        "fleet": [
+          "fleet"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1786033137,
+        "narHash": "sha256-EHah1RPqtHskPoLJkJFcyQJy1T3jUNqVS0zIHI0CxYc=",
+        "owner": "averagechris",
+        "repo": "srht",
+        "rev": "125f982de6fe846c55896cec9b5de746596b872b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "averagechris",
+        "repo": "srht",
         "type": "github"
       }
     },
@@ -477,6 +500,9 @@
         "fleet": [
           "fleet"
         ],
+        "fleet-srht": [
+          "fleet-srht"
+        ],
         "gander": "gander",
         "helix": "helix_2",
         "home-manager": [
@@ -495,9 +521,6 @@
         ],
         "rdny": "rdny",
         "sideshow": "sideshow",
-        "srht": [
-          "srht"
-        ],
         "starship-jj": "starship-jj"
       },
       "locked": {
@@ -822,6 +845,7 @@
           "flake-utils"
         ],
         "fleet": "fleet",
+        "fleet-srht": "fleet-srht",
         "gander": [
           "hm-modules",
           "gander"
@@ -845,8 +869,6 @@
         ],
         "rdny": "rdny_2",
         "sideshow": "sideshow_2",
-        "slack": "slack",
-        "srht": "srht",
         "starship-jj": [
           "hm-modules",
           "starship-jj"
@@ -918,27 +940,6 @@
         "type": "github"
       }
     },
-    "rust-overlay_3": {
-      "inputs": {
-        "nixpkgs": [
-          "slack",
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1785993740,
-        "narHash": "sha256-naSJ+p7zkIT2hHNSJkhxiPZlmVRgE3UdODinMM7rpD8=",
-        "owner": "oxalica",
-        "repo": "rust-overlay",
-        "rev": "3d1b34a12a26be073f7ae67165a6b61229ca6025",
-        "type": "github"
-      },
-      "original": {
-        "owner": "oxalica",
-        "repo": "rust-overlay",
-        "type": "github"
-      }
-    },
     "sideshow": {
       "inputs": {
         "fleet": [
@@ -984,56 +985,6 @@
       "original": {
         "owner": "averagechris",
         "repo": "sideshow",
-        "type": "github"
-      }
-    },
-    "slack": {
-      "inputs": {
-        "flake-utils": [
-          "flake-utils"
-        ],
-        "fleet": [
-          "fleet"
-        ],
-        "nixpkgs": [
-          "nixpkgs"
-        ],
-        "rust-overlay": "rust-overlay_3"
-      },
-      "locked": {
-        "lastModified": 1786315957,
-        "narHash": "sha256-GPzPgzphLBILlBF00YV73fUewnO69YZOl+beiW6KeM4=",
-        "owner": "averagechris",
-        "repo": "slack",
-        "rev": "faa6651e1ad3d97810148236136392a415a0962b",
-        "type": "github"
-      },
-      "original": {
-        "owner": "averagechris",
-        "repo": "slack",
-        "type": "github"
-      }
-    },
-    "srht": {
-      "inputs": {
-        "fleet": [
-          "fleet"
-        ],
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1786033137,
-        "narHash": "sha256-EHah1RPqtHskPoLJkJFcyQJy1T3jUNqVS0zIHI0CxYc=",
-        "owner": "averagechris",
-        "repo": "srht",
-        "rev": "125f982de6fe846c55896cec9b5de746596b872b",
-        "type": "github"
-      },
-      "original": {
-        "owner": "averagechris",
-        "repo": "srht",
         "type": "github"
       }
     },

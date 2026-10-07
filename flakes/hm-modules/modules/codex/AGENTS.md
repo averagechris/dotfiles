@@ -20,3 +20,11 @@ opencode run --standalone \
 ## Project environment
 
 For projects using direnv, run commands with `direnv exec <workdir> <command>` to load the project's environment in desktop sessions.
+
+## Tool choice
+
+Prefer installed CLIs when they support the task; they compose well with shell tools and structured output. Check command help before guessing syntax. If authentication fails after the tool's normal refresh, ask me to log in and then retry. Use connectors or the browser when they provide needed capabilities or I explicitly request them.
+
+## Datadog
+
+Start Datadog investigations with the installed `pup` CLI. Use the Datadog MCP when it fits better. If authentication fails after automatic refresh, ask me to run `pup auth login`, then retry. Prefer these tools over the browser unless the task specifically needs the Datadog UI.

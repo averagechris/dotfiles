@@ -41,9 +41,6 @@ tailwindcss = "/nix/store/.../bin/tailwindcss"
 ffmpeg = "/nix/store/.../bin/ffmpeg"
 vhs = "/nix/store/.../bin/vhs"
 aws = "/nix/store/.../bin/aws"
-
-[srht]
-token-cmd = ["pass", "show", "srht/pages-token"]
 ```
 
 `tailwindcss` is enabled by default because `sideshow build` shells out to the
@@ -61,17 +58,13 @@ dotfiles.sideshow.tools.aws.enable = true;
 The ffmpeg tool defaults to `pkgs.ffmpeg-headless`, shared with rdny and the
 Calibre utilities so Home Manager has only one `bin/ffmpeg` provider.
 
-For secrets, do not place plaintext tokens in Nix. Use `SRHT_TOKEN` at runtime or
-set `dotfiles.sideshow.srht.tokenCommand` to a keyring/password-manager command.
-`suremac` sets this to read the same macOS Keychain item that the `srht` CLI uses
-after `srht auth login`: generic password `service = srht`, `account = sr.ht`.
+Publishing credentials are runtime-owned; do not place plaintext tokens in Nix.
 
 ## Host enablement
 
 - `suremac` enables `dotfiles.sideshow`, configures `ffmpeg` for video
-  optimization, configures `aws` for S3 publishing, configures sideshow's
-  SourceHut Pages token command to read the `srht` Keychain item, and exposes
-  `sideshow` to OpenCode agents.
+  optimization, configures `aws` for S3 publishing, and exposes `sideshow`
+  to OpenCode agents.
 - `tater` enables `dotfiles.sideshow` with the default Tailwind configuration and
   exposes `sideshow` to OpenCode agents. For dotfiles, its story evidence uses
   GitHub Issues and GitHub PRs; other projects retain their existing tracker
@@ -107,7 +100,6 @@ sideshow build ./deck
 sideshow serve ./deck --open --port 0
 sideshow serve ./deck --review --open --port 8000
 sideshow review export ./deck --format markdown
-sideshow publish ./deck --target srht --domain averagechris.srht.site
 ```
 
 Custom fonts are deck-local rather than Home Manager configuration. Declare

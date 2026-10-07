@@ -12,8 +12,8 @@
       inputs.linear-cli.follows = "hm-modules/linear-cli";
       inputs.gander.follows = "hm-modules/gander";
       inputs.sideshow.follows = "sideshow";
-      inputs.srht.follows = "srht";
       inputs.fleet.follows = "fleet";
+      inputs.fleet-srht.follows = "fleet-srht";
       inputs.ctx.follows = "ctx";
       inputs.rdny.follows = "rdny";
       inputs.nitter-link.follows = "nitter-link";
@@ -39,8 +39,8 @@
       inputs.helix.follows = "hm-modules/helix";
       inputs.starship-jj.follows = "hm-modules/starship-jj";
       inputs.gander.follows = "hm-modules/gander";
-      inputs.srht.follows = "srht";
       inputs.fleet.follows = "fleet";
+      inputs.fleet-srht.follows = "fleet-srht";
       inputs.hyprland.follows = "hyprland";
       inputs.Hyprspace.follows = "Hyprspace";
       inputs.hypridle.follows = "hypridle";
@@ -78,8 +78,8 @@
       inputs.starship-jj.follows = "hm-modules/starship-jj";
       inputs.gander.follows = "hm-modules/gander";
       inputs.sideshow.follows = "sideshow";
-      inputs.srht.follows = "srht";
       inputs.fleet.follows = "fleet";
+      inputs.fleet-srht.follows = "fleet-srht";
       inputs.hyprland.follows = "hyprland";
       inputs.Hyprspace.follows = "Hyprspace";
       inputs.hypridle.follows = "hypridle";
@@ -136,7 +136,7 @@
       inputs.opencode.follows = "base-lib/opencode";
       inputs.nitter-link.follows = "nitter-link";
       inputs.fleet.follows = "fleet";
-      inputs.srht.follows = "srht";
+      inputs.fleet-srht.follows = "fleet-srht";
     };
     darwin-modules = {
       url = "path:./flakes/darwin-modules";
@@ -168,9 +168,11 @@
     fleet = {
       url = "github:averagechris/averagechris.github.io";
       inputs.nixpkgs.follows = "nixpkgs";
-      inputs.srht.follows = "srht";
+      inputs.srht.follows = "fleet-srht";
     };
-    srht = {
+    # Fleet's publishing/build apps use this package internally; hosts do not
+    # install it as the SourceHut CLI.
+    fleet-srht = {
       url = "github:averagechris/srht";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.fleet.follows = "fleet";

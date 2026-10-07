@@ -27,6 +27,18 @@ dotfiles.codex = {
 behavioral checks, and design judgment to Codex and the OpenCode orchestrator.
 Codex adds model-selection guidance and a command for loading direnv project
 environments in desktop sessions.
+The global guidance prefers installed CLIs for tasks they support, uses command
+help for discovery, and asks for login after normal authentication refresh fails.
+Connectors and browsers remain available when their capabilities fit the task
+or the user requests them. On `suremac`, `extraInstructions` generates a compact
+tool list from `dotfiles.opencode.agentTools`, sharing the installed command names
+and concrete purposes with OpenCode rather than maintaining a second inventory.
+The Codex note currently excludes `gander`, `ctx`, and `showboat`; their existing
+installation and OpenCode integration are unchanged.
+Datadog investigations start with the installed `pup` CLI, with the Datadog MCP
+available when it fits better. If authentication fails after automatic refresh,
+agents ask Chris to run `pup auth login` and then retry. Browser use remains
+available for tasks that specifically need the Datadog UI.
 Home Manager combines these files and `extraInstructions` into the global
 `AGENTS.md`. The shared skills carry topic-specific workflows and use the same
 sources in both clients. Their detailed teaching, writing, testing, and discovery
@@ -175,11 +187,11 @@ owner workspace, independent of the workstation's Home Manager configuration.
 `flakes/hosts/thorny/personal-codex.nix` reuses the shared skill registry and
 renderer for this service account. NixOS links complete skill directories into
 its `~/.agents/skills` directory: the seven portable skills, `how`, `why`,
-`memo`, `rdny-browser`, and the three SourceHut skills. Its instructions retain
+`memo` and `rdny-browser`. Its instructions retain
 Thorny's Codex model and sub-agent guidance. The `how` and `why` helpers use
 Codex delegation and omit work-specific source playbooks.
 The owner shell, queued worker, and remote Codex server receive the personal
-`memo`, `srht`, and `showboat` CLIs alongside the existing coding and browser
+`memo` and `showboat` CLIs alongside the existing coding and browser
 tools. History remains available through `michi-codex-sessions`.
 Codex is encouraged to use `memo` quietly and selectively for durable project
 learnings and decision history. Memo is an append-only note history with an
@@ -199,8 +211,7 @@ when both are relevant. Routine reads, notes, and maintenance stay quiet, with
 no usage reports or reminders. Notes are leads to verify against current code.
 
 This profile excludes Linear, Datadog, Sentry, AWS/Kubernetes tools, work meeting
-integrations, and private Sure stack context. SourceHut authentication must be
-configured for the service account separately; workstation credentials are not
+integrations, and private Sure stack context. Workstation credentials are not
 copied. No Codex config, plugins, or login files are replaced.
 NixOS activation applies these links and service PATH changes; editing the
 module alone does not update a running Codex session.
