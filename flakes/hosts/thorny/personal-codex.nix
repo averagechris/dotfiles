@@ -6,7 +6,6 @@
   inherit (pkgs) lib;
   system = pkgs.stdenv.hostPlatform.system;
   memoPackage = inputs.memo.packages.${system}.default;
-  srhtPackage = inputs.srht.packages.${system}.srht;
   sharedGuidance = builtins.readFile ../../hm-modules/modules/agent-guidance.md;
   thornyGuidance = builtins.readFile ./michi/CODING.md;
   howDirectory = ../../hm-modules/modules/opencode/skills/how;
@@ -65,8 +64,8 @@
 
       | Category | Playbook |
       |---|---|
-      | Source control history | [`code-archaeology.md`](./sources/code-archaeology.md), [`sourcehut-ci.md`](./sources/sourcehut-ci.md) |
-      | Repository issues | [`sourcehut-issues.md`](./sources/sourcehut-issues.md) |
+      | Source control history | [`code-archaeology.md`](./sources/code-archaeology.md) |
+      | Repository issues | Use the repository's available issue tracker and its documented CLI. |
       | Repository documentation | [`repository-markdown.md`](./sources/repository-markdown.md) |
 
       Also add [`incident-postmortem.md`](./sources/incident-postmortem.md) when the target looks defensive, such as a check, retry, timeout, rate limit, flag, egress guard, or OOM handler.
@@ -74,9 +73,7 @@
     cp ${pkgs.writeText "thorny-codex-why-investigator-prompt.md" investigatorText} "$out/references/investigator-prompt-template.md"
     cp ${pkgs.writeText "thorny-codex-why-synthesizer-prompt.md" synthesizerText} "$out/references/synthesizer-prompt-template.md"
     cp ${whyDirectory}/references/sources/code-archaeology.md "$out/references/sources/"
-    cp ${whyDirectory}/references/sources/sourcehut-issues.md "$out/references/sources/"
     cp ${whyDirectory}/references/sources/repository-markdown.md "$out/references/sources/"
-    cp ${whyDirectory}/references/sources/sourcehut-ci.md "$out/references/sources/"
     cp ${whyDirectory}/references/sources/incident-postmortem.md "$out/references/sources/"
   '';
   toolGuidance = ''
@@ -115,8 +112,7 @@
     Mention it only if asked, or if a material failure affects the task. Never
     store credentials, secrets, or another person's private information.
 
-    Use `srht` for SourceHut repositories and services when relevant to the
-    request. Use `showboat` to create a shareable work record when requested.
+    Use `showboat` to create a shareable work record when requested.
   '';
   config = inputs.home-manager.lib.homeManagerConfiguration {
     inherit pkgs;
@@ -152,29 +148,12 @@
             source = inputs.rdny + "/skills/rdny-browser";
             targets = ["codex"];
           };
-          srht-issues = {
-            source = inputs.srht + "/assets/skills/srht-issues.md";
-            targets = ["codex"];
-          };
-          srht-ci = {
-            source = inputs.srht + "/assets/skills/srht-ci.md";
-            targets = ["codex"];
-          };
-          srht-setup = {
-            source = inputs.srht + "/assets/skills/srht-setup.md";
-            targets = ["codex"];
-          };
         };
 
         dotfiles.agentSkillBundles = {
           rdny = {
             sourceDirectory = inputs.rdny + "/skills";
             expectedNames = ["rdny-browser"];
-          };
-          srht = {
-            sourceDirectory = inputs.srht + "/assets/skills";
-            layout = "flat-markdown";
-            expectedNames = ["srht-ci" "srht-issues" "srht-setup"];
           };
         };
       }
@@ -190,5 +169,5 @@ in
   assert valid; {
     instructions = config.config.home.file.".codex/AGENTS.md".source;
     skills = renderedSkills;
-    packages = [memoPackage srhtPackage pkgs.showboat];
+    packages = [memoPackage pkgs.showboat];
   }

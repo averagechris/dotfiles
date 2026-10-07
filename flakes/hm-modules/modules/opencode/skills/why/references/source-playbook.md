@@ -4,8 +4,8 @@ Use a playbook only when the question or a concrete lead makes its source releva
 
 | Category | Playbook | Example source it documents |
 |---|---|---|
-| Source control history | [`code-archaeology.md`](./sources/code-archaeology.md), [`sourcehut-ci.md`](./sources/sourcehut-ci.md) | `jj` or git, `gh`, relevant builds.sr.ht CI |
-| Issue / ticket tracker | [`linear.md`](./sources/linear.md), [`sourcehut-issues.md`](./sources/sourcehut-issues.md) | A tracker linked by repository conventions, commits, or the user |
+| Source control history | [`code-archaeology.md`](./sources/code-archaeology.md) | `jj` or git, `gh` |
+| Issue / ticket tracker | [`linear.md`](./sources/linear.md) | A tracker linked by repository conventions, commits, or the user |
 | Long-form documents | [`repository-markdown.md`](./sources/repository-markdown.md), [`granola.md`](./sources/granola.md), [`notion.md`](./sources/notion.md) | Repository docs first; meeting notes or document systems when a lead points there |
 | Infrastructure observability | [`datadog.md`](./sources/datadog.md) | Datadog (adapt for New Relic, Honeycomb, Grafana, Splunk) |
 | Error / exception tracking | [`sentry.md`](./sources/sentry.md) | Sentry (adapt for Rollbar, Bugsnag, Airbrake) |

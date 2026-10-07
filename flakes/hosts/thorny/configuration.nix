@@ -480,7 +480,6 @@
 
       fleet_repos=(
         linear-cli
-        slack
         granola-cli
         ctx
         starship-jj
@@ -884,23 +883,6 @@ in {
 
     dotfiles.shell.yazi.enable = true;
     programs.opencode.enable = true;
-    dotfiles.srht.enable = true;
-    programs.srht.instances = [
-      {
-        name = "sr.ht";
-        tokenCmd = [
-          "${pkgs.coreutils}/bin/cat"
-          config.age.secrets.hut-access-token.path
-        ];
-      }
-    ];
-    dotfiles.opencode.agentTools = [
-      {
-        package = inputs.srht.packages.${pkgs.stdenv.hostPlatform.system}.srht;
-        name = "srht";
-        description = "SourceHut CLI";
-      }
-    ];
     xdg.configFile."hut/config".source = hutConfig;
     services.network-manager-applet.enable = true;
     home.packages = [pkgs.claude-code pkgs.hut];

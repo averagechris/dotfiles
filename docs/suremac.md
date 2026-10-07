@@ -403,16 +403,14 @@ tool. See [`docs/notion-cli.md`](/docs/notion-cli.md) for usage and update notes
 
 `suremac` installs personal CLIs from GitHub flake inputs:
 
-- `slack` (`github:averagechris/slack`) - Slack CLI, installed in Home
-  Manager `home.packages`
 - `ctx` (`github:averagechris/ctx`) - agentic context CLI for indexing and
   searching coding-agent session history, exposed to OpenCode agents via
   `dotfiles.opencode.agentTools` (also installed on `tater`)
 - `rdny` (`github:averagechris/rdny`) - browser automation CLI, installed via
   `dotfiles.rdny` and exposed to OpenCode agents (also installed on `tater`)
 
-These follow the host flake's `nixpkgs`; `slack` and `ctx` also follow
-`flake-utils`. Bump them with `nix flake update slack ctx rdny` in
+These follow the host flake's `nixpkgs`; `ctx` also follows
+`flake-utils`. Bump them with `nix flake update ctx rdny` in
 `flakes/hosts/suremac` (and `ctx rdny` in `flakes/hosts/tater`), plus the
 matching nested nodes in the root `flake.lock`.
 

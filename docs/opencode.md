@@ -846,7 +846,6 @@ build time. Current examples include:
   synthesis, and package-backed `sideshow-deck-author`, for creating, revising,
   checking, building, reviewing, and publishing actual decks (both registered by
   `dotfiles.sideshow`)
-- `srht-issues`, `srht-ci`, and `srht-setup` (registered by `dotfiles.srht`)
 - `databricks-cli` (registered globally, currently disabled on `suremac`)
 - `pup-cli`
 - `rust-cargo` (registered by `agent-workflows.nix` through the shared skill

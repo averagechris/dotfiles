@@ -454,7 +454,7 @@
           "nixpkgs"
         ],
         "srht": [
-          "srht"
+          "fleet-srht"
         ]
       },
       "locked": {
@@ -468,6 +468,29 @@
       "original": {
         "owner": "averagechris",
         "repo": "averagechris.github.io",
+        "type": "github"
+      }
+    },
+    "fleet-srht": {
+      "inputs": {
+        "fleet": [
+          "fleet"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1786033137,
+        "narHash": "sha256-EHah1RPqtHskPoLJkJFcyQJy1T3jUNqVS0zIHI0CxYc=",
+        "owner": "averagechris",
+        "repo": "srht",
+        "rev": "125f982de6fe846c55896cec9b5de746596b872b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "averagechris",
+        "repo": "srht",
         "type": "github"
       }
     },
@@ -551,6 +574,9 @@
         "fleet": [
           "fleet"
         ],
+        "fleet-srht": [
+          "fleet-srht"
+        ],
         "gander": "gander",
         "helix": "helix",
         "home-manager": [
@@ -569,9 +595,6 @@
         ],
         "rdny": "rdny",
         "sideshow": "sideshow",
-        "srht": [
-          "srht"
-        ],
         "starship-jj": "starship-jj"
       },
       "locked": {
@@ -1363,6 +1386,7 @@
           "flake-utils"
         ],
         "fleet": "fleet",
+        "fleet-srht": "fleet-srht",
         "gander": [
           "hm-modules",
           "gander"
@@ -1389,7 +1413,6 @@
         "pip-chrome-extension": "pip-chrome-extension",
         "rdny": "rdny_2",
         "sideshow": "sideshow_2",
-        "srht": "srht",
         "starship-jj": [
           "hm-modules",
           "starship-jj"
@@ -1485,29 +1508,6 @@
       "original": {
         "owner": "averagechris",
         "repo": "sideshow",
-        "type": "github"
-      }
-    },
-    "srht": {
-      "inputs": {
-        "fleet": [
-          "fleet"
-        ],
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1786033137,
-        "narHash": "sha256-EHah1RPqtHskPoLJkJFcyQJy1T3jUNqVS0zIHI0CxYc=",
-        "owner": "averagechris",
-        "repo": "srht",
-        "rev": "125f982de6fe846c55896cec9b5de746596b872b",
-        "type": "github"
-      },
-      "original": {
-        "owner": "averagechris",
-        "repo": "srht",
         "type": "github"
       }
     },

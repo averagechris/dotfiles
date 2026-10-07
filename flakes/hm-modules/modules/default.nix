@@ -9,7 +9,6 @@
     ./linear-cli
     ./nitter-link.nix
     ./rdny.nix
-    ./srht.nix
     ./sideshow.nix
     ./meganz.nix
     ./pi.nix

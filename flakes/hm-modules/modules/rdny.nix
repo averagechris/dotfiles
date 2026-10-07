@@ -307,7 +307,7 @@ in {
         {
           inherit (cfg) package;
           name = "rdny";
-          description = "browser automation CLI";
+          description = "automate browser navigation, inspection, and interaction";
         }
       ];
     })

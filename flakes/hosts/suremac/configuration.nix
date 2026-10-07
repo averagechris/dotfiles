@@ -9,7 +9,6 @@
 }: let
   ctxPackage = inputs.ctx.packages.${pkgs.stdenv.hostPlatform.system}.ctx;
   rdnyPackage = inputs.rdny.packages.${pkgs.stdenv.hostPlatform.system}.rdny;
-  srhtPackage = inputs.srht.packages.${pkgs.stdenv.hostPlatform.system}.srht;
   opencodeCliPreferences = {
     "$schema" = "https://opencode.ai/v2/cli.json";
     theme.name = "rosepine";
@@ -479,7 +478,6 @@ in {
   home-manager.users.chris = hmArgs @ {pkgs, ...}: {
     home.stateVersion = "26.05";
     home.packages = with pkgs; [
-      inputs.slack.packages.${pkgs.stdenv.hostPlatform.system}.slack
       kubernetes-helm
       rdnyHeliumPackage
     ];
@@ -578,6 +576,20 @@ in {
     ];
     dotfiles.codex = {
       enable = true;
+      extraInstructions = let
+        tools = builtins.sort (a: b: a.name < b.name) (
+          builtins.filter (tool: !(builtins.elem tool.name ["gander" "ctx" "showboat"]))
+          hmArgs.config.dotfiles.opencode.agentTools
+        );
+        toolNote = tool:
+          "- `${tool.name}`" + lib.optionalString (tool.description != null) ": ${tool.description}";
+      in ''
+        ## Installed CLI tools on suremac
+
+        ${lib.concatMapStringsSep "\n" toolNote tools}
+
+        Project dev shells may provide additional tools.
+      '';
       settings = {
         model = "gpt-6.1-sol";
         model_reasoning_effort = "low";
@@ -677,7 +689,6 @@ in {
     };
     dotfiles.sideshow = {
       enable = true;
-      srht.tokenCommand = ["/usr/bin/security" "find-generic-password" "-s" "srht" "-a" "sr.ht" "-w"];
       tools = {
         ffmpeg.enable = true;
         aws = {
@@ -722,19 +733,38 @@ in {
       ordinary Helium profile, then connects. Do not terminate or replace an
       ordinary Helium process to make it controllable.
     '';
-    dotfiles.srht.enable = true;
     dotfiles.opencode.agentSupportPackages = [];
     dotfiles.agentSkills.memo.source = inputs.memo + "/skills/memo";
     dotfiles.opencode.agentTools = with pkgs; [
       {
+        package = kubernetes-helm;
+        name = "helm";
+        description = "inspect and manage Kubernetes chart releases";
+      }
+      {
+        package = docker;
+        name = "docker";
+        description = "inspect containers, images, logs, and local builds";
+      }
+      {
+        package = nh;
+        name = "nh";
+        description = "build and activate NixOS, Darwin, and Home Manager configurations";
+      }
+      {
+        package = nix-output-monitor;
+        name = "nom";
+        description = "monitor Nix build progress and logs";
+      }
+      {
         package = inputs.memo.packages.${pkgs.stdenv.hostPlatform.system}.memo;
         name = "memo";
-        description = "remember lasting workflow context";
+        description = "store and retrieve lasting decisions and workflow context";
       }
       {
         package = awscli2;
         name = "aws";
-        description = "AWS CLI";
+        description = "query and manage AWS services and infrastructure";
       }
       {
         package = ctxPackage;
@@ -744,27 +774,27 @@ in {
       {
         package = kubectl;
         name = "kubectl";
-        description = "Kubernetes CLI";
+        description = "inspect clusters, workloads, events, and logs";
       }
       {
         package = pkgs.pup;
         name = "pup";
-        description = "Datadog CLI";
+        description = "search Datadog logs, traces, metrics, and monitors";
       }
       {
         package = pkgs.sentry;
         name = "sentry";
-        description = "Sentry CLI";
+        description = "investigate Sentry issues, events, and traces";
       }
       {
         package = notion-cli;
         name = "ntn";
-        description = "Notion CLI";
+        description = "work with Notion pages, files, APIs, and workers";
       }
       {
         package = gh;
         name = "gh";
-        description = "GitHub CLI";
+        description = "inspect and manage GitHub issues, pull requests, and CI";
       }
       {
         package = pkgs.showboat;
@@ -774,17 +804,12 @@ in {
       {
         package = inputs.linear-cli.packages.${pkgs.stdenv.hostPlatform.system}.linear;
         name = "linear";
-        description = "Linear CLI";
+        description = "search and manage Linear issues, projects, and cycles";
       }
       {
         package = inputs.granola-cli.packages.${pkgs.stdenv.hostPlatform.system}.default;
         name = "granola";
-        description = "Granola meeting notes CLI";
-      }
-      {
-        package = srhtPackage;
-        name = "srht";
-        description = "SourceHut CLI";
+        description = "search and read Granola meeting notes";
       }
     ];
 

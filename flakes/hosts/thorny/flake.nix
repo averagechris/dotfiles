@@ -18,7 +18,7 @@
       inputs.home-manager.follows = "home-manager";
       inputs.opencode.follows = "base-lib/opencode";
       inputs.fleet.follows = "fleet";
-      inputs.srht.follows = "srht";
+      inputs.fleet-srht.follows = "fleet-srht";
     };
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
     home-manager.follows = "base-lib/home-manager";
@@ -33,9 +33,11 @@
     fleet = {
       url = "github:averagechris/averagechris.github.io";
       inputs.nixpkgs.follows = "nixpkgs";
-      inputs.srht.follows = "srht";
+      inputs.srht.follows = "fleet-srht";
     };
-    srht = {
+    # Fleet's publishing/build apps use this package internally; it is not
+    # installed as a host CLI.
+    fleet-srht = {
       url = "github:averagechris/srht";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.fleet.follows = "fleet";
@@ -125,9 +127,6 @@
           "project-map"
           "rdny-browser"
           "rust-cargo"
-          "srht-ci"
-          "srht-issues"
-          "srht-setup"
           "teach"
           "technical-writing"
           "test-curation"
@@ -146,7 +145,6 @@
           } ''
             python3 ${../../hm-modules/modules/opencode/tests/check-deployed-skills.py} ${manifest}
             memo --help > /dev/null
-            srht --help > /dev/null
             showboat --help > /dev/null
             grep -Fq '## Coding models' ${personal.instructions}
             grep -Fq 'direnv exec <workdir> <command>' ${personal.instructions}

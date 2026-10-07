@@ -15,8 +15,8 @@ story of the impact.”
 
 1. Gather bounded evidence first: search agent history with `ctx`, related issue
    tracker work with available tools (`gh issue` for GitHub Issues, `linear` for
-   Linear, `srht todo` for todo.sr.ht), and code changes with available
-   VCS/forge tools (`jj`, `gh`, or `srht git`). Use exact dates, project names,
+   Linear), and code changes with available
+   VCS/forge tools (`jj`, `gh`). Use exact dates, project names,
    and keywords from the user;
    prefer JSON or compact output.
 2. Separate facts from interpretation. Extract concrete before/after measures,
