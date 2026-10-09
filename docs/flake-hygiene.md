@@ -45,12 +45,12 @@ use `nix-systems/default-linux`, also root a shared `systems` input and make eac
 consumer follow it. This keeps standalone host flakes usable while avoiding
 duplicate transitive lock graphs in the root flake.
 
-The shared `fleet` input is rooted once in the top-level aggregator and followed
-by consumers. Fleet declares its own pinned `srht` input for internal SourceHut
-publishing and build apps; keep that package dependency on the `fleet-srht`
-alias, separate from host CLI installation. A child flake such as `rdny`
-currently exposes `fleet` but no direct SourceHut CLI input, so root only its
-`fleet` input and do not invent a direct override.
+The shared `fleet` website input is rooted once in the top-level aggregator
+and followed by consumers. It now exposes `flake-utils` and a separate `fleet`
+CLI input; add one root `fleet-cli` input and follow its `nixpkgs`, `flake-utils`, and
+`srht` inputs to the shared graph (`fleet-srht` remains the SourceHut package
+alias). A child flake such as `rdny` exposes `fleet` but no direct SourceHut CLI
+input, so root only its `fleet` input and do not invent a direct override.
 One intentional exception is `suremac/helix`: it keeps Helix's own `nixpkgs` so
 the cached upstream Helix runtime can be fetched from `helix.cachix.org` instead
 of building Darwin grammars locally. The Home Manager module trims that runtime

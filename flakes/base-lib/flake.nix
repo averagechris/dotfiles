@@ -24,7 +24,6 @@
     agenix = {
       url = "github:ryantm/agenix";
       inputs.nixpkgs.follows = "nixpkgs";
-      inputs.systems.follows = "systems";
     };
     titlecase = {
       url = "github:averagechris/titlecase";

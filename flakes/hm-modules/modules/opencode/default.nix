@@ -42,14 +42,14 @@
   # V2's fixed-output derivation still copies every node_modules tree after the
   # build. Remove this override when upstream installs directly into $out or an
   # output-equivalence check proves its replacement preserves the same tree.
-  optimizedNodeModules = pkgs.opencode.node_modules.overrideAttrs (old: let
-    buildSetupMarker = "export BUN_INSTALL_CACHE_DIR=$(mktemp -d)";
-    markerParts = lib.splitString buildSetupMarker old.buildPhase;
-  in
-    assert lib.assertMsg (builtins.length markerParts == 2) ''
-      OpenCode node_modules buildPhase marker drifted; update the direct-to-output injection
-    '';
-      {
+  optimizedNodeModules = pkgs.opencode.node_modules.overrideAttrs (
+    old: let
+      buildSetupMarker = "export BUN_INSTALL_CACHE_DIR=$(mktemp -d)";
+      markerParts = lib.splitString buildSetupMarker old.buildPhase;
+    in
+      assert lib.assertMsg (builtins.length markerParts == 2) ''
+        OpenCode node_modules buildPhase marker drifted; update the direct-to-output injection
+      ''; {
         buildPhase =
           lib.replaceString buildSetupMarker ''
             ${buildSetupMarker}
@@ -69,15 +69,7 @@
           runHook postInstall
         '';
       }
-      // lib.optionalAttrs pkgs.stdenv.hostPlatform.isDarwin {
-        # The direct-to-output tree hash depends on the nixpkgs-provided Bun.
-        outputHash = "sha256-KoF/h/bKsu2WzCxNXnchVwgoiBI4WVNE5uGSxcvkk9A=";
-      }
-      // lib.optionalAttrs (pkgs.stdenv.hostPlatform.system == "x86_64-linux") {
-        # Verified on the pinned Thorny nixpkgs/OpenCode inputs. Keep this
-        # architecture-specific because native optional dependencies can differ.
-        outputHash = "sha256-bLZ6VYSGlDIBOyPSKL//dlWOGmdhNIPzvmBcDLmZXKs=";
-      });
+  );
   opencodeWithOptimizedNodeModules = pkgs.opencode.overrideAttrs (_: {
     node_modules = optimizedNodeModules;
   });

@@ -193,6 +193,10 @@ Codex delegation and omit work-specific source playbooks.
 The owner shell, queued worker, and remote Codex server receive the personal
 `memo` and `showboat` CLIs alongside the existing coding and browser
 tools. History remains available through `michi-codex-sessions`.
+The tater and thorny Linux flakes serialize Memo's Rust test harness with
+`RUST_TEST_THREADS=1`: its generated-command integration test copies and runs
+the executable while parallel tests can inherit the copy's write descriptor,
+causing Linux `ETXTBSY`. The package checks remain enabled.
 Codex is encouraged to use `memo` quietly and selectively for durable project
 learnings and decision history. Memo is an append-only note history with an
 aligned summary tree. `wake` covers the whole selected history within its line
@@ -217,3 +221,16 @@ NixOS activation applies these links and service PATH changes; editing the
 module alone does not update a running Codex session.
 See [the ZeroClaw runbook](zeroclaw.md#codex-coding-jobs) for login, execution,
 job results, and the worker's isolation from other chats.
+
+## Worker checks
+
+The root `michi-codex` flake check exercises queued jobs, cancellation, restart
+recovery, and owner followups with a fake Codex process. On Linux its temporary
+fixtures live in the sandbox's `/dev/shm` so synchronous state writes do not
+make five-second worker deadlines depend on persistent-disk contention. The
+production worker keeps its durable `fsync` behavior. Darwin uses the builder's
+normal temporary directory.
+
+```sh
+direnv exec . nix build --no-link .#checks.x86_64-linux.michi-codex
+```

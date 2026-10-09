@@ -870,7 +870,9 @@ in {
     dotfiles.agentSkills.memo.source = inputs.memo + "/skills/memo";
     dotfiles.opencode.agentTools = [
       {
-        package = inputs.memo.packages.${pkgs.stdenv.hostPlatform.system}.memo;
+        package = import ../../base-lib/packages/memo.nix {
+          package = inputs.memo.packages.${pkgs.stdenv.hostPlatform.system}.memo;
+        };
         name = "memo";
         description = "remember lasting workflow context";
       }
