@@ -5,7 +5,9 @@
 }: let
   inherit (pkgs) lib;
   system = pkgs.stdenv.hostPlatform.system;
-  memoPackage = inputs.memo.packages.${system}.default;
+  memoPackage = import ../../base-lib/packages/memo.nix {
+    package = inputs.memo.packages.${system}.default;
+  };
   sharedGuidance = builtins.readFile ../../hm-modules/modules/agent-guidance.md;
   thornyGuidance = builtins.readFile ./michi/CODING.md;
   howDirectory = ../../hm-modules/modules/opencode/skills/how;

@@ -48,7 +48,6 @@ in {
         width.fraction = 0.35;
         y.fraction = 0.18;
         height.absolute = 280;
-        margin = 0;
 
         # Behavior
         hidePluginInfo = true;

@@ -20,7 +20,9 @@
     ];
   };
 
-  memoPackage = inputs.memo.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  memoPackage = import ../../base-lib/packages/memo.nix {
+    package = inputs.memo.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  };
   rdnyPackage = inputs.rdny.packages.${pkgs.stdenv.hostPlatform.system}.rdny;
   ownerWorkspace = "/var/lib/zeroclaw-home/agents/owner/workspace";
   gitCredentialEnvironment = {

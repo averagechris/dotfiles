@@ -168,6 +168,13 @@
     fleet = {
       url = "github:averagechris/averagechris.github.io";
       inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+      inputs.fleet.follows = "fleet-cli";
+    };
+    fleet-cli = {
+      url = "github:averagechris/fleet";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
       inputs.srht.follows = "fleet-srht";
     };
     # Fleet's publishing/build apps use this package internally; hosts do not
@@ -337,6 +344,12 @@
               nativeBuildInputs = [pkgs.git (pkgs.python3.withPackages (ps: [ps.websocket-client]))];
             } ''
               export PYTHONDONTWRITEBYTECODE=1
+              ${pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isLinux ''
+                # State-machine fixtures fsync frequently; keep their deadlines
+                # independent of contention on the builder's persistent disk.
+                export TMPDIR="$(mktemp -d /dev/shm/michi-codex.XXXXXX)"
+                trap 'rm -rf "$TMPDIR"' EXIT
+              ''}
               cd ${self}
               python3 -m unittest discover -s tests -p 'test_michi_codex*.py'
               touch "$out"

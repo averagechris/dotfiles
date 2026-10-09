@@ -68,6 +68,9 @@ The launcher is a floating window (not fullscreen) with a transparent outer laye
 - `height.absolute = 280`
 - `y.fraction = 0.18`
 
+The upstream launcher no longer supports the `margin` configuration field.
+Spacing is controlled by the CSS rules in `extraCss`.
+
 Theme colors come from the Hyprland theme module (`dotfiles.gui.hyprland.theme`).
 
 ## Customization

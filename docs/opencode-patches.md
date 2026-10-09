@@ -2,7 +2,7 @@
 
 The Home Manager OpenCode module applies repository-owned patches to the source
 from the pinned `github:anomalyco/opencode/v2` flake input. The package is pinned
-at revision `b1860465cd13d186e69a911642d098a10cef0b49`, OpenCode 2.0.8. The patch
+at revision `8eff035bf45342bda2d37a884df1191cd9bf3e62`, OpenCode 2.0.26. The patch
 list lives in `flakes/hm-modules/modules/opencode/default.nix`, and patch files
 live beside the module under `patches/`.
 
@@ -60,33 +60,25 @@ an executable fixture. Remove the override once upstream installs directly into
 the output, or once an upstream replacement passes the same output-equivalence
 check.
 
-The direct-to-output tree can hash differently when the shared nixpkgs input
-changes the Bun used to build it. The module overrides `outputHash` per platform
-with the hash verified for the pinned OpenCode revision and shared nixpkgs
-revision. For OpenCode `b1860465cd13d186e69a911642d098a10cef0b49` and nixpkgs
-`e554fab72f81915600f3f449b786fd9af40439a5`, the verified hashes are
-`sha256-KoF/h/bKsu2WzCxNXnchVwgoiBI4WVNE5uGSxcvkk9A=` on aarch64-darwin and
-`sha256-bLZ6VYSGlDIBOyPSKL//dlWOGmdhNIPzvmBcDLmZXKs=` on x86_64-linux. The
-x86_64-linux hash differs from nixpkgs' upstream install hash because this
-module copies the generated tree directly into the fixed output. Other Linux
-architectures retain the upstream hash until their outputs are verified.
+OpenCode 2.0.26 canonicalizes module links and normalizes Bun binaries before
+installation. The direct-to-output trees match upstream's fixed-output hashes
+for x86_64-linux, aarch64-linux, and aarch64-darwin, so the old platform hash
+overrides are removed. ARM dependency trees were generated on Linux using Bun's
+explicit CPU/OS selection; this does not validate native ARM executables. The
+module inherits upstream's platform hashes. The direct-to-output install override
+remains to avoid the second recursive copy.
 
-Remove the platform hash overrides when upstream's install produces the same
-fixed output across supported nixpkgs revisions, or when the direct-to-output
-workaround can be removed. After either change, build the isolated package and
-confirm that the upstream hash succeeds rather than copying a hash from another
-OpenCode revision. To verify the Linux derivation without building the host
-system closure:
+To verify the Linux package without building the host system closure:
 
 ```sh
-direnv exec . nix build \
+direnv exec . nix build --no-link \
   '.#nixosConfigurations.thorny.config.home-manager.users.chris.programs.opencode.package'
 ```
 
-The Darwin package can be checked separately:
+On Darwin, build the suremac package:
 
 ```sh
-HOME="$(mktemp -d)" nix build \
+direnv exec . nix build --no-link \
   '.#darwinConfigurations.suremac.config.home-manager.users.chris.programs.opencode.package'
 ```
 

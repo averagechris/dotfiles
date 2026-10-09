@@ -40,7 +40,6 @@
     fleet = {
       url = "github:averagechris/averagechris.github.io";
       inputs.nixpkgs.follows = "nixpkgs";
-      inputs.srht.follows = "fleet-srht";
     };
     # Fleet's publishing/build apps use this package internally; it is not
     # installed as a host CLI.
