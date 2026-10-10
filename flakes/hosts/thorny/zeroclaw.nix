@@ -206,6 +206,12 @@ in {
     lib.optional (!secretExists)
     "ZeroClaw is staged off: provision secrets/thorny/zeroclaw-env.age before deploying Thorny.";
 
+  # Keep the self-deploy health check aligned with the secret-gated services.
+  dotfiles.selfDeploy.requiredSystemUnits = lib.mkIf secretExists [
+    "zeroclaw-home.service"
+    "michi-browser.service"
+  ];
+
   # `zeroclaw auth login` for the Codex subscription must run as the service
   # user with the same build as the unit (runbook step 5).
   environment.systemPackages = [zeroclawPackage codexPackage codexOwnerWrapper];

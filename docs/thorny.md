@@ -239,11 +239,42 @@ active:
 - `nix-daemon.service`
 - `NetworkManager.service`
 
+When the tracked ZeroClaw secret exists, the health check also requires
+`zeroclaw-home.service` and `michi-browser.service` to be active. Both services
+are staged off without that secret, so they are added to the check only when
+their shared configuration gate enables them.
+
 It also requires `systemctl is-system-running --quiet` to pass. If activation or
 the health check fails, it immediately switches back to the previous system. State
 is kept under `/var/lib/dotfiles-thorny-self-deploy/` so repeated timer runs skip
 the already-deployed revision and only ever attempt the latest `main`; there is no
 per-commit deployment backlog.
+
+The self-deploy service sets NixOS `restartIfChanged = false` and
+`stopIfChanged = false`. Activation replaces its unit definition while the deploy
+process is still running; these settings let that process finish its health
+check or rollback instead of systemd terminating it during the switch. After a
+failed run, inspect `last-attempt-rev`, `last-success-rev`, and
+`last-failure-rev` in the state directory alongside the service journal. A
+failed revision remains eligible for the next timer attempt unless it already
+matches `last-success-rev`.
+
+For a manual recovery, stop the timer first so it does not retry during the
+repair. Restore a system with the bot and browser units, start
+`zeroclaw-home.service` if it is inactive. Activate a configuration containing
+the self-deploy safeguards outside the timer service, then confirm both required
+units and system health before restarting the timer. Do not clear the revision state:
+only a successful deployment suppresses a retry.
+Run the rebuild below only after the safeguard fix is merged into `main`.
+
+```bash
+sudo systemctl stop dotfiles-thorny-self-deploy.timer
+sudo systemctl status zeroclaw-home.service michi-browser.service
+sudo systemctl start zeroclaw-home.service
+sudo systemctl status zeroclaw-home.service michi-browser.service
+sudo nixos-rebuild switch --flake github:averagechris/dotfiles#thorny
+sudo systemctl start dotfiles-thorny-self-deploy.timer
+```
 
 Useful checks from another machine, especially `tater`:
 

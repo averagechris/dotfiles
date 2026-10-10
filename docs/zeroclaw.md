@@ -28,6 +28,12 @@ into the store, so it also works during flake checks with `--no-build`.
 - State: `/var/lib/zeroclaw-home` (service user `zeroclaw-home`), including
   `.secret_key`, the Codex auth profile, sessions, and memory. Back it up.
 
+If the bot stops during a system update, check `zeroclaw-home.service` and
+`dotfiles-thorny-self-deploy.service` together. An interrupted activation can
+leave the bot inactive without an application crash. Follow the timer pause
+and manual activation steps in [Thorny's recovery guide](thorny.md).
+Enabled bot and browser units are required by the deployment health check.
+
 ## Personality
 
 Michi is a helpful kitten with an evil-mastermind reputation and a small smug
