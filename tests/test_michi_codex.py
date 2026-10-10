@@ -361,8 +361,10 @@ class MichiCodexTests(unittest.TestCase):
             self.assertEqual(len(received), 1)
             payload = received[0][1]
             self.assertEqual(payload["chat_id"], "123456789")
-            self.assertIn(job, payload["text"])
+            self.assertNotIn(job, payload["text"])
+            self.assertNotIn("Codex job", payload["text"])
             self.assertIn("Checks: unit suite passed", payload["text"])
+            self.assertTrue(payload["text"].startswith("Implemented the requested change."))
             self.assertNotIn("Outcome: complete", payload["text"])
             notification = michi.read_json(directory / "notification.json")
             self.assertEqual(notification["status"], "sent")
@@ -397,7 +399,9 @@ class MichiCodexTests(unittest.TestCase):
                 self.assertEqual((pending["status"], pending["retry_at"]), ("pending", 122))
                 self.assertEqual(notifier.notify_once(self.root, "bot-secret", "123456789", now=122), 1)
             self.assertEqual(len(received), 3)
-            self.assertIn("needs your input", received[2][1]["text"])
+            self.assertIn("I need your input to continue.", received[2][1]["text"])
+            self.assertIn("Implemented the requested change.", received[2][1]["text"])
+            self.assertNotIn(job, received[2][1]["text"])
             self.assertNotIn("Outcome: needs_input", received[2][1]["text"])
         finally:
             server.shutdown()
@@ -443,9 +447,11 @@ class MichiCodexTests(unittest.TestCase):
             self.assertEqual(orphan_state["status"], "interrupted")
             self.assertEqual(orphan_state["session_id"], "123e4567-e89b-12d3-a456-426614174000")
             messages = [entry[1]["text"] for entry in received]
-            self.assertTrue(any(f"Codex job {failed} failed" in text for text in messages))
-            self.assertTrue(any(f"Codex job {cancelled} was cancelled" in text for text in messages))
-            self.assertTrue(any(f"Codex job {orphan} was interrupted" in text for text in messages))
+            self.assertTrue(any(text.startswith("The task failed.") for text in messages))
+            self.assertTrue(any(text.startswith("The task was cancelled.") for text in messages))
+            self.assertTrue(any(text.startswith("The task was interrupted before it finished.") for text in messages))
+            self.assertTrue(all("Codex job" not in text for text in messages))
+            self.assertTrue(all(job_id not in text for text in messages for job_id in (failed, cancelled, orphan)))
         finally:
             server.shutdown()
             server.server_close()
@@ -482,19 +488,49 @@ class MichiCodexTests(unittest.TestCase):
             with mock.patch.object(notifier, "API_URL", self.server_url(server)):
                 self.assertEqual(notifier.notify_once(self.root, "bot-secret", "123456789", now=12), 1)
             self.assertEqual(len(received), 1)
-            self.assertIn(job, received[0][1]["text"])
+            self.assertNotIn(job, received[0][1]["text"])
+            self.assertEqual(received[0][1]["text"], "Implemented the requested change.\nChecks: unit suite passed.")
         finally:
             worker_lock.close()
             server.shutdown()
             server.server_close()
 
     def test_telegram_text_limit_counts_utf16_code_units(self):
-        job = "a" * 32
         directory = Path(self.temp.name)
         (directory / "result.txt").write_text("🐈" * 5000, encoding="utf-8")
-        message = notifier.message_for(job, {"status": "complete"}, directory)
+        message = notifier.message_for({"status": "complete"}, directory)
         self.assertLessEqual(notifier.utf16_length(message), 4096)
         self.assertIn("[Result shortened for Telegram.]", message)
+        self.assertTrue(message.startswith("🐈"))
+
+    def test_followup_uses_direct_completion_and_clear_terminal_fallbacks(self):
+        directory = Path(self.temp.name)
+        result_path = directory / "result.txt"
+        result_path.write_text("Actual findings.\nOutcome: complete", encoding="utf-8")
+        self.assertEqual(
+            notifier.message_for({"status": "complete"}, directory),
+            "Actual findings.",
+        )
+
+        result_path.write_text("The change is complete and all checks passed.", encoding="utf-8")
+        cancelled = notifier.message_for({"status": "cancelled"}, directory)
+        self.assertTrue(cancelled.startswith("The task was cancelled."))
+        self.assertIn("The saved response may be incomplete or out of date", cancelled)
+        self.assertIn("The change is complete", cancelled)
+
+        result_path.unlink()
+        for status, expected in (
+            ("complete", "The task completed, but no final answer was saved."),
+            ("needs_input", "I need your input to continue."),
+            ("failed", "The task failed."),
+            ("cancelled", "The task was cancelled."),
+            ("interrupted", "The task was interrupted before it finished."),
+        ):
+            with self.subTest(status=status):
+                message = notifier.message_for({"status": status}, directory)
+                self.assertTrue(message.startswith(expected))
+                if status != "complete":
+                    self.assertIn("No final answer was saved.", message)
 
     def test_network_failure_survives_restart_and_retries_successfully(self):
         job = self.submit("outcome:complete", notify_owner=True)

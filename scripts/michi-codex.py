@@ -271,7 +271,15 @@ def submit(
         prompt += (
             "\n\nFor this Michi follow-up job, end your final response with exactly one final line: "
             "Outcome: complete, Outcome: needs_input, or Outcome: failed. Use needs_input when "
-            "the owner must answer or unblock the work. Report actual changes, checks, and unresolved issues."
+            "the owner must answer or unblock the work. Write a concise, direct, answer-first "
+            "reply to the owner's original request, preserving current conversation context, "
+            "corrections, and facts the owner has confirmed. For read-only investigation, include the "
+            "actual findings even when no files changed. For implementation, report actual "
+            "changes, checks, and unresolved issues. Keep claims truthful to inspected evidence "
+            "and checks that ran. Do not mention job or session IDs, internal worker or "
+            "notification mechanics, or repeat a reply already sent to the owner. Use brief "
+            "repository-relative references when useful, not local absolute-path links. Omit "
+            "no-change and repository-status boilerplate unless it matters to the answer."
         )
     atomic_json(directory / "request.json", {
         "id": value,

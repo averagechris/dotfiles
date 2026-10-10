@@ -340,8 +340,11 @@ Results remain on disk when a Telegram reply truncates them. `wait` defaults to
 and reports the full result path. A job has a two-hour runtime limit. A worker restart
 interrupts active work; it does not silently restart the coding task.
 
-Michi submits coding requests with `submit --notify-owner`. This opts that
-specific job into a durable follow-up to the configured owner's private DM.
+Michi delegates natural owner requests about Michi's configuration,
+capabilities, or project map, along with repository investigation, review, and
+implementation, through `submit --notify-owner`. Read-only questions stay
+read-only. This opts that specific job into a durable follow-up to the
+configured owner's private DM.
 The owner shell receives `TG_OWNER_ID` to record the originating DM at
 submission. Delivery must match that saved ID to the current encrypted
 `TG_OWNER_ID`; it refuses to reroute old jobs if the owner configuration changes.
@@ -352,12 +355,17 @@ speaks in a group.
 
 `michi-codex-notify.service` checks opted-in jobs every 30 seconds through a
 systemd timer. It makes no model calls and never restarts coding work. It sends
-one bounded plain-text message with the terminal status, job ID, and Codex's
-final account of changes, checks, and unresolved issues. Full results remain on
+one bounded plain-text message with the concise final answer, including findings
+for read-only work. Completed work returns Codex's final answer directly.
+Failure, cancellation, interruption, and requests for input state that outcome
+clearly; a saved response after cancellation or interruption is labeled as
+possibly incomplete or out of date. No job or session
+IDs or worker details appear in ordinary follow-ups. Full results remain on
 disk. A successful Codex exit is not proof that the requested work succeeded;
 opted-in prompts ask for an explicit outcome, including `needs_input` when
 blocked. Cancellation and interrupted work also receive follow-ups. Session
-IDs are saved during execution so interruption does not lose the association.
+IDs are saved internally during execution so interruption does not lose the
+association.
 
 Private per-job delivery records survive service restarts. Acknowledged
 deliveries are not repeated. Transient network, server, and rate-limit failures
