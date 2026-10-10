@@ -246,6 +246,9 @@ in {
       description = "Pull and activate the latest ${hostName} system from dotfiles main";
       after = ["network-online.target"];
       wants = ["network-online.target"];
+      # Activation must not kill the process performing the deployment.
+      restartIfChanged = false;
+      stopIfChanged = false;
       serviceConfig = {
         Type = "oneshot";
         ExecStart = lib.getExe selfDeploy;
