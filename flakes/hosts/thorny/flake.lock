@@ -841,11 +841,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1790737889,
-        "narHash": "sha256-X9LEPHyvbwrnEc2uIZC8NJKlpdmZQTOpAeMamzftUJ8=",
+        "lastModified": 1791589740,
+        "narHash": "sha256-yaDJyJVrJf8tdoOOvBYAkNqhKQgwZb1X691R6Vild3c=",
         "owner": "averagechris",
         "repo": "hister",
-        "rev": "2cef01ebc43ab6e4015b3e2b68d13d690f1cafd0",
+        "rev": "d545a2e25d7c6159bd676c501f01bd27da0a6308",
         "type": "github"
       },
       "original": {
@@ -1389,11 +1389,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1790740911,
-        "narHash": "sha256-6+whheNBQtklzyMphR7dpdTScbHHPSBH25K7IXZOJBM=",
+        "lastModified": 1791589787,
+        "narHash": "sha256-BrDVdgYGtqFzFtjH4STUuPocI2ajW3dFkJd+pD86da4=",
         "owner": "averagechris",
         "repo": "linear-cli",
-        "rev": "c23b8be31a8ff121c27c7251bb78b55c795a2b80",
+        "rev": "45057d7c1717244f6eaa5e783dae05633a66ce28",
         "type": "github"
       },
       "original": {
@@ -2118,11 +2118,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1790741612,
-        "narHash": "sha256-rpYJgTF7AdCtGzICzyMKcj3H1K7wJlucfMq3i8BETnY=",
+        "lastModified": 1791589871,
+        "narHash": "sha256-MT4NlnVs3rvP5w77a9GnPFPyJWzdW7RBmgANd0vdYAw=",
         "owner": "averagechris",
         "repo": "starship-jj",
-        "rev": "71bae815013d8e780edae2455c9d6b95c4db896e",
+        "rev": "e7bfe5c20e19586f657e6d387cf8746eb494704b",
         "type": "github"
       },
       "original": {
@@ -2397,17 +2397,17 @@
         ]
       },
       "locked": {
-        "lastModified": 1791079339,
-        "narHash": "sha256-fzSmZl4zRaw1nRzxddGe/SNkDN56Za6D8S8AutITcnk=",
+        "lastModified": 1791589925,
+        "narHash": "sha256-aXSbt/Y2hdMsBHqF9wNPPvM3rkw/yCpA9Z/55K3e3fI=",
         "owner": "averagechris",
         "repo": "zeroclaw",
-        "rev": "386873f0068df5dc70a5684cb60f5e3855df541e",
+        "rev": "c48cc608a108a9165d0dc5c87ddf09904e72104d",
         "type": "github"
       },
       "original": {
         "owner": "averagechris",
         "repo": "zeroclaw",
-        "rev": "386873f0068df5dc70a5684cb60f5e3855df541e",
+        "rev": "c48cc608a108a9165d0dc5c87ddf09904e72104d",
         "type": "github"
       }
     }
