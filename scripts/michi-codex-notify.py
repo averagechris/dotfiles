@@ -141,18 +141,18 @@ def truncate_utf16(value: str, limit: int) -> str:
     return "".join(output)
 
 
-def message_for(job_id: str, state: dict[str, Any], directory: Path) -> str:
+def message_for(state: dict[str, Any], directory: Path) -> str:
     status = state.get("status")
     if status == "complete":
-        outcome = "finished"
+        lead = ""
     elif status == "needs_input":
-        outcome = "needs your input"
+        lead = "I need your input to continue."
     elif status == "failed":
-        outcome = "failed"
+        lead = "The task failed."
     elif status == "cancelled":
-        outcome = "was cancelled"
+        lead = "The task was cancelled."
     elif status == "interrupted":
-        outcome = "was interrupted"
+        lead = "The task was interrupted before it finished."
     else:
         raise NotifyError("job is not in a terminal state")
     result = ""
@@ -160,17 +160,37 @@ def message_for(job_id: str, state: dict[str, Any], directory: Path) -> str:
         result = (directory / "result.txt").read_text(encoding="utf-8", errors="replace").strip()
     except OSError:
         pass
-    if state.get("error"):
-        result = (result + "\n\n" if result else "") + "Worker detail: " + str(state["error"])
     result = re.sub(r"(?:\n)?Outcome: (?:complete|needs_input|failed)\s*$", "", result).rstrip()
-    if not result:
-        result = "No final Codex message was saved."
-    header = f"Codex job {job_id} {outcome}.\n\n"
-    available = MAX_UTF16 - utf16_length(header)
-    if utf16_length(result) > available:
+    if status == "complete":
+        message = result or "The task completed, but no final answer was saved."
+    else:
+        message = lead
+        if result:
+            if status in {"cancelled", "interrupted"}:
+                message += "\n\nThe saved response may be incomplete or out of date:\n"
+            else:
+                message += "\n\n"
+            message += result
+        else:
+            message += "\n\nNo final answer was saved."
+        error = state.get("error")
+        if error:
+            if "two-hour limit" in str(error):
+                reason = "The task exceeded its time limit."
+            elif "worker restarted" in str(error):
+                reason = "The task stopped after a restart before it finished."
+            elif "not authenticated" in str(error):
+                reason = "Codex could not start because its account is not signed in."
+            elif "exited with status " in str(error):
+                code = re.search(r"exited with status (\d+)", str(error))
+                reason = f"The task process exited with status {code.group(1)}." if code else "The task did not finish successfully."
+            else:
+                reason = "The task stopped because of an internal error."
+            message += "\n\n" + reason
+    if utf16_length(message) > MAX_UTF16:
         suffix = "\n\n[Result shortened for Telegram.]"
-        result = truncate_utf16(result, max(0, available - utf16_length(suffix))).rstrip() + suffix
-    return header + result
+        message = truncate_utf16(message, max(0, MAX_UTF16 - utf16_length(suffix))).rstrip() + suffix
+    return message
 
 
 def retry_delay(attempt: int, retry_after: int | None = None) -> int:
@@ -278,7 +298,7 @@ def notify_once(root: Path, token: str, owner_id: str, now: int | None = None) -
             notification.pop("retry_at", None)
             atomic_json(notification_path, notification)
             attempts_this_run += 1
-            result, message_id, retry_after = send(token, owner_id, message_for(directory.name, state, directory))
+            result, message_id, retry_after = send(token, owner_id, message_for(state, directory))
             if result == "sent":
                 notification.update(status="sent", message_id=message_id, sent_at=current)
                 notification.pop("retry_at", None)
