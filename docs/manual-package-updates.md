@@ -79,3 +79,12 @@ Use `--ignore-cooldown` only after reviewing fresh upstream releases.
 `showboat` lives in a separate package file so it can be enrolled later without
 refactoring the overlay, but its Go `vendorHash` update loop is not automated
 yet.
+
+## Maintained fork inputs
+
+The 2026-10-09 fork review updates pin `ctx`, `hister`, `linear-cli`,
+`starship-jj`, and `zeroclaw` to their merged upstream-review changes. Keep
+these revisions consistent in the root lock and every standalone host or
+shared-module lock that consumes them. ZeroClaw also has an explicit revision
+in `flakes/hosts/thorny/flake.nix`; advance that URL when updating its lock.
+Slack is no longer a dotfiles flake input.

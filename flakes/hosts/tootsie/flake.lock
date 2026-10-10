@@ -555,11 +555,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1790740911,
-        "narHash": "sha256-6+whheNBQtklzyMphR7dpdTScbHHPSBH25K7IXZOJBM=",
+        "lastModified": 1791589787,
+        "narHash": "sha256-BrDVdgYGtqFzFtjH4STUuPocI2ajW3dFkJd+pD86da4=",
         "owner": "averagechris",
         "repo": "linear-cli",
-        "rev": "c23b8be31a8ff121c27c7251bb78b55c795a2b80",
+        "rev": "45057d7c1717244f6eaa5e783dae05633a66ce28",
         "type": "github"
       },
       "original": {
@@ -1013,11 +1013,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1790741612,
-        "narHash": "sha256-rpYJgTF7AdCtGzICzyMKcj3H1K7wJlucfMq3i8BETnY=",
+        "lastModified": 1791589871,
+        "narHash": "sha256-MT4NlnVs3rvP5w77a9GnPFPyJWzdW7RBmgANd0vdYAw=",
         "owner": "averagechris",
         "repo": "starship-jj",
-        "rev": "71bae815013d8e780edae2455c9d6b95c4db896e",
+        "rev": "e7bfe5c20e19586f657e6d387cf8746eb494704b",
         "type": "github"
       },
       "original": {
