@@ -183,7 +183,7 @@
     format = "aieos";
     aieos_inline = builtins.toJSON {
       identity.bio = builtins.readFile ./michi/IDENTITY.md;
-      linguistics.style = builtins.readFile ./michi/SOUL.md + builtins.readFile ./michi/SCHEDULING.md + extraInstructions;
+      linguistics.style = builtins.readFile ./michi/SOUL.md + builtins.readFile ./michi/SCHEDULING.md + builtins.readFile ./michi/SEARCH.md + extraInstructions;
     };
   };
 in {

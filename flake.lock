@@ -3027,17 +3027,17 @@
         ]
       },
       "locked": {
-        "lastModified": 1791693074,
-        "narHash": "sha256-jv/2yz4hHTAbbHcLYC3GjIBKKeGIUqdlj3HKZyBUE5c=",
+        "lastModified": 1791697290,
+        "narHash": "sha256-MAgVW/ZF/fIaB2V9QqX03oFfmcxKCQjBZWbCRvizF+U=",
         "owner": "averagechris",
         "repo": "zeroclaw",
-        "rev": "36712eeead9ed0ef6705019bd621fc6e30a0b3b8",
+        "rev": "2c57d561208965936a84b8a8ff864d7cd57cbf4d",
         "type": "github"
       },
       "original": {
         "owner": "averagechris",
         "repo": "zeroclaw",
-        "rev": "36712eeead9ed0ef6705019bd621fc6e30a0b3b8",
+        "rev": "2c57d561208965936a84b8a8ff864d7cd57cbf4d",
         "type": "github"
       }
     }

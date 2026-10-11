@@ -162,9 +162,28 @@ service user's saved profile.
 ## Capabilities
 
 Owner chats, invited friends, and approved groups can use Kagi search and
-single-page extraction. Search uses Kagi's default results unless a request
-specifies a lens. Extraction accepts one public HTTPS page per call. Search
+single-page extraction. Michi chooses Programming, Forums, or a local activities
+lens when useful, with ordinary Kagi search as the default. Extraction accepts one public HTTPS page per call. Search
 failures do not silently switch providers.
+
+The shared [search guide](../flakes/hosts/thorny/michi/SEARCH.md) is the source
+for three inline lenses: Montevideo after hours, Buenos Aires en escena, and
+Westside life. They narrow event discovery to local calendars, venues, city
+sources, and reporting. Businesses and services use broad search, with local
+terms, neighborhoods, and practical requirements. Michi checks original pages
+for dates and availability and broadens searches when a lens misses useful
+results. The guide is inherited by invited chats and groups without granting
+owner tools or sharing private location context.
+
+Inline lenses require runtime support for `lens.sites_included`; account lens
+creation is unnecessary. Edit the guide's domain lists and deploy the host to
+change them. To check a rollout, ask for a Montevideo cinema plan, a Buenos Aires
+play, and a Santa Monica weekend event, then inspect search calls and verify
+the linked dates. Also ask for a florist or plumber and confirm the search is
+unrestricted. Removing the guide from `michiIdentity` rolls back automatic lens
+selection while leaving ordinary search available. Source-list quality still
+needs live Kagi and Telegram QA; an instruction evaluation alone cannot prove
+that Kagi indexes a particular event.
 
 Sent photos are passed to the chat's model for vision and saved in that chat's
 workspace for later edits. Local image references from messages, history, or
@@ -321,9 +340,6 @@ notes are not imported into the prior backend.
 Cross-chat memory sharing is outside this trial.
 
 ## Follow-up
-
-Keep Kagi on its default search for now. Revisit lenses with Chris: explain how
-they filter results, then help create lenses for his recurring searches.
 
 Use rdny for browser automation and shell for other owner host work. Native desktop control and a richer
 Codex task interface are deferred. Keep Thorny's separate

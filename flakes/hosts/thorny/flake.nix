@@ -77,9 +77,9 @@
     };
     rdny.follows = "hm-modules/rdny";
     # Maintained ZeroClaw fork: isolated Telegram chats, bounded media processing,
-    # Go transcription, Kagi search, Codex images, and scheduling. See zeroclaw.nix.
+    # Go transcription, Kagi lenses, Codex images, and scheduling. See zeroclaw.nix.
     zeroclaw = {
-      url = "github:averagechris/zeroclaw/36712eeead9ed0ef6705019bd621fc6e30a0b3b8";
+      url = "github:averagechris/zeroclaw/2c57d561208965936a84b8a8ff864d7cd57cbf4d";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };
