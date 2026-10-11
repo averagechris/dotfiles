@@ -77,9 +77,9 @@
     };
     rdny.follows = "hm-modules/rdny";
     # Maintained ZeroClaw fork: isolated Telegram chats, bounded media processing,
-    # Go transcription, Kagi search, and Codex images. See zeroclaw.nix.
+    # Go transcription, Kagi search, Codex images, and scheduling. See zeroclaw.nix.
     zeroclaw = {
-      url = "github:averagechris/zeroclaw/c48cc608a108a9165d0dc5c87ddf09904e72104d";
+      url = "github:averagechris/zeroclaw/36712eeead9ed0ef6705019bd621fc6e30a0b3b8";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };
@@ -112,6 +112,27 @@
     deploy.nodes.thorny = lib.mkDeploy self.nixosConfigurations.thorny;
 
     checks.${system} = {
+      thorny-scheduling-config = let
+        scheduling = import ./michi/scheduling-policy.nix {inherit (pkgs) lib;};
+        inherit (scheduling) settings schedulingTools;
+        profiles = [settings.risk_profiles.owner settings.risk_profiles.guests];
+      in
+        assert settings.scheduler.missed_run_policy == "review";
+        assert settings.agents.guest_template.risk_profile == "guests";
+        assert settings.agents.group_template.risk_profile == "guests";
+        assert builtins.all
+        (profile:
+          builtins.all
+          (tool: builtins.elem tool profile.allowed_tools && builtins.elem tool profile.auto_approve)
+          schedulingTools)
+        profiles;
+        assert builtins.elem "shell" settings.risk_profiles.owner.allowed_tools;
+        assert !(builtins.elem "shell" settings.risk_profiles.guests.allowed_tools);
+          pkgs.runCommand "thorny-scheduling-config" {} ''
+            mkdir -p "$out"
+            echo 'owner, guest, and group scheduling grants are present; shell remains owner-only' > "$out/result"
+          '';
+
       thorny-personal-codex = let
         personal = import ./personal-codex.nix {
           inherit inputs;
