@@ -197,6 +197,37 @@ Venue shares also include the place name and address. Replies to a pin retain
 that location in the quoted context. An initial live location is a snapshot;
 later movement updates are not consumed.
 
+## Scheduled tasks
+
+The owner, each invited private chat, and each approved group can ask Michi to
+do work once later or on a recurring schedule. Each task belongs to the chat
+that created it and inherits only that chat's tools, workspace, and account
+access. Owner-only shell access stays exclusive to the owner DM. Scheduled
+work cannot create or change scheduled tasks.
+
+Scheduler time checks run in code and do not spend model inference. Michi asks
+for a timezone when it cannot infer one from the user's context, then confirms
+the interpreted schedule in plain language. No checks are created unless a
+user asks for them. Work that can take time runs in the background; Michi
+reports the result to the originating chat. If a requested check finds no
+change, Michi stays quiet unless the user asked to receive a report every time.
+
+In chat, users can ask Michi to list tasks and their status, change a schedule
+or task, pause or resume it, remove it, run it once now, or show its run
+history. When the service returns after a task was missed, the `review` policy
+asks Michi to consider that overdue task once and choose to run it now, leave
+it for its next scheduled time, skip it, or ask the user. The decision is
+recorded, so routine checks do not repeatedly ask the model about the same
+missed run.
+
+The host grants the six scheduler tools through the same risk-profile list as
+the other conversation tools. The config check evaluates the shared policy
+used by the service settings, so it runs even when the encrypted environment
+file is absent. It verifies that owner, guest, and group profiles all receive
+the grants, and that only the owner receives `shell`. The policy is in
+`flakes/hosts/thorny/michi/scheduling-policy.nix`; shared behavior instructions
+are in `flakes/hosts/thorny/michi/SCHEDULING.md`.
+
 ## Owner shell, browser, and GitHub
 
 Only the owner DM has `shell`. Invited DMs and groups exclude it, including
@@ -503,6 +534,21 @@ The daemon boots even when config validation fails and only logs
 `config has validation errors`. Look for that and for
 `invalid Telegram route table`, which means the bot answers nobody. Owner routing and templates are read at startup, so restart after changing
 those or the secret. Invitations and group approvals apply immediately.
+
+Before enabling scheduled tools, build and check the Thorny host, then deploy
+through the normal Thorny rollout. Verify in an owner DM, an invited DM, and an
+approved group that Michi can create, inspect, pause, resume, run, and remove a
+task. Confirm a scheduled task uses only the originating chat's tools, runs in
+the background, and sends its result to that chat. Confirm routine time checks
+produce no model requests and exercise one overdue task to verify Michi makes
+one sensible choice and remembers it.
+
+To roll back, first ask Michi to pause or remove every active task, then list
+tasks and confirm none remains enabled. Deploy the previous host revision or
+remove the scheduler tool grants only after doing this: removing access to the
+tools does not pause or delete jobs already stored by the daemon. The
+`scheduler.missed_run_policy = "review"` setting and shared scheduling
+instructions are part of the same host change.
 
 To update the fork, first set the merged revision in
 `flakes/hosts/thorny/flake.nix`. Run
