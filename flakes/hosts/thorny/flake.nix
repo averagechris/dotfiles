@@ -115,22 +115,30 @@
       thorny-scheduling-config = let
         scheduling = import ./michi/scheduling-policy.nix {inherit (pkgs) lib;};
         inherit (scheduling) settings schedulingTools;
-        profiles = [settings.risk_profiles.owner settings.risk_profiles.guests];
+        owner = settings.risk_profiles.owner;
+        guests = settings.risk_profiles.guests;
+        invitationTools = [
+          "memo"
+          "memory_recall"
+          "memory_store"
+          "memory_forget"
+          "reaction"
+          "image_gen"
+          "web_search_tool"
+        ];
       in
         assert settings.scheduler.missed_run_policy == "review";
         assert settings.agents.guest_template.risk_profile == "guests";
         assert settings.agents.group_template.risk_profile == "guests";
         assert builtins.all
-        (profile:
-          builtins.all
-          (tool: builtins.elem tool profile.allowed_tools && builtins.elem tool profile.auto_approve)
-          schedulingTools)
-        profiles;
-        assert builtins.elem "shell" settings.risk_profiles.owner.allowed_tools;
-        assert !(builtins.elem "shell" settings.risk_profiles.guests.allowed_tools);
+        (tool: builtins.elem tool owner.allowed_tools && builtins.elem tool owner.auto_approve)
+        schedulingTools;
+        assert builtins.all (tool: builtins.elem tool invitationTools) guests.allowed_tools;
+        assert builtins.all (tool: builtins.elem tool invitationTools) guests.auto_approve;
+        assert builtins.elem "shell" owner.allowed_tools;
           pkgs.runCommand "thorny-scheduling-config" {} ''
             mkdir -p "$out"
-            echo 'owner, guest, and group scheduling grants are present; shell remains owner-only' > "$out/result"
+            echo 'scheduling and shell grants are owner-only' > "$out/result"
           '';
 
       thorny-personal-codex = let
