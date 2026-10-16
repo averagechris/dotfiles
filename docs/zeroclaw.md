@@ -199,11 +199,11 @@ later movement updates are not consumed.
 
 ## Scheduled tasks
 
-The owner, each invited private chat, and each approved group can ask Michi to
-do work once later or on a recurring schedule. Each task belongs to the chat
-that created it and inherits only that chat's tools, workspace, and account
-access. Owner-only shell access stays exclusive to the owner DM. Scheduled
-work cannot create or change scheduled tasks.
+Only the owner DM can ask Michi to do work once later or on a recurring
+schedule. Each task belongs to the owner chat and inherits only that chat's
+tools, workspace, and account access. Invited private chats and approved groups
+do not receive scheduler tools. Owner-only shell access stays exclusive to the
+owner DM. Scheduled work cannot create or change scheduled tasks.
 
 Scheduler time checks run in code and do not spend model inference. Michi asks
 for a timezone when it cannot infer one from the user's context, then confirms
@@ -220,13 +220,15 @@ it for its next scheduled time, skip it, or ask the user. The decision is
 recorded, so routine checks do not repeatedly ask the model about the same
 missed run.
 
-The host grants the six scheduler tools through the same risk-profile list as
-the other conversation tools. The config check evaluates the shared policy
-used by the service settings, so it runs even when the encrypted environment
-file is absent. It verifies that owner, guest, and group profiles all receive
-the grants, and that only the owner receives `shell`. The policy is in
-`flakes/hosts/thorny/michi/scheduling-policy.nix`; shared behavior instructions
-are in `flakes/hosts/thorny/michi/SCHEDULING.md`.
+The host grants the six scheduler tools and approves their use only in the
+owner risk profile. Guest and group templates share a profile without those
+tools, so Telegram invitation validation continues to accept the policy. The
+config check evaluates the shared policy used by the service settings, so it
+runs even when the encrypted environment file is absent. It verifies that the
+owner receives the grants, guests do not, and only the owner receives `shell`.
+It also keeps guest tools within Telegram's invitation validator allowlist.
+The policy is in `flakes/hosts/thorny/michi/scheduling-policy.nix`; shared
+behavior instructions are in `flakes/hosts/thorny/michi/SCHEDULING.md`.
 
 ## Owner shell, browser, and GitHub
 
@@ -535,13 +537,13 @@ The daemon boots even when config validation fails and only logs
 `invalid Telegram route table`, which means the bot answers nobody. Owner routing and templates are read at startup, so restart after changing
 those or the secret. Invitations and group approvals apply immediately.
 
-Before enabling scheduled tools, build and check the Thorny host, then deploy
-through the normal Thorny rollout. Verify in an owner DM, an invited DM, and an
-approved group that Michi can create, inspect, pause, resume, run, and remove a
-task. Confirm a scheduled task uses only the originating chat's tools, runs in
-the background, and sends its result to that chat. Confirm routine time checks
-produce no model requests and exercise one overdue task to verify Michi makes
-one sensible choice and remembers it.
+After changing scheduling policy, check that the owner can create, inspect,
+pause, resume, run, and remove a task. Verify that invited DMs and approved
+groups still receive ordinary replies and have no scheduler tool grants.
+Confirm an owner task uses only the owner's tools, runs in the background, and
+sends its result to the owner chat. Routine time checks should produce no model
+requests; exercise one overdue task to verify Michi makes one sensible choice
+and remembers it.
 
 To roll back, first ask Michi to pause or remove every active task, then list
 tasks and confirm none remains enabled. Deploy the previous host revision or

@@ -5,7 +5,8 @@
   memoryTools = ["memo"];
   searchTools = lib.optional kagiEnabled "web_search_tool";
   schedulingTools = ["cron_add" "cron_list" "cron_update" "cron_remove" "cron_run" "cron_runs"];
-  allowedTools = memoryTools ++ ["reaction" "image_gen"] ++ searchTools ++ schedulingTools;
+  sharedTools = memoryTools ++ ["reaction" "image_gen"] ++ searchTools;
+  allowedTools = sharedTools ++ schedulingTools;
   autoApprove = allowedTools;
 in {
   inherit schedulingTools allowedTools autoApprove;
@@ -22,9 +23,9 @@ in {
         auto_approve = autoApprove ++ ["shell"];
       };
       guests = {
-        allowed_tools = allowedTools;
+        allowed_tools = sharedTools;
         excluded_tools = ["shell"];
-        auto_approve = autoApprove;
+        auto_approve = sharedTools;
       };
     };
   };
