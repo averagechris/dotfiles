@@ -243,6 +243,14 @@ keys remain excluded. The same GitHub-only helper is available to the owner
 service, Codex worker, phone host, and direct `codex` CLI. The worker passes
 these three settings to Codex child processes through its environment allowlist.
 No workstation login or credential file is copied.
+
+The owner's runtime profile allows 1,000,000 tool rounds per turn so browser
+and repository work can finish without the default ten-round cutoff. It keeps
+the 50-message history setting explicit so the large iteration ceiling does
+not expand structured-session history. Context trimming, cancellation, and
+existing request and shell timeouts still apply. Guest profiles keep their
+existing runtime limits.
+
 GitHub recommends a fine-grained token restricted to selected repositories and
 needed permissions. See [token setup](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens).
 GitHub CLI uses [GH_TOKEN](https://cli.github.com/manual/gh_help_environment)

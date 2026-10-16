@@ -428,6 +428,12 @@ in {
 
         # Runtime effort is explicit; the Codex adapter otherwise defaults to xhigh.
         runtime.reasoning_effort = "medium";
+        runtime_profiles.owner = {
+          # Let useful owner work finish rather than stopping after ten rounds.
+          max_tool_iterations = 1000000;
+          # Do not scale structured-session history with the iteration ceiling.
+          max_history_messages = 50;
+        };
         providers.models.openai.sol = {
           model = "gpt-6.1-sol";
           wire_api = "responses";
@@ -489,6 +495,7 @@ in {
         agents = {
           owner = {
             model_provider = "openai.codex";
+            runtime_profile = "owner";
             risk_profile = "owner";
             identity = michiIdentity ("\n" + builtins.readFile ./michi/OWNER_TOOLS.md);
             transcription_provider = "opencode_go.michi";

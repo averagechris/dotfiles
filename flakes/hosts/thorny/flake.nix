@@ -79,7 +79,7 @@
     # Maintained ZeroClaw fork: isolated Telegram chats, bounded media processing,
     # Go transcription, Kagi search, Codex images, and scheduling. See zeroclaw.nix.
     zeroclaw = {
-      url = "github:averagechris/zeroclaw/36712eeead9ed0ef6705019bd621fc6e30a0b3b8";
+      url = "github:averagechris/zeroclaw/ff0c9b58eaec8e69049da424bdf93f7ae07d2397";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };
