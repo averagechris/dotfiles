@@ -854,6 +854,10 @@ build time. Current examples include:
 - `sure-stack-context` (suremac only)
 - `memo` (suremac and tater), sourced directly from Memo's bundled skill
 
+Codex also receives `teach`, `how`, and `why`. Its helpers are adapted from the
+same sources for Codex delegation and available history tools. OpenCode retains
+its named-agent routing. See [Codex shared guidance and skills](codex.md#shared-guidance-and-skills).
+
 Memo's data store is local to each machine. The suremac and tater configurations
 do not initialize or synchronize memory between hosts.
 

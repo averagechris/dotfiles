@@ -42,6 +42,11 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
+    dotfiles.agentSkills = lib.mapAttrs (_: source: {
+      source = lib.mkDefault source;
+      targets = lib.mkDefault ["codex"];
+    }) (import ./skills.nix {inherit pkgs;});
+
     programs.codex = {
       enable = true;
       package = lib.mkDefault cfg.package;
