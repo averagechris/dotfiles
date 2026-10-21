@@ -208,7 +208,7 @@ its built-in auto-update disabled. Its desktop-managed OpenCode provider uses a
 private, separately pinned OpenCode 2 binary from the same flake; this does not
 replace or modify the existing `programs.opencode` package and configuration.
 T3 Code follows the shared `nixpkgs` pin, currently revision
-`e554fab72f81915600f3f449b786fd9af40439a5`. That package set supplies Electron
+`baa82799b627d760265eae9965b54c180462de23`. That package set supplies Electron
 44 and the package version matching the pinned OpenCode `node_modules`
 fixed-output hash. Letting the shared input advance without checking both can
 therefore break the build even when the T3 Code source is unchanged.

@@ -88,3 +88,53 @@ these revisions consistent in the root lock and every standalone host or
 shared-module lock that consumes them. ZeroClaw also has an explicit revision
 in `flakes/hosts/thorny/flake.nix`; advance that URL when updating its lock.
 Slack is no longer a dotfiles flake input.
+
+## eMudhra certificate mitigation (2026-10-20)
+
+Keep the shared `nixpkgs` input pinned to
+`baa82799b627d760265eae9965b54c180462de23` until the `nixos-unstable` channel
+includes the `cacert` 3.131.1 fix. The channel revision
+`02c087f3fe673c9e317f206a627cb6b910336dbe` contains the NixOS system
+certificate blacklist, but predates that `cacert` fix, which is needed by
+Darwin and direct `pkgs.cacert` consumers. Keep `original.ref = "nixos-unstable"`
+and make all 14 canonical lockfiles use the same pinned revision.
+
+The normal updater advances this input to the current channel, so do not update
+the shared `nixpkgs` pin until the channel has the fix. Before lifting the pin,
+verify the `cacert` version and repeat the certificate checks against both the
+direct endpoint and Sectigo cross-sign endpoint:
+
+```bash
+for endpoint in \
+  https://dv-g3b-emudhra.we-have-a-problem.com/ \
+  https://dv-g3b-aaa-emudhra.we-have-a-problem.com/; do
+  if curl --cacert /etc/ssl/certs/ca-certificates.crt \
+    --silent --show-error --output /dev/null "$endpoint"; then
+    echo "unexpected TLS success: $endpoint" >&2
+    exit 1
+  else
+    status=$?
+    test "$status" -eq 60 || exit "$status"
+  fi
+done
+```
+
+Both checks pass only when curl rejects the certificate with error 60. Network
+or DNS errors do not pass. The eMudhra advisory homepage is a healthy HTTPS
+site, so do not use it as a rejection test. Run this after the target system
+bundle has been updated; the current `/etc/ssl/certs/ca-certificates.crt` still
+accepts both chains. Repeat the same check with
+`--cacert /etc/nix/macos-keychain.crt` to check the Nix daemon's separately
+exported macOS Keychain bundle. Updating the system bundle does not update that
+file. An input update alone does not prove every Nixpkgs-managed or
+application-bundled trust store has the fix.
+Nixpkgs tracks its bundled certificate updates in
+[issue #576475](https://github.com/NixOS/nixpkgs/issues/576475).
+
+This mitigation follows the
+[eMudhra advisory](https://emudhra.we-have-a-problem.com/) and the nixpkgs
+fixes in [PR #576390](https://github.com/NixOS/nixpkgs/pull/576390) and
+[PR #576347](https://github.com/NixOS/nixpkgs/pull/576347). Nixpkgs-managed
+bundled certificates need separate verification after the pin changes.
+Manually installed browsers such as Helium and Chrome have separate update
+paths and may need an update and restart before their trust state changes.
