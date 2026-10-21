@@ -10,10 +10,9 @@
   # to read an unrealised source store path, so provide the tag from the flake
   # source directly instead.
   hyprlandPackage =
-    inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland.override
-    {
+    (inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland.override {
       makeWrapper = pkgs.makeBinaryWrapper;
-    }.overrideAttrs (old: {
+    }).overrideAttrs (old: {
       # hyprpm's CMakeLists requires glaze 7.x while nixpkgs ships 8.x, and the
       # SameMajorVersion package check makes 8.x invisible to find_package. Set
       # the glaze_DIR cache variable directly so find_package loads the glaze-v7
