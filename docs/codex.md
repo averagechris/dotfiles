@@ -42,8 +42,9 @@ available for tasks that specifically need the Datadog UI.
 Home Manager combines these files and `extraInstructions` into the global
 `AGENTS.md`. The shared skills carry topic-specific workflows and use the same
 sources in both clients. Their detailed teaching, writing, testing, and discovery
-guidance is retained. The teaching workflow assumes `how` and `why` are available. Project discovery
-uses optional helper skills when available.
+guidance is retained. `teach` shapes the explanation, `how` investigates mechanics,
+and `why` investigates rationale and history. All three deploy with the Codex
+module. Project discovery uses optional helper skills when available.
 
 `modules/agent-workflows.nix` registers seven portable skills independently of
 OpenCode: conventional-commits, test-curation, teach, project-map,
@@ -51,6 +52,20 @@ impactful-writing, technical-writing, and rust-cargo. Their existing source
 directories remain under `modules/opencode/skills/`; both clients consume the
 same rendered sources. The registry retains strict patches, additive host
 instructions, full companion directories, and bundle audits.
+
+The Codex module also registers `how` and `why`, bringing its default set to nine.
+`modules/codex/skills.nix` adapts their existing OpenCode sources with checked
+replacements. It uses available Codex delegation and session-history tools,
+retains the evidence standards and complete reference directories, and leaves
+OpenCode's named-agent routing intact. Workstation source playbooks remain
+available when relevant tools and evidence exist.
+
+The [initial migration](https://github.com/averagechris/dotfiles/pull/25)
+intentionally limited the shared set to portable workflows, but retained
+`teach`'s references to the excluded helpers. That left an incomplete teaching
+workflow. The [later Thorny port](https://github.com/averagechris/dotfiles/pull/46)
+adapted those helpers only for its personal service account. Those adaptations
+now live in the shared Codex module so workstations receive them too.
 
 Every registry entry has a `targets` list. Existing registrations default to
 `["opencode"]`; portable registrations default to `["opencode" "codex"]`.
@@ -70,9 +85,9 @@ dotfiles.agentSkills.rust-cargo.targets = ["codex"];
 dotfiles.agentSkills.teach.enable = false;
 ```
 
-The initial set excludes workflows coupled to OpenCode's named agent roster,
-Bay/jj workspace management, and ctx history assumptions. These need explicit
-adaptation before opting into Codex. Host CLI skills remain OpenCode-only unless
+Other workflows coupled to OpenCode's named agent roster, Bay/jj workspace
+management, or ctx history assumptions still need explicit adaptation before
+opting into Codex. Host CLI skills remain OpenCode-only unless
 a host adds Codex to their targets. Private skill appendices are not migrated;
 never place decrypted material in Nix settings, prompt strings, or sources.
 
@@ -186,10 +201,11 @@ command. This is a service-user installation with its own ChatGPT login and
 owner workspace, independent of the workstation's Home Manager configuration.
 `flakes/hosts/thorny/personal-codex.nix` reuses the shared skill registry and
 renderer for this service account. NixOS links complete skill directories into
-its `~/.agents/skills` directory: the seven portable skills, `how`, `why`,
-`memo` and `rdny-browser`. Its instructions retain
-Thorny's Codex model and sub-agent guidance. The `how` and `why` helpers use
-Codex delegation and omit work-specific source playbooks.
+its `~/.agents/skills` directory: the nine default Codex skills plus `memo` and
+`rdny-browser`. Its instructions retain Thorny's Codex model and sub-agent
+guidance. It uses the shared `how` adaptation and restricts `why` to repository
+history, documentation, issues, and incident investigation playbooks, omitting
+work-specific sources.
 The owner shell, queued worker, and remote Codex server receive the personal
 `memo` and `showboat` CLIs alongside the existing coding and browser
 tools. History remains available through `michi-codex-sessions`.
