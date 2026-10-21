@@ -30,6 +30,24 @@ apply immediately. These thresholds are an emergency fallback, not a
 replacement for scheduled Bay sweep plus store GC. They do not alter APFS
 reserves.
 
+### Temporary eMudhra client trust override
+
+The 2026-10-20 mitigation installs user-only overrides in
+`~/.config/nix/nix.conf` and `~/.curlrc`. Both use
+`~/.local/state/dotfiles-security/emudhra-ca-bundle.crt`, a copy of
+Determinate's Keychain export with the affected emSign ECC G3 and AAA roots
+removed by SHA-256 fingerprint. The other 160 certificates are preserved.
+Default user Nix downloads and curl reject both published test endpoints with
+this bundle. See the [certificate checks](manual-package-updates.md#emudhra-certificate-mitigation-2026-10-20).
+
+These are temporary imperative files, not Home Manager configuration. They do
+not update the daemon's `/etc/nix/macos-keychain.crt`, system-wide clients, or
+application-bundled roots. Nix warns that an untrusted user's `ssl-cert-file`
+setting is ignored by the daemon; client-side downloads still use the user
+setting. After activating the updated system and fixing the daemon export,
+verify both underlying bundles explicitly, then remove the two overrides and
+their copied bundle. The copy is a snapshot and does not receive later CA updates.
+
 ### `fsync-metadata = false` and parallel agents
 
 Nix's store database (`/nix/var/nix/db/db.sqlite`) allows one writer at a
