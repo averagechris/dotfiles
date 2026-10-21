@@ -92,12 +92,18 @@ Slack is no longer a dotfiles flake input.
 ## eMudhra certificate mitigation (2026-10-20)
 
 Keep the shared `nixpkgs` input pinned to
-`e73cff84c5f94d59c2a80f9e7b9f687c9809c6a6` until the `nixos-unstable` channel
+`e4d4e5154c52da44a9e5a4895d270cffa1ecb6fc` until the `nixos-unstable` channel
 includes both the `cacert` 3.131.1 and uv 0.13.4 fixes. The channel revision
 `02c087f3fe673c9e317f206a627cb6b910336dbe` contains the NixOS system
 certificate blacklist, but predates that `cacert` fix, which is needed by
 Darwin and direct `pkgs.cacert` consumers. Keep `original.ref = "nixos-unstable"`
-and make all 14 canonical lockfiles use the same pinned revision.
+and make all 14 canonical lockfiles use the same pinned revision. This snapshot
+also includes the [System76 module installation fix](https://github.com/NixOS/nixpkgs/pull/575724)
+needed for thorny to build with the newer kernel module certificate checks.
+
+OpenCode remains at its previously validated source revision. Its Darwin
+`node_modules` hash is refreshed for the updated Bun version in both package
+overlays; see [OpenCode patch lifecycle](opencode-patches.md).
 
 The normal updater advances this input to the current channel, so do not update
 the shared `nixpkgs` pin until the channel has the fix. Before lifting the pin,
