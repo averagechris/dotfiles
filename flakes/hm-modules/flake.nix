@@ -130,7 +130,7 @@
             node_modules = final.callPackage "${opencodeInput}/nix/node_modules.nix" (
               {inherit rev;}
               // final.lib.optionalAttrs (final.stdenv.hostPlatform.system == "aarch64-darwin") {
-                hash = "sha256-KoF/h/bKsu2WzCxNXnchVwgoiBI4WVNE5uGSxcvkk9A=";
+                hash = "sha256-gM4Ypnad8mzI6luKvQTXrMOcNxfatOSh65UKmXOgolM=";
               }
             );
           in {

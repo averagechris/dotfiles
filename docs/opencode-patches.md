@@ -61,12 +61,13 @@ the output, or once an upstream replacement passes the same output-equivalence
 check.
 
 OpenCode 2.0.26 canonicalizes module links and normalizes Bun binaries before
-installation. The direct-to-output trees match upstream's fixed-output hashes
-for x86_64-linux, aarch64-linux, and aarch64-darwin, so the old platform hash
-overrides are removed. ARM dependency trees were generated on Linux using Bun's
-explicit CPU/OS selection; this does not validate native ARM executables. The
-module inherits upstream's platform hashes. The direct-to-output install override
-remains to avoid the second recursive copy.
+installation. Updating nixpkgs supplies Bun 1.4.2, which changes the generated
+Darwin dependency tree's fixed-output hash. Keep the observed Darwin hash override
+in both `flakes/base-lib/overlays/default.nix` and `flakes/hm-modules/flake.nix`;
+the standalone module overlay must use the same value as the main overlay. Linux
+inherits upstream's hashes. ARM dependency trees were generated on Linux using
+Bun's explicit CPU/OS selection; this does not validate native ARM executables.
+The direct-to-output install override remains to avoid the second recursive copy.
 
 To verify the Linux package without building the host system closure:
 

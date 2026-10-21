@@ -30,6 +30,24 @@ apply immediately. These thresholds are an emergency fallback, not a
 replacement for scheduled Bay sweep plus store GC. They do not alter APFS
 reserves.
 
+### Temporary eMudhra client trust override
+
+The 2026-10-20 mitigation installs user-only overrides in
+`~/.config/nix/nix.conf` and `~/.curlrc`. Both use
+`~/.local/state/dotfiles-security/emudhra-ca-bundle.crt`, a copy of
+Determinate's Keychain export with the affected emSign ECC G3 and AAA roots
+removed by SHA-256 fingerprint. The other 160 certificates are preserved.
+Default user Nix downloads and curl reject both published test endpoints with
+this bundle. See the [certificate checks](manual-package-updates.md#emudhra-certificate-mitigation-2026-10-20).
+
+These are temporary imperative files, not Home Manager configuration. They do
+not update the daemon's `/etc/nix/macos-keychain.crt`, system-wide clients, or
+application-bundled roots. Nix warns that an untrusted user's `ssl-cert-file`
+setting is ignored by the daemon; client-side downloads still use the user
+setting. After activating the updated system and fixing the daemon export,
+verify both underlying bundles explicitly, then remove the two overrides and
+their copied bundle. The copy is a snapshot and does not receive later CA updates.
+
 ### `fsync-metadata = false` and parallel agents
 
 Nix's store database (`/nix/var/nix/db/db.sqlite`) allows one writer at a
@@ -208,7 +226,7 @@ its built-in auto-update disabled. Its desktop-managed OpenCode provider uses a
 private, separately pinned OpenCode 2 binary from the same flake; this does not
 replace or modify the existing `programs.opencode` package and configuration.
 T3 Code follows the shared `nixpkgs` pin, currently revision
-`e554fab72f81915600f3f449b786fd9af40439a5`. That package set supplies Electron
+`e4d4e5154c52da44a9e5a4895d270cffa1ecb6fc`. That package set supplies Electron
 44 and the package version matching the pinned OpenCode `node_modules`
 fixed-output hash. Letting the shared input advance without checking both can
 therefore break the build even when the T3 Code source is unchanged.
