@@ -9,21 +9,25 @@
   # source while constructing GIT_TAG. With --no-build evaluation this can try
   # to read an unrealised source store path, so provide the tag from the flake
   # source directly instead.
-  hyprlandPackage = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland.overrideAttrs (old: {
-    # hyprpm's CMakeLists requires glaze 7.x while nixpkgs ships 8.x, and the
-    # SameMajorVersion package check makes 8.x invisible to find_package. Set
-    # the glaze_DIR cache variable directly so find_package loads the glaze-v7
-    # config file without any prefix-path search, and configure never falls
-    # back to a FetchContent git clone, which cannot run inside the sandbox.
-    # A nativeBuildInputs entry was tried before and CI showed configure still
-    # missed the package, so discovery is bypassed entirely here.
-    cmakeFlags = (old.cmakeFlags or []) ++ ["-Dglaze_DIR=${pkgs.glaze-v7}/share/glaze"];
-    env =
-      (old.env or {})
-      // {
-        GIT_TAG = "v${lib.removeSuffix "\n" (builtins.readFile "${inputs.hyprland}/VERSION")}";
-      };
-  });
+  hyprlandPackage =
+    inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland.override
+    {
+      makeWrapper = pkgs.makeBinaryWrapper;
+    }.overrideAttrs (old: {
+      # hyprpm's CMakeLists requires glaze 7.x while nixpkgs ships 8.x, and the
+      # SameMajorVersion package check makes 8.x invisible to find_package. Set
+      # the glaze_DIR cache variable directly so find_package loads the glaze-v7
+      # config file without any prefix-path search, and configure never falls
+      # back to a FetchContent git clone, which cannot run inside the sandbox.
+      # A nativeBuildInputs entry was tried before and CI showed configure still
+      # missed the package, so discovery is bypassed entirely here.
+      cmakeFlags = (old.cmakeFlags or []) ++ ["-Dglaze_DIR=${pkgs.glaze-v7}/share/glaze"];
+      env =
+        (old.env or {})
+        // {
+          GIT_TAG = "v${lib.removeSuffix "\n" (builtins.readFile "${inputs.hyprland}/VERSION")}";
+        };
+    });
 
   skipFingerprintWhenLidClosed = pkgs.writeShellApplication {
     name = "skip-fingerprint-when-lid-closed";

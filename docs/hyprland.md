@@ -6,6 +6,14 @@ This document describes the Hyprland window manager configuration, keybindings, 
 
 Hyprland is a Wayland compositor with GPU acceleration, smooth animations, and a flexible configuration system. This configuration uses Colemak Mod-DH navigation keys (M=Left, N=Down, E=Up, I=Right).
 
+## NixOS package wrapper
+
+Tater and thorny build the pinned upstream Hyprland package with
+`makeBinaryWrapper`. NixOS adds a capability wrapper for `cap_sys_nice`, which
+requires an ELF executable. Upstream's default shell wrapper fails that check.
+The binary wrapper supports the package's runtime environment flags and keeps
+the compositor launch environment intact.
+
 ## GTK theme package
 
 Hyprland workstations use `pkgs.rose-pine-gtk-modern`, a repository-managed
