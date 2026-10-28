@@ -26,6 +26,7 @@
 - [LAN SSH](/docs/lan-ssh.md) - DHCP-friendly local-network host discovery, safe SSH wrappers, and host key authorization notes
 - [linear-cli](/docs/linear-cli.md) - Linear CLI Home Manager module, completions, agent-facing context defaults, and hygiene automation (scheduled checks, notifications, prompt nudges, PR hygiene cache, agentic autofix)
 - [manual package updates](/docs/manual-package-updates.md) - Rust flake/manual package updater, manifest enrollment, cooldowns, and fixed-hash package pins
+- [Morrowind on thorny](/docs/morrowind.md) - Steam, OpenMW, and separate Rebirth and Tamriel Rebuilt profiles
 - [nixos](/docs/nixos.md) - General NixOS configuration notes
 - [notion-cli](/docs/notion-cli.md) - Notion CLI package, suremac installation, usage, and update notes
 - [opencode](/docs/opencode.md) - OpenCode module configuration, skills, and MCP integrations

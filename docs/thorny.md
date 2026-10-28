@@ -9,13 +9,10 @@ used locally.
 
 - Remote Nix builder reachable over Tailscale/SSH.
 - Local desktop workstation with the shared Hyprland setup used by `tater`.
-- Desktop/builder machine with Podman and libvirt enabled. The old Steam,
-  GameMode, and controller-support stack was removed because `thorny` is no
-  longer used as a gaming box and those packages significantly inflate the
-  workstation closure. 32-bit graphics support is disabled for the same reason;
-  re-enable it only if Steam/Wine or another 32-bit graphics workload returns to
-  thorny. With the chat/browser app trim already applied, disabling 32-bit
-  graphics reduced the patched closure from about 10.9 GiB to 10.1 GiB.
+- Desktop/builder machine with Podman and libvirt enabled. Steam is enabled for
+  games owned through the user's Steam account, with 32-bit graphics support
+  for compatibility. OpenMW is installed natively for Morrowind; it reads the
+  game data installed by Steam and launches independently of Steam/Proton.
 - Signal and Helium are disabled on `thorny`. Chat/browser workflows live on
   `tater`/`suremac`; keeping those Electron/browser apps out of thorny's Home
   Manager profile leaves the local Hyprland session available without bloating
@@ -36,6 +33,27 @@ used locally.
   same reusable self-deploy module is used by enrolled server hosts such as
   `tom` and `trainwreck`; `thorny` remains the build/cache warmer rather than a
   central deploy-rs pusher.
+
+## Morrowind / OpenMW
+
+Steam and native OpenMW are enabled by `morrowind.nix`. After downloading
+Morrowind through Steam, run `morrowind-setup` to configure the Rebirth profile,
+which is the default. Use `morrowind-setup --profile tr` for Tamriel Rebuilt, or
+`--profile all` to configure both. `--stage-only` stages the profile files
+without writing OpenMW configuration. Launch **Morrowind Rebirth** or
+**Morrowind Tamriel Rebuilt** from the desktop menu. The `morrowind` command
+launches Rebirth; `morrowind-rebirth` and `morrowind-tr` select a profile
+explicitly. See [Morrowind setup](/docs/morrowind.md) for downloads, load order,
+and recovery. Steam/Proton downloads the owned game files; OpenMW runs the game
+natively.
+
+Each profile has its own OpenMW config and saves. Rebirth uses
+`~/.config/morrowind/rebirth/openmw/openmw.cfg` and
+`~/.local/share/morrowind/rebirth/openmw/saves/`; Tamriel Rebuilt uses
+`~/.config/morrowind/tr/openmw/openmw.cfg` and
+`~/.local/share/morrowind/tr/openmw/saves/`. The setup leaves existing
+`~/.config/openmw/` and `~/.local/share/openmw/saves/` untouched. Both profiles
+share downloaded archives and staged mods under `~/.local/share/openmw/`.
 
 ## Remote builder configuration
 
