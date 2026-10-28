@@ -552,6 +552,7 @@ in {
     inputs.nixos-modules.nixosModules.hyprlandDesktop
     inputs.hister.nixosModules.hister
     ./hardware.nix
+    ./morrowind.nix
     ./zeroclaw.nix
     inputs.agenix.nixosModules.default
     inputs.nixos-hardware.nixosModules.system76
@@ -588,7 +589,6 @@ in {
     thornyStatus
   ];
   hardware.graphics.enable = true;
-  hardware.graphics.enable32Bit = lib.mkForce false;
   hardware.enableRedistributableFirmware = true;
   hardware.system76.enableAll = true;
 
