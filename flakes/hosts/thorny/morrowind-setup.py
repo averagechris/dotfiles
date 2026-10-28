@@ -230,6 +230,9 @@ def write_profile_config(profile, data_dirs, ordered_plugins, fallbacks):
     temp_cfg = CFG.with_suffix(".cfg.tmp")
     temp_cfg.write_text("\n".join(lines) + "\n")
     os.replace(temp_cfg, CFG)
+    launcher_cfg = CONFIG / "launcher.cfg"
+    if not launcher_cfg.exists():
+        launcher_cfg.write_text("[General]\nfirstrun=false\n")
     say(f"OpenMW {profile} config written: {CFG}")
     say("Enabled content: " + ", ".join(ordered_plugins))
 

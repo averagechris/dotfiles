@@ -6,8 +6,8 @@ two independent profiles: Morrowind Rebirth is the default, and Tamriel Rebuilt
 configuration, and saves. Both use the same Steam game files and share the
 download and staged-mod directories.
 
-Steam login and the owned game download are still required on `thorny`. Sign
-in and install Morrowind, Steam app `22320`. If Steam disables Install, select
+For a fresh installation, sign into Steam on `thorny` and install Morrowind,
+Steam app `22320`. If Steam disables Install, select
 Proton under the game's Compatibility properties to allow the download.
 OpenMW runs the game natively; the original Windows executable need not run.
 
@@ -72,6 +72,10 @@ profile. Rebirth's author supports OpenMW but warns that TR can conflict with
 its models and balance; the [compatibility notes](https://www.moddb.com/mods/morrowind-rebirth/tutorials/compatibility)
 also specify the bundled Rebirth patch in place of Patch for Purists. Keep the two
 profiles separate rather than combining their plugin lists.
+
+The launcher also lists Rebirth's bundled compatibility patches for Julan,
+Project Cyrodiil, Skyrim: Home of the Nords, Siege at Firemoth, and Uvirith's
+Legacy. Leave these unchecked; the corresponding mods are not installed.
 
 For a fresh installation, save the legacy Glow archive as
 `Glow_in_the_Dahrk_2.11.2.7z`. Keep the original Nexus filenames for MET,
@@ -139,6 +143,10 @@ automatically run setup only when that profile's `openmw.cfg` is missing, so
 normal launcher edits persist. The helper does not upgrade an already-staged
 mod just because a newer archive is downloaded.
 
+After importing the game, setup initializes a missing `launcher.cfg` with
+`firstrun=false` so the launcher opens the prepared profile without offering
+the installation wizard. Existing launcher preferences are preserved.
+
 If a launcher shows the wrong plugins, check the selected profile's
 `openmw.cfg` and rerun setup for that profile. Keep each profile's configuration
 and save directory together when making a backup. Do not copy mod files into
@@ -157,5 +165,5 @@ All selected archives extracted successfully. The actual plugins' master
 dependencies are satisfied in the generated order. Separate-profile checks
 used these real mods with synthetic base-game fixtures to verify plugin and
 asset isolation, save paths, backups, reruns, and unknown-plugin refusal.
-An actual gameplay check still requires Steam's Morrowind files and a desktop
-login.
+The Steam download is now installed and the Rebirth launcher has been opened
+on the desktop. In-game testing is in progress.
