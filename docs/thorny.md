@@ -393,6 +393,33 @@ disabled and logind's idle action is ignored. This keeps the machine reachable
 for SSH and remote builds even if it was last used as a local desktop. Display
 DPMS and screen locking are still handled by the Hyprland user session.
 
+## SSD maintenance
+
+The root LUKS device on `/dev/sda2` allows discard requests so the SSD can
+receive TRIM through the encrypted root mapper and its LVM volumes. The imported
+`common-pc-ssd` module already runs weekly `fstrim`; continuous filesystem
+discard is not enabled.
+
+Allowing discards on dm-crypt can reveal allocation patterns. The kernel warns
+that discarded blocks may expose the filesystem type and used space if those
+blocks can later be located on the encrypted device. See the [dm-crypt optional
+parameters](https://docs.kernel.org/admin-guide/device-mapper/dm-crypt.html).
+
+After deploying this setting, reboot Thorny so the initrd reopens the encrypted
+root device with discards enabled. Then verify the mapper and run the weekly trim
+service manually:
+
+```bash
+sudo cryptsetup status root
+lsblk -D
+sudo systemctl start fstrim.service
+sudo journalctl -u fstrim.service -n 20 --no-pager
+```
+
+`cryptsetup status root` should list `discards`. The root mapper and its LVM
+volumes should show nonzero discard limits in `lsblk -D`, and the service log
+should include `/` among the trimmed filesystems.
+
 ## Thermal and fan policy
 
 `thorny` is allowed to get loud during remote builds. The desired behavior is

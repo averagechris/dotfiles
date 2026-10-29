@@ -575,7 +575,10 @@ in {
     pkgs.xdg-desktop-portal-gtk
   ];
 
-  boot.initrd.luks.devices.root.device = "/dev/sda2";
+  boot.initrd.luks.devices.root = {
+    device = "/dev/sda2";
+    allowDiscards = true;
+  };
   networking.hostName = "thorny";
 
   networking.wireless.interfaces = ["wlp6s0"];
