@@ -883,6 +883,7 @@ in {
     };
 
     programs.meganz.enable = true;
+    programs.gh.enable = true;
     programs.signal.enable = false;
     programs.helium.enable = false;
     programs.helium.extension-simple-pip-helper.enable = false;
@@ -891,6 +892,10 @@ in {
     programs.opencode.enable = true;
     xdg.configFile."hut/config".source = hutConfig;
     services.network-manager-applet.enable = true;
-    home.packages = [pkgs.claude-code pkgs.hut];
+    home.packages = [
+      pkgs.claude-code
+      pkgs.hut
+      (pkgs.callPackage ../../base-lib/packages/chatgpt-desktop.nix {})
+    ];
   };
 }

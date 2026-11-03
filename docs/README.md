@@ -2,6 +2,7 @@
 
 ## Configuration
 
+- [ChatGPT desktop](/docs/chatgpt-desktop.md) - Official Linux app on thorny, NixOS compatibility launcher, and one-command updates
 - [anyrun](/docs/anyrun.md) - Anyrun launcher configuration and usage
 - [automated maintenance](/docs/automated-maintenance.md) - Thorny-driven daily update automation plan, short-term safeguards, and long-term project fleet vision
 - [audio](/docs/audio.md) - PipeWire/WirePlumber output priority, helper commands, and Eww controls

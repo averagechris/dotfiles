@@ -16,6 +16,14 @@ install newer versions in a profile and have them win by default.
 export PATH="$HOME/.nix-profile/bin:$PATH"
 ```
 
+## GitHub CLI
+
+`thorny` and `tater` enable Home Manager's `programs.gh.enable` to install
+GitHub CLI (`gh`) and its shell completions. Package updates follow nixpkgs
+updates and normal host activation. Authenticate separately on each machine
+with `gh auth login`; credentials are not stored in dotfiles. For HTTPS Git
+authentication after login, run `gh auth setup-git`.
+
 ## direnv
 
 The shell module enables direnv and nix-direnv by default for project-local dev
