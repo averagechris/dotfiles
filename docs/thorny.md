@@ -9,6 +9,8 @@ used locally.
 
 - Remote Nix builder reachable over Tailscale/SSH.
 - Local desktop workstation with the shared Hyprland setup used by `tater`.
+- Official ChatGPT Linux preview for occasional desktop use and local project
+  access; see [ChatGPT desktop](chatgpt-desktop.md) for installation and updates.
 - Desktop/builder machine with Podman and libvirt enabled. The old Steam,
   GameMode, and controller-support stack was removed because `thorny` is no
   longer used as a gaming box and those packages significantly inflate the
