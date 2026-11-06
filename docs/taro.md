@@ -11,8 +11,8 @@ directory `/Users/chris`. The post-reset Bonjour name is
 `Christophers-MacBook-Pro`; activation changes it to the configured hostname.
 The chosen hostname is `taro`.
 
-Installed native apps and automation jobs remain choices to confirm during
-onboarding.
+Helium, Steam, and Raycast are installed directly from their official downloads.
+Automation jobs remain choices to confirm during onboarding.
 
 ## Bootstrap the wiped Mac
 
@@ -26,8 +26,9 @@ Before the draft PR is merged, check out `chris/personal-darwin-host`; after mer
 use `main`:
 
 ```bash
-git clone https://github.com/averagechris/dotfiles.git ~/dotfiles
-cd ~/dotfiles
+mkdir -p ~/projects
+git clone https://github.com/averagechris/dotfiles.git ~/projects/dotfiles
+cd ~/projects/dotfiles
 git switch chris/personal-darwin-host # Pre-merge only; use main after merge.
 nix run .#setup-darwin-determinate-substituters
 nix run .#darwinConfigurations.taro.pkgs.nh -- darwin build -q --no-nom . --hostname taro
@@ -57,7 +58,7 @@ management permission if macOS requests it, following the
 The host uses personal Git and jj identity, `Chris Cummings <chris@thesogu.com>`,
 and personal project directories `~/projects` and `~/contrib`. It explicitly clears
 the shared jj module's historical Sure directory scope. The shell, Helix, Yazi,
-WezTerm, Gander, Codex, OpenCode, Pi, memo, and ctx are configured for personal use.
+WezTerm, Gander, Codex, OpenCode, Pi, and memo are configured for personal use.
 
 No agenix secrets are required for first activation. Git and jj signing start
 disabled until a personal signing key is enrolled. Sign into coding agents using
@@ -66,9 +67,60 @@ contexts, Sure agent references, or work hygiene jobs are installed. The config
 does not install suremac's self-update job. macOS security-update preferences stay
 at the machine's existing defaults.
 
-Native apps such as Helium, Raycast, and a container runtime can be installed
-manually as needed, using personal accounts. The host does not rely on an MDM
-software portal. See [dev-cache](dev-cache.md) for build-cache cleanup behavior.
+See [dev-cache](dev-cache.md) for build-cache cleanup behavior.
+
+## Native apps and self-updates
+
+On taro, install these apps directly from upstream. Their ordinary app bundles
+live in `/Applications` and use their own updaters. No package manager or pinned download
+version is involved.
+
+| App | Official download |
+| --- | --- |
+| Helium | [Helium browser](https://helium.computer/) |
+| Steam | [Steam for macOS](https://store.steampowered.com/about/) |
+| Raycast | [Raycast](https://www.raycast.com/) |
+
+An agent can perform the installation with the browser or command-line download
+tools, following the same steps as an interactive install:
+
+1. Open the official page and follow its current macOS download link. Choose
+   Apple Silicon or ARM64 when offered; use a universal build otherwise.
+2. Download and open the disk image or archive, then copy the app bundle to
+   `/Applications`. Follow the official installer if it uses a different format.
+3. Open the installed app to finish its first-run setup. Enable automatic updates
+   if prompted, and use personal accounts for sign-in.
+4. Eject the disk image and remove the downloaded installer after confirming the
+   installed app opens.
+
+Keep Helium services enabled for its automatic updater, as described in the
+[Helium FAQ](https://helium.computer/). Set Helium as the default browser and
+choose Raycast's login startup and shortcuts in their own settings. Verify that
+`Helium.app`, `Steam.app`, and `Raycast.app` open from `/Applications`. Repeat the download steps for a reinstall; ongoing
+updates come from each app. A container runtime and other suggested utilities
+remain optional.
+
+### Optional Logitech setup
+
+[OpenLogi](https://openlogi.org/) is the candidate replacement for Logi Options+.
+Its [supported-device list](https://openlogi.org/docs/supported-devices) includes
+Chris's MX Master 3 and MX Master 4, with support for Unifying and Bolt receivers.
+The project is still marked unstable; trial one mouse before configuring both.
+
+Download the signed, notarized macOS DMG from the
+[official releases](https://github.com/AprilNEA/OpenLogi/releases/latest) and copy
+`OpenLogi.app` to `/Applications`. Follow its
+[macOS installation instructions](https://openlogi.org/docs/installation), granting
+OpenLogi Agent Accessibility and Input Monitoring when prompted. Quit Options+
+if present before launching OpenLogi, since they compete for receiver access.
+Verify side buttons, the thumb wheel, gestures, DPI, and SmartShift on each mouse.
+
+The project documents no account or telemetry, with local configuration in
+`~/.config/openlogi/config.toml`. Its [network disclosure](https://openlogi.org/#privacy)
+lists device artwork fetched from a public CDN and optional update checks, off
+by default. Keep update checks off for a manual-update trial; install newer DMGs
+from the release page. This privacy description comes from the project, not an
+independent audit.
 
 ## SSH and plugged-in work
 
@@ -112,7 +164,7 @@ the managed activation command, since pmset settings persist.
 
 Lid closure, manual sleep, reboot, and FileVault's pre-login unlock can still make
 this laptop unavailable. Use an open lid or a supported powered external-display
-setup. SSH starts at boot, but GUI agent sessions and ctx indexing need the user
-logged in. AC power keeps it awake on any network, not just at home. No scheduled
+setup. SSH starts at boot, but GUI agent sessions need the user logged in. AC
+power keeps it awake on any network, not just at home. No scheduled
 build worker, CI runner, wake schedule, or unattended GUI automation is enrolled
 by this draft.

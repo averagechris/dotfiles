@@ -30,7 +30,6 @@
       inputs.gander.follows = "hm-modules/gander";
       inputs.fleet.follows = "fleet";
       inputs.fleet-srht.follows = "fleet-srht";
-      inputs.ctx.follows = "ctx";
       inputs.nitter-link.follows = "nitter-link";
       inputs.memo.follows = "memo";
       inputs.helix.follows = "suremac/helix";

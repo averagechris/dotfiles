@@ -1520,9 +1520,6 @@
         "base-lib": [
           "base-lib"
         ],
-        "ctx": [
-          "ctx"
-        ],
         "darwin": [
           "taro",
           "base-lib",

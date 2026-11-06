@@ -6,7 +6,6 @@
   sshKeys,
   ...
 }: let
-  ctxPackage = inputs.ctx.packages.${pkgs.stdenv.hostPlatform.system}.ctx;
   weztermPackage =
     pkgs.runCommand "${pkgs.wezterm.name}-without-compiler-references" {
       inherit (pkgs.wezterm) meta passthru;
@@ -287,11 +286,6 @@ in {
     dotfiles.codex.enable = true;
     programs.opencode.enable = true;
     programs.pi.enable = true;
-    dotfiles.ctx = {
-      enable = true;
-      package = ctxPackage;
-      index.enable = true;
-    };
     dotfiles.agentSkills.memo.source = inputs.memo + "/skills/memo";
     dotfiles.opencode.agentTools = with pkgs; [
       {
@@ -308,11 +302,6 @@ in {
         package = inputs.memo.packages.${pkgs.stdenv.hostPlatform.system}.memo;
         name = "memo";
         description = "store and retrieve lasting decisions and workflow context";
-      }
-      {
-        package = ctxPackage;
-        name = "ctx";
-        description = "search local agent history";
       }
       {
         package = gh;

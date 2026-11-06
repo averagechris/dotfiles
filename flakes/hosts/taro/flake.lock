@@ -81,32 +81,6 @@
         "type": "github"
       }
     },
-    "ctx": {
-      "inputs": {
-        "flake-utils": [
-          "flake-utils"
-        ],
-        "fleet": [
-          "fleet"
-        ],
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1791589715,
-        "narHash": "sha256-umfETMotAP6bpYhFhgkFFlyVyFAmkuVwA3vGc+9JI5g=",
-        "owner": "averagechris",
-        "repo": "ctx",
-        "rev": "a504a8c11f36e3755a84a13a7e959426ffeb1e8c",
-        "type": "github"
-      },
-      "original": {
-        "owner": "averagechris",
-        "repo": "ctx",
-        "type": "github"
-      }
-    },
     "darwin": {
       "inputs": {
         "nixpkgs": [
@@ -890,7 +864,6 @@
           "agenix"
         ],
         "base-lib": "base-lib",
-        "ctx": "ctx",
         "darwin": [
           "base-lib",
           "darwin"

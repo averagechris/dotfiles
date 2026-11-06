@@ -49,12 +49,6 @@
       inputs.fleet.follows = "fleet";
     };
 
-    ctx = {
-      url = "github:averagechris/ctx";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.flake-utils.follows = "flake-utils";
-      inputs.fleet.follows = "fleet";
-    };
     nitter-link = {
       url = "github:averagechris/nitter-link/v0.1.4";
       inputs.nixpkgs.follows = "nixpkgs";
