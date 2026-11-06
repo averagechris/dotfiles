@@ -59,7 +59,8 @@ dotfiles/
 │   ├── hm-modules/          # Shared home-manager modules
 │   ├── darwin-modules/      # Shared nix-darwin modules
 │   └── hosts/               # Individual host configurations
-│       ├── suremac/         # macOS system
+│       ├── suremac/         # Work macOS system
+│       ├── taro/          # Personal macOS system
 │       ├── trap/            # NixOS system
 │       ├── thorny/          # NixOS system
 │       ├── tom/             # NixOS system
@@ -80,7 +81,8 @@ the 2026-07-09 flake performance audit and follow-up plan.
 
 | Host | System | Purpose | Notes |
 |------|--------|---------|-------|
-| **suremac** | aarch64-darwin | Personal MacBook | Uses `darwin-rebuild` |
+| **suremac** | aarch64-darwin | Work MacBook | Uses `darwin-rebuild` |
+| **taro** | aarch64-darwin | Personal MacBook Pro, draft | [Bootstrap guide](docs/taro.md) |
 | **trap** | x86_64-linux | COSMIC desktop, System76 | SSH deployable |
 | **thorny** | x86_64-linux | COSMIC desktop, System76 Thelio | SSH deployable |
 | **tom** | x86_64-linux | Home server (home-assistant) | Requires `openssl-1.1.1w` |

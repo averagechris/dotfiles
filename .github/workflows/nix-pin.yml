@@ -6,6 +6,7 @@ on:
       - "**/flake.lock"
       - "flakes/hm-modules/modules/opencode/**"
       - "flakes/hosts/suremac/**"
+      - "flakes/hosts/taro/**"
       - ".github/workflows/nix-pin.yml"
   push:
     branches:
@@ -14,6 +15,7 @@ on:
       - "**/flake.lock"
       - "flakes/hm-modules/modules/opencode/**"
       - "flakes/hosts/suremac/**"
+      - "flakes/hosts/taro/**"
       - ".github/workflows/nix-pin.yml"
   workflow_dispatch:
 
@@ -41,6 +43,7 @@ jobs:
             flakes/hm-modules/flake.lock
             flakes/hosts/cruber/flake.lock
             flakes/hosts/suremac/flake.lock
+            flakes/hosts/taro/flake.lock
             flakes/hosts/tater/flake.lock
             flakes/hosts/taz/flake.lock
             flakes/hosts/thorny/flake.lock

@@ -6,7 +6,8 @@ Each host is a self-contained flake that can be built and deployed independently
 
 | Host | System | Purpose | Status |
 |------|--------|---------|--------|
-| **suremac** | aarch64-darwin | Personal MacBook | Active |
+| **suremac** | aarch64-darwin | Work MacBook | Active |
+| **taro** | aarch64-darwin | Personal MacBook Pro, Apple Silicon, 48 GiB | Draft |
 | **trap** | x86_64-linux | COSMIC desktop, System76 | Active |
 | **thorny** | x86_64-linux | Hyprland desktop, System76 Thelio | Active |
 | **tater** | x86_64-linux | ThinkPad T14s Gen 5 AMD laptop | Active |
@@ -94,6 +95,8 @@ The duplication is **not** a limitation to be refactored away. It's an architect
 1. Copy an existing host directory as template (trap for NixOS, suremac for Darwin)
 2. Update `flake.nix` description and hostname
 3. Update `configuration.nix` with host-specific settings
-4. Generate `hardware.nix` on target system: `nixos-generate-config --show-hardware-config`
+4. For NixOS, generate `hardware.nix` on the target system: `nixos-generate-config --show-hardware-config`. For Darwin, confirm the chip architecture and existing macOS short username.
 5. Add to root `flake.nix` inputs and outputs
 6. Test: `nix flake check ./flakes/hosts/HOSTNAME`
+
+See [personal MacBook setup](/docs/taro.md) for the `taro` bootstrap and personal automation notes.

@@ -15,6 +15,10 @@
     UsePAM yes
     AllowUsers ${config.system.primaryUser}
     AuthorizedKeysFile .ssh/authorized_keys
+    # nix-darwin writes declarative keys here, not in the user's home. Match
+    # its standard sshd snippet, using cat to read the store-backed symlink.
+    AuthorizedKeysCommand /bin/cat /etc/ssh/nix_authorized_keys.d/%u
+    AuthorizedKeysCommandUser _sshd
     Subsystem sftp /usr/libexec/sftp-server
   '';
 in {

@@ -118,3 +118,14 @@ If tater gets a dedicated `chris@tater` user SSH key, add it to
 `flakes/base-lib/ssh-keys/default.nix` as `chris.tater` and include it in
 suremac's authorized keys so normal user-initiated SSH from tater to suremac does
 not need the host key identity.
+
+## Personal Mac custom SSH service
+
+`taro` uses the shared Darwin `dotfiles.customSshd` service on port 2222.
+The service reads both `~/.ssh/authorized_keys` and nix-darwin's declarative
+`/etc/ssh/nix_authorized_keys.d/%u` through `AuthorizedKeysCommand /bin/cat`,
+matching nix-darwin's standard key lookup. This also fixes declarative key lookup
+for suremac's custom SSH service after its next activation.
+
+The new Mac's host key is not enrolled in port-22 LAN discovery. Use direct SSH
+after verifying its fresh host key. See [personal MacBook setup](taro.md#ssh-and-plugged-in-work).
