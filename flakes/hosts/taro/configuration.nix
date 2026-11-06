@@ -206,11 +206,30 @@ in {
     home = "/Users/chris";
     openssh.authorizedKeys.keys = [
       sshKeys.chris.thelio
+      sshKeys.chris.suremac
       sshKeys.system.tater
     ];
   };
 
   services.openssh.enable = false;
+
+  programs.ssh = {
+    extraConfig = ''
+      Host suremac-lan suremac.local
+        HostName suremac.local
+        User chris
+        Port 2222
+        IdentityFile ~/.ssh/id_ed25519
+        IdentitiesOnly yes
+        IgnoreUnknown UseKeychain
+        UseKeychain yes
+        AddKeysToAgent yes
+    '';
+    knownHosts.suremac-local = {
+      hostNames = ["suremac.local" "[suremac.local]:2222"];
+      publicKey = sshKeys.system.suremac;
+    };
+  };
 
   system.activationScripts.extraActivation.text = lib.mkAfter ''
     /usr/bin/pmset -c sleep 0

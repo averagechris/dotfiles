@@ -401,6 +401,17 @@
         text = builtins.readFile ./scripts/deploy-quiet.sh;
       };
 
+      packages.pair-taro = pkgs.writeShellApplication {
+        name = "pair-taro";
+        text = builtins.readFile ./scripts/pair-taro.sh;
+      };
+
+      apps.pair-taro = {
+        type = "app";
+        program = "${self.packages.${system}.pair-taro}/bin/pair-taro";
+        meta.description = "Pair suremac and taro for public-key SSH on the LAN";
+      };
+
       packages.update-flakes = pkgs.rustPlatform.buildRustPackage {
         pname = "dotfiles-update-flakes";
         version = "0.1.0";

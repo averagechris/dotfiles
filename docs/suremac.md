@@ -84,6 +84,10 @@ tater's `system.tater` host key; see [LAN SSH](/docs/lan-ssh.md) for the
 DHCP-friendly `dotfiles-lan-hosts`, `ssh-lan`, and `ssh-suremac-lan` helpers and
 for the current key-trust caveat around a future dedicated `chris@tater` user key.
 
+The personal Mac uses `ssh taro-lan` on port 2222. After taro's first activation,
+run `nix run .#pair-taro` from suremac to create taro's key and authorize it for
+reverse access. See [Mac-to-Mac access](lan-ssh.md#mac-to-mac-access).
+
 ## Sleep on AC power
 
 `suremac` disables automatic idle system sleep on AC power so local coding

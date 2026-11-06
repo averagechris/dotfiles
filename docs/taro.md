@@ -1,204 +1,123 @@
-# Personal MacBook Pro setup
+# Taro
 
-`taro` is the nix-darwin host for the donated, factory-reset MacBook Pro. This guide covers its first activation and use as a personal laptop
-that can also accept builds and automation over SSH.
+Personal MacBook Pro with Apple Silicon, 48 GiB RAM, macOS 26.5.1, and user
+`chris`. nix-darwin sets its hostname to `taro` and manages the shell, Helix,
+WezTerm, coding-agent tools, Colemak-DH, and build-cache cleanup. Windows float;
+Raycast handles window shortcuts.
 
-## Machine details
+## Start with ChatGPT
 
-Confirmed hardware and account details are Apple Silicon (`aarch64-darwin`),
-48 GiB RAM, macOS 26.5.1 build 25F80, and short username `chris` with home
-directory `/Users/chris`. The post-reset Bonjour name is
-`Christophers-MacBook-Pro`; activation changes it to the configured hostname.
-The chosen hostname is `taro`.
+Download [ChatGPT for macOS](https://learn.chatgpt.com/docs/app) first and sign in
+with your personal OpenAI account. Ask the agent to set up this Mac using this
+guide and the repository's `AGENTS.md`. Complete account sign-ins and macOS
+permission prompts when needed.
 
-Helium, Steam, Raycast, and OpenLogi are installed directly from their official
-downloads.
-Automation jobs remain choices to confirm during onboarding.
+## Install the native apps
 
-## Bootstrap the wiped Mac
+Use current official downloads. Install app bundles in `/Applications` and launch
+each app to finish setup. Choose Apple Silicon or a universal build when offered.
 
-Prerequisites: completed macOS onboarding, an administrator account matching the
-configuration, and Determinate Nix installed through its installer. This host sets
-`nix.enable = false`, so Determinate owns the Nix daemon. Install Apple's Command
-Line Tools with `xcode-select --install` for development outside Nix shells.
+| App | Download |
+| --- | --- |
+| ChatGPT | [macOS desktop app](https://learn.chatgpt.com/docs/app) |
+| Helium | [Helium](https://helium.computer/) |
+| Steam | [Steam for macOS](https://store.steampowered.com/about/) |
+| Raycast | [Raycast](https://www.raycast.com/) |
+| OpenLogi | [Signed macOS DMG](https://github.com/AprilNEA/OpenLogi/releases/latest) |
+| Tailscale | [Standalone macOS app](https://tailscale.com/download/mac) |
 
-Clone the public repository over HTTPS until this Mac has its own GitHub SSH key.
-Before the draft PR is merged, check out `chris/personal-darwin-host`; after merge,
-use `main`:
+Use the apps' own update settings. Helium services must be enabled for its
+updater. OpenLogi's update checks are opt-in; newer releases can be installed
+from the same download page.
+
+Set Helium as the default browser and enable Raycast at login. OpenLogi supports
+the MX Master 3 and 4 receivers. Grant OpenLogi Agent Accessibility and Input
+Monitoring, then check buttons, thumb wheel, and SmartShift. Quit Options+ if
+present before using OpenLogi, since they compete for receiver access.
+
+## Apply dotfiles
+
+Install Apple's Command Line Tools with `xcode-select --install`, then install
+[Determinate Nix](https://determinate.systems/nix/). Determinate owns the Nix
+daemon; this host sets `nix.enable = false`.
 
 ```bash
 mkdir -p ~/projects
 git clone https://github.com/averagechris/dotfiles.git ~/projects/dotfiles
 cd ~/projects/dotfiles
-git switch chris/personal-darwin-host # Pre-merge only; use main after merge.
+git switch chris/personal-darwin-host # Before PR merge; use main afterward.
 nix run .#setup-darwin-determinate-substituters
 nix run .#darwinConfigurations.taro.pkgs.nh -- darwin build -q --no-nom . --hostname taro
 nix run .#darwinConfigurations.taro.pkgs.nh -- darwin switch . --hostname taro
 ```
 
-The cache setup command uses sudo and updates `/etc/nix/nix.custom.conf`, then
-restarts Determinate's daemon. See [suremac's daemon settings](suremac.md#determinate-nix-daemon-settings)
-for the settings and `fsync-metadata` crash-recovery tradeoff. Run the switch
-command only on the new Mac. No activation of `suremac` is needed.
-
-After activation, open a new terminal and use the installed `nh`:
+Run these commands on taro. The cache setup uses sudo and restarts Determinate's
+daemon. See [daemon settings](suremac.md#determinate-nix-daemon-settings) for its
+settings and recovery tradeoff. After activation, use:
 
 ```bash
-nh darwin build -q --no-nom . --hostname taro
 nh darwin switch . --hostname taro
 ```
 
-The standalone flake also works with `./flakes/hosts/taro` in place of `.`.
-Colemak-DH input sources may need a logout/login before appearing everywhere.
-Keep the U.S. input source available as a fallback. Allow Home Manager's app
-management permission if macOS requests it, following the
-[App Management troubleshooting guide](troubleshooting/home-manager-app-management.md).
+Log out and back in if Colemak-DH is not visible. Keep U.S. as a fallback input
+source. Follow the [App Management guide](troubleshooting/home-manager-app-management.md)
+if Home Manager needs macOS permission.
 
-## Personal profile
+Git and jj use `Chris Cummings <chris@thesogu.com>`. Signing is disabled until a
+personal key is enrolled. First activation needs no encrypted secrets. Personal
+projects live under `~/projects` and `~/contrib`.
 
-The host uses personal Git and jj identity, `Chris Cummings <chris@thesogu.com>`,
-and personal project directories `~/projects` and `~/contrib`. It explicitly clears
-the shared jj module's historical Sure directory scope. The shell, Helix, Yazi,
-WezTerm, Gander, Codex, OpenCode, Pi, and memo are configured for personal use.
+## LAN SSH
 
-No agenix secrets are required for first activation. Git and jj signing start
-disabled until a personal signing key is enrolled. Sign into coding agents using
-personal accounts; no work OpenRouter key, Granola token, AWS profiles, Kubernetes
-contexts, Sure agent references, or work hygiene jobs are installed. The config
-does not install suremac's self-update job. macOS security-update preferences stay
-at the machine's existing defaults.
+The custom sshd accepts public keys for `chris` on port 2222. After taro's first
+activation, apply this revision on suremac and run `nix run .#pair-taro` there.
+Pairing creates taro's key if needed, authorizes its public key on suremac, and
+checks the reverse connection. Enter a passphrase when creating a key and compare
+taro's first-connection fingerprint using the [pairing instructions](lan-ssh.md#mac-to-mac-access).
 
-See [dev-cache](dev-cache.md) for build-cache cleanup behavior.
-
-## Native apps and self-updates
-
-On taro, install these apps directly from upstream. Their ordinary app bundles
-live in `/Applications`. Helium, Steam, and Raycast update themselves; OpenLogi
-uses optional update checks and manually downloaded releases as described below.
-No package manager or pinned download version is involved.
-
-| App | Official download |
-| --- | --- |
-| Helium | [Helium browser](https://helium.computer/) |
-| Steam | [Steam for macOS](https://store.steampowered.com/about/) |
-| Raycast | [Raycast](https://www.raycast.com/) |
-| OpenLogi | [Signed macOS DMG](https://github.com/AprilNEA/OpenLogi/releases/latest) |
-
-An agent can perform the installation with the browser or command-line download
-tools, following the same steps as an interactive install:
-
-1. Open the official page and follow its current macOS download link. Choose
-   Apple Silicon or ARM64 when offered; use a universal build otherwise.
-2. Download and open the disk image or archive, then copy the app bundle to
-   `/Applications`. Follow the official installer if it uses a different format.
-3. Open the installed app to finish its first-run setup. Enable automatic updates
-   if prompted, and use personal accounts for sign-in.
-4. Eject the disk image and remove the downloaded installer after confirming the
-   installed app opens.
-
-Keep Helium services enabled for its automatic updater, as described in the
-[Helium FAQ](https://helium.computer/). Set Helium as the default browser and
-choose Raycast's login startup and shortcuts in their own settings. Verify that
-`Helium.app`, `Steam.app`, `Raycast.app`, and `OpenLogi.app` open from
-`/Applications`. Repeat the download steps for a reinstall.
-
-### Logitech setup
-
-Use [OpenLogi](https://openlogi.org/) for Logitech configuration instead of
-Logi Options+.
-Its [supported-device list](https://openlogi.org/docs/supported-devices) includes
-Chris's MX Master 3 and MX Master 4, with support for Unifying and Bolt receivers.
-The project is still marked unstable; trial one mouse before configuring both.
-
-Download the signed, notarized macOS DMG from the
-[official releases](https://github.com/AprilNEA/OpenLogi/releases/latest) and copy
-`OpenLogi.app` to `/Applications`. Follow its
-[macOS installation instructions](https://openlogi.org/docs/installation), granting
-OpenLogi Agent Accessibility and Input Monitoring when prompted. Quit Options+
-if present before launching OpenLogi, since they compete for receiver access.
-Verify side buttons, the thumb wheel, gestures, DPI, and SmartShift on each mouse.
-
-The project documents no account or telemetry, with local configuration in
-`~/.config/openlogi/config.toml`. Its [network disclosure](https://openlogi.org/#privacy)
-lists device artwork fetched from a public CDN and optional update checks, off
-by default. Keep update checks off for a manual-update trial; install newer DMGs
-from the release page. This privacy description comes from the project, not an
-independent audit.
-
-## Desktop choices
-
-Use macOS floating windows and Raycast for window management. AeroSpace and Stats
-are not part of this setup. Homerow is not selected because it requires payment.
-BetterDisplay remains an optional evaluation, outside the main download list.
-Its [free/Pro comparison](https://betterdisplay.pro/guide/licensing/free-and-pro-features/)
-identifies which display controls remain available without Pro after the trial.
-
-## Container runtime experiments
-
-A container runtime is not part of the download list or nix-darwin configuration.
-Try Apple's [container CLI](https://github.com/apple/container) before deciding
-whether to bring over [OrbStack](https://orbstack.dev/), which Chris already uses
-on suremac. OrbStack remains an option for later.
-
-Apple's CLI runs OCI-compatible Linux containers in lightweight VMs using its
-[Containerization library](https://github.com/apple/containerization). It supports
-Apple Silicon and macOS 26, matching taro. When ready to experiment, use the
-latest signed `.pkg` from the [official releases](https://github.com/apple/container/releases),
-following the upstream installation instructions. A first smoke check is:
+Once paired:
 
 ```bash
-container system start
-container run --rm alpine echo hello
+# From suremac
+ssh taro-lan hostname
+# From taro
+ssh suremac-lan hostname
 ```
 
-The expected output is `hello`. Before choosing a runtime for automation, try a
-representative personal project and check image builds, bind mounts, networking,
-and its orchestration requirements. Use the upstream `container` commands during
-the trial rather than assuming existing Docker-specific scripts are compatible.
+The aliases use `taro.local` and `suremac.local`, so both Macs must be on the same
+LAN. See [Mac-to-Mac key enrollment](lan-ssh.md#mac-to-mac-access) for public keys,
+first-connection verification, and the required suremac activation.
 
-## SSH and plugged-in work
+## Join the personal tailnet
 
-The shared custom SSH service listens on TCP 2222 using Apple's sshd. It allows
-only `chris`, accepts public keys, and disables password and keyboard-interactive
-authentication. It reads nix-darwin's declarative key file as well as the user's
-`~/.ssh/authorized_keys`. It authorizes thorny's `chris.thelio` user key and
-tater's system key for automation that explicitly uses that identity. The standard Remote Login
-service on port 22 is disabled by this profile.
-
-After activation, read the fresh host key directly on the new Mac:
+1. Install and open the standalone Tailscale app from the download list.
+2. Approve its network extension and VPN configuration in System Settings.
+3. Sign in with the identity for your existing personal tailnet and enable login
+   startup. Confirm the selected network in the app.
+4. Set the device name and verify the connection:
 
 ```bash
-sudo cat /etc/ssh/ssh_host_ed25519_key.pub
+/Applications/Tailscale.app/Contents/MacOS/Tailscale set --hostname=taro
+/Applications/Tailscale.app/Contents/MacOS/Tailscale status --json \
+  | jq '{state: .BackendState, tailnet: .CurrentTailnet.Name, name: .Self.HostName}'
 ```
 
-Verify that key through a trusted channel before accepting it on another machine.
-Then connect from thorny using the Mac's current home LAN IP or its Bonjour name:
+Expect `Running`, your personal tailnet's name, and `taro`. Complete device
+approval in the personal tailnet's admin console if required. Enrollment uses
+interactive login; no auth key is stored in dotfiles. Follow the
+[macOS installation guide](https://tailscale.com/docs/install/mac) if an extension
+prompt needs attention.
 
-```bash
-ssh -p 2222 chris@taro.local hostname
-ssh -p 2222 chris@taro.local 'nix config show system'
-```
+Other devices on that tailnet can use `ssh -p 2222 chris@taro` when MagicDNS and
+the tailnet's access rules allow it. The LAN aliases remain independent of
+Tailscale membership.
 
-Expected results are `taro` and `aarch64-darwin`. Remote Login being off in
-System Settings is expected; this is a separate launchd service. Inspect
-`sudo launchctl print system/org.nixos.dotfiles-custom-sshd` and
-`/var/log/dotfiles-custom-sshd.log` if it fails to start.
+## Plugged-in work
 
-The existing `ssh-lan` fleet discovery helpers use port 22 and committed host
-keys. They cannot discover `taro` yet. Do not copy suremac's old host key or
-private identities onto this wiped Mac. It needs its own user key for outbound
-SSH; enrolling its public user/host keys and configuring remote builders are
-follow-up steps once the real keys and CPU capacity are known.
+Activation sets `pmset -c sleep 0`. AC idle system sleep is disabled; battery and
+display sleep settings are preserved. Verify with `pmset -g custom`.
 
-On AC power, activation applies `pmset -c sleep 0` so idle display sleep does not
-interrupt jobs. Battery and display sleep settings are preserved. Verify with
-`pmset -g custom`: AC Power should show `sleep 0`; battery policy should remain
-unchanged. To restore automatic AC sleep, apply `pmset -c sleep 10` before removing
-the managed activation command, since pmset settings persist.
-
-Lid closure, manual sleep, reboot, and FileVault's pre-login unlock can still make
-this laptop unavailable. Use an open lid or a supported powered external-display
-setup. SSH starts at boot, but GUI agent sessions need the user logged in. AC
-power keeps it awake on any network, not just at home. No scheduled
-build worker, CI runner, wake schedule, or unattended GUI automation is enrolled
-by this draft.
+Keep the lid open or use a supported powered external display. Lid closure,
+manual sleep, reboot, and FileVault unlock can interrupt access. The Tailscale
+app and GUI agents need a logged-in user session. See [dev-cache](dev-cache.md)
+for build-cache cleanup.
