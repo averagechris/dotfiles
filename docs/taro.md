@@ -11,7 +11,8 @@ directory `/Users/chris`. The post-reset Bonjour name is
 `Christophers-MacBook-Pro`; activation changes it to the configured hostname.
 The chosen hostname is `taro`.
 
-Helium, Steam, and Raycast are installed directly from their official downloads.
+Helium, Steam, Raycast, and OpenLogi are installed directly from their official
+downloads.
 Automation jobs remain choices to confirm during onboarding.
 
 ## Bootstrap the wiped Mac
@@ -72,14 +73,16 @@ See [dev-cache](dev-cache.md) for build-cache cleanup behavior.
 ## Native apps and self-updates
 
 On taro, install these apps directly from upstream. Their ordinary app bundles
-live in `/Applications` and use their own updaters. No package manager or pinned download
-version is involved.
+live in `/Applications`. Helium, Steam, and Raycast update themselves; OpenLogi
+uses optional update checks and manually downloaded releases as described below.
+No package manager or pinned download version is involved.
 
 | App | Official download |
 | --- | --- |
 | Helium | [Helium browser](https://helium.computer/) |
 | Steam | [Steam for macOS](https://store.steampowered.com/about/) |
 | Raycast | [Raycast](https://www.raycast.com/) |
+| OpenLogi | [Signed macOS DMG](https://github.com/AprilNEA/OpenLogi/releases/latest) |
 
 An agent can perform the installation with the browser or command-line download
 tools, following the same steps as an interactive install:
@@ -96,13 +99,13 @@ tools, following the same steps as an interactive install:
 Keep Helium services enabled for its automatic updater, as described in the
 [Helium FAQ](https://helium.computer/). Set Helium as the default browser and
 choose Raycast's login startup and shortcuts in their own settings. Verify that
-`Helium.app`, `Steam.app`, and `Raycast.app` open from `/Applications`. Repeat the download steps for a reinstall; ongoing
-updates come from each app. A container runtime and other suggested utilities
-remain optional.
+`Helium.app`, `Steam.app`, `Raycast.app`, and `OpenLogi.app` open from
+`/Applications`. Repeat the download steps for a reinstall.
 
-### Optional Logitech setup
+### Logitech setup
 
-[OpenLogi](https://openlogi.org/) is the candidate replacement for Logi Options+.
+Use [OpenLogi](https://openlogi.org/) for Logitech configuration instead of
+Logi Options+.
 Its [supported-device list](https://openlogi.org/docs/supported-devices) includes
 Chris's MX Master 3 and MX Master 4, with support for Unifying and Bolt receivers.
 The project is still marked unstable; trial one mouse before configuring both.
@@ -121,6 +124,37 @@ lists device artwork fetched from a public CDN and optional update checks, off
 by default. Keep update checks off for a manual-update trial; install newer DMGs
 from the release page. This privacy description comes from the project, not an
 independent audit.
+
+## Desktop choices
+
+Use macOS floating windows and Raycast for window management. AeroSpace and Stats
+are not part of this setup. Homerow is not selected because it requires payment.
+BetterDisplay remains an optional evaluation, outside the main download list.
+Its [free/Pro comparison](https://betterdisplay.pro/guide/licensing/free-and-pro-features/)
+identifies which display controls remain available without Pro after the trial.
+
+## Container runtime experiments
+
+A container runtime is not part of the download list or nix-darwin configuration.
+Try Apple's [container CLI](https://github.com/apple/container) before deciding
+whether to bring over [OrbStack](https://orbstack.dev/), which Chris already uses
+on suremac. OrbStack remains an option for later.
+
+Apple's CLI runs OCI-compatible Linux containers in lightweight VMs using its
+[Containerization library](https://github.com/apple/containerization). It supports
+Apple Silicon and macOS 26, matching taro. When ready to experiment, use the
+latest signed `.pkg` from the [official releases](https://github.com/apple/container/releases),
+following the upstream installation instructions. A first smoke check is:
+
+```bash
+container system start
+container run --rm alpine echo hello
+```
+
+The expected output is `hello`. Before choosing a runtime for automation, try a
+representative personal project and check image builds, bind mounts, networking,
+and its orchestration requirements. Use the upstream `container` commands during
+the trial rather than assuming existing Docker-specific scripts are compatible.
 
 ## SSH and plugged-in work
 
