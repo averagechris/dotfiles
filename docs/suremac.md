@@ -84,6 +84,10 @@ tater's `system.tater` host key; see [LAN SSH](/docs/lan-ssh.md) for the
 DHCP-friendly `dotfiles-lan-hosts`, `ssh-lan`, and `ssh-suremac-lan` helpers and
 for the current key-trust caveat around a future dedicated `chris@tater` user key.
 
+The personal Mac uses `ssh taro-lan` on port 2222. After taro's first activation,
+run `nix run .#pair-taro` from suremac to create taro's key and authorize it for
+reverse access. See [Mac-to-Mac access](lan-ssh.md#mac-to-mac-access).
+
 ## Sleep on AC power
 
 `suremac` disables automatic idle system sleep on AC power so local coding
@@ -236,7 +240,7 @@ launchd service is enabled.
 The mutable T3 Code user settings are merged on a future Home Manager
 activation. To update T3 Code, first test the fork with its own lock file and
 check it against the repository's shared `nixpkgs`. When that shared pin is
-bumped, update all 14 repository lock files together and verify Electron 44 and
+bumped, update all 15 repository lock files together and verify Electron 44 and
 the OpenCode fixed-output hash still match. Refresh the T3 source in both the
 root and standalone suremac lock graphs with:
 

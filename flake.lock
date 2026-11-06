@@ -1510,6 +1510,91 @@
         "type": "github"
       }
     },
+    "taro": {
+      "inputs": {
+        "agenix": [
+          "taro",
+          "base-lib",
+          "agenix"
+        ],
+        "base-lib": [
+          "base-lib"
+        ],
+        "darwin": [
+          "taro",
+          "base-lib",
+          "darwin"
+        ],
+        "darwin-modules": [
+          "darwin-modules"
+        ],
+        "deploy-rs": [
+          "taro",
+          "base-lib",
+          "deploy-rs"
+        ],
+        "flake-utils": [
+          "taro",
+          "base-lib",
+          "flake-utils"
+        ],
+        "fleet": [
+          "fleet"
+        ],
+        "fleet-srht": [
+          "fleet-srht"
+        ],
+        "gander": [
+          "hm-modules",
+          "gander"
+        ],
+        "helix": [
+          "suremac",
+          "helix"
+        ],
+        "hm-modules": [
+          "hm-modules"
+        ],
+        "home-manager": [
+          "taro",
+          "base-lib",
+          "home-manager"
+        ],
+        "linear-cli": [
+          "hm-modules",
+          "linear-cli"
+        ],
+        "memo": [
+          "memo"
+        ],
+        "nitter-link": [
+          "nitter-link"
+        ],
+        "nixpkgs": [
+          "taro",
+          "base-lib",
+          "nixpkgs"
+        ],
+        "starship-jj": [
+          "hm-modules",
+          "starship-jj"
+        ],
+        "titlecase": [
+          "taro",
+          "base-lib",
+          "titlecase"
+        ]
+      },
+      "locked": {
+        "path": "./flakes/hosts/taro",
+        "type": "path"
+      },
+      "original": {
+        "path": "./flakes/hosts/taro",
+        "type": "path"
+      },
+      "parent": []
+    },
     "nitter-link": {
       "inputs": {
         "flake-utils": [
@@ -1929,6 +2014,7 @@
         "hypridle": "hypridle",
         "hyprland": "hyprland",
         "memo": "memo",
+        "taro": "taro",
         "nitter-link": "nitter-link",
         "nixos-hardware": "nixos-hardware",
         "nixos-modules": "nixos-modules",

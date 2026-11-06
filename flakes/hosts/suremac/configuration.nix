@@ -475,6 +475,18 @@ in {
 
   services.openssh.enable = true;
 
+  programs.ssh.extraConfig = ''
+    Host taro-lan taro.local
+      HostName taro.local
+      User chris
+      Port 2222
+      IdentityFile ~/.ssh/id_ed25519
+      IdentitiesOnly yes
+      IgnoreUnknown UseKeychain
+      UseKeychain yes
+      AddKeysToAgent yes
+  '';
+
   home-manager.users.chris = hmArgs @ {pkgs, ...}: {
     home.stateVersion = "26.05";
     home.packages = with pkgs; [

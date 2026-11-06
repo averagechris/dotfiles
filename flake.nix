@@ -20,6 +20,20 @@
       inputs.t3-code-nix.follows = "t3-code-nix";
       inputs.memo.follows = "memo";
     };
+    taro = {
+      url = "path:./flakes/hosts/taro";
+      inputs.base-lib.follows = "base-lib";
+      inputs.hm-modules.follows = "hm-modules";
+      inputs.darwin-modules.follows = "darwin-modules";
+      inputs.starship-jj.follows = "hm-modules/starship-jj";
+      inputs.linear-cli.follows = "hm-modules/linear-cli";
+      inputs.gander.follows = "hm-modules/gander";
+      inputs.fleet.follows = "fleet";
+      inputs.fleet-srht.follows = "fleet-srht";
+      inputs.nitter-link.follows = "nitter-link";
+      inputs.memo.follows = "memo";
+      inputs.helix.follows = "suremac/helix";
+    };
     trap = {
       url = "path:./flakes/hosts/trap";
       inputs.base-lib.follows = "base-lib";
@@ -242,6 +256,7 @@
   outputs = inputs @ {
     self,
     suremac,
+    taro,
     trap,
     thorny,
     tom,
@@ -273,6 +288,7 @@
       # Re-export all Darwin configurations
       darwinConfigurations = {
         inherit (suremac.darwinConfigurations) suremac;
+        inherit (taro.darwinConfigurations) taro;
       };
 
       # Re-export all deploy nodes
@@ -383,6 +399,17 @@
         name = "deploy-quiet";
         runtimeInputs = [pkgs.nix];
         text = builtins.readFile ./scripts/deploy-quiet.sh;
+      };
+
+      packages.pair-taro = pkgs.writeShellApplication {
+        name = "pair-taro";
+        text = builtins.readFile ./scripts/pair-taro.sh;
+      };
+
+      apps.pair-taro = {
+        type = "app";
+        program = "${self.packages.${system}.pair-taro}/bin/pair-taro";
+        meta.description = "Pair suremac and taro for public-key SSH on the LAN";
       };
 
       packages.update-flakes = pkgs.rustPlatform.buildRustPackage {
