@@ -1,0 +1,79 @@
+name: Maintenance decision
+run-name: Maintenance decision ${{ inputs.request_id }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      request_id:
+        description: Unique maintenance decision request identifier
+        required: true
+        type: string
+      review:
+        description: Structured Sol review JSON
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  decide:
+    if: >-
+      vars.MAINTENANCE_ENABLED == 'true' &&
+      vars.MAINTENANCE_AUTOMERGE == 'true' &&
+      github.ref == 'refs/heads/main' && github.actor == vars.MAINTENANCE_APP_LOGIN &&
+      inputs.request_id != '' && inputs.review != ''
+    runs-on: ubuntu-24.04
+    environment: maintenance-merge
+    permissions:
+      contents: read
+      actions: read
+      statuses: read
+      pull-requests: write
+    steps:
+      - name: Check out trusted decision code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          path: trusted
+          persist-credentials: false
+      - name: Decode review JSON without shell interpolation
+        env:
+          REVIEW_JSON: ${{ inputs.review }}
+        run: |
+          mkdir -p review
+          python3 - <<'PY'
+          import json, os
+          with open("review/evidence.json", "w", encoding="utf-8") as output:
+              json.dump(json.loads(os.environ["REVIEW_JSON"]), output, separators=(",", ":"))
+          PY
+      - name: Mint short-lived maintenance App token
+        id: app-token
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349
+        with:
+          app-id: ${{ secrets.MAINTENANCE_APP_ID }}
+          private-key: ${{ secrets.MAINTENANCE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: dotfiles
+          permission-contents: write
+          permission-pull-requests: write
+          permission-actions: read
+      - name: Apply trusted merge gates
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          MAINTENANCE_APP_ID: ${{ secrets.MAINTENANCE_APP_ID }}
+          MAINTENANCE_APP_LOGIN: ${{ vars.MAINTENANCE_APP_LOGIN }}
+          MAINTENANCE_HOST_ATTESTOR_LOGIN: ${{ vars.MAINTENANCE_HOST_ATTESTOR_LOGIN }}
+          MAINTENANCE_AUTOMERGE: ${{ vars.MAINTENANCE_AUTOMERGE }}
+        run: |
+          mkdir -p out
+          PYTHONPATH=trusted/scripts python3 -m maintenance.cli decide \
+            --trusted trusted --review review/evidence.json --output out/evidence.json
+      - name: Upload decision evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: maintenance-decision
+          path: out/evidence.json
+          if-no-files-found: warn
+          retention-days: 14

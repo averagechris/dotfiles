@@ -1,0 +1,91 @@
+name: Maintenance watchdog
+
+on:
+  schedule:
+    - cron: '43 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  watchdog:
+    if: >-
+      vars.MAINTENANCE_ENABLED == 'true' && github.ref == 'refs/heads/main' &&
+      (github.event_name == 'schedule' || github.actor == vars.MAINTENANCE_APP_LOGIN)
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Check out trusted watchdog code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          path: trusted
+          persist-credentials: false
+      - name: Check for a recent successful heartbeat
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: PYTHONPATH=trusted/scripts python3 -m maintenance.cli watchdog
+
+  notify-owner:
+    needs: watchdog
+    if: >-
+      always() &&
+      vars.MAINTENANCE_ENABLED == 'true' && github.ref == 'refs/heads/main' &&
+      (github.event_name == 'schedule' || github.actor == vars.MAINTENANCE_APP_LOGIN)
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: maintenance-watchdog-notify
+      cancel-in-progress: false
+    permissions:
+      contents: read
+    steps:
+      - name: Check out trusted notification code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          path: trusted
+          persist-credentials: false
+      - name: Restore private-format watchdog outbox
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: outbox
+          key: maintenance-watchdog-v1-main-${{ github.run_id }}
+          restore-keys: |
+            maintenance-watchdog-v1-main-
+      - name: Queue bounded watchdog alert when heartbeat is stale
+        if: needs.watchdog.result == 'failure'
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          mkdir -p outbox
+          python3 - <<'PY'
+          import json, os
+          event = {"kind": "watchdog", "fingerprint": "watchdog:heartbeat",
+                   "summary": "Michi maintenance heartbeat is missing or stale; Thorny may be unavailable.",
+                   "url": os.environ["RUN_URL"]}
+          with open("event.json", "w", encoding="utf-8") as output:
+              json.dump(event, output, separators=(",", ":"))
+          PY
+          PYTHONPATH=trusted/scripts python3 -m maintenance.notify enqueue --state outbox --event event.json
+      - name: Deliver pending bounded watchdog alerts
+        env:
+          BOT_TOKEN: ${{ secrets.MAINTENANCE_TELEGRAM_BOT_TOKEN }}
+          TG_OWNER_ID: ${{ secrets.MAINTENANCE_TELEGRAM_OWNER_ID }}
+        run: |
+          PYTHONPATH=trusted/scripts python3 - <<'PY'
+          import os
+          from maintenance.notify import deliver
+          result = deliver("outbox", os.environ["BOT_TOKEN"], os.environ["TG_OWNER_ID"])
+          print("watchdog notification delivery:", result)
+          if result["retried"] or result["blocked"]:
+              raise SystemExit(1)
+          PY
+      - name: Save watchdog outbox for the next scheduled run
+        if: always()
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: outbox
+          key: maintenance-watchdog-v1-main-${{ github.run_id }}

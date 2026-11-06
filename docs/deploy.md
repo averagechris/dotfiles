@@ -40,9 +40,13 @@ nh darwin switch . --hostname suremac
 
 NixOS hosts can enroll in `dotfiles.selfDeploy`, a reusable pull-based updater
 module. Enrolled hosts periodically check the current dotfiles `main` flake,
-build their own `nixosConfigurations.<host>.config.system.build.toplevel`,
-activate it with `switch-to-configuration switch`, then run local health checks.
-If activation or health checks fail, the service switches back to the previously
+resolve its commit and locked flake URL together, then build their own
+`nixosConfigurations.<host>.config.system.build.toplevel` from that immutable
+source. The build stays pinned to the resolved commit even if `main` moves while
+the build is starting. A missing or malformed revision or locked URL fails the
+run before any build or activation. The service activates a successful build
+with `switch-to-configuration switch`, then runs local health checks. If
+activation or health checks fail, the service switches back to the previously
 running system.
 
 This keeps deployment control host-local while still letting `thorny` do the

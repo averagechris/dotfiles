@@ -1,0 +1,194 @@
+name: Maintenance validation
+run-name: Maintenance validation ${{ inputs.head }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: Maintenance pull request number
+        required: true
+        type: string
+      base:
+        description: Trusted main commit
+        required: true
+        type: string
+      head:
+        description: Candidate commit to validate
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    if: >-
+      vars.MAINTENANCE_ENABLED == 'true' && github.ref == 'refs/heads/main' &&
+      github.actor == vars.MAINTENANCE_APP_LOGIN && inputs.base == github.sha
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: read
+    env:
+      M_PR: ${{ inputs.pr }}
+      M_BASE: ${{ inputs.base }}
+      M_HEAD: ${{ inputs.head }}
+      GH_TOKEN: ${{ github.token }}
+      MAINTENANCE_APP_LOGIN: ${{ vars.MAINTENANCE_APP_LOGIN }}
+    steps:
+      - name: Check out trusted workflow code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          path: trusted
+          persist-credentials: false
+      - name: Verify candidate identity and sources
+        run: |
+          mkdir -p identity
+          PYTHONPATH=trusted/scripts python3 -m maintenance.cli prepare \
+            --trusted trusted --output identity/evidence.json
+      - name: Upload verified identity
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: maintenance-identity
+          path: identity/evidence.json
+          if-no-files-found: error
+          retention-days: 7
+
+  native:
+    needs: prepare
+    if: needs.prepare.result == 'success'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            system: x86_64-linux
+          - runner: ubuntu-24.04-arm
+            system: aarch64-linux
+          - runner: macos-14
+            system: aarch64-darwin
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Check out trusted validation code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          path: trusted
+          persist-credentials: false
+      - name: Check out candidate source for sandboxed validation
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: ${{ github.repository }}
+          ref: ${{ inputs.head }}
+          path: candidate
+          persist-credentials: false
+      - name: Download trusted identity
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: maintenance-identity
+          path: identity
+      - name: Install sandboxed Nix
+        uses: cachix/install-nix-action@75c75c31ebece974e48ebc36b4ad125bd97bd97b
+        with:
+          extra_nix_config: |
+            sandbox = true
+            accept-flake-config = false
+      - name: Run native candidate validation
+        env:
+          M_SYSTEM: ${{ matrix.system }}
+        run: |
+          mkdir -p out
+          python3 trusted/scripts/maintenance/validate.py \
+            --trusted trusted --candidate candidate --system "$M_SYSTEM" \
+            --identity identity/evidence.json --output out/evidence.json
+      - name: Upload native evidence shard
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: native-${{ matrix.system }}
+          path: out/evidence.json
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Upload native logs separately
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: logs-${{ matrix.system }}
+          path: out/evidence.json.logs/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  aggregate:
+    needs: [prepare, native]
+    if: always() && needs.prepare.result == 'success'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: read
+      statuses: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      M_HEAD: ${{ inputs.head }}
+      STATUS_STATE: ${{ needs.native.result == 'success' && 'success' || 'failure' }}
+    steps:
+      - name: Check out trusted aggregation code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          path: trusted
+          persist-credentials: false
+      - name: Download verified identity
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: maintenance-identity
+          path: identity
+      - name: Download native evidence shards
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: native-*
+          path: shards
+          merge-multiple: false
+      - name: Collect and verify all native evidence
+        id: collect
+        continue-on-error: true
+        run: |
+          mkdir -p out
+          PYTHONPATH=trusted/scripts python3 -m maintenance.cli collect \
+            --trusted trusted --identity identity/evidence.json --shards shards \
+            --output out/evidence.json
+      - name: Upload aggregate evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: maintenance-evidence
+          path: out/evidence.json
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Set required native evidence commit status
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          STATUS_STATE: ${{ steps.collect.outcome == 'success' && needs.native.result == 'success' && 'success' || 'failure' }}
+        run: |
+          python3 - <<'PY'
+          import json, os, re, urllib.request
+          head = os.environ["M_HEAD"]
+          if not re.fullmatch(r"[0-9a-f]{40}", head):
+              raise SystemExit("invalid expected candidate SHA")
+          body = json.dumps({"state": os.environ["STATUS_STATE"],
+              "context": "Maintenance / native evidence",
+              "description": "All required native evidence verified" if os.environ["STATUS_STATE"] == "success" else "Native maintenance evidence failed or is incomplete"}).encode()
+          request = urllib.request.Request("https://api.github.com/repos/averagechris/dotfiles/statuses/" + head,
+              data=body, method="POST", headers={"Authorization": "Bearer " + os.environ["GH_TOKEN"],
+              "Accept": "application/vnd.github+json", "Content-Type": "application/json",
+              "X-GitHub-Api-Version": "2022-11-28"})
+          with urllib.request.urlopen(request, timeout=30) as response:
+              response.read(4096)
+          PY
+      - name: Require successful native collection
+        if: always()
+        run: test "${{ steps.collect.outcome }}" = success && test "${{ needs.native.result }}" = success

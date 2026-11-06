@@ -1,0 +1,105 @@
+name: Maintenance host attestation
+run-name: Maintenance host attestation ${{ inputs.head }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: Maintenance pull request number
+        required: true
+        type: string
+      base:
+        description: Trusted main commit
+        required: true
+        type: string
+      head:
+        description: Candidate commit
+        required: true
+        type: string
+      attestation:
+        description: Fresh host attestation JSON
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    if: >-
+      vars.MAINTENANCE_ENABLED == 'true' && github.ref == 'refs/heads/main' &&
+      github.actor == vars.MAINTENANCE_HOST_ATTESTOR_LOGIN && inputs.base == github.sha
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: read
+    env:
+      M_PR: ${{ inputs.pr }}
+      M_BASE: ${{ inputs.base }}
+      M_HEAD: ${{ inputs.head }}
+      GH_TOKEN: ${{ github.token }}
+      MAINTENANCE_APP_LOGIN: ${{ vars.MAINTENANCE_APP_LOGIN }}
+    steps:
+      - name: Check out trusted attestation verifier
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          path: trusted
+          persist-credentials: false
+      - name: Verify candidate context against trusted GitHub state
+        run: |
+          mkdir -p identity
+          PYTHONPATH=trusted/scripts python3 -m maintenance.cli prepare \
+            --trusted trusted --output identity/evidence.json
+      - name: Upload verified identity
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: maintenance-attestation-identity
+          path: identity/evidence.json
+          if-no-files-found: error
+          retention-days: 7
+
+  accept:
+    needs: prepare
+    if: needs.prepare.result == 'success'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Check out trusted attestation verifier
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          path: trusted
+          persist-credentials: false
+      - name: Download verified identity
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: maintenance-attestation-identity
+          path: identity
+      - name: Decode attestation JSON without shell interpolation
+        env:
+          ATTESTATION_JSON: ${{ inputs.attestation }}
+        run: |
+          mkdir -p supplied out
+          python3 - <<'PY'
+          import json, os
+          with open("supplied/evidence.json", "w", encoding="utf-8") as output:
+              json.dump(json.loads(os.environ["ATTESTATION_JSON"]), output, separators=(",", ":"))
+          PY
+      - name: Accept fresh attestation bound to verified identity
+        env:
+          MAINTENANCE_HOST_ATTESTOR_LOGIN: ${{ vars.MAINTENANCE_HOST_ATTESTOR_LOGIN }}
+        run: |
+          PYTHONPATH=trusted/scripts python3 -m maintenance.cli accept-attestation \
+            --trusted trusted --identity identity/evidence.json \
+            --attestation supplied/evidence.json --output out/evidence.json
+      - name: Upload host attestation evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: maintenance-host-attestation
+          path: out/evidence.json
+          if-no-files-found: warn
+          retention-days: 14

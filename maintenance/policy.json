@@ -1,0 +1,73 @@
+{
+  "schema": 1,
+  "repository": "averagechris/dotfiles",
+  "base_branch": "main",
+  "merge_enabled": false,
+  "branch_prefix": "maintenance/",
+  "model": "gpt-6.1-sol",
+  "reasoning": "high",
+  "max_review_age_seconds": 21600,
+  "max_evidence_age_seconds": 86400,
+  "max_changed_files": 20,
+  "max_patch_bytes": 400000,
+  "cooldown_days": 7,
+  "canonical_locks": [
+    "flake.lock",
+    "flakes/base-lib/flake.lock",
+    "flakes/darwin-modules/flake.lock",
+    "flakes/hm-modules/flake.lock",
+    "flakes/hosts/cruber/flake.lock",
+    "flakes/hosts/suremac/flake.lock",
+    "flakes/hosts/tater/flake.lock",
+    "flakes/hosts/taz/flake.lock",
+    "flakes/hosts/thorny/flake.lock",
+    "flakes/hosts/tom/flake.lock",
+    "flakes/hosts/tootsie/flake.lock",
+    "flakes/hosts/trainwreck/flake.lock",
+    "flakes/hosts/trap/flake.lock",
+    "flakes/nixos-modules/flake.lock"
+  ],
+  "manual_packages": [
+    "flakes/base-lib/packages/pi-coding-agent.nix",
+    "flakes/base-lib/packages/helium-bin.nix"
+  ],
+  "native_hosts": {
+    "x86_64-linux": ["thorny", "tater", "tom", "trap", "cruber"],
+    "aarch64-linux": ["trainwreck"],
+    "aarch64-darwin": ["suremac"]
+  },
+  "required_systems": ["x86_64-linux", "aarch64-linux", "aarch64-darwin"],
+  "validation_workflow": ".github/workflows/maintenance-validate.yml",
+  "decision_workflow": ".github/workflows/maintenance-decide.yml",
+  "holds": {
+    "emudhra": {
+      "input": "nixpkgs",
+      "revision": "e4d4e5154c52da44a9e5a4895d270cffa1ecb6fc",
+      "rationale": "Preserve certificate distrust, uv trust-store fixes, and the System76 module installation fix while following nixos-unstable.",
+      "source": "docs/manual-package-updates.md#emudhra-certificate-mitigation-2026-10-20",
+      "minimum_versions": {"cacert": "3.131.1", "uv": "0.13.4"},
+      "required_nixpkgs_commits": [
+        "02c087f3fe673c9e317f206a627cb6b910336dbe",
+        "baa82799b627d760265eae9965b54c180462de23",
+        "e4d4e5154c52da44a9e5a4895d270cffa1ecb6fc"
+      ],
+      "reject_endpoints": [
+        "https://dv-g3b-emudhra.we-have-a-problem.com/",
+        "https://dv-g3b-aaa-emudhra.we-have-a-problem.com/"
+      ],
+      "healthy_endpoint": "https://github.com/",
+      "required_checks": ["versions", "ancestry", "package-bundle", "system-bundle", "uv-system-certs"],
+      "requires_host_attestation": true,
+      "host_attestation_check": "macos-keychain"
+    }
+  },
+  "context_files": [
+    "AGENTS.md",
+    "docs/automated-maintenance.md",
+    "docs/manual-package-updates.md",
+    "docs/flake-hygiene.md",
+    "docs/opencode-patches.md",
+    "docs/cache-policy.md",
+    "docs/deploy.md"
+  ]
+}

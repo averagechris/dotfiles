@@ -1,0 +1,25 @@
+name: Maintenance heartbeat
+run-name: Maintenance heartbeat ${{ inputs.request_id }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      request_id:
+        description: Unique heartbeat request identifier
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  heartbeat:
+    if: >-
+      vars.MAINTENANCE_ENABLED == 'true' && github.ref == 'refs/heads/main' &&
+      github.actor == vars.MAINTENANCE_APP_LOGIN && inputs.request_id != ''
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Confirm trusted maintenance heartbeat
+        run: test "$GITHUB_REF" = refs/heads/main
