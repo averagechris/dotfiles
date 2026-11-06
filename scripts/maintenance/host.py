@@ -13,7 +13,7 @@ import time
 from types import SimpleNamespace
 
 from maintenance import cli, gate
-from maintenance.common import Blocked, GitHub, REPOSITORY, atomic_json, credential, digest, dumps, json_bytes, read_json, require
+from maintenance.common import Blocked, GitHub, REPOSITORY, atomic_json, digest, dumps, json_bytes, read_json, require
 from maintenance.controller import policy_at
 
 ATTEST_WORKFLOW = ".github/workflows/maintenance-attest.yml"

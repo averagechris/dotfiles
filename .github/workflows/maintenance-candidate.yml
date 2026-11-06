@@ -67,6 +67,7 @@ jobs:
       github.ref == 'refs/heads/main' && github.actor == vars.MAINTENANCE_APP_LOGIN &&
       inputs.base == github.sha
     runs-on: ubuntu-24.04
+    environment: maintenance-merge
     permissions:
       contents: read
       actions: read

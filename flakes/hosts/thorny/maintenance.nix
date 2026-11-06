@@ -9,6 +9,32 @@
   cfg = config.dotfiles.maintenance;
   stateDir = "/var/lib/dotfiles-maintenance";
   requestDir = "/var/lib/dotfiles-maintenance-requests";
+  serviceDefaults = {
+    Type = "oneshot";
+    User = "dotfiles-maintenance";
+    Group = "dotfiles-maintenance";
+    WorkingDirectory = stateDir;
+    NoNewPrivileges = true;
+    PrivateUsers = true;
+    PrivateTmp = true;
+    PrivateDevices = true;
+    ProtectSystem = "strict";
+    ProtectHome = true;
+    ProtectKernelModules = true;
+    ProtectKernelTunables = true;
+    ProtectKernelLogs = true;
+    ProtectControlGroups = true;
+    ProtectProc = "invisible";
+    InaccessiblePaths = ["/var/lib/zeroclaw-home"];
+    RestrictNamespaces = true;
+    RestrictAddressFamilies = ["AF_INET" "AF_INET6" "AF_UNIX"];
+    RestrictSUIDSGID = true;
+    LockPersonality = true;
+    CapabilityBoundingSet = "";
+    StateDirectory = "dotfiles-maintenance";
+    StateDirectoryMode = "0700";
+    Environment = ["PYTHONPATH=${maintenanceRuntime}"];
+  };
   source = ../../../scripts/maintenance;
   maintenanceRuntime = pkgs.runCommand "dotfiles-maintenance-runtime" {} ''
     mkdir -p "$out/maintenance"
@@ -130,56 +156,34 @@ in {
         after = ["network-online.target"];
         wants = ["network-online.target"];
         path = [pkgs.openssl];
-        serviceConfig = {
-          Type = "oneshot";
-          User = "dotfiles-maintenance";
-          Group = "dotfiles-maintenance";
-          SupplementaryGroups = ["dotfiles-maintenance-requests"];
-          WorkingDirectory = stateDir;
-          ExecStart = lib.escapeShellArgs [
-            (lib.getExe controllerPackage)
-            "tick"
-            "--state"
-            stateDir
-            "--app-login"
-            cfg.appLogin
-            "--app-id"
-            cfg.githubAppId
-            "--installation-id"
-            cfg.githubInstallationId
-            "--requests"
-            requestDir
-            "--attestor-login"
-            cfg.attestorLogin
-          ];
-          LoadCredential = [
-            "github-app-key:${toString cfg.githubAppKeyFile}"
-            "openai-api-key:${toString cfg.openaiApiKeyFile}"
-          ];
-          UMask = "0007";
-          TimeoutStartSec = "10min";
-          NoNewPrivileges = true;
-          PrivateUsers = true;
-          PrivateTmp = true;
-          PrivateDevices = true;
-          ProtectSystem = "strict";
-          ProtectHome = true;
-          ProtectKernelModules = true;
-          ProtectKernelTunables = true;
-          ProtectKernelLogs = true;
-          ProtectControlGroups = true;
-          ProtectProc = "invisible";
-          InaccessiblePaths = ["/var/lib/zeroclaw-home"];
-          RestrictNamespaces = true;
-          RestrictAddressFamilies = ["AF_INET" "AF_INET6" "AF_UNIX"];
-          RestrictSUIDSGID = true;
-          LockPersonality = true;
-          CapabilityBoundingSet = "";
-          ReadWritePaths = [stateDir requestDir];
-          StateDirectory = "dotfiles-maintenance";
-          StateDirectoryMode = "0700";
-          Environment = ["PYTHONPATH=${maintenanceRuntime}"];
-        };
+        serviceConfig =
+          serviceDefaults
+          // {
+            SupplementaryGroups = ["dotfiles-maintenance-requests"];
+            ExecStart = lib.escapeShellArgs [
+              (lib.getExe controllerPackage)
+              "tick"
+              "--state"
+              stateDir
+              "--app-login"
+              cfg.appLogin
+              "--app-id"
+              cfg.githubAppId
+              "--installation-id"
+              cfg.githubInstallationId
+              "--requests"
+              requestDir
+              "--attestor-login"
+              cfg.attestorLogin
+            ];
+            LoadCredential = [
+              "github-app-key:${toString cfg.githubAppKeyFile}"
+              "openai-api-key:${toString cfg.openaiApiKeyFile}"
+            ];
+            UMask = "0007";
+            TimeoutStartSec = "10min";
+            ReadWritePaths = [stateDir requestDir];
+          };
       };
       systemd.timers.dotfiles-maintenance = {
         description = "Periodic Dotfiles maintenance controller tick";
@@ -195,46 +199,24 @@ in {
         description = "Deliver private Dotfiles maintenance alerts to the owner";
         after = ["network-online.target"];
         wants = ["network-online.target"];
-        serviceConfig = {
-          Type = "oneshot";
-          User = "dotfiles-maintenance";
-          Group = "dotfiles-maintenance";
-          WorkingDirectory = stateDir;
-          ExecStart = lib.escapeShellArgs [
-            "${pkgs.python3}/bin/python"
-            "${maintenanceRuntime}/maintenance/notify.py"
-            "deliver"
-            "--state"
-            "${stateDir}/alerts"
-          ];
-          LoadCredential = [
-            "bot-token:${toString cfg.telegramBotTokenFile}"
-            "owner-id:${toString cfg.telegramOwnerIdFile}"
-          ];
-          UMask = "0077";
-          TimeoutStartSec = "2min";
-          NoNewPrivileges = true;
-          PrivateUsers = true;
-          PrivateTmp = true;
-          PrivateDevices = true;
-          ProtectSystem = "strict";
-          ProtectHome = true;
-          ProtectKernelModules = true;
-          ProtectKernelTunables = true;
-          ProtectKernelLogs = true;
-          ProtectControlGroups = true;
-          ProtectProc = "invisible";
-          InaccessiblePaths = ["/var/lib/zeroclaw-home"];
-          RestrictNamespaces = true;
-          RestrictAddressFamilies = ["AF_INET" "AF_INET6" "AF_UNIX"];
-          RestrictSUIDSGID = true;
-          LockPersonality = true;
-          CapabilityBoundingSet = "";
-          ReadWritePaths = [stateDir];
-          StateDirectory = "dotfiles-maintenance";
-          StateDirectoryMode = "0700";
-          Environment = ["PYTHONPATH=${maintenanceRuntime}"];
-        };
+        serviceConfig =
+          serviceDefaults
+          // {
+            ExecStart = lib.escapeShellArgs [
+              "${pkgs.python3}/bin/python"
+              "${maintenanceRuntime}/maintenance/notify.py"
+              "deliver"
+              "--state"
+              "${stateDir}/alerts"
+            ];
+            LoadCredential = [
+              "bot-token:${toString cfg.telegramBotTokenFile}"
+              "owner-id:${toString cfg.telegramOwnerIdFile}"
+            ];
+            UMask = "0077";
+            TimeoutStartSec = "2min";
+            ReadWritePaths = [stateDir];
+          };
       };
       systemd.timers.dotfiles-maintenance-notify = {
         description = "Periodic delivery of Dotfiles maintenance alerts";

@@ -5,6 +5,8 @@ import json
 import os
 from pathlib import Path
 import re
+import shlex
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -33,8 +35,12 @@ class SelfDeployRevisionPinTests(unittest.TestCase):
             temp = Path(tmp)
             fake_bin = temp / "bin"
             fake_bin.mkdir()
+            bash = shutil.which("bash")
+            sh = shutil.which("sh")
+            self.assertIsNotNone(bash, "bash must be available on PATH")
+            self.assertIsNotNone(sh, "sh must be available on PATH")
             (fake_bin / "nix").write_text(
-                "#!/bin/bash\n"
+                f"#!{bash}\n"
                 'if [ "$1" = flake ] && [ "$2" = metadata ]; then\n'
                 '  printf \'%s\\n\' "$METADATA_JSON"\n'
                 '  printf B >"$BRANCH_STATE"\n'
@@ -46,14 +52,16 @@ class SelfDeployRevisionPinTests(unittest.TestCase):
                 'fi\n'
             )
             (fake_bin / "nix").chmod(0o755)
-            (fake_bin / "readlink").write_text("#!/bin/sh\nprintf /nix/store/previous-system\n")
+            (fake_bin / "readlink").write_text(
+                f"#!{sh}\nprintf /nix/store/previous-system\n"
+            )
             (fake_bin / "readlink").chmod(0o755)
             state_dir = temp / "state"
             script = "\n".join(
                 [
-                    "#!/bin/bash",
+                    f"#!{bash}",
                     "set -euo pipefail",
-                    f"state_dir={json.dumps(str(state_dir))}",
+                    f"state_dir={shlex.quote(str(state_dir))}",
                     'lock_file="$state_dir/deploy.lock"',
                     'last_success_rev_file="$state_dir/last-success-rev"',
                     'last_attempt_rev_file="$state_dir/last-attempt-rev"',
@@ -75,7 +83,7 @@ class SelfDeployRevisionPinTests(unittest.TestCase):
                 "BRANCH_STATE": str(branch_state),
             }
             result = subprocess.run(
-                ["bash", str(script_path)], capture_output=True, text=True, env=env
+                [bash, str(script_path)], capture_output=True, text=True, env=env
             )
             return result, build_ref.read_text().strip() if build_ref.exists() else "", branch_state.read_text() if branch_state.exists() else ""
 

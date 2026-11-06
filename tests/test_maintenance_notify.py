@@ -1,14 +1,14 @@
-import importlib.util
+import contextlib
+import io
 import json
+from pathlib import Path
+import sys
 import tempfile
 import unittest
-from pathlib import Path
+from unittest import mock
 
-
-SCRIPT = Path(__file__).parents[1] / "scripts" / "maintenance" / "notify.py"
-SPEC = importlib.util.spec_from_file_location("maintenance_notify", SCRIPT)
-notify = importlib.util.module_from_spec(SPEC)
-SPEC.loader.exec_module(notify)
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+from maintenance import notify
 
 
 class MaintenanceNotifyTests(unittest.TestCase):
@@ -84,6 +84,20 @@ class MaintenanceNotifyTests(unittest.TestCase):
         self.assertIn("permanently", record["receipt"])
         self.assertNotIn("last_error", record)
         self.assertFalse(notify.queue(self.state, self.event, now=200000))
+        result = notify.deliver(self.state, "token", "7", now=200000,
+                                transport=lambda *_: self.fail("permanently rejected alert must not resend"))
+        self.assertEqual(result["blocked"], 1, "a permanent failure must remain visible on later ticks")
+
+    def test_cli_exposes_delivery_failure_without_secret_or_event_content(self):
+        for kind in ("retried", "blocked"):
+            result = {"sent": 0, "retried": 0, "blocked": 0, "skipped": 0, kind: 1}
+            output = io.StringIO()
+            with mock.patch.dict("os.environ", {"BOT_TOKEN": "secret-token", "TG_OWNER_ID": "7"}), \
+                 mock.patch.object(notify, "deliver", return_value=result), contextlib.redirect_stdout(output):
+                code = notify.main(["deliver", "--state", str(self.state)])
+            self.assertEqual(code, 1)
+            self.assertEqual(json.loads(output.getvalue()), result)
+            self.assertNotIn("secret-token", output.getvalue())
 
     def test_credentials_and_content_are_not_exposed(self):
         self.assertTrue(notify.queue(self.state, {**self.event, "summary": "See /etc/private/key"}, now=100))

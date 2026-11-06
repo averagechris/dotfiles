@@ -144,6 +144,7 @@ class ControllerTests(unittest.TestCase):
         reviewer = mock.Mock(return_value=decision)
         with mock.patch("maintenance.controller.gate.verify_validation", return_value={"run_id": 9}), \
              mock.patch("maintenance.controller.gate.verify_sources", return_value={"nixpkgs": self.policy["holds"]["emudhra"]["revision"]}), \
+             mock.patch("maintenance.controller.policy_at", return_value=({**self.policy, "merge_enabled": True}, self.policy_hash)), \
              mock.patch("maintenance.controller.collect_context", return_value={}), \
              mock.patch("maintenance.controller.gate.verify_review"), \
              mock.patch("maintenance.controller.issue") as alert:
@@ -165,6 +166,26 @@ class ControllerTests(unittest.TestCase):
         self.assertEqual(second["phase"], "complete")
         self.assertEqual(second["head"], HEAD)
         self.assertEqual(len([x for x in api.calls if x[0] == "post" and "maintenance-decide.yml" in x[1]]), 1)
+
+    def test_dry_run_records_successful_review_without_merge_dispatch(self):
+        self.write_state(state_for("validating", self.policy_hash, pr=4, head=HEAD))
+        created = datetime.datetime.fromtimestamp(NOW, datetime.timezone.utc).isoformat()
+        api = FakeApi(runs=[{"display_title": "Maintenance validation " + HEAD, "created_at": created,
+                             "status": "completed", "conclusion": "success", "id": 8}])
+        decision = {"decision": "merge", "summary": "passed", "unresolved": [], "holds": {}}
+        with mock.patch("maintenance.controller.gate.verify_validation", return_value={"run_id": 9}), \
+             mock.patch("maintenance.controller.gate.verify_sources", return_value={"nixpkgs": self.policy["holds"]["emudhra"]["revision"]}), \
+             mock.patch("maintenance.controller.collect_context", return_value={}), \
+             mock.patch("maintenance.controller.gate.verify_review") as verify, \
+             mock.patch("maintenance.controller.issue") as alert:
+            result = controller.tick(self.state_dir, api, "michi[bot]", "key", self.requests,
+                                     now=NOW, reviewer=mock.Mock(return_value=decision))
+        self.assertEqual(result["phase"], "complete", result)
+        self.assertIn("disabled", result["summary"])
+        self.assertEqual(json.loads((self.state_dir / "review.json").read_text()), decision)
+        verify.assert_called_once()
+        alert.assert_not_called()
+        self.assertFalse(any(x[0] == "post" and "maintenance-decide.yml" in x[1] for x in api.calls))
 
     def test_duplicate_dispatch_runs_are_not_selected_ambiguously(self):
         created = datetime.datetime.fromtimestamp(NOW, datetime.timezone.utc).isoformat()

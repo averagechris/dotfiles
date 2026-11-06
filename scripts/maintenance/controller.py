@@ -11,7 +11,7 @@ import subprocess
 import time
 import uuid
 
-from maintenance.common import Blocked, GitHub, REPOSITORY, atomic_json, credential, digest, dumps, json_bytes, read_json, require
+from maintenance.common import Blocked, GitHub, REPOSITORY, atomic_json, digest, dumps, json_bytes, read_json, require
 from maintenance import gate, notify
 from maintenance.review import review
 
@@ -213,6 +213,9 @@ def tick(state_dir, api, app_login, api_key, requests=None, now=None, reviewer=r
                 atomic_json(state_dir / "review.json", decision)
                 require(decision["decision"] == "merge", decision["summary"])
                 gate.verify_review(policy, expected, decision, evidence, sources["nixpkgs"], now)
+                if not policy.get("merge_enabled"):
+                    state.update(phase="complete", summary="Review passed; autonomous merging remains disabled.")
+                    return state
                 state.update(phase="deciding", decision_started_at=now)
                 atomic_json(path, state)
                 try:

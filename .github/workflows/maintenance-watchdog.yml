@@ -36,6 +36,7 @@ jobs:
       vars.MAINTENANCE_ENABLED == 'true' && github.ref == 'refs/heads/main' &&
       (github.event_name == 'schedule' || github.actor == vars.MAINTENANCE_APP_LOGIN)
     runs-on: ubuntu-24.04
+    environment: maintenance-merge
     concurrency:
       group: maintenance-watchdog-notify
       cancel-in-progress: false
@@ -74,15 +75,7 @@ jobs:
         env:
           BOT_TOKEN: ${{ secrets.MAINTENANCE_TELEGRAM_BOT_TOKEN }}
           TG_OWNER_ID: ${{ secrets.MAINTENANCE_TELEGRAM_OWNER_ID }}
-        run: |
-          PYTHONPATH=trusted/scripts python3 - <<'PY'
-          import os
-          from maintenance.notify import deliver
-          result = deliver("outbox", os.environ["BOT_TOKEN"], os.environ["TG_OWNER_ID"])
-          print("watchdog notification delivery:", result)
-          if result["retried"] or result["blocked"]:
-              raise SystemExit(1)
-          PY
+        run: PYTHONPATH=trusted/scripts python3 -m maintenance.notify deliver --state outbox
       - name: Save watchdog outbox for the next scheduled run
         if: always()
         uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830

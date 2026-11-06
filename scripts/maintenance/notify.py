@@ -5,17 +5,17 @@ from __future__ import annotations
 
 import argparse
 import fcntl
-import hashlib
 import json
 import os
 import re
 import sys
-import tempfile
 import time
 import urllib.error
 import urllib.request
 from pathlib import Path
 from typing import Any, Callable
+
+from maintenance.common import Blocked, atomic_json, digest, dumps, read_json
 
 API_URL = "https://api.telegram.org"
 MAX_UTF16 = 4096
@@ -50,30 +50,11 @@ def _layout(state_dir: Path) -> dict[str, Path]:
     return result
 
 
-def _atomic_json(path: Path, value: dict[str, Any]) -> None:
-    fd, temp_name = tempfile.mkstemp(prefix=".write-", dir=path.parent)
-    temp = Path(temp_name)
-    try:
-        os.fchmod(fd, 0o600)
-        with os.fdopen(fd, "w", encoding="utf-8") as stream:
-            json.dump(value, stream, ensure_ascii=True, sort_keys=True)
-            stream.write("\n")
-            stream.flush()
-            os.fsync(stream.fileno())
-        os.replace(temp, path)
-        os.chmod(path, 0o600)
-        dir_fd = os.open(path.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
-        try:
-            os.fsync(dir_fd)
-        finally:
-            os.close(dir_fd)
-    finally:
-        temp.unlink(missing_ok=True)
-
-
 def _read(path: Path) -> dict[str, Any]:
-    with path.open(encoding="utf-8") as stream:
-        value = json.load(stream)
+    try:
+        value = read_json(path)
+    except (Blocked, OSError, ValueError, TypeError):
+        raise NotifyError("invalid outbox record") from None
     if not isinstance(value, dict):
         raise NotifyError("invalid outbox record")
     return value
@@ -86,10 +67,6 @@ def _lock(state_dir: Path) -> Any:
     stream = os.fdopen(fd, "r+")
     fcntl.flock(stream.fileno(), fcntl.LOCK_EX)
     return stream
-
-
-def _digest(fingerprint: str) -> str:
-    return hashlib.sha256(fingerprint.encode("ascii")).hexdigest()
 
 
 def _validate_event(event: Any) -> dict[str, Any]:
@@ -118,7 +95,7 @@ def queue(state_dir: str | Path, event: dict[str, Any], now: int | None = None) 
     if event["kind"] in QUIET_KINDS:
         return False
     current = int(time.time() if now is None else now)
-    key = _digest(event["fingerprint"])
+    key = digest(event["fingerprint"].encode("ascii"))
     with _lock(state_dir):
         for dirname in ("pending", "inflight", "sent", "blocked"):
             path = dirs[dirname] / f"{key}.json"
@@ -132,7 +109,7 @@ def queue(state_dir: str | Path, event: dict[str, Any], now: int | None = None) 
                 return False
         record = {"event": event, "fingerprint": event["fingerprint"], "queued_at": current,
                   "attempts": 0, "next_attempt": current}
-        _atomic_json(dirs["pending"] / f"{key}.json", record)
+        atomic_json(dirs["pending"] / f"{key}.json", record)
         return True
 
 
@@ -229,8 +206,8 @@ def deliver(state_dir: str | Path, bot_token: str, owner_id: str, now: int | Non
     bot_token, owner_id = _validate_credentials(bot_token, owner_id)
     current = int(time.time() if now is None else now)
     transport = transport or _send
-    stats = {"sent": 0, "retried": 0, "blocked": 0, "skipped": 0}
     with _lock(state_dir):
+        stats = {"sent": 0, "retried": 0, "blocked": len(list(dirs["blocked"].glob("*.json"))), "skipped": 0}
         # A process may have exited at any point after claiming. The Telegram API
         # has no idempotency key, so the safest durable recovery is to retry it.
         for path in list(dirs["inflight"].glob("*.json")):
@@ -250,19 +227,19 @@ def deliver(state_dir: str | Path, bot_token: str, owner_id: str, now: int | Non
             if outcome == "sent":
                 record["sent_at"] = current
                 record.pop("last_error", None)
-                _atomic_json(dirs["sent"] / path.name, record)
+                atomic_json(dirs["sent"] / path.name, record)
                 inflight.unlink(missing_ok=True)
                 stats["sent"] += 1
             elif outcome == "blocked":
                 record["blocked_at"] = current
                 record["receipt"] = "Telegram rejected this alert permanently."
-                _atomic_json(dirs["blocked"] / path.name, record)
+                atomic_json(dirs["blocked"] / path.name, record)
                 inflight.unlink(missing_ok=True)
                 stats["blocked"] += 1
             else:
                 record["attempts"] = int(record.get("attempts", 0)) + 1
                 record["next_attempt"] = current + _retry_delay(record["attempts"], retry_after)
-                _atomic_json(dirs["pending"] / path.name, record)
+                atomic_json(dirs["pending"] / path.name, record)
                 inflight.unlink(missing_ok=True)
                 stats["retried"] += 1
                 if stats["retried"] >= MAX_ATTEMPTS_PER_RUN:
@@ -285,8 +262,9 @@ def main(argv: list[str] | None = None) -> int:
             queue(args.state, event)
             return 0
         token, owner = _validate_credentials(_credential("BOT_TOKEN"), _credential("TG_OWNER_ID"))
-        deliver(args.state, token, owner)
-        return 0
+        result = deliver(args.state, token, owner)
+        print(dumps(result))
+        return int(bool(result["retried"] or result["blocked"]))
     except (NotifyError, OSError, json.JSONDecodeError):
         # Deliberately avoid rendering exception values, which may contain event
         # text, credential paths, or transport details.

@@ -53,6 +53,8 @@ cause a burst of catch-up generations.
    author session. No global Michi model or existing Codex profile changes. It
    returns merge, hold, or needs_owner, with reasons, sources, concerns, and every
    hold's decision. Model success alone is never sufficient evidence.
+   With policy merging disabled, a passing review completes a dry run without
+   dispatching a merge workflow; its review remains available in private state.
 7. The merge workflow re-fetches PR/files/policy, native and host artifacts,
    freshness, hashes, required branch rules, and App bypasses. Require strict
    server-side Maintenance / native evidence checks and PRs on main. Merge only
@@ -121,7 +123,9 @@ candidate/failure fingerprint, and reminds after 24 hours if unresolved. Noop,
 merged, and recovered classes stay quiet. Alerts explain the problem and needed
 action with a PR/run link. The notifier alone receives fixed-owner Telegram
 credentials. Transient/rate-limit failures retry with backoff; permanent rejection
-remains visible. Lost acknowledgements may produce a duplicate.
+keeps the notifier failed until its blocked receipt is addressed. Both host and
+GitHub use the same delivery command, which logs only counts and fails visibly
+on retry or permanent rejection. Lost acknowledgements may produce a duplicate.
 
 An independent GitHub watchdog checks an 18-hour heartbeat threshold every six
 hours. Its cached outbox retains retries/deduplication and drains after recovery.
@@ -151,7 +155,8 @@ These actions need Chris's separate approval; this setup performs none:
    Secrets: MAINTENANCE_APP_ID, MAINTENANCE_APP_PRIVATE_KEY,
    MAINTENANCE_TELEGRAM_BOT_TOKEN, MAINTENANCE_TELEGRAM_OWNER_ID.
    Variables: MAINTENANCE_APP_LOGIN, MAINTENANCE_HOST_ATTESTOR_LOGIN.
-   Use the maintenance-merge environment; generator/native jobs get no secrets.
+   Publisher, merge, and watchdog notifier jobs use the maintenance-merge
+   environment; generator/native jobs get no secrets.
    Separately approve the narrowly scoped suremac attestor token and its Darwin
    launch agent; set the same authorized user login in both hosts and GitHub.
 4. Approve strict required Maintenance / native evidence checks and PRs for main,
