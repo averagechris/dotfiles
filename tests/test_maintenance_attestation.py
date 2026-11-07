@@ -97,5 +97,43 @@ class AttestationAcceptanceTests(unittest.TestCase):
                 cli.accept_attestation(self.args)
 
 
+class AttestationCurlTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp.name)
+        self.identity = self.root / "identity.json"
+        self.identity.write_text("{}")
+        self.args = SimpleNamespace(trusted=self.root, identity=self.identity,
+                                    output=self.root / "out.json", curl="/nix/store/hash-curl/bin/curl")
+        self.policy = {"holds": {"emudhra": {"healthy_endpoint": "https://healthy.invalid/",
+                                                "reject_endpoints": ["https://reject.invalid/"]}}}
+
+    def tearDown(self):
+        self.temp.cleanup()
+
+    def run_attest(self):
+        with mock.patch.object(cli, "load_policy", return_value=(self.policy, "hash")), \
+             mock.patch.object(cli.sys, "platform", "darwin"), \
+             mock.patch.object(cli.socket, "gethostname", return_value="suremac"), \
+             mock.patch.object(Path, "is_file", return_value=True):
+            cli.attest(self.args)
+
+    def test_attest_rejects_mutable_path_even_if_it_resolves_into_store(self):
+        self.args.curl = "/tmp/curl-alias"
+        with mock.patch.object(Path, "resolve", return_value=Path("/nix/store/hash-curl/bin/curl")):
+            with self.assertRaisesRegex(Blocked, "immutable Nix-store path"):
+                self.run_attest()
+
+    def test_attest_rejects_securetransport_curl(self):
+        completed = __import__("subprocess").CompletedProcess([], 0, "curl 8.7.1 libcurl/8.7.1 SecureTransport\\n", "")
+        with mock.patch("maintenance.cli.subprocess.run", return_value=completed) as run, \
+             mock.patch.object(Path, "is_file", return_value=True), \
+             mock.patch("maintenance.cli.os.access", return_value=True):
+            with self.assertRaisesRegex(Blocked, "OpenSSL TLS backend"):
+                self.run_attest()
+        self.assertEqual(run.call_args.args[0][0], "/nix/store/hash-curl/bin/curl")
+        self.assertEqual(run.call_args.args[0][1], "--version")
+
+
 if __name__ == "__main__":
     unittest.main()

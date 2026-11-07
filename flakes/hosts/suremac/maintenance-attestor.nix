@@ -22,7 +22,8 @@
         --state ${lib.escapeShellArg stateDir} \
         --app-login ${lib.escapeShellArg cfg.appLogin} \
         --attestor-login ${lib.escapeShellArg cfg.attestorLogin} \
-        --token-file ${lib.escapeShellArg cfg.tokenFile}
+        --token-file ${lib.escapeShellArg cfg.tokenFile} \
+        --curl ${lib.escapeShellArg (lib.getExe pkgs.curl)}
     '';
   };
 in {

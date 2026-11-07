@@ -18,6 +18,7 @@
     "flakes/hm-modules/flake.lock",
     "flakes/hosts/cruber/flake.lock",
     "flakes/hosts/suremac/flake.lock",
+    "flakes/hosts/taro/flake.lock",
     "flakes/hosts/tater/flake.lock",
     "flakes/hosts/taz/flake.lock",
     "flakes/hosts/thorny/flake.lock",
@@ -34,7 +35,7 @@
   "native_hosts": {
     "x86_64-linux": ["thorny", "tater", "tom", "trap", "cruber"],
     "aarch64-linux": ["trainwreck"],
-    "aarch64-darwin": ["suremac"]
+    "aarch64-darwin": ["suremac", "taro"]
   },
   "required_systems": ["x86_64-linux", "aarch64-linux", "aarch64-darwin"],
   "validation_workflow": ".github/workflows/maintenance-validate.yml",

@@ -130,8 +130,9 @@ class MaintenanceValidationTests(unittest.TestCase):
         bundle.write_text("certificate fixture")
         validator._resolve_locked_input = lambda _lock, _name: {"locked": {"rev": "f" * 40}}
         validator._nix = lambda *args, **_kwargs: "1.2.3" if "cacert" in args[-1] else "0.13.4"
-        validator._build_path = lambda attr: str(package)
-        validator._curl_bundle = lambda _bundle, _hold: None
+        validator._build_path = lambda attr, **_kwargs: str(package) if "cacert" in attr else "/nix/store/test-curl"
+        validator._require_openssl_curl = lambda _curl: None
+        validator._curl_bundle = lambda _bundle, _hold, _curl: None
         validator._probe_uv_system_certs = lambda _uv, _python: None
         policy = {"holds": {"emudhra": {
             "input": "nixpkgs", "revision": "e" * 40,
@@ -187,8 +188,10 @@ class MaintenanceValidationTests(unittest.TestCase):
     def test_certificate_network_error_is_not_a_rejection_pass(self):
         validator = self.make_validator(lambda argv, **_kwargs: (35, "TLS connect error"))
         hold = {"reject_endpoints": ["https://reject.invalid/", "https://reject2.invalid/"], "healthy_endpoint": "https://healthy.invalid/"}
+        curl = Path("/nix/store/test-curl/bin/curl")
+        validator._require_openssl_curl = lambda _curl: None
         with self.assertRaisesRegex(validate.ValidationError, "expected 60"):
-            validator._curl_bundle("/tmp/candidate.pem", hold)
+            validator._curl_bundle("/tmp/candidate.pem", hold, curl)
         self.assertEqual(validator.commands[0]["expected_exit_code"], 60)
         self.assertEqual(validator.commands[0]["exit_code"], 35)
 
@@ -196,8 +199,21 @@ class MaintenanceValidationTests(unittest.TestCase):
         codes = iter([60, 60, 7])
         validator = self.make_validator(lambda argv, **_kwargs: (next(codes), "curl result"))
         hold = {"reject_endpoints": ["https://reject.invalid/", "https://reject2.invalid/"], "healthy_endpoint": "https://healthy.invalid/"}
+        validator._require_openssl_curl = lambda _curl: None
         with self.assertRaisesRegex(validate.ValidationError, "expected 0"):
-            validator._curl_bundle("/tmp/candidate.pem", hold)
+            validator._curl_bundle("/tmp/candidate.pem", hold, Path("/nix/store/test-curl/bin/curl"))
+
+    def test_curl_probe_uses_explicit_executable_and_requires_openssl(self):
+        seen = []
+        validator = self.make_validator(lambda argv, **_kwargs: (seen.append(argv) or 0, "libcurl/8.22.0 OpenSSL/3.5.9"))
+        curl = Path("/nix/store/hash-curl/bin/curl")
+        with patch.object(Path, "is_file", return_value=True), patch.object(validate.os, "access", return_value=True):
+            validator._require_openssl_curl(curl)
+        self.assertEqual(seen, [[str(curl), "--version"]])
+        validator.command = lambda argv, **_kwargs: (0, "libcurl/8.7.1 SecureTransport")
+        with patch.object(Path, "is_file", return_value=True), patch.object(validate.os, "access", return_value=True):
+            with self.assertRaisesRegex(validate.ValidationError, "OpenSSL TLS backend"):
+                validator._require_openssl_curl(curl)
 
     def test_missing_ancestry_proof_fails_closed(self):
         validator = self.make_validator(self.command_ok)

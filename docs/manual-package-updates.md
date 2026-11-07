@@ -102,7 +102,7 @@ includes both the `cacert` 3.131.1 and uv 0.13.4 fixes. The channel revision
 `02c087f3fe673c9e317f206a627cb6b910336dbe` contains the NixOS system
 certificate blacklist, but predates that `cacert` fix, which is needed by
 Darwin and direct `pkgs.cacert` consumers. Keep `original.ref = "nixos-unstable"`
-and make all 14 canonical lockfiles use the same pinned revision. This snapshot
+and make all 15 canonical lockfiles use the same pinned revision. This snapshot
 also includes the [System76 module installation fix](https://github.com/NixOS/nixpkgs/pull/575724)
 needed for thorny to build with the newer kernel module certificate checks.
 
@@ -116,23 +116,32 @@ verify the `cacert` version and repeat the certificate checks against both the
 direct endpoint and Sectigo cross-sign endpoint:
 
 ```bash
+curl_bin="$(nix build --no-link --print-out-paths .#darwinConfigurations.suremac.pkgs.curl)/bin/curl"
+"$curl_bin" --version | head -n 1  # Confirm the output names OpenSSL.
+for bundle in \
+  /etc/ssl/certs/ca-certificates.crt \
+  /etc/nix/macos-keychain.crt; do
+  "$curl_bin" --disable --cacert "$bundle" --silent --show-error --output /dev/null \
+    https://github.com/ || exit 1
 for endpoint in \
   https://dv-g3b-emudhra.we-have-a-problem.com/ \
   https://dv-g3b-aaa-emudhra.we-have-a-problem.com/; do
-  if curl --cacert /etc/ssl/certs/ca-certificates.crt \
+  if "$curl_bin" --disable --cacert "$bundle" \
     --silent --show-error --output /dev/null "$endpoint"; then
-    echo "unexpected TLS success: $endpoint" >&2
+    echo "unexpected TLS success: $endpoint using $bundle" >&2
     exit 1
   else
     status=$?
     test "$status" -eq 60 || exit "$status"
   fi
 done
+done
 ```
 
-Both checks pass only when curl rejects the certificate with error 60. Network
-or DNS errors do not pass. The eMudhra advisory homepage is a healthy HTTPS
-site, so do not use it as a rejection test. Run this after the target system
+Both checks pass only when the trusted Nix-store OpenSSL curl rejects both
+certificates with error 60 for each bundle and GitHub succeeds. Network or DNS
+errors do not pass. The eMudhra advisory homepage is a healthy HTTPS site, so do
+not use it as a rejection test. Run this after the target system
 bundle has been updated. Repeat the same check with
 `--cacert /etc/nix/macos-keychain.crt` to check the Nix daemon's separately
 exported macOS Keychain bundle. Updating the system bundle does not update that

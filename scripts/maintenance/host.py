@@ -47,7 +47,7 @@ def _run_by_title(api, workflow, title, base, actor=None, started_at=None):
     return max(found, key=lambda run: run["id"]) if found else None
 
 
-def _run_local_attestor(api, policy, expected, now):
+def _run_local_attestor(api, policy, expected, now, curl):
     policy_bytes = api.file("maintenance/policy.json", expected["base"])
     with tempfile.TemporaryDirectory(prefix="maintenance-host-attestor-") as temp:
         trusted = Path(temp) / "trusted"
@@ -57,7 +57,7 @@ def _run_local_attestor(api, policy, expected, now):
         identity = Path(temp) / "identity.json"
         identity.write_text(dumps(expected) + "\n")
         output = Path(temp) / "attestation.json"
-        cli.attest(SimpleNamespace(trusted=trusted, identity=identity, output=output))
+        cli.attest(SimpleNamespace(trusted=trusted, identity=identity, output=output, curl=curl))
         result = json_bytes(output.read_bytes())
     gate.verify_identity(result, expected)
     gate.fresh(result.get("created_at"), policy["max_evidence_age_seconds"], max(now, int(time.time())))
@@ -66,7 +66,7 @@ def _run_local_attestor(api, policy, expected, now):
     return result
 
 
-def tick(state_dir, api, app_login, attestor_login, now=None):
+def tick(state_dir, api, app_login, attestor_login, now=None, curl=None):
     now = int(time.time() if now is None else now)
     require(socket.gethostname().split(".")[0] == "suremac", "host attestor can run only on suremac")
     require(attestor_login and not attestor_login.endswith("[bot]"), "host attestor needs its separately approved scoped user token")
@@ -133,7 +133,8 @@ def tick(state_dir, api, app_login, attestor_login, now=None):
         if previous and previous.get("identity") == expected and now - previous.get("created_at", 0) < DEDUP_SECONDS:
             return {"phase": "submitted", "head": key}
 
-        attestation = _run_local_attestor(api, policy, expected, now)
+        require(curl, "trusted OpenSSL curl path is required for host attestation")
+        attestation = _run_local_attestor(api, policy, expected, now, curl)
         input_value = dumps(attestation)
         state["submitted"][key] = {"identity": expected, "created_at": now,
                                     "attestation_sha256": digest(input_value.encode())}
@@ -153,10 +154,11 @@ def main(argv=None):
     command.add_argument("--app-login", required=True)
     command.add_argument("--attestor-login", required=True)
     command.add_argument("--token-file", type=Path, required=True)
+    command.add_argument("--curl", required=True)
     args = parser.parse_args(argv)
     try:
         api = GitHub(token_from_file(args.token_file))
-        result = tick(args.state, api, args.app_login, args.attestor_login)
+        result = tick(args.state, api, args.app_login, args.attestor_login, curl=args.curl)
         print(dumps(result))
     except (Blocked, OSError, KeyError, ValueError) as exc:
         message = str(exc) if isinstance(exc, Blocked) else "invalid or unavailable host attestation input"

@@ -303,6 +303,10 @@ class Validator:
                 self.holds["emudhra"][check] = True
             self.holds["emudhra"]["details"] = {"state": "trusted nixpkgs hold retained", "revision": candidate_rev}
             return
+        trusted_host = next((name for name in hosts if name in ("thorny", "tater", "suremac")), hosts[0])
+        trusted_prefix = (f"darwinConfigurations.{trusted_host}.pkgs" if self.system == "aarch64-darwin"
+                          else f"nixosConfigurations.{trusted_host}.pkgs")
+        curl = Path(self._build_path(f"{trusted_prefix}.curl", cwd=self.trusted)) / "bin/curl"
         if self.system == "aarch64-darwin":
             self.holds["emudhra"]["details"] = {
                 "state": "system-bundle check is Linux-native; host keychain attestation is a separate required gate",
@@ -317,7 +321,7 @@ class Validator:
                 package_bundle = Path(package_path) / "etc/ssl/certs/ca-bundle.pem"
             if not package_bundle.is_file():
                 raise ValidationError("candidate Darwin cacert output contains no known CA bundle file")
-            self._curl_bundle(str(package_bundle), hold)
+            self._curl_bundle(str(package_bundle), hold, curl)
             self.holds["emudhra"]["package-bundle"] = True
             uv_path = self._build_path("darwinConfigurations.suremac.pkgs.uv")
             uv = Path(uv_path) / "bin" / "uv"
@@ -344,9 +348,9 @@ class Validator:
             package_bundle = Path(package_path) / "etc/ssl/certs/ca-bundle.pem"
         if not package_bundle.is_file():
             raise ValidationError("candidate cacert output contains no known CA bundle file")
-        self._curl_bundle(str(package_bundle), hold)
+        self._curl_bundle(str(package_bundle), hold, curl)
         self.holds["emudhra"]["package-bundle"] = True
-        self._curl_bundle(bundle, hold)
+        self._curl_bundle(bundle, hold, curl)
         self.holds["emudhra"]["system-bundle"] = True
         uv_path = self._build_path(f"nixosConfigurations.{host}.pkgs.uv")
         uv = Path(uv_path) / "bin" / "uv"
@@ -362,16 +366,26 @@ class Validator:
             raise ValidationError(f"nix build did not return an output path for {attr}")
         return paths[-1]
 
-    def _curl_bundle(self, bundle: str, hold: dict[str, Any]) -> None:
+    def _require_openssl_curl(self, curl: Path) -> None:
+        resolved = curl.resolve()
+        if (not curl.is_absolute() or not str(curl).startswith("/nix/store/") or ".." in curl.parts or
+                not str(resolved).startswith("/nix/store/") or not resolved.is_file() or not os.access(resolved, os.X_OK)):
+            raise ValidationError("trusted curl must be an executable immutable Nix-store path")
+        version = self.run([str(resolved), "--version"], cwd=self.trusted)
+        if not re.search(r"libcurl/[^\s]+\s+OpenSSL/", version):
+            raise ValidationError("trusted curl must use the OpenSSL TLS backend")
+
+    def _curl_bundle(self, bundle: str, hold: dict[str, Any], curl: Path) -> None:
+        self._require_openssl_curl(curl)
         for endpoint in hold["reject_endpoints"]:
             self.run(
-                ["curl", "--disable", "--silent", "--show-error", "--output", "/dev/null", "--max-time", "30", "--cacert", bundle, endpoint],
+                [str(curl.resolve()), "--disable", "--silent", "--show-error", "--output", "/dev/null", "--max-time", "30", "--cacert", bundle, endpoint],
                 timeout=45,
                 expected_exit_code=60,
             )
         endpoint = hold["healthy_endpoint"]
         self.run(
-            ["curl", "--disable", "--silent", "--show-error", "--output", "/dev/null", "--max-time", "30", "--cacert", bundle, endpoint],
+            [str(curl.resolve()), "--disable", "--silent", "--show-error", "--output", "/dev/null", "--max-time", "30", "--cacert", bundle, endpoint],
             timeout=45,
         )
 
