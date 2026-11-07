@@ -53,6 +53,16 @@ def policy(*locks: str) -> dict:
 
 
 class PolicyLockTests(unittest.TestCase):
+    def test_policy_covers_every_standalone_host_lock(self):
+        root = Path(__file__).resolve().parents[1]
+        config, _ = load_policy(root)
+        actual_host_locks = {
+            path.relative_to(root).as_posix()
+            for path in (root / "flakes/hosts").glob("*/flake.lock")
+        }
+        self.assertTrue(actual_host_locks)
+        self.assertLessEqual(actual_host_locks, set(config["canonical_locks"]))
+
     def test_repository_lock_graphs_are_eligible_without_source_changes(self):
         root = Path(__file__).resolve().parents[1]
         config, _ = load_policy(root)

@@ -196,11 +196,20 @@ def attest(args):
     require(host == "suremac", "host attestation must run on suremac")
     policy, _ = load_policy(args.trusted)
     hold = policy["holds"]["emudhra"]
+    curl = Path(args.curl)
+    resolved_curl = curl.resolve()
+    require(curl.is_absolute() and str(curl).startswith("/nix/store/") and ".." not in curl.parts and
+            str(resolved_curl).startswith("/nix/store/") and resolved_curl.is_file() and os.access(resolved_curl, os.X_OK),
+            "attestor curl must be an executable immutable Nix-store path")
+    version = subprocess.run([str(resolved_curl), "--version"], capture_output=True, text=True, timeout=15,
+                             env={"PATH": os.defpath, "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8"})
+    require(version.returncode == 0 and re.search(r"libcurl/[^\s]+\s+OpenSSL/", version.stdout),
+            "attestor curl must use the OpenSSL TLS backend")
     results = []
     for bundle_id, bundle in (("system", "/etc/ssl/certs/ca-certificates.crt"), ("keychain", "/etc/nix/macos-keychain.crt")):
         require(Path(bundle).is_file(), "a required host certificate bundle is missing")
         for endpoint, exit_code in [(hold["healthy_endpoint"], 0)] + [(url, 60) for url in hold["reject_endpoints"]]:
-            result = subprocess.run(["/usr/bin/curl", "--disable", "--silent", "--show-error", "--output", "/dev/null", "--max-time", "30", "--cacert", bundle, endpoint],
+            result = subprocess.run([str(resolved_curl), "--disable", "--silent", "--show-error", "--output", "/dev/null", "--max-time", "30", "--cacert", bundle, endpoint],
                                     capture_output=True, timeout=40,
                                     env={"PATH": os.defpath, "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8"})
             require(result.returncode == exit_code, "host certificate rejection or positive control failed")
@@ -255,6 +264,8 @@ def main():
             p.add_argument("--review", type=Path, required=True)
         if name == "accept-attestation":
             p.add_argument("--attestation", type=Path, required=True)
+        if name == "attest":
+            p.add_argument("--curl", required=True)
     p = commands.add_parser("request")
     p.add_argument("operation", choices=("run", "pause", "resume", "status"))
     p.add_argument("--requests", type=Path, required=True)

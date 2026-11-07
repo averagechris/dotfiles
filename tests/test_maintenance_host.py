@@ -88,7 +88,7 @@ class HostAttestorTests(unittest.TestCase):
         self.temp.cleanup()
 
     @staticmethod
-    def local_result(api, policy, expected, now):
+    def local_result(api, policy, expected, now, curl):
         return {**expected, "host": "suremac", "check": "macos-keychain", "status": "passed",
                 "created_at": now, "checks": []}
 
@@ -97,7 +97,7 @@ class HostAttestorTests(unittest.TestCase):
              mock.patch("maintenance.host.gate.verify_sources", return_value={"nixpkgs": api.nixpkgs}), \
              mock.patch("maintenance.host.gate.verify_validation", return_value={"run_id": 55}), \
              mock.patch("maintenance.host._run_local_attestor", side_effect=self.local_result) as local:
-            result = host.tick(self.state, api, APP, ATTESTOR, NOW)
+            result = host.tick(self.state, api, APP, ATTESTOR, NOW, curl="/nix/store/hash-curl/bin/curl")
         return result, local
 
     def test_dispatch_contains_exact_identity_and_attestation_and_dedupes(self):
@@ -129,7 +129,7 @@ class HostAttestorTests(unittest.TestCase):
         with mock.patch("maintenance.host.socket.gethostname", return_value="suremac"), \
              mock.patch("maintenance.host.gate.verify_sources", return_value={"nixpkgs": api_rev}), \
              mock.patch("maintenance.host._run_local_attestor") as local:
-            result = host.tick(self.state, api, APP, ATTESTOR, NOW)
+            result = host.tick(self.state, api, APP, ATTESTOR, NOW, curl="/nix/store/hash-curl/bin/curl")
         self.assertEqual(result["phase"], "not_required")
         local.assert_not_called()
         self.assertEqual(api.posts, [])
@@ -178,9 +178,11 @@ class HostAttestorTests(unittest.TestCase):
              mock.patch("maintenance.host.GitHub") as github, \
              mock.patch("maintenance.host.tick", return_value={"phase": "idle"}) as run:
             self.assertIsNone(host.main(["tick", "--state", str(self.state), "--app-login", APP,
-                                         "--attestor-login", ATTESTOR, "--token-file", str(token)]))
+                                         "--attestor-login", ATTESTOR, "--token-file", str(token),
+                                         "--curl", "/nix/store/hash-curl/bin/curl"]))
         github.assert_called_once_with("ghp_synthetic")
         self.assertEqual(run.call_args.args[1], github.return_value)
+        self.assertEqual(run.call_args.kwargs["curl"], "/nix/store/hash-curl/bin/curl")
 
     def test_local_probe_reuses_trusted_attestor_with_isolated_policy(self):
         api = HostApi()
@@ -194,8 +196,9 @@ class HostAttestorTests(unittest.TestCase):
                                                "status": "passed", "created_at": NOW, "checks": []}))
 
         with mock.patch("maintenance.host.cli.attest", side_effect=attest) as probe:
-            value = host._run_local_attestor(api, api.policy, expected, NOW)
+            value = host._run_local_attestor(api, api.policy, expected, NOW, "/nix/store/hash-curl/bin/curl")
         probe.assert_called_once()
+        self.assertEqual(probe.call_args.args[0].curl, "/nix/store/hash-curl/bin/curl")
         self.assertEqual(captured["identity"], expected)
         self.assertEqual(captured["policy"], api.policy)
         self.assertEqual(value["head"], HEAD)
@@ -206,6 +209,7 @@ class HostAttestorTests(unittest.TestCase):
         self.assertIn("config = lib.mkIf cfg.enable", module)
         self.assertIn("cfg.tokenFile != null && lib.hasPrefix \"/\" cfg.tokenFile", module)
         self.assertIn("StartInterval = 900", module)
+        self.assertIn("lib.getExe pkgs.curl", module)
         self.assertIn("RunAtLoad = true", module)
 
 

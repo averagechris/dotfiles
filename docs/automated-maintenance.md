@@ -31,10 +31,12 @@ cause a burst of catch-up generations.
 
 1. Resolve current main, trusted policy hash, and a unique run identifier.
 2. Run the trusted-base Rust updater in a secretless GitHub job with normal
-   cooldowns. Coordinate named shared inputs across all 14 locks, then refresh
-   local path parents offline. Preserve original URLs, explicit revisions,
-   version tags, local topology, and suremac's separate Helix graph. Only enrolled
-   Pi/Helium version and hash updates are eligible package edits.
+   cooldowns. Coordinate named shared inputs across all 15 canonical locks, then
+   refresh local path parents offline. Preserve original URLs, explicit revisions,
+   version tags, local topology, and suremac's separate Helix graph. Native Darwin
+   validation builds both suremac and taro, while the Keychain attestation remains
+   specific to suremac. Only enrolled Pi/Helium version and hash updates are
+   eligible package edits.
    Coordination applies to the same original input; a host-specific explicit pin
    (such as Thorny's memo input) stays distinct and cannot be advanced by syncing.
 3. A separate publisher rechecks allowed bytes and creates one commit/PR through
@@ -111,16 +113,21 @@ bundle, with fresh evidence bound to the exact candidate and policy:
 ```sh
 PYTHONPATH=scripts python3 -m maintenance.cli attest \
   --trusted . --identity /approved/tmp/evidence.json \
+  --curl /nix/store/<trusted-curl-output>/bin/curl \
   --output /approved/tmp/host-evidence.json
 ```
 
 Get identity from the trusted validation run, run on suremac from a trusted
 checkout, and submit its JSON through maintenance-attest.yml as the approved
-attestor. Then request a fresh review. The task creates or borrows no identity.
+attestor. The required curl path must be the trusted base's immutable Nix-store
+curl executable using OpenSSL; the command checks its backend before probing.
+This avoids Darwin's system curl selecting SecureTransport even when `--cacert`
+is supplied. Then request a fresh review. The task creates or borrows no identity.
 Missing host evidence retains the hold; routine attestor work gets a one-hour
 grace period before alerting Chris. Host evidence measures the currently activated
-Mac using its system curl, not the candidate's future system bundle. Binding it
-to the candidate identifies which decision may use this environmental observation;
+Mac's system and exported Keychain bundles using the trusted Nix-store OpenSSL
+curl. It does not attest the candidate's future system bundle. Binding it to the
+candidate identifies which decision may use this environmental observation;
 candidate certificate bytes and uv behavior are separately proved by Darwin CI.
 It does not cover every browser/application-bundled store;
 see [manual package updates](manual-package-updates.md). Conditions continue
