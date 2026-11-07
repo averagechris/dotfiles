@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import time
-import fnmatch
 import datetime
 import re
 import urllib.parse
@@ -11,6 +10,9 @@ from maintenance.common import Blocked, REPOSITORY, digest, dumps, require, sha
 from maintenance.policy import check_contents
 
 VALIDATION_CONTEXT = "Maintenance / native evidence"
+# Public GitHub Actions integration on the fixed github.com API host.
+VALIDATION_INTEGRATION_ID = 15368
+IDENTITY_FIELDS = ("schema", "repository", "pr", "base", "head", "policy_sha256")
 
 
 class MergeUncertain(Blocked):
@@ -24,7 +26,8 @@ def identity(policy_hash, pr, base, head):
 
 
 def verify_identity(value, expected):
-    require(all(value.get(k) == v for k, v in expected.items()), "evidence identifies a different candidate or policy")
+    require(all(key in expected and value.get(key) == expected[key] for key in IDENTITY_FIELDS),
+            "evidence identifies a different candidate or policy")
 
 
 def verify_control_run(run, path, base, app_login):
@@ -114,6 +117,22 @@ def verify_sources(api, policy, expected):
     return result
 
 
+def verify_ancestry(api, policy, revision):
+    """Resolve platform-independent ancestry once, with the prepare job's token."""
+    sha(revision)
+    proofs = {}
+    for name, hold in policy["holds"].items():
+        require(hold.get("input", "nixpkgs") == "nixpkgs", "unsupported hold ancestry input")
+        commits = hold.get("required_nixpkgs_commits") or [hold["revision"]]
+        for commit in commits:
+            sha(commit)
+            # Page two retains ancestry metadata without the unbounded file diff.
+            comparison = api.get(f"/repos/NixOS/nixpkgs/compare/{commit}...{revision}?per_page=1&page=2")
+            require(comparison.get("status") in {"ahead", "identical"}, "required nixpkgs fix is not an ancestor")
+        proofs[name] = {"revision": revision, "required_commits": commits, "verified": True}
+    return proofs
+
+
 def verify_shards(policy, expected, shards, now=None):
     now = time.time() if now is None else now
     require(isinstance(shards, list) and len(shards) == len(policy["required_systems"]), "incomplete native evidence")
@@ -197,30 +216,22 @@ def verify_review(policy, expected, review, evidence, nixpkgs, now=None):
 
 
 def verify_repository_gates(api):
-    # The trusted workflow supplies the same App ID it passed to token minting.
-    app_id = getattr(api, "app_id", None)
-    require(isinstance(app_id, int) and not isinstance(app_id, bool) and app_id > 0,
-            "maintenance GitHub App installation identity is unavailable")
     rules = api.get(f"/repos/{REPOSITORY}/rules/branches/main")
     checks = [r.get("parameters", {}) for r in rules if r.get("type") == "required_status_checks"]
     require(any(r.get("strict_required_status_checks_policy") is True and
-                any(x.get("context") == VALIDATION_CONTEXT for x in r.get("required_status_checks", []))
+                any(x.get("context") == VALIDATION_CONTEXT and x.get("integration_id") == VALIDATION_INTEGRATION_ID
+                    for x in r.get("required_status_checks", []))
                 for r in checks), "strict required maintenance status check is not configured")
     require(any(r.get("type") == "pull_request" for r in rules), "main does not require pull requests")
-    rulesets = api.pages(f"/repos/{REPOSITORY}/rulesets?includes_parents=true")
-    for summary in rulesets:
-        if summary.get("enforcement") != "active" or summary.get("target") != "branch":
-            continue
-        detail = api.get(f"/repos/{REPOSITORY}/rulesets/{summary['id']}")
-        conditions = detail.get("conditions", {}).get("ref_name", {})
-        includes = conditions.get("include", [])
-        excludes = conditions.get("exclude", [])
-        matches = lambda pattern: pattern in {"~ALL", "~DEFAULT_BRANCH"} or fnmatch.fnmatchcase("refs/heads/main", pattern)
-        if not any(matches(pattern) for pattern in includes) or any(matches(pattern) for pattern in excludes):
-            continue
-        require(not any(actor.get("actor_type") == "Integration" and actor.get("actor_id") == app_id
-                        for actor in detail.get("bypass_actors", [])),
-                "maintenance GitHub App can bypass protected main rules")
+    # GitHub already resolved which active rulesets apply to main. Do not
+    # reimplement its glob rules or mistake an omitted bypass_actors for [].
+    rulesets = {rule.get("ruleset_id") for rule in rules}
+    require(all(isinstance(value, int) and not isinstance(value, bool) and value > 0 for value in rulesets),
+            "applicable ruleset identity is missing")
+    for ruleset_id in sorted(rulesets):
+        detail = api.get(f"/repos/{REPOSITORY}/rulesets/{ruleset_id}")
+        require(detail.get("current_user_can_bypass") == "never",
+                "maintenance token can bypass rules or its bypass access is unknown")
 
 
 def merge(api, policy, expected, review, run_id, app_login, enabled, now=None, attestor_login=None):

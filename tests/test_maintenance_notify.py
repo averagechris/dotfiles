@@ -83,10 +83,16 @@ class MaintenanceNotifyTests(unittest.TestCase):
         record = json.loads(next((self.state / "blocked").glob("*.json")).read_text())
         self.assertIn("permanently", record["receipt"])
         self.assertNotIn("last_error", record)
-        self.assertFalse(notify.queue(self.state, self.event, now=200000))
         result = notify.deliver(self.state, "token", "7", now=200000,
                                 transport=lambda *_: self.fail("permanently rejected alert must not resend"))
         self.assertEqual(result["blocked"], 1, "a permanent failure must remain visible on later ticks")
+        self.assertFalse(notify.queue(self.state, self.event, now=101 + 86399))
+        self.assertTrue(notify.queue(self.state, self.event, now=101 + 86400))
+        recovered = notify.deliver(self.state, "repaired-token", "7", now=200001,
+                                   transport=lambda *_: ("sent", None))
+        self.assertEqual(recovered["sent"], 1)
+        self.assertEqual(recovered["blocked"], 0)
+        self.assertFalse(list((self.state / "blocked").glob("*.json")))
 
     def test_cli_exposes_delivery_failure_without_secret_or_event_content(self):
         for kind in ("retried", "blocked"):

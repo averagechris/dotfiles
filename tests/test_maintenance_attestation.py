@@ -57,6 +57,9 @@ class AttestationAcceptanceTests(unittest.TestCase):
             cli.accept_attestation(self.args)
 
     def test_accepts_exact_six_distinct_slot_endpoint_probes_even_with_same_digest(self):
+        # Prepare's platform-independent proof is separate from host identity.
+        prepared = {**self.identity, "ancestry": {"emudhra": {"verified": True}}}
+        self.identity_file.write_text(json.dumps(prepared))
         self.accept()
         accepted = json.loads(self.output_file.read_text())
         self.assertEqual(len(accepted["checks"]), 6)

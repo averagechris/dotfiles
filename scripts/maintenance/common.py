@@ -22,6 +22,10 @@ class Blocked(RuntimeError):
     """A failed precondition; never turn this into a successful merge."""
 
 
+class Transient(Blocked):
+    """A temporary transport failure that may be retried without accepting evidence."""
+
+
 def require(condition, message):
     if not condition:
         raise Blocked(message)
@@ -91,9 +95,8 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
 
 class GitHub:
     """No arbitrary URLs, credential fallbacks, or response-body error logging."""
-    def __init__(self, token, app_id=None):
+    def __init__(self, token):
         self.token = token
-        self.app_id = app_id
 
     def request(self, method, path, data=None, raw=False):
         require(path.startswith("/") and not path.startswith("//"), "invalid GitHub API path")
@@ -113,6 +116,7 @@ class GitHub:
             # Artifact download redirects must never carry Authorization onward.
             if raw and error.code in (301, 302, 303, 307, 308):
                 location = error.headers.get("Location", "")
+                error.close()
                 parsed = urllib.parse.urlsplit(location)
                 host = parsed.hostname or ""
                 require(parsed.scheme == "https" and not parsed.username and (
@@ -120,12 +124,22 @@ class GitHub:
                     host.endswith(".actions.githubusercontent.com") or
                     host.endswith(".s3.amazonaws.com")
                 ), "unexpected artifact download host")
-                with urllib.request.build_opener(NoRedirect).open(location, timeout=45) as response:
-                    value = response.read(MAX_JSON + 1)
+                try:
+                    with urllib.request.build_opener(NoRedirect).open(location, timeout=45) as response:
+                        value = response.read(MAX_JSON + 1)
+                except urllib.error.HTTPError as download_error:
+                    error_type = Transient if download_error.code == 429 or download_error.code >= 500 else Blocked
+                    download_error.close()
+                    raise error_type("GitHub artifact download failed") from None
+                except (OSError, TimeoutError):
+                    raise Transient("GitHub artifact download unavailable") from None
             else:
-                raise Blocked(f"GitHub request failed ({error.code}); check access or rate limits") from None
+                error_type = Transient if error.code == 429 or error.code >= 500 else Blocked
+                code = error.code
+                error.close()
+                raise error_type(f"GitHub request failed ({code}); check access or rate limits") from None
         except (OSError, TimeoutError):
-            raise Blocked("GitHub request unavailable") from None
+            raise Transient("GitHub request unavailable") from None
         require(len(value) <= MAX_JSON, "GitHub response exceeds size limit")
         return value if raw else (json.loads(value) if value else None)
 

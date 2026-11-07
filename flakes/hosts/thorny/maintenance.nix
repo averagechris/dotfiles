@@ -25,7 +25,7 @@
     ProtectKernelLogs = true;
     ProtectControlGroups = true;
     ProtectProc = "invisible";
-    InaccessiblePaths = ["/var/lib/zeroclaw-home"];
+    InaccessiblePaths = ["-/var/lib/zeroclaw-home"];
     RestrictNamespaces = true;
     RestrictAddressFamilies = ["AF_INET" "AF_INET6" "AF_UNIX"];
     RestrictSUIDSGID = true;
@@ -137,7 +137,6 @@ in {
       users.users.zeroclaw-home.extraGroups = ["dotfiles-maintenance-requests"];
 
       systemd.tmpfiles.rules = [
-        "d ${stateDir} 0700 dotfiles-maintenance dotfiles-maintenance -"
         "d ${requestDir} 2770 root dotfiles-maintenance-requests -"
       ];
       users.users.dotfiles-maintenance = {
@@ -181,7 +180,7 @@ in {
               "openai-api-key:${toString cfg.openaiApiKeyFile}"
             ];
             UMask = "0007";
-            TimeoutStartSec = "10min";
+            TimeoutStartSec = "15min";
             ReadWritePaths = [stateDir requestDir];
           };
       };
@@ -191,7 +190,6 @@ in {
         timerConfig = {
           OnBootSec = "5m";
           OnUnitActiveSec = "15m";
-          Persistent = true;
         };
       };
 
@@ -224,7 +222,6 @@ in {
         timerConfig = {
           OnBootSec = "1m";
           OnUnitActiveSec = "30s";
-          Persistent = true;
         };
       };
       systemd.paths.dotfiles-maintenance-requests = {

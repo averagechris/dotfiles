@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import io
+import copy
 import json
 import os
 from pathlib import Path
@@ -13,9 +14,10 @@ import unittest
 from unittest import mock
 import zipfile
 import sys
+import urllib.error
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
-from maintenance.common import Blocked, GitHub, MAX_JSON, credential, json_bytes
+from maintenance.common import Blocked, GitHub, MAX_JSON, Transient, credential, json_bytes, load_policy
 from maintenance.policy import check_contents, check_lock, local_check, package_shape, safe_path
 
 
@@ -51,6 +53,25 @@ def policy(*locks: str) -> dict:
 
 
 class PolicyLockTests(unittest.TestCase):
+    def test_repository_lock_graphs_are_eligible_without_source_changes(self):
+        root = Path(__file__).resolve().parents[1]
+        config, _ = load_policy(root)
+        content = lambda name: (root / name).read_bytes()
+        check_contents(config, config["canonical_locks"], content, content)
+
+    def test_existing_redirected_tarball_can_remain_but_cannot_change(self):
+        before = lock()
+        before["nodes"]["legacy"] = {
+            "original": {"type": "tarball", "url": "https://channels.nixos.org/nixos-unstable/nixexprs.tar.xz"},
+            "locked": {"type": "tarball", "url": "https://releases.nixos.org/release/nixexprs.tar.xz", "narHash": "existing"},
+        }
+        check_lock(before, copy.deepcopy(before))
+        for change in ({"url": "https://attacker.invalid/source.tar.gz"}, {"narHash": "new"}):
+            after = copy.deepcopy(before)
+            after["nodes"]["legacy"]["locked"].update(change)
+            with self.subTest(change=change), self.assertRaisesRegex(Blocked, "redirected tarball changed"):
+                check_lock(before, after)
+
     def test_protected_path_and_unsafe_path_rejected_with_callbacks(self):
         old, new = lock(), lock()
         files = {"flake.lock": json.dumps(new).encode()}
@@ -107,6 +128,13 @@ class PolicyLockTests(unittest.TestCase):
         with self.assertRaisesRegex(Blocked, "shared deploy-rs revisions differ"):
             check_contents(policy(*paths), [paths[1]], initial.__getitem__, updated.__getitem__)
 
+    def test_host_specific_explicit_pin_remains_distinct_from_shared_input(self):
+        paths = ["flake.lock", "flakes/hosts/test/flake.lock"]
+        root, child = lock(shared_rev=REV_B), lock()
+        child["nodes"]["deploy-rs"]["original"]["rev"] = REV_A
+        files = {paths[0]: json.dumps(root).encode(), paths[1]: json.dumps(child).encode()}
+        check_contents(policy(*paths), [paths[0]], files.__getitem__, files.__getitem__)
+
 
 class PackageAndJsonTests(unittest.TestCase):
     def test_package_version_and_hash_values_can_change_but_code_cannot(self):
@@ -128,6 +156,19 @@ class PackageAndJsonTests(unittest.TestCase):
 
 
 class CommonIOTests(unittest.TestCase):
+    def test_temporary_transport_failures_are_distinct_from_missing_access(self):
+        for error, expected in ((OSError("offline"), Transient),
+                                (urllib.error.HTTPError("ignored", 502, "server", {}, None), Transient),
+                                (urllib.error.HTTPError("ignored", 429, "rate limit", {}, None), Transient),
+                                (urllib.error.HTTPError("ignored", 403, "access", {}, None), Blocked)):
+            with self.subTest(error=error), mock.patch("maintenance.common.urllib.request.build_opener") as opener:
+                opener.return_value.open.side_effect = error
+                with self.assertRaises(expected) as raised:
+                    GitHub("private-token").get("/example")
+                if expected is Blocked:
+                    self.assertNotIsInstance(raised.exception, Transient)
+                self.assertNotIn("private-token", str(raised.exception))
+
     def test_credential_does_not_use_ambient_broad_token_fallback(self):
         with mock.patch.dict(os.environ, {"GH_TOKEN": "broad-token", "GITHUB_TOKEN": "also-broad"}, clear=True):
             with self.assertRaisesRegex(Blocked, "missing token credential"):

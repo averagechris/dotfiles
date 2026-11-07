@@ -6,7 +6,7 @@ from pathlib import Path, PurePosixPath
 import re
 import subprocess
 
-from maintenance.common import Blocked, require
+from maintenance.common import require
 
 SHARED_NODES = (
     "nixpkgs", "home-manager", "darwin", "opencode", "agenix", "deploy-rs",
@@ -55,8 +55,14 @@ def check_lock(before, after):
         require(locked.get("type") == original.get("type"), "locked source type differs from original")
         identity_fields = {"github": ("owner", "repo"), "git": ("url",),
                            "tarball": ("url",), "path": ("path",)}
-        require(all(locked.get(key) == original.get(key) for key in identity_fields[locked["type"]]),
-                "locked source identity differs from original")
+        if locked["type"] == "tarball" and locked.get("url") != original.get("url"):
+            # Nix records the resolved release URL for channel tarball redirects.
+            # Existing bytes may remain; changing such a source needs owner review.
+            require(any(v.get("original") == original and v.get("locked") == locked for v in old.values()),
+                    "redirected tarball changed; source needs owner review")
+        else:
+            require(all(locked.get(key) == original.get(key) for key in identity_fields[locked["type"]]),
+                    "locked source identity differs from original")
         if original.get("type") == "path":
             previous = [v for v in old.values() if v.get("original") == original]
             require(any(v.get("inputs") == node.get("inputs") and v.get("parent") == node.get("parent")
@@ -91,9 +97,9 @@ def check_contents(policy, changed, before, after):
         require(nodes["nixpkgs"]["locked"]["rev"] == revision, "canonical nixpkgs revisions differ")
         require(nodes["nixpkgs"]["original"].get("ref") == "nixos-unstable", "nixpkgs channel changed")
         for shared in SHARED_NODES:
-            if shared in root and shared in nodes:
-                require(nodes[shared].get("original") == root[shared].get("original") and
-                        nodes[shared].get("locked") == root[shared].get("locked"),
+            if (shared in root and shared in nodes and
+                    nodes[shared].get("original") == root[shared].get("original")):
+                require(nodes[shared].get("locked") == root[shared].get("locked"),
                         f"shared {shared} revisions differ")
     require(root.get("t3-code-nix", {}).get("inputs", {}).get("nixpkgs") == ["nixpkgs"], "t3-code-nix stopped following nixpkgs")
     return {"nixpkgs": revision, "changed": sorted(changed)}

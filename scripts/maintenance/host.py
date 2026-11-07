@@ -10,10 +10,11 @@ import socket
 import stat
 import tempfile
 import time
+import datetime
 from types import SimpleNamespace
 
 from maintenance import cli, gate
-from maintenance.common import Blocked, GitHub, REPOSITORY, atomic_json, digest, dumps, json_bytes, read_json, require
+from maintenance.common import Blocked, GitHub, REPOSITORY, Transient, atomic_json, digest, dumps, json_bytes, read_json, require
 from maintenance.controller import policy_at
 
 ATTEST_WORKFLOW = ".github/workflows/maintenance-attest.yml"
@@ -32,9 +33,14 @@ def token_from_file(path: Path) -> str:
     return value
 
 
-def _run_by_title(api, workflow, title, base, actor=None):
-    runs = api.pages(f"/repos/{REPOSITORY}/actions/workflows/{Path(workflow).name}/runs?event=workflow_dispatch", "workflow_runs")
+def _run_by_title(api, workflow, title, base, actor=None, started_at=None):
+    query = f"/repos/{REPOSITORY}/actions/workflows/{Path(workflow).name}/runs?event=workflow_dispatch"
+    if started_at is not None:
+        since = datetime.datetime.fromtimestamp(started_at - 60, datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        query += f"&created=%3E={since}"
+    runs = api.pages(query, "workflow_runs")
     found = [run for run in runs if run.get("display_title") == title and
+             (started_at is None or datetime.datetime.fromisoformat(run["created_at"].replace("Z", "+00:00")).timestamp() >= started_at - 60) and
              run.get("path") == workflow and run.get("event") == "workflow_dispatch" and
              run.get("head_branch") == "main" and run.get("head_sha") == base and
              (actor is None or run.get("actor", {}).get("login") == actor)]
@@ -94,14 +100,21 @@ def tick(state_dir, api, app_login, attestor_login, now=None):
             return {"phase": "not_required", "head": expected["head"]}
 
         title = "Maintenance validation " + expected["head"]
-        validation = _run_by_title(api, policy["validation_workflow"], title, base)
+        try:
+            validation_started = int(datetime.datetime.fromisoformat(
+                pr.get("created_at", "").replace("Z", "+00:00")).timestamp())
+        except ValueError:
+            validation_started = now - 8 * 3600
+        validation = _run_by_title(api, policy["validation_workflow"], title, base,
+                                   started_at=validation_started)
         require(validation and validation.get("status") == "completed" and validation.get("conclusion") == "success",
                 "candidate has no successful trusted native validation run")
         evidence = gate.verify_validation(api, policy, expected, validation["id"], now)
         key = expected["head"]
         previous = state["submitted"].get(key)
         host_title = "Maintenance host attestation " + expected["head"]
-        existing = _run_by_title(api, ATTEST_WORKFLOW, host_title, base, attestor_login)
+        existing = _run_by_title(api, ATTEST_WORKFLOW, host_title, base, attestor_login,
+                                 started_at=now - DEDUP_SECONDS)
         if existing:
             if existing.get("status") == "completed" and existing.get("conclusion") == "success":
                 try:
@@ -109,6 +122,8 @@ def tick(state_dir, api, app_login, attestor_login, now=None):
                     observed = attached["host_attestations"]["macos-keychain"]["created_at"]
                     if now - observed < DEDUP_SECONDS:
                         return {"phase": "complete", "head": key, "run_id": existing["id"]}
+                except Transient:
+                    raise
                 except Blocked:
                     # Stale/expired evidence is never reused. A new read-only
                     # host measurement may replace it; final CI verifies anew.

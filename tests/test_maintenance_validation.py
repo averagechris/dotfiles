@@ -123,7 +123,6 @@ class MaintenanceValidationTests(unittest.TestCase):
         validator = validate.Validator(
             self.trusted, self.candidate, "aarch64-darwin", self.identity_path,
             self.output, command=self.command_ok,
-            http_json=lambda _url: {"status": "ahead", "merge_base_commit": {"sha": "d" * 40}},
         )
         package = self.root / "fake-cacert"
         bundle = package / "etc/ssl/certs/ca-bundle.crt"
@@ -139,6 +138,9 @@ class MaintenanceValidationTests(unittest.TestCase):
             "minimum_versions": {"cacert": "1.2.3", "uv": "0.13.4"},
             "required_nixpkgs_commits": ["d" * 40],
         }}}
+        validator.identity["ancestry"] = {"emudhra": {
+            "revision": "f" * 40, "required_commits": ["d" * 40], "verified": True,
+        }}
         validator._check_hold(policy, ["suremac"], {"unused": True})
         holds = validator.holds["emudhra"]
         self.assertTrue(holds["versions"])
@@ -197,12 +199,29 @@ class MaintenanceValidationTests(unittest.TestCase):
         with self.assertRaisesRegex(validate.ValidationError, "expected 0"):
             validator._curl_bundle("/tmp/candidate.pem", hold)
 
-    def test_missing_ancestry_commit_fails(self):
-        validator = self.make_validator(self.command_ok, http_json=lambda _url: {
-            "status": "ahead", "merge_base_commit": {"sha": "c" * 40},
-        })
-        with self.assertRaisesRegex(validate.ValidationError, "does not prove ancestry"):
-            validator._compare_ancestry({"required_nixpkgs_commits": ["d" * 40]}, "e" * 40)
+    def test_missing_ancestry_proof_fails_closed(self):
+        validator = self.make_validator(self.command_ok)
+        hold = {"revision": "e" * 40, "required_nixpkgs_commits": ["d" * 40]}
+        with self.assertRaisesRegex(validate.ValidationError, "no verified ancestry proof"):
+            validator._verify_ancestry_proof("emudhra", hold, "f" * 40)
+
+    def test_mismatched_ancestry_proof_fails_closed(self):
+        validator = self.make_validator(self.command_ok)
+        hold = {"revision": "e" * 40, "required_nixpkgs_commits": ["d" * 40]}
+        validator.identity["ancestry"] = {"emudhra": {
+            "revision": "c" * 40, "required_commits": ["d" * 40], "verified": True,
+        }}
+        with self.assertRaisesRegex(validate.ValidationError, "revision does not match"):
+            validator._verify_ancestry_proof("emudhra", hold, "f" * 40)
+
+    def test_ancestry_proof_must_match_policy_commits(self):
+        validator = self.make_validator(self.command_ok)
+        hold = {"revision": "e" * 40, "required_nixpkgs_commits": ["d" * 40]}
+        validator.identity["ancestry"] = {"emudhra": {
+            "revision": "f" * 40, "required_commits": ["c" * 40], "verified": True,
+        }}
+        with self.assertRaisesRegex(validate.ValidationError, "commits do not match policy"):
+            validator._verify_ancestry_proof("emudhra", hold, "f" * 40)
 
     def test_eval_stdout_is_separate_from_retained_stderr_warnings(self):
         validator = self.make_validator(lambda _argv, **_kwargs: validate.CommandResult(0, "3.131.1", "warning: from evaluator\n"))

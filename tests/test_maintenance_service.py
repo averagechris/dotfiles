@@ -54,7 +54,7 @@ class MaintenanceServiceTests(unittest.TestCase):
         self.assertNotIn("PYTHONPATH:+", TEXT)
         self.assertIn('lib.getExe controllerPackage', TEXT)
         self.assertIn('lib.escapeShellArgs [', TEXT)
-        self.assertIn('TimeoutStartSec = "10min"', TEXT)
+        self.assertIn('TimeoutStartSec = "15min"', TEXT)
         self.assertIn('TimeoutStartSec = "2min"', TEXT)
         self.assertIn('PathChanged = "${requestDir}/request.json"', TEXT)
         self.assertIn("--requests ${requestDir}", TEXT)

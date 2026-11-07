@@ -133,7 +133,6 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       M_HEAD: ${{ inputs.head }}
-      STATUS_STATE: ${{ needs.native.result == 'success' && 'success' || 'failure' }}
     steps:
       - name: Check out trusted aggregation code
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262

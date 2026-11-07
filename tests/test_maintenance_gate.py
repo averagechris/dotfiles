@@ -44,25 +44,20 @@ def fixture():
 class FakeGitHub:
     def __init__(self):
         self.merge_calls = []
-        self.app_id = 456
         self.current_base = BASE
         self.pr = {"state": "open", "draft": False, "user": {"login": APP},
                    "head": {"repo": {"full_name": REPOSITORY}, "sha": HEAD, "ref": "maintenance/7"},
                    "base": {"repo": {"full_name": REPOSITORY}, "ref": "main", "sha": BASE}}
         self.commit = {"sha": HEAD, "parents": [{"sha": BASE}]}
         self.rules = [
-            {"type": "required_status_checks", "parameters": {
+            {"type": "required_status_checks", "ruleset_id": 30, "parameters": {
                 "strict_required_status_checks_policy": True,
-                "required_status_checks": [{"context": gate.VALIDATION_CONTEXT}]}},
-            {"type": "pull_request"},
+                "required_status_checks": [{"context": gate.VALIDATION_CONTEXT, "integration_id": gate.VALIDATION_INTEGRATION_ID}]}},
+            {"type": "pull_request", "ruleset_id": 30},
         ]
-        self.rulesets = [{"id": 30, "target": "branch", "enforcement": "active"}]
-        self.ruleset_details = {30: {"conditions": {"ref_name": {"include": ["~DEFAULT_BRANCH"], "exclude": []}},
-                                     "bypass_actors": [{"actor_type": "User", "actor_id": 123}]}}
+        self.ruleset_details = {30: {"current_user_can_bypass": "never"}}
 
     def get(self, path):
-        if path.endswith("/rulesets?includes_parents=true"):
-            return self.rulesets
         if "/rulesets/" in path:
             return self.ruleset_details[int(path.rsplit("/", 1)[1])]
         if "/rules/branches/" in path:
@@ -74,8 +69,6 @@ class FakeGitHub:
         raise AssertionError(f"unexpected GET {path}")
 
     def pages(self, path):
-        if path.endswith("/rulesets?includes_parents=true"):
-            return self.rulesets
         if path.endswith("/commits"):
             return [self.commit]
         raise AssertionError(f"unexpected pages {path}")
@@ -115,28 +108,21 @@ class MergeGateTests(unittest.TestCase):
         self.api.rules[0]["parameters"]["strict_required_status_checks_policy"] = False
         self.rejected()
 
-    def test_active_main_ruleset_does_not_allow_maintenance_app_bypass(self):
-        self.api.ruleset_details[30]["bypass_actors"] = [{"actor_type": "Integration", "actor_id": 456}]
-        self.rejected()
+    def test_applicable_ruleset_requires_known_non_bypassing_token(self):
+        for access in (None, "always", "pull_requests_only"):
+            self.api.ruleset_details[30] = {"current_user_can_bypass": access}
+            self.rejected()
+        # The read-only response need not expose bypass_actors at all.
+        self.api.ruleset_details[30] = {"current_user_can_bypass": "never"}
+        gate.verify_repository_gates(self.api)
 
-    def test_ruleset_bypass_exclusions_and_nonmatching_patterns_are_ignored(self):
-        self.api.ruleset_details[30] = {
-            "conditions": {"ref_name": {"include": ["release/*"], "exclude": []}},
-            "bypass_actors": [{"actor_type": "Integration", "actor_id": 456}],
-        }
-        gate.verify_repository_gates(self.api)
-        self.api.ruleset_details[30] = {
-            "conditions": {"ref_name": {"include": ["~ALL"], "exclude": ["refs/heads/main"]}},
-            "bypass_actors": [{"actor_type": "Integration", "actor_id": 456}],
-        }
-        gate.verify_repository_gates(self.api)
-        self.api.ruleset_details[30] = {
-            "conditions": {"ref_name": {"include": ["refs/heads/main"], "exclude": []}},
-            "bypass_actors": [{"actor_type": "Integration", "actor_id": 456}],
-        }
-        self.rejected()
-        self.api.rules[0]["parameters"]["strict_required_status_checks_policy"] = True
-        self.api.rules[0]["parameters"]["required_status_checks"] = []
+    def test_required_status_is_bound_to_actions_and_ruleset_identity(self):
+        checks = self.api.rules[0]["parameters"]["required_status_checks"]
+        for integration in (None, -1, 123):
+            checks[0]["integration_id"] = integration
+            self.rejected()
+        checks[0]["integration_id"] = gate.VALIDATION_INTEGRATION_ID
+        self.api.rules[0].pop("ruleset_id")
         self.rejected()
 
     def test_wrong_author_fork_head_base_and_branch_are_rejected(self):

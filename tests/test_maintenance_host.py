@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import datetime
 import os
 from pathlib import Path
 import stat
@@ -32,6 +33,7 @@ class HostApi:
         self.posts = []
         self.pr = {
             "number": 42, "state": "open", "draft": False,
+            "created_at": datetime.datetime.fromtimestamp(NOW - 1000, datetime.timezone.utc).isoformat(),
             "user": {"login": APP},
             "head": {"repo": {"full_name": "averagechris/dotfiles"}, "ref": "maintenance/candidate", "sha": HEAD},
             "base": {"repo": {"full_name": "averagechris/dotfiles"}, "ref": "main", "sha": BASE},
@@ -56,6 +58,7 @@ class HostApi:
             return [{"sha": HEAD, "parents": [{"sha": BASE}]}]
         if "maintenance-validate.yml/runs" in path:
             return [{"display_title": "Maintenance validation " + HEAD,
+                     "created_at": datetime.datetime.fromtimestamp(NOW - 1000, datetime.timezone.utc).isoformat(),
                      "path": self.policy["validation_workflow"], "event": "workflow_dispatch",
                      "head_branch": "main", "head_sha": BASE, "status": "completed",
                      "conclusion": "success", "id": 55}]
@@ -135,6 +138,7 @@ class HostAttestorTests(unittest.TestCase):
         api = HostApi()
         self.tick(api)
         api.attestation_runs = [{"display_title": "Maintenance host attestation " + HEAD,
+                                 "created_at": datetime.datetime.fromtimestamp(NOW - 1000, datetime.timezone.utc).isoformat(),
                                  "path": host.ATTEST_WORKFLOW, "event": "workflow_dispatch",
                                  "head_branch": "main", "head_sha": BASE,
                                  "actor": {"login": ATTESTOR}, "status": "in_progress", "id": 90}]
@@ -142,6 +146,9 @@ class HostAttestorTests(unittest.TestCase):
         self.assertEqual(result["phase"], "in_progress")
         local.assert_not_called()
         self.assertEqual(len(api.posts), 1)
+        query = next(call[1] for call in api.calls if call[0] == "pages" and
+                     "maintenance-attest.yml/runs" in call[1])
+        self.assertIn("created=%3E=", query)
 
     def test_wrong_machine_or_api_identity_is_blocked(self):
         api = HostApi()

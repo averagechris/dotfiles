@@ -57,42 +57,79 @@ class Candidate:
                     continue
                 if nodes[name].get("original") == root_nodes[name].get("original"):
                     nodes[name]["locked"] = root_nodes[name]["locked"]
-            path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n")
+            updated = json.dumps(data, indent=2, sort_keys=True) + "\n"
+            if path.read_text() != updated:
+                path.write_text(updated)
 
     def _path_parents(self, policy: dict) -> None:
-        """Refresh direct canonical path inputs in leaves-to-root order, offline."""
+        """Refresh canonical path inputs dependency-first, offline."""
         entries = self._lock_paths(policy)
-        canonical_dirs = {self.candidate / Path(name).parent for name, _ in entries}
-        ordered = sorted(entries, key=lambda item: (-len(Path(item[0]).parts), item[0]))
-        for rel, lock_path in ordered:
+        by_dir = {self.candidate / Path(rel).parent: (rel, lock_path)
+                  for rel, lock_path in entries}
+        dependencies: dict[str, set[str]] = {rel: set() for rel, _ in entries}
+        local_inputs: dict[str, list[str]] = {}
+
+        for rel, lock_path in entries:
             flake_dir = self.candidate / Path(rel).parent
             data = json.loads(lock_path.read_bytes())
             root_inputs = data["nodes"][data["root"]].get("inputs", {})
             names = []
+            targets = set()
             for name, node_ref in root_inputs.items():
                 if not INPUT_NAME.fullmatch(name):
                     raise Blocked("unsafe path input name")
+                # A list denotes a follows reference, even if its first element
+                # happens to name a node whose original source is a local path.
                 if isinstance(node_ref, list):
-                    node_ref = node_ref[0] if node_ref else None
+                    continue
                 node = data["nodes"].get(node_ref, {})
                 original = node.get("original", {})
                 if original.get("type") != "path" or not isinstance(original.get("path"), str):
                     continue
                 target = (flake_dir / original["path"]).resolve()
-                if target in canonical_dirs:
+                if target in by_dir:
                     names.append(name)
-            for name in sorted(names):
-                with tempfile.NamedTemporaryFile(prefix="maintenance-lock-", suffix=".json", delete=False) as temp:
-                    output_lock = Path(temp.name)
-                try:
-                    flake_ref = f"path:{self.candidate}?dir={Path(rel).parent.as_posix()}"
-                    self._run(["nix", "flake", "update", name, "--offline", "--option", "sandbox", "true",
-                               "--no-accept-flake-config", "--flake", flake_ref,
-                               "--output-lock-file", str(output_lock)], cwd=self.candidate)
-                    require(output_lock.is_file(), "offline path update produced no lock")
-                    lock_path.write_bytes(output_lock.read_bytes())
-                finally:
-                    output_lock.unlink(missing_ok=True)
+                    targets.add(by_dir[target][0])
+            local_inputs[rel] = sorted(names)
+            dependencies[rel] = targets
+
+        ordered: list[str] = []
+        visiting: set[str] = set()
+        visited: set[str] = set()
+
+        def visit(rel: str) -> None:
+            if rel in visiting:
+                raise Blocked("cycle in canonical local path inputs")
+            if rel in visited:
+                return
+            visiting.add(rel)
+            for dependency in sorted(dependencies[rel]):
+                visit(dependency)
+            visiting.remove(rel)
+            visited.add(rel)
+            ordered.append(rel)
+
+        for rel, _ in entries:
+            visit(rel)
+
+        for rel in ordered:
+            names = local_inputs[rel]
+            if not names:
+                continue
+            lock_path = by_dir[self.candidate / Path(rel).parent][1]
+            with tempfile.NamedTemporaryFile(prefix="maintenance-lock-", suffix=".json", delete=False) as temp:
+                output_lock = Path(temp.name)
+            try:
+                flake_ref = f"path:{self.candidate}?dir={Path(rel).parent.as_posix()}"
+                self._run(["nix", "flake", "update", *names, "--offline", "--option", "sandbox", "true",
+                           "--no-accept-flake-config", "--flake", flake_ref,
+                           "--output-lock-file", str(output_lock)], cwd=self.candidate)
+                require(output_lock.is_file(), "offline path update produced no lock")
+                updated = output_lock.read_bytes()
+                if lock_path.read_bytes() != updated:
+                    lock_path.write_bytes(updated)
+            finally:
+                output_lock.unlink(missing_ok=True)
 
     def _run(self, argv: list[str], *, cwd: Path) -> None:
         env = dict(os.environ)

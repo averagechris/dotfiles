@@ -129,6 +129,72 @@ class CandidateTests(unittest.TestCase):
         self.assertEqual(result["noop"], True)
         self.assertEqual(result["files"], [])
 
+    def test_path_inputs_refresh_dependency_first_and_batch_per_lock(self):
+        paths = {
+            "base": "flakes/base-lib/flake.lock",
+            "module": "flakes/nixos-modules/module/flake.lock",
+            "host": "flakes/hosts/host/flake.lock",
+        }
+        dirs = {name: self.candidate / Path(rel).parent for name, rel in paths.items()}
+        for directory in dirs.values():
+            directory.mkdir(parents=True, exist_ok=True)
+
+        def write_lock(name, inputs):
+            nodes = {"root": {"inputs": {}}}
+            for input_name, (target, is_follows) in inputs.items():
+                nodes["root"]["inputs"][input_name] = ["base-lib"] if is_follows else input_name
+                if not is_follows:
+                    relative = os.path.relpath(dirs[target], dirs[name])
+                    nodes[input_name] = {"original": {"type": "path", "path": relative}}
+            lock_path = self.candidate / paths[name]
+            lock_path.write_text(json.dumps({"version": 7, "root": "root", "nodes": nodes}))
+
+        write_lock("base", {})
+        write_lock("module", {"base-lib": ("base", False)})
+        # Host's two direct local inputs share a single update invocation. The
+        # follows alias is not mistaken for another direct local path input.
+        write_lock("host", {"module": ("module", False), "base-lib": ("base", False),
+                             "alias": ("base", True)})
+        calls = []
+
+        def run(argv, **kwargs):
+            calls.append(argv)
+            output = Path(argv[argv.index("--output-lock-file") + 1])
+            flake_ref = argv[argv.index("--flake") + 1]
+            rel = next(rel for rel in paths.values()
+                       if f"?dir={Path(rel).parent.as_posix()}" in flake_ref)
+            output.write_bytes((self.candidate / rel).read_bytes())
+            return subprocess.CompletedProcess(argv, 0, stdout="ok")
+
+        policy = {"canonical_locks": list(paths.values())}
+        Candidate(self.trusted, self.candidate, self.output, run=run)._path_parents(policy)
+        order = [next(name for name, rel in paths.items()
+                      if f"?dir={Path(rel).parent.as_posix()}" in argv[argv.index("--flake") + 1])
+                 for argv in calls]
+        self.assertEqual(order, ["module", "host"])
+        self.assertEqual([argv[3:argv.index("--offline")] for argv in calls],
+                         [["base-lib"], ["base-lib", "module"]])
+        self.assertEqual(len(calls), 2)
+
+    def test_path_input_cycle_fails_closed_before_running_nix(self):
+        paths = {"one": "flakes/a/flake.lock", "two": "flakes/b/flake.lock"}
+        dirs = {name: self.candidate / Path(rel).parent for name, rel in paths.items()}
+        for directory in dirs.values():
+            directory.mkdir(parents=True, exist_ok=True)
+        for name, target in (("one", "two"), ("two", "one")):
+            lock_path = self.candidate / paths[name]
+            relative = os.path.relpath(dirs[target], dirs[name])
+            lock_path.write_text(json.dumps({"version": 7, "root": "root", "nodes": {
+                "root": {"inputs": {"dependency": "dependency"}},
+                "dependency": {"original": {"type": "path", "path": relative}},
+            }}))
+        calls = []
+        candidate = Candidate(self.trusted, self.candidate, self.output,
+                               run=lambda argv, **kwargs: calls.append(argv))
+        with self.assertRaisesRegex(Blocked, "cycle in canonical local path inputs"):
+            candidate._path_parents({"canonical_locks": list(paths.values())})
+        self.assertEqual(calls, [])
+
     def test_cli_writes_noop_artifact_without_changed_files(self):
         def fake_run(instance, argv, *, cwd):
             if argv[1] == "run":

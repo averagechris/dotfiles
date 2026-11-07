@@ -119,7 +119,8 @@ class MaintenanceWorkflowBoundaryTests(unittest.TestCase):
 
     def test_merge_is_doubly_opted_in_and_policy_remains_disabled(self):
         source = workflow("decide")
-        self.assertIn("vars.MAINTENANCE_AUTOMERGE == 'true'", source)
+        self.assertIn("MAINTENANCE_AUTOMERGE: ${{ vars.MAINTENANCE_AUTOMERGE }}", source)
+        self.assertNotIn("vars.MAINTENANCE_AUTOMERGE == 'true'", source)
         self.assertIn("environment: maintenance-merge", source)
         self.assertIn("maintenance.cli decide", source)
         policy = (ROOT / "maintenance" / "policy.json").read_text(encoding="utf-8")

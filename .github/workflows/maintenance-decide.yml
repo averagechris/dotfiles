@@ -20,7 +20,6 @@ jobs:
   decide:
     if: >-
       vars.MAINTENANCE_ENABLED == 'true' &&
-      vars.MAINTENANCE_AUTOMERGE == 'true' &&
       github.ref == 'refs/heads/main' && github.actor == vars.MAINTENANCE_APP_LOGIN &&
       inputs.request_id != '' && inputs.review != ''
     runs-on: ubuntu-24.04
@@ -61,7 +60,6 @@ jobs:
       - name: Apply trusted merge gates
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          MAINTENANCE_APP_ID: ${{ secrets.MAINTENANCE_APP_ID }}
           MAINTENANCE_APP_LOGIN: ${{ vars.MAINTENANCE_APP_LOGIN }}
           MAINTENANCE_HOST_ATTESTOR_LOGIN: ${{ vars.MAINTENANCE_HOST_ATTESTOR_LOGIN }}
           MAINTENANCE_AUTOMERGE: ${{ vars.MAINTENANCE_AUTOMERGE }}

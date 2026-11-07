@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import base64
-import json
 import os
 from pathlib import Path
 import re
@@ -36,8 +35,23 @@ def prepare(args):
     expected = env_identity(policy_hash)
     api = github()
     gate.verify_pr(api, policy, expected, os.environ.get("MAINTENANCE_APP_LOGIN", ""))
-    gate.verify_sources(api, policy, expected)
+    sources = gate.verify_sources(api, policy, expected)
+    expected["ancestry"] = gate.verify_ancestry(api, policy, sources["nixpkgs"])
     atomic_json(args.output, expected)
+
+
+def close_superseded(api, policy, current_pr, app_login):
+    for pr in api.pages(f"/repos/{REPOSITORY}/pulls?state=open&base=main"):
+        if (pr["number"] == current_pr or pr.get("user", {}).get("login") != app_login or
+                pr.get("head", {}).get("repo", {}).get("full_name") != REPOSITORY or
+                not pr.get("head", {}).get("ref", "").startswith(policy["branch_prefix"])):
+            continue
+        commits = api.pages(f"/repos/{REPOSITORY}/pulls/{pr['number']}/commits")
+        require(len(commits) == 1 and commits[0]["sha"] == pr["head"]["sha"] and
+                len(commits[0]["parents"]) == 1 and
+                f"Candidate: `{pr['head']['sha']}`" in (pr.get("body") or ""),
+                "older maintenance PR was modified; owner review is required before replacing it")
+        api.request("PATCH", f"/repos/{REPOSITORY}/pulls/{pr['number']}", {"state": "closed"})
 
 
 def publish(args):
@@ -104,6 +118,7 @@ def publish(args):
                     f"Base: `{base}`\nCandidate: `{head}`",
         })
     result = {"schema": 1, "base": base, "head": head, "pr": pr["number"], "noop": False}
+    close_superseded(api, policy, pr["number"], os.environ["MAINTENANCE_APP_LOGIN"])
     atomic_json(args.output, result)
     api.post(f"/repos/{REPOSITORY}/actions/workflows/maintenance-validate.yml/dispatches", {
         "ref": "main", "inputs": {"base": base, "head": head, "pr": str(pr["number"])},
@@ -126,7 +141,6 @@ def decide(args):
             os.environ.get("MAINTENANCE_APP_LOGIN", "").endswith("[bot]"), "decision did not come from the maintenance App")
     expected = gate.identity(policy_hash, decision["pr"], decision["base"], decision["head"])
     api = github()
-    api.app_id = int(os.environ["MAINTENANCE_APP_ID"])
     # Published record is useful even when the gate rejects. No candidate code runs here.
     try:
         result = gate.merge(api, policy, expected, decision, decision["evidence_run_id"],
@@ -165,7 +179,7 @@ def tick(args):
 
 def watchdog(args):
     api = github()
-    runs = api.get(f"/repos/{REPOSITORY}/actions/workflows/maintenance-heartbeat.yml/runs?event=workflow_dispatch&per_page=1")["workflow_runs"]
+    runs = api.get(f"/repos/{REPOSITORY}/actions/workflows/maintenance-heartbeat.yml/runs?event=workflow_dispatch&status=success&per_page=1")["workflow_runs"]
     healthy = False
     if runs:
         import datetime

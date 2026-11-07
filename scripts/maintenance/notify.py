@@ -102,9 +102,9 @@ def queue(state_dir: str | Path, event: dict[str, Any], now: int | None = None) 
             if not path.exists():
                 continue
             record = _read(path)
-            if dirname in ("pending", "inflight", "blocked"):
+            if dirname in ("pending", "inflight"):
                 return False
-            delivered_at = record.get("sent_at", current)
+            delivered_at = record.get("sent_at", record.get("blocked_at", current))
             if isinstance(delivered_at, int) and current - delivered_at < 24 * 60 * 60:
                 return False
         record = {"event": event, "fingerprint": event["fingerprint"], "queued_at": current,
@@ -229,13 +229,18 @@ def deliver(state_dir: str | Path, bot_token: str, owner_id: str, now: int | Non
                 record.pop("last_error", None)
                 atomic_json(dirs["sent"] / path.name, record)
                 inflight.unlink(missing_ok=True)
+                blocked = dirs["blocked"] / path.name
+                if blocked.exists():
+                    blocked.unlink()
+                    stats["blocked"] -= 1
                 stats["sent"] += 1
             elif outcome == "blocked":
                 record["blocked_at"] = current
                 record["receipt"] = "Telegram rejected this alert permanently."
+                previous_rejection = (dirs["blocked"] / path.name).exists()
                 atomic_json(dirs["blocked"] / path.name, record)
                 inflight.unlink(missing_ok=True)
-                stats["blocked"] += 1
+                stats["blocked"] += int(not previous_rejection)
             else:
                 record["attempts"] = int(record.get("attempts", 0)) + 1
                 record["next_attempt"] = current + _retry_delay(record["attempts"], retry_after)

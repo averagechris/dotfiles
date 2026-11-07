@@ -35,19 +35,27 @@ cause a burst of catch-up generations.
    local path parents offline. Preserve original URLs, explicit revisions,
    version tags, local topology, and suremac's separate Helix graph. Only enrolled
    Pi/Helium version and hash updates are eligible package edits.
+   Coordination applies to the same original input; a host-specific explicit pin
+   (such as Thorny's memo input) stays distinct and cannot be advanced by syncing.
 3. A separate publisher rechecks allowed bytes and creates one commit/PR through
    GitHub blob/tree APIs. It never executes candidate code, overwrites a differing
    branch, or reopens a closed matching PR. No-op generation creates no PR.
+   A replacement closes older untouched App maintenance PRs; extra commits stop
+   replacement for owner review. Local path inputs refresh in dependency order.
 4. Validate exact base/head/policy and clean checkout on x86_64 Linux, ARM64 Linux,
    and ARM64 Darwin. Run base-versus-candidate warning comparison with the same
    Nix version, lint, native full-host builds, flake checks, and forced OpenCode
    node_modules rebuilds. Reject flake-supplied configuration and require Nix
    sandboxing. Candidate uv additionally runs in a filesystem/process sandbox.
+   The trusted prepare job verifies ancestry once with authenticated GitHub reads;
+   native shards require that exact-revision proof. Lint runs on x86_64 Linux.
    A missing, skipped, failed, or stale platform cannot count as green.
 5. Gather trusted repository context, the complete allowed patch, comparisons
    for changed canonical locks, enrolled release metadata, and native evidence.
    Large comparisons explicitly label their bounded commit sample. Uncovered
    legacy/new sources and oversized context require owner review.
+   Existing channel tarballs may retain their recorded redirect target; changing
+   those locked bytes requires owner review rather than a guessed source identity.
 6. Call the Responses API with gpt-6.1-sol, high reasoning, structured output,
    and store=false. The model has no tools, shell, plugins, credentials, or resumed
    author session. No global Michi model or existing Codex profile changes. It
@@ -55,14 +63,23 @@ cause a burst of catch-up generations.
    hold's decision. Model success alone is never sufficient evidence.
    With policy merging disabled, a passing review completes a dry run without
    dispatching a merge workflow; its review remains available in private state.
+   The output cap is 32,768 tokens including reasoning; the socket deadline is
+   ten minutes. Confirm those bounded costs in the API budget before enablement.
 7. The merge workflow re-fetches PR/files/policy, native and host artifacts,
    freshness, hashes, required branch rules, and App bypasses. Require strict
-   server-side Maintenance / native evidence checks and PRs on main. Merge only
+   server-side Maintenance / native evidence checks from GitHub Actions and PRs
+   on main. The calling token must report `current_user_can_bypass=never` for
+   every applicable ruleset; unknown access blocks. Merge only
    the exact head SHA; an advanced base requires regeneration. A candidate cannot
    alter its own acceptance policy.
 8. Reconcile the actual PR result. Persist uncertain dispatch/merge outcomes and
    query GitHub before allowing new work. A timeout never proves nothing executed.
    An interrupted review stops rather than silently reusing old context.
+   Superseded generations end quietly. Completed decision runs settle from the
+   exact PR state; missing runs stay latched until their review can no longer
+   pass the freshness gate. Owner run requests remain pending while busy/paused
+   or through temporary API failures. Temporary failures retry and alert after
+   an hour rather than permanently stopping future scheduled work.
 
 Arbitrary module repairs, policy/CI edits, credentials, deployment logic, and
 boot/storage/network/auth changes need Chris's review. Broader compatibility
@@ -100,8 +117,12 @@ PYTHONPATH=scripts python3 -m maintenance.cli attest \
 Get identity from the trusted validation run, run on suremac from a trusted
 checkout, and submit its JSON through maintenance-attest.yml as the approved
 attestor. Then request a fresh review. The task creates or borrows no identity.
-Missing host evidence retains the hold and alerts Chris. Host evidence proves
-observed bundles at its timestamp, not every browser/application-bundled store;
+Missing host evidence retains the hold; routine attestor work gets a one-hour
+grace period before alerting Chris. Host evidence measures the currently activated
+Mac using its system curl, not the candidate's future system bundle. Binding it
+to the candidate identifies which decision may use this environmental observation;
+candidate certificate bytes and uv behavior are separately proved by Darwin CI.
+It does not cover every browser/application-bundled store;
 see [manual package updates](manual-package-updates.md). Conditions continue
 protecting subsequent updates until policy is explicitly revised.
 
@@ -123,7 +144,9 @@ candidate/failure fingerprint, and reminds after 24 hours if unresolved. Noop,
 merged, and recovered classes stay quiet. Alerts explain the problem and needed
 action with a PR/run link. The notifier alone receives fixed-owner Telegram
 credentials. Transient/rate-limit failures retry with backoff; permanent rejection
-keeps the notifier failed until its blocked receipt is addressed. Both host and
+keeps the notifier failed until delivery succeeds. Unresolved rejected events can
+retry after the same 24-hour reminder window, so fixing access restores delivery.
+Both host and
 GitHub use the same delivery command, which logs only counts and fails visibly
 on retry or permanent rejection. Lost acknowledgements may produce a duplicate.
 
@@ -160,7 +183,8 @@ These actions need Chris's separate approval; this setup performs none:
    Separately approve the narrowly scoped suremac attestor token and its Darwin
    launch agent; set the same authorized user login in both hosts and GitHub.
 4. Approve strict required Maintenance / native evidence checks and PRs for main,
-   read-only workflow defaults, and no maintenance App bypass.
+   pin the check to the GitHub Actions integration, read-only workflow defaults,
+   and no maintenance App bypass. Existing owner bypass is a separate decision.
 5. Review/merge setup separately. Configure Nix credential-file options and IDs.
    Approve enabling the controller and MAINTENANCE_ENABLED for controlled dry runs,
    while MAINTENANCE_AUTOMERGE and policy merging remain false.

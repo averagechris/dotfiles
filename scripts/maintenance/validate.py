@@ -15,7 +15,6 @@ import sys
 import tempfile
 import threading
 import time
-import urllib.request
 import uuid
 import zipfile
 from pathlib import Path
@@ -56,20 +55,6 @@ def _safe_environment() -> dict[str, str]:
     return env
 
 
-def _http_json(url: str, timeout: int = 30) -> dict[str, Any]:
-    request = urllib.request.Request(
-        url, headers={"Accept": "application/vnd.github+json", "User-Agent": "dotfiles-maintenance-validator"}
-    )
-    with urllib.request.urlopen(request, timeout=timeout) as response:
-        raw = response.read(MAX_LOG_BYTES + 1)
-    if len(raw) > MAX_LOG_BYTES:
-        raise ValidationError("GitHub compare response exceeded the size limit")
-    payload = json.loads(raw.decode("utf-8"))
-    if not isinstance(payload, dict):
-        raise ValidationError("GitHub compare response was not an object")
-    return payload
-
-
 class Validator:
     def __init__(
         self,
@@ -80,7 +65,6 @@ class Validator:
         output: Path,
         *,
         command: Callable[..., Any] | None = None,
-        http_json: Callable[[str], dict[str, Any]] = _http_json,
         timeout: int = DEFAULT_TIMEOUT,
     ) -> None:
         self.trusted = trusted.resolve()
@@ -89,7 +73,6 @@ class Validator:
         self.identity_path = identity_path
         self.output = output
         self.command = command or self._command
-        self.http_json = http_json
         self.timeout = timeout
         self.commands: list[dict[str, Any]] = []
         self.warnings: list[str] = []
@@ -173,14 +156,14 @@ class Validator:
     def _git(self, root: Path, *args: str) -> str:
         return self.run(["git", "-C", str(root), *args]).strip()
 
-    def _check_identity(self) -> dict[str, Any]:
+    def _check_identity(self) -> tuple[dict[str, Any], dict[str, Any]]:
         policy_path = self.trusted / POLICY_REL
         policy_bytes = policy_path.read_bytes()
         policy_hash = hashlib.sha256(policy_bytes).hexdigest()
         policy = json.loads(policy_bytes)
         identity = _json(self.identity_path)
         if isinstance(identity, dict):
-            self.identity = {key: identity[key] for key in ("schema", "repository", "pr", "base", "head", "policy_sha256") if key in identity}
+            self.identity = {key: identity[key] for key in ("schema", "repository", "pr", "base", "head", "policy_sha256", "ancestry") if key in identity}
         if not isinstance(identity, dict) or identity.get("schema") != 1:
             raise ValidationError("identity schema must be 1")
         if identity.get("repository") != policy.get("repository"):
@@ -211,23 +194,23 @@ class Validator:
     def _resolve_locked_input(self, lock: dict[str, Any], name: str) -> dict[str, Any]:
         nodes = lock["nodes"]
 
-        def resolve_ref(ref: Any, trail: set[str]) -> dict[str, Any]:
+        def resolve_ref(ref: Any) -> dict[str, Any]:
             if isinstance(ref, list):
                 if not ref:
                     raise ValidationError(f"empty flake lock input route for {name}")
-                node = resolve_ref(ref[0], trail)
+                node = resolve_ref(ref[0])
                 for child in ref[1:]:
                     node_id = node.get("inputs", {}).get(child)
-                    node = resolve_ref(node_id, trail)
+                    node = resolve_ref(node_id)
                 return node
-            if not isinstance(ref, str) or ref in trail or ref not in nodes:
+            if not isinstance(ref, str) or ref not in nodes:
                 raise ValidationError(f"cannot resolve locked flake input {name}")
             return nodes[ref]
 
         root_inputs = nodes[lock["root"]]["inputs"]
         if name not in root_inputs:
             raise ValidationError(f"candidate flake.lock has no {name} input")
-        return resolve_ref(root_inputs[name], set())
+        return resolve_ref(root_inputs[name])
 
     def _verify_native(self, policy: dict[str, Any]) -> list[str]:
         if self.system not in policy.get("required_systems", []):
@@ -277,30 +260,27 @@ class Validator:
         if new:
             raise ValidationError(f"candidate introduced flake evaluation warnings: {'; '.join(new[:4])}")
 
-    def _compare_ancestry(self, hold: dict[str, Any], candidate_rev: str) -> None:
+    def _verify_ancestry_proof(self, hold_name: str, hold: dict[str, Any], candidate_rev: str) -> None:
         commits = hold.get("required_nixpkgs_commits") or [hold["revision"]]
-        for base in commits:
-            if not SHA_RE.fullmatch(base):
-                raise ValidationError("trusted hold contains invalid required nixpkgs commit")
-            url = f"https://api.github.com/repos/NixOS/nixpkgs/compare/{base}...{candidate_rev}"
-            try:
-                result = self.http_json(url)
-                response_log = json.dumps(result, sort_keys=True)
-                exit_code = 0
-            except Exception as exc:
-                response_log = f"unauthenticated GitHub compare request failed: {str(exc)[:500]}"
-                exit_code = 1
-                payload = response_log.encode("utf-8")
-                self.commands.append({"argv": ["GET", url], "cwd": str(self.candidate), "exit_code": exit_code, "expected_exit_code": 0, "log_sha256": hashlib.sha256(payload).hexdigest()})
-                self._write_log(len(self.commands), payload)
-                raise ValidationError(response_log) from exc
-            payload = response_log.encode("utf-8")[-MAX_LOG_BYTES:]
-            self.commands.append({"argv": ["GET", url], "cwd": str(self.candidate), "exit_code": exit_code, "expected_exit_code": 0, "log_sha256": hashlib.sha256(payload).hexdigest()})
-            self._write_log(len(self.commands), payload)
-            status = result.get("status")
-            merge_base = result.get("merge_base_commit", {}).get("sha")
-            if status not in ("ahead", "identical") or merge_base != base:
-                raise ValidationError(f"candidate nixpkgs {candidate_rev} does not prove ancestry from {base}")
+        ancestry = self.identity.get("ancestry")
+        proof = ancestry.get(hold_name) if isinstance(ancestry, dict) else None
+        if not isinstance(proof, dict) or proof.get("verified") is not True:
+            raise ValidationError(f"trusted identity has no verified ancestry proof for hold {hold_name}")
+        if proof.get("revision") != candidate_rev:
+            raise ValidationError(f"trusted ancestry proof revision does not match candidate nixpkgs {candidate_rev}")
+        if proof.get("required_commits") != commits:
+            raise ValidationError(f"trusted ancestry proof commits do not match policy for hold {hold_name}")
+        if any(not isinstance(commit, str) or not SHA_RE.fullmatch(commit) for commit in commits):
+            raise ValidationError("trusted hold contains invalid required nixpkgs commit")
+
+    def _check_hold_versions(self, hold: dict[str, Any], attr_prefix: str) -> dict[str, str]:
+        versions: dict[str, str] = {}
+        for package, minimum in hold["minimum_versions"].items():
+            actual = self._nix("eval", "--raw", f".{attr_prefix}.{package}.version")
+            versions[package] = actual
+            if self._version_tuple(actual) < self._version_tuple(minimum):
+                raise ValidationError(f"{package} {actual} is below required {minimum}")
+        return versions
 
     @staticmethod
     def _version_tuple(value: str) -> tuple[int, ...]:
@@ -308,9 +288,6 @@ class Validator:
         if not match:
             raise ValidationError(f"cannot compare package version {value!r}")
         return tuple(int(part) for part in match.group(1).split("."))
-
-    def _eval_version(self, host: str, package: str) -> str:
-        return self._nix("eval", "--raw", f".#nixosConfigurations.{host}.pkgs.{package}.version")
 
     def _check_hold(self, policy: dict[str, Any], hosts: list[str], candidate_lock: dict[str, Any]) -> None:
         hold = policy.get("holds", {}).get("emudhra")
@@ -320,6 +297,7 @@ class Validator:
         candidate_rev = node.get("locked", {}).get("rev")
         if not isinstance(candidate_rev, str) or not SHA_RE.fullmatch(candidate_rev):
             raise ValidationError("candidate nixpkgs lock has no valid locked revision")
+        self._verify_ancestry_proof("emudhra", hold, candidate_rev)
         if candidate_rev == hold["revision"]:
             for check in ("versions", "ancestry", "package-bundle", "system-bundle", "uv-system-certs"):
                 self.holds["emudhra"][check] = True
@@ -330,17 +308,8 @@ class Validator:
                 "state": "system-bundle check is Linux-native; host keychain attestation is a separate required gate",
                 "revision": candidate_rev,
             }
-            minimum = hold["minimum_versions"]
-            versions = {
-                package: self._nix("eval", "--raw", f".#darwinConfigurations.suremac.pkgs.{package}.version")
-                for package in ("cacert", "uv")
-            }
-            for package, required in minimum.items():
-                actual = versions[package]
-                if self._version_tuple(actual) < self._version_tuple(required):
-                    raise ValidationError(f"{package} {actual} is below required {required}")
+            versions = self._check_hold_versions(hold, "darwinConfigurations.suremac.pkgs")
             self.holds["emudhra"]["versions"] = True
-            self._compare_ancestry(hold, candidate_rev)
             self.holds["emudhra"]["ancestry"] = True
             package_path = self._build_path("darwinConfigurations.suremac.pkgs.cacert")
             package_bundle = Path(package_path) / "etc/ssl/certs/ca-bundle.crt"
@@ -360,14 +329,8 @@ class Validator:
         if self.system not in ("x86_64-linux", "aarch64-linux"):
             raise ValidationError(f"changed eMudhra hold is unsupported on native system {self.system}")
         host = next((name for name in hosts if name in ("thorny", "tater")), hosts[0])
-        versions: dict[str, str] = {}
-        for package, minimum in hold["minimum_versions"].items():
-            actual = self._eval_version(host, package)
-            versions[package] = actual
-            if self._version_tuple(actual) < self._version_tuple(minimum):
-                raise ValidationError(f"{package} {actual} is below required {minimum}")
+        versions = self._check_hold_versions(hold, f"nixosConfigurations.{host}.pkgs")
         self.holds["emudhra"]["versions"] = True
-        self._compare_ancestry(hold, candidate_rev)
         self.holds["emudhra"]["ancestry"] = True
         self.holds["emudhra"]["details"] = {"revision": candidate_rev, "versions": versions}
         package_path = self._build_path(f"nixosConfigurations.{host}.pkgs.cacert")
@@ -526,7 +489,7 @@ class Validator:
         return [sandbox_exec, "-f", str(profile)], str(probe_inputs / "local-ca.pem"), str(probe_inputs / "untrusted-ca.pem"), {"HOME": str(scratch), "TMPDIR": str(scratch), "UV_CACHE_DIR": str(scratch / "cache")}
 
     def _lint(self) -> None:
-        if self.system.endswith("linux"):
+        if self.system == "x86_64-linux":
             script = self.trusted / "scripts/ci-check-tiers.sh"
             path = _safe_environment().get("PATH", "")
             real_nix = shutil.which("nix", path=path)
@@ -536,7 +499,7 @@ class Validator:
             with tempfile.TemporaryDirectory(prefix="dotfiles-nix-guard-") as guard_dir:
                 guard = Path(guard_dir) / "nix"
                 guard.write_text(
-                    "#!/usr/bin/env python3\n"
+                    f"#!{sys.executable}\n"
                     "import os, sys\n"
                     f"real = {real_nix!r}\n"
                     "args = [arg for arg in sys.argv[1:] if arg != '--accept-flake-config']\n"
