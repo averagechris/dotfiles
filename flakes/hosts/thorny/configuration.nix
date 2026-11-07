@@ -553,6 +553,7 @@ in {
     inputs.hister.nixosModules.hister
     ./hardware.nix
     ./zeroclaw.nix
+    ./maintenance.nix
     inputs.agenix.nixosModules.default
     inputs.nixos-hardware.nixosModules.system76
     inputs.nixos-hardware.nixosModules.common-cpu-amd

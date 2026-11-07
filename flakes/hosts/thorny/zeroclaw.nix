@@ -163,7 +163,8 @@
       codexOwnerCli
       codexSessions
     ]
-    ++ personalCodex.packages;
+    ++ personalCodex.packages
+    ++ lib.optional config.dotfiles.maintenance.enable config.dotfiles.maintenance.package;
 
   # Keep the parent path valid in a clean checkout. A missing path literal is
   # rejected during Nix evaluation before pathExists can disable the feature.
@@ -405,6 +406,7 @@ in {
   systemd.services.zeroclaw-home.serviceConfig = lib.mkIf secretExists {
     ExecStartPost = ["+${lib.getExe publishBrowserNamespace}"];
     ExecStopPost = ["+${pkgs.coreutils}/bin/rm -f /run/zeroclaw-home-browser-userns"];
+    ReadWritePaths = lib.mkIf config.dotfiles.maintenance.enable (lib.mkAfter ["/var/lib/dotfiles-maintenance-requests"]);
   };
   systemd.services.zeroclaw-home.environment = lib.mkIf secretExists gitCredentialEnvironment;
 
@@ -521,43 +523,45 @@ in {
             require_approval_for_medium_risk = false;
             workspace_only = true;
             shell_env_passthrough = ["GH_TOKEN" "TG_OWNER_ID"] ++ builtins.attrNames gitCredentialEnvironment;
-            allowed_commands = [
-              "git"
-              "gh"
-              "jj"
-              "rg"
-              "jq"
-              "curl"
-              "fd"
-              "rdny"
-              "michi-codex"
-              "codex"
-              "michi-codex-sessions"
-              "npm"
-              "cargo"
-              "ls"
-              "cat"
-              "grep"
-              "find"
-              "echo"
-              "pwd"
-              "wc"
-              "head"
-              "tail"
-              "date"
-              "df"
-              "du"
-              "uname"
-              "uptime"
-              "hostname"
-              "python"
-              "python3"
-              "pip"
-              "node"
-              "free"
-              "ffmpeg"
-              "ffprobe"
-            ];
+            allowed_commands =
+              [
+                "git"
+                "gh"
+                "jj"
+                "rg"
+                "jq"
+                "curl"
+                "fd"
+                "rdny"
+                "michi-codex"
+                "codex"
+                "michi-codex-sessions"
+                "npm"
+                "cargo"
+                "ls"
+                "cat"
+                "grep"
+                "find"
+                "echo"
+                "pwd"
+                "wc"
+                "head"
+                "tail"
+                "date"
+                "df"
+                "du"
+                "uname"
+                "uptime"
+                "hostname"
+                "python"
+                "python3"
+                "pip"
+                "node"
+                "free"
+                "ffmpeg"
+                "ffprobe"
+              ]
+              ++ lib.optional config.dotfiles.maintenance.enable "michi-maintenance";
           };
           guests = {
             max_tool_result_chars = 524288;

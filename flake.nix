@@ -355,6 +355,21 @@
       # once; name collisions with different values throw.
       checks = lib.mergeFlakeChecks [
         {
+          maintenance =
+            pkgs.runCommand "dotfiles-maintenance-tests" {
+              nativeBuildInputs = [pkgs.bash pkgs.git pkgs.jq pkgs.openssl pkgs.python3];
+            } ''
+              export HOME="$TMPDIR/home"
+              mkdir -p "$HOME"
+              export PYTHONDONTWRITEBYTECODE=1
+              export GIT_CONFIG_GLOBAL=/dev/null
+              export GIT_AUTHOR_NAME="Maintenance tests" GIT_COMMITTER_NAME="Maintenance tests"
+              export GIT_AUTHOR_EMAIL="tests@example.invalid" GIT_COMMITTER_EMAIL="tests@example.invalid"
+              cd ${self}
+              python3 -m unittest discover -s tests -p 'test_maintenance_*.py'
+              python3 tests/test_self_deploy.py
+              touch "$out"
+            '';
           michi-codex =
             pkgs.runCommand "michi-codex-tests" {
               nativeBuildInputs = [pkgs.git (pkgs.python3.withPackages (ps: [ps.websocket-client]))];

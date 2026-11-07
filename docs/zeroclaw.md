@@ -199,6 +199,12 @@ later movement updates are not consumed.
 
 ## Scheduled tasks
 
+Dotfiles maintenance has a separate opt-in controller and task-specific Sol 6.1
+high review. When enabled, the owner DM can use `michi-maintenance` requests.
+It changes neither Michi's conversational model nor the bot's credentials. Only
+issues reach the private owner DM. Credentials, GitHub gates, and live validation
+must be separately approved; see [automated maintenance](automated-maintenance.md).
+
 Only the owner DM can ask Michi to do work once later or on a recurring
 schedule. Each task belongs to the owner chat and inherits only that chat's
 tools, workspace, and account access. Invited private chats and approved groups

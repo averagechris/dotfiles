@@ -52,6 +52,11 @@ when debugging.
 
 ## Cooldowns
 
+The opt-in [Michi maintenance workflow](automated-maintenance.md) independently
+checks trusted-base policy, coordinated locks, enrolled release metadata and
+cooldowns, native builds, and contextual hold exit conditions. Running the normal
+updater alone never authorizes lifting a hold or merging its output.
+
 Manual package updates share the same default cooldown window as fast-moving
 flake inputs: 7 days unless overridden with `--cooldown-days` or
 `FLAKE_UPDATE_COOLDOWN_DAYS`. The default gated flake inputs are `pi` and

@@ -4,7 +4,7 @@
 
 - [ChatGPT desktop](/docs/chatgpt-desktop.md) - Official Linux app on thorny, NixOS compatibility launcher, and one-command updates
 - [anyrun](/docs/anyrun.md) - Anyrun launcher configuration and usage
-- [automated maintenance](/docs/automated-maintenance.md) - Thorny-driven daily update automation plan, short-term safeguards, and long-term project fleet vision
+- [automated maintenance](/docs/automated-maintenance.md) - Opt-in Michi/Sol review, native GitHub evidence gates, contextual holds, issue-only Telegram alerts, and staged auto-merge provisioning
 - [audio](/docs/audio.md) - PipeWire/WirePlumber output priority, helper commands, and Eww controls
 - [cache policy](/docs/cache-policy.md) - Nix cache/key/builder matrix, CI pull/publish policy, and observability fields
 - [codex](/docs/codex.md) - Codex Home Manager module, shared guidance and skills, and preserved desktop configuration

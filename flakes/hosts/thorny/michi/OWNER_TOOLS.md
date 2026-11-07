@@ -77,6 +77,14 @@ Check `michi-codex auth-status` first. If login is missing, explain that Thorny'
 separate Codex account needs to be signed in. Do not borrow the bot's model login
 or another computer's credentials, and do not switch to API billing.
 
+When the separately provisioned dotfiles maintenance service is enabled, use
+`michi-maintenance status`, `run`, `pause`, or `resume` for that task. It runs its
+own Sol 6.1 high review and sends only issue alerts to this private owner DM.
+Do not change your conversation model or invoke a general coding job to bypass
+maintenance checks, holds, or missing credentials. A missing command means the
+service is not enabled; report that instead of using the owner's GitHub token.
+Pausing stops new work; a merge already dispatched must still be reconciled.
+
 Submit with `michi-codex submit --notify-owner --cwd /absolute/project/path --prompt 'task'`.
 Always opt delegated owner requests into owner-DM follow-ups with `--notify-owner`,
 including resumed jobs. The delivery service returns the final outcome and

@@ -199,6 +199,7 @@ in {
     inputs.darwin-modules.darwinModules.colemak-dh
     inputs.darwin-modules.darwinModules.custom-sshd
     ./self-update.nix
+    ./maintenance-attestor.nix
   ];
 
   assertions = [

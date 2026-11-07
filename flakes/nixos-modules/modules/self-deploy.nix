@@ -47,9 +47,31 @@
         exit 0
       fi
 
-      latest_rev=$(nix flake metadata --json "$flake_ref" | jq -r '.revision // .locked.rev // empty')
-      if [ -z "$latest_rev" ]; then
-        echo "Could not determine latest revision for $flake_ref" >&2
+      metadata_json=$(nix flake metadata --json "$flake_ref")
+      latest_rev=$(jq -r '(.revision | select(type == "string" and length > 0)) // .locked.rev // empty' <<<"$metadata_json")
+      locked_flake_ref=$(jq -r '(.lockedUrl // .url // empty) | select(type == "string")' <<<"$metadata_json")
+      if [[ ! "$latest_rev" =~ ^([0-9a-fA-F]{40}|[0-9a-fA-F]{64})$ ]]; then
+        echo "Could not determine a valid locked revision for $flake_ref" >&2
+        exit 1
+      fi
+      locked_rev=$(jq -r '.locked.rev // empty' <<<"$metadata_json")
+      if [ -n "$locked_rev" ] && [ "$locked_rev" != "$latest_rev" ]; then
+        echo "Flake metadata revision does not match its locked revision for $flake_ref" >&2
+        exit 1
+      fi
+      if [ -z "$locked_flake_ref" ] || [[ "$locked_flake_ref" == *'#'* ]]; then
+        echo "Could not determine a locked flake URL for $flake_ref" >&2
+        exit 1
+      fi
+      locked_url_rev=$(jq -rn --arg url "$locked_flake_ref" --arg rev "$latest_rev" '
+        $url | if startswith("github:") then
+          (split("?")[0] | [scan("/([0-9a-fA-F]{40}|[0-9a-fA-F]{64})$")] | if length == 1 then .[0][0] else "" end)
+        else
+          ([scan("[?&]rev=([^&#]*)")] | if length == 1 and .[0][0] == $rev then .[0][0] else "" end)
+        end
+      ')
+      if [ "$locked_url_rev" != "$latest_rev" ]; then
+        echo "Locked flake URL is not pinned to the resolved revision for $flake_ref" >&2
         exit 1
       fi
 
@@ -61,6 +83,10 @@
       printf '%s\n' "$latest_rev" >"$last_attempt_rev_file"
 
       previous_system=$(readlink -f /run/current-system)
+      if [ -z "$previous_system" ] || [ ! -x "$previous_system/bin/switch-to-configuration" ]; then
+        echo "Current system closure is unavailable or invalid: $previous_system" >&2
+        exit 1
+      fi
       echo "Previous system: $previous_system"
       echo "Building ${hostName} from $flake_ref at $latest_rev"
 
@@ -69,7 +95,7 @@
         --no-link \
         --print-out-paths \
         --print-build-logs \
-        "$flake_ref#$attr"); then
+        "$locked_flake_ref#$attr"); then
         echo "Build failed for $latest_rev" >&2
         printf '%s\n' "$latest_rev" >"$last_failure_rev_file"
         exit 1
@@ -120,10 +146,37 @@
         return "$failed"
       }
 
+      system_profile=/nix/var/nix/profiles/system
+      restore_previous_system() {
+        local check_health="$1"
+        echo "Restoring system profile to $previous_system" >&2
+        if ! nix-env --profile "$system_profile" --set "$previous_system"; then
+          echo "Could not restore the system profile to $previous_system" >&2
+          return 1
+        fi
+        if ! "$previous_system/bin/switch-to-configuration" switch; then
+          echo "Could not reactivate previous system $previous_system" >&2
+          return 1
+        fi
+        if [ "$check_health" = true ] && ! health_check; then
+          echo "Previous system is still unhealthy after rollback" >&2
+          return 1
+        fi
+        return 0
+      }
+
+      echo "Setting system profile to $new_system"
+      if ! nix-env --profile "$system_profile" --set "$new_system"; then
+        echo "Could not set system profile to $new_system; attempting rollback" >&2
+        restore_previous_system false || true
+        printf '%s\n' "$latest_rev" >"$last_failure_rev_file"
+        exit 1
+      fi
+
       echo "Activating $new_system"
       if ! "$new_system/bin/switch-to-configuration" switch; then
         echo "Activation failed; attempting rollback to $previous_system" >&2
-        "$previous_system/bin/switch-to-configuration" switch || true
+        restore_previous_system false || true
         printf '%s\n' "$latest_rev" >"$last_failure_rev_file"
         exit 1
       fi
@@ -136,7 +189,7 @@
       fi
 
       echo "Health check failed; rolling back to $previous_system" >&2
-      if "$previous_system/bin/switch-to-configuration" switch && health_check; then
+      if restore_previous_system true; then
         echo "Rollback succeeded after failed deployment of $latest_rev" >&2
       else
         echo "Rollback failed or system is still unhealthy after rollback" >&2

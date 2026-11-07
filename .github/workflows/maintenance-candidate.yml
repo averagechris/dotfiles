@@ -1,0 +1,112 @@
+name: Maintenance candidate
+run-name: Maintenance candidate ${{ inputs.request_id }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      base:
+        description: Trusted main commit used as the candidate base
+        required: true
+        type: string
+      request_id:
+        description: Unique maintenance request identifier
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    if: >-
+      vars.MAINTENANCE_ENABLED == 'true' && github.ref == 'refs/heads/main' &&
+      github.actor == vars.MAINTENANCE_APP_LOGIN &&
+      inputs.base == github.sha && inputs.request_id != ''
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Check out trusted workflow code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          path: trusted
+          persist-credentials: false
+      - name: Check out trusted candidate base
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: ${{ github.repository }}
+          ref: ${{ inputs.base }}
+          path: candidate
+          persist-credentials: false
+      - name: Install sandboxed Nix
+        uses: cachix/install-nix-action@75c75c31ebece974e48ebc36b4ad125bd97bd97b
+        with:
+          extra_nix_config: |
+            sandbox = true
+            accept-flake-config = false
+      - name: Generate bounded candidate artifact
+        env:
+          M_BASE: ${{ inputs.base }}
+        run: |
+          mkdir -p out
+          PYTHONPATH=trusted/scripts python3 trusted/scripts/maintenance/candidate.py generate \
+            --trusted trusted --candidate candidate --output out/evidence.json
+      - name: Upload candidate artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: maintenance-candidate-files
+          path: out/evidence.json
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: generate
+    if: >-
+      needs.generate.result == 'success' && vars.MAINTENANCE_ENABLED == 'true' &&
+      github.ref == 'refs/heads/main' && github.actor == vars.MAINTENANCE_APP_LOGIN &&
+      inputs.base == github.sha
+    runs-on: ubuntu-24.04
+    environment: maintenance-merge
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Check out trusted workflow code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          path: trusted
+          persist-credentials: false
+      - name: Download generated artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: maintenance-candidate-files
+          path: bundle
+      - name: Mint short-lived maintenance App token
+        id: app-token
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349
+        with:
+          app-id: ${{ secrets.MAINTENANCE_APP_ID }}
+          private-key: ${{ secrets.MAINTENANCE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: dotfiles
+          permission-contents: write
+          permission-pull-requests: write
+          permission-actions: write
+      - name: Publish validated artifact
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          MAINTENANCE_APP_LOGIN: ${{ vars.MAINTENANCE_APP_LOGIN }}
+          M_BASE: ${{ inputs.base }}
+        run: |
+          mkdir -p out
+          PYTHONPATH=trusted/scripts python3 -m maintenance.cli publish \
+            --trusted trusted --bundle bundle/evidence.json --output out/evidence.json
+      - name: Upload publication result
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: maintenance-candidate-result
+          path: out/evidence.json
+          if-no-files-found: error
+          retention-days: 7
