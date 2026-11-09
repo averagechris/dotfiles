@@ -206,7 +206,7 @@ its `~/.agents/skills` directory: the nine default Codex skills plus `memo` and
 guidance. It uses the shared `how` adaptation and restricts `why` to repository
 history, documentation, issues, and incident investigation playbooks, omitting
 work-specific sources.
-The owner shell, queued worker, and remote Codex server receive the personal
+The owner shell and queued worker receive the personal
 `memo` and `showboat` CLIs alongside the existing coding and browser
 tools. History remains available through `michi-codex-sessions`.
 The tater and thorny Linux flakes serialize Memo's Rust test harness with
@@ -250,3 +250,12 @@ normal temporary directory.
 ```sh
 direnv exec . nix build --no-link .#checks.x86_64-linux.michi-codex
 ```
+
+### Phone host identity
+
+The phone's `michi-codex-remote.service` runs as workstation user `chris`, with
+the real home and existing `.codex` profile. It uses that user's SSH and Git
+configuration rather than the bot profile's wrappers or credential environment.
+The bot shell and queued worker retain their isolated service-user profile.
+See [phone access](zeroclaw.md#phone-access) for self-deploy behavior, pairing
+and live identity checks. Existing workstation Codex configuration is preserved.
