@@ -246,8 +246,9 @@ receive `GH_TOKEN` and three fixed Git configuration variables only for the
 owner profile. They configure `gh auth git-credential` for
 `https://github.com` only, using the token from agenix; other hosts and provider
 keys remain excluded. The same GitHub-only helper is available to the owner
-service, Codex worker, phone host, and direct `codex` CLI. The worker passes
-these three settings to Codex child processes through its environment allowlist.
+service, Codex worker, and bot-profile `codex` CLI. The phone host uses
+the normal workstation user's Git configuration and authentication instead.
+The worker passes these three settings to Codex child processes through its environment allowlist.
 No workstation login or credential file is copied.
 
 The owner's runtime profile allows 1,000,000 tool rounds per turn so browser
@@ -496,48 +497,65 @@ DMs and groups retain their shell exclusion and have no Codex command grant.
 ## Phone access
 
 `michi-codex-remote.service` runs the pinned CLI's foreground remote-control
-host at boot after the dedicated account has logged in. The owner paired an
-iPhone successfully through CLI 0.160.0. ChatGPT required MFA on that account
-before host registration. The service uses the same owner workspace, account,
-coding guidance, tools, and filesystem restrictions as the coding worker.
-It forwards only `GH_TOKEN` from agenix, using a separate runtime credential
-file so worker cleanup cannot remove the host's credentials.
+host as the workstation user `chris`. It uses `/home/chris` as its real home
+and working directory, with the user's normal `/home/chris/.codex` profile.
+SSH identities, known hosts, Git settings and user-installed tools come from
+that account. The service no longer imports the bot's GitHub token or redirects
+commands through the bot's owner-shell wrappers.
+
+The Telegram bot and queued `michi-codex-worker` remain `zeroclaw-home` services
+with separate state. The phone service retains the Codex workspace-write
+sandbox and system-service hardening, while allowing access to the actual
+user home. The bot state tree remains hidden. Running as `chris` does not grant
+root access or remove Codex's per-task write boundaries.
 
 Phone tasks default to Sol 6.1 low, with Luna medium as the subagent default.
 The phone can choose a different model or reasoning effort for a task.
-The foreground app server bypasses the managed daemon's separate auto-updater;
-Nix controls the installed CLI. Restarting it reuses the profile's enrollment.
-The app server reconnected with the paired daemon's host identity.
-Its local socket lives in a private runtime directory shared with the owner
-client. This avoids the CLI's hashed socket alias being hidden in PrivateTmp.
-The resolved Unix socket path stays below Linux's length limit.
+Nix controls the installed CLI. Its local socket is
+`/home/chris/.codex/michi-app-server.sock`; the short socket alias uses the
+service's private runtime directory.
 
-Check it with `systemctl status michi-codex-remote` and
-`journalctl -u michi-codex-remote`. Stop it with
-`sudo systemctl stop michi-codex-remote` to disable phone access until the next
-start. Systemd sends SIGINT for the CLI's shutdown handler. The bot and coding
-queue run independently.
+### Switch an existing service-user host
 
-For a new phone, stop the foreground service before using the CLI's managed
-pairing flow. Run these commands from SSH under the dedicated profile:
+Thorny's existing self-deploy timer applies merged GitHub `main` on its next
+run, every two hours with up to 15 minutes of randomized delay. No manual
+switch is normally needed. Activation restarts the phone service and can
+disconnect the existing phone session.
+The old bot profile and project files are preserved; this change does not copy
+credentials, replace the user's existing Codex configuration, or migrate old
+thread paths. Start a new phone task in a user-owned working directory.
+
+The service starts only when `/home/chris/.codex/auth.json` exists. If needed,
+log in as `chris` using the normal terminal, then pair the user profile:
 
 ```sh
 sudo systemctl stop michi-codex-remote
-sudo -u zeroclaw-home env \
-  HOME=/var/lib/zeroclaw-home/agents/owner/workspace \
-  CODEX_HOME=/var/lib/zeroclaw-home/agents/owner/workspace/.codex \
-  PATH=/run/current-system/sw/bin \
-  sh -c 'codex remote-control start --json && codex remote-control pair --json'
+# Only if this profile is not already logged in with file-backed credentials:
+/run/current-system/sw/bin/codex -c 'cli_auth_credentials_store="file"' login
+/run/current-system/sw/bin/codex -c 'cli_auth_credentials_store="file"' remote-control start --json
+/run/current-system/sw/bin/codex -c 'cli_auth_credentials_store="file"' remote-control pair --json
 ```
 
-Enter the short-lived manual code on the phone, signed into the same account
-and workspace. After pairing, stop the managed daemon under the same profile
-with `codex remote-control stop --json`, then restart the foreground service.
-Do not run both hosts together. The [official CLI commands](https://learn.chatgpt.com/docs/developer-commands#codex-remote-control)
-describe the experimental pairing commands. The [Remote guide](https://learn.chatgpt.com/docs/remote-connections)
-still documents desktop hosts on Mac and Windows; this Linux CLI route is a
-verified experimental setup, without a Linux desktop app or desktop computer
-control. Browser work continues through rdny.
+Enter the short-lived manual code on the phone under the same ChatGPT account.
+After pairing, stop the managed daemon and start the Nix-managed foreground host:
+
+```sh
+/run/current-system/sw/bin/codex remote-control stop --json
+sudo systemctl start michi-codex-remote
+systemctl show michi-codex-remote -p User -p Group -p WorkingDirectory
+```
+
+The expected Unix user is `chris`. Confirm `id -un` returns `chris` in a new
+phone task and test `ssh taro true` using the normal user's SSH configuration.
+Existing enrollment under the old bot profile is separate and may require
+selecting the newly paired host. Neither the bot nor the coding queue is
+restarted by these commands.
+
+Check failures with `systemctl status michi-codex-remote` and
+`journalctl -u michi-codex-remote`. The [official CLI commands](https://learn.chatgpt.com/docs/developer-commands#codex-remote-control)
+describe the experimental pairing flow. This configuration has not yet been
+activated or verified as `chris`; source evaluation is distinct from a live
+identity and SSH check.
 
 ## Operations
 
