@@ -610,6 +610,10 @@ in {
           url = "https://mcp.sentry.dev/mcp";
           enabled = true;
         };
+        mcp_servers.whimsical = {
+          url = "https://mcp.whimsical.com/mcp";
+          enabled = true;
+        };
       };
     };
     # Reference only. Adoption requires a separate request after review and merge.
