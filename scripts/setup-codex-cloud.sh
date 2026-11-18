@@ -17,7 +17,8 @@ fi
 mkdir -p "$tools_root" "$(dirname -- "$skill_link")"
 
 if command -v nix >/dev/null && nix store info >/dev/null 2>&1; then
-  nix build "path:$repo#cloud-tools" --no-update-lock-file --out-link "$tools_root/profile"
+  # Let Nix use tracked files when the setup runs from a Git checkout.
+  nix build "$repo#cloud-tools" --no-update-lock-file --out-link "$tools_root/profile"
 else
   # Match the OpenCode release initially used by the dotfiles flake.
   version=2.0.26
