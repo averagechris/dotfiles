@@ -1,5 +1,6 @@
 {lib, ...}: let
   names = [
+    "advisor-council"
     "conventional-commits"
     "test-curation"
     "teach"

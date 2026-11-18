@@ -38,7 +38,7 @@ Use the "Model selection" section of the existing
 source for model routing. Read it when choosing a model for launched tasks.
 Pass explicit model and reasoning selections for intentional routing.
 
-The suremac Codex configuration declares Sol 6.1 with low reasoning as the
+The suremac Codex configuration declares Sol 6.2 with medium reasoning as the
 fallback. A fallback is separate from a deliberate routing choice. Desktop
 launches with omitted selections use saved desktop defaults; do not assume
 the Nix declaration changes those defaults without verifying a fresh launch.

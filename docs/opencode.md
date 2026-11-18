@@ -807,6 +807,9 @@ modules register bundled or repo-managed skills with `dotfiles.agentSkills`, so
 rendering, patching, extension, and per-skill enablement happen uniformly at
 build time. Current examples include:
 
+- `advisor-council`, for requested independent model reviews, with verified
+  evidence and a private synthesis. Codex uses the same skill.
+
 - `architect`, for explicit design work and expensive-to-reverse boundaries; it
   does not trigger for routine features, clear-precedent placement, explanation,
   critique, implemented-diff review, or mere multi-file breadth

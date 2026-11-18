@@ -520,6 +520,26 @@
       # agenix package
       packages.agenix = base-lib.inputs.agenix.packages.${system}.default;
 
+      packages.${
+        if pkgs.stdenv.hostPlatform.isLinux
+        then "cloud-tools"
+        else null
+      } = pkgs.buildEnv {
+        name = "dotfiles-cloud-tools";
+        paths = with pkgs; [
+          (pkgs.extend base-lib.overlays.default).opencode
+          direnv
+          gh
+          git
+          jq
+          jujutsu
+          nodejs
+          pnpm
+          ripgrep
+        ];
+        pathsToLink = ["/bin"];
+      };
+
       # Development shell
       devShells.default = pkgs.mkShell {
         packages = commonDevPackages;
