@@ -6,7 +6,7 @@ Turn larger work into bounded tasks with relevant context, acceptance criteria, 
 
 ## Advisor council
 
-Use the `advisor-council` skill when I request a council or outside-model feedback. It contains the reviewer roster, independent-review workflow, and OpenCode setup checks. Model selection for routine Codex work follows the guidance above.
+Use the `advisor-council` skill for non-trivial work or when asked for an advisor or council.
 
 ## Project environment
 

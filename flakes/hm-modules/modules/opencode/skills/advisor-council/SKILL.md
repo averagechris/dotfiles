@@ -1,30 +1,11 @@
 ---
 name: advisor-council
-description: Get independent model feedback on a plan, architecture, change, or draft and synthesize it with verified evidence. Use when Chris asks for a council, named outside-model advisors, or an independent taste consultation.
+description: Always use for non-trivial work to collect independent feedback, or when asked for an advisor or council.
 ---
 
 # Advisor council
 
-1. **Frame the question.** State the decision, constraints, options, and what the reviewer should check. Pin a code review to a commit or diff. Prioritize security and correctness, then performance, then simplicity and maintainability unless Chris gives a different order.
-2. **Choose advisors.** Read [the roster](references/models.md). Include Opus 5.5 unless Chris explicitly opts out. Use other requested seats, or select a small number that fit the task. A single taste consultation can use the requested advisor. A full council attempts every applicable configured seat.
-3. **Send one compact evidence packet.** Include only what each destination is authorized to receive. Confirm permission for private material and review provider terms applicable to it. Strip credentials, customer data, and irrelevant internal context. Keep the evidence and questions consistent across reviewers. Give each reviewer a fresh, independent session with analysis-only instructions, without other reviewers' conclusions. Run independent calls in parallel when available.
-4. **Verify.** Ask for a short recommendation, consequential findings with evidence, and what remains unproven. Check claims against the source or a focused test. Distinguish observed defects from assumptions, design preferences, and unresolved disagreements.
-5. **Synthesize.** Lead with a recommendation and the few points that could change the decision. Name each advisor that actually ran, its model and effort, the revision reviewed, and any unavailable seats. Provide deeper evidence or individual reports when requested. Re-review the affected area after a material change. The lead owns the decision and this workflow does not publish feedback or modify the work.
-
-## Running a review
-
-Verify the selected executor, CLI version, provider, exact model, and reasoning variant before relying on a reviewer. OpenCode v2 lists available models with `opencode models --standalone`. A cold catalog can be empty while providers initialize. Check it again or use the model picker. When auth or routing is unproven, use a tiny synthetic prompt with no work material and check the returned model and variant. A public catalog listing does not prove your account can run it.
-
-For OpenCode, put only the approved packet in a fresh scratch directory. Run from that directory with tool permissions denied and keep the installed OpenCode credentials local to the executor. Use `--standalone` so the restriction applies to the new server. Never use `--auto` for a review.
-
-```sh
-OPENCODE_CONFIG_CONTENT='{"permissions":[{"action":"*","resource":"*","effect":"deny"}]}' \
-opencode run --standalone \
-  --model 'openrouter/anthropic/claude-opus-5.5#high' \
-  --file ./packet.md \
-  'Review the attached packet independently. Give a recommendation and evidence for material findings. Analysis only. Do not use tools, edit, or delegate.'
-```
-
-Use a clean OpenCode configuration with only the intended provider. Before submitting a packet, check for custom agents, plugins, integrations, instructions and references that could add context or permissions. A prompt restriction alone is not an isolation boundary.
-
-Cloud and Dot sessions need a usable shell executor, a local OpenCode installation, and their own provider access. They do not inherit suremac's tools or credentials. Check the published environment's configured tools path first. In a Dot workspace with a shared install, also check `/workspace/shared/cloud-tools/bin/opencode`. If a seat cannot run, report the blocker. Never present a replacement or catalog entry as a completed review.
+1. **Scope.** Give reviewers the same question, constraints, and evidence. For code, use the requested commit, PR diff, or working copy. Include relevant staged, unstaged, and untracked changes. Keep the reviewed state stable until reviews finish or share a snapshot.
+2. **Review.** Use one fitting [advisor](references/models.md) for focused feedback. For a council, include Opus 5.5 and pick one or two others unless the user specifies a lineup. A full council uses every applicable seat. Run independent, read-only reviews in parallel when possible. Ask for consequential findings with evidence, prioritizing security and correctness, then performance, then simplicity unless asked otherwise.
+3. **Share safely.** Let authorized reviewers with checkout access inspect it directly. For external reviewers, send only approved excerpts or a scoped diff, inline or attached. Exclude secrets and customer data. See [how to run an external review](references/models.md#external-reviews).
+4. **Synthesize.** Verify findings, explain material disagreements, and recommend next steps. Record the reviewed state, which models and effort actually ran, and any unavailable seats. Re-review material changes when needed. Get authorization before posting results.

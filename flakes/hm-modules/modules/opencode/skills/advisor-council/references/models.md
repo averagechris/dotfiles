@@ -14,4 +14,16 @@ Use native Codex delegation for the OpenAI seats when the requested selection is
 
 The API model `muse-wonder-1.0` is [Muse Wonder](https://dev.meta.ai/docs/muse-wonder). It is a different seat from Wonder Full, even at maximum effort. Use it only when requested or agreed.
 
-For a general council, use Opus and one or two of Sol, Astra or a specialist. Make Fable a meaningful separate vote where the quality of the design or writing matters. For defensive security work, add Carbon or a confirmed Daybreak seat when requested and available. Record the actual Daybreak model and tier if used.
+## External reviews
+
+Check the provider's terms for the material. Confirm a usable executor, CLI, authorized provider, exact model and variant. Check `opencode models --standalone` or the model picker. For unproven access, run a synthetic prompt first. Cloud and Dot sessions need their own tooling and provider access. A Dot shared install may be at `/workspace/shared/cloud-tools/bin/opencode`.
+
+Run in a clean scratch directory with only the intended provider configured. Deny tool access. Put small diffs inline or attach larger excerpts with `--file`.
+
+```sh
+OPENCODE_CONFIG_CONTENT='{"permissions":[{"action":"*","resource":"*","effect":"deny"}]}' \
+opencode run --standalone --model 'openrouter/anthropic/claude-opus-5.5#high' \
+  'Review this evidence independently. Give consequential findings with reasons: <approved evidence>'
+```
+
+Report blocked seats without substituting. For Daybreak, record the actual model and tier.

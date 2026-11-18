@@ -98,8 +98,10 @@ Sol 6.2 high for deeper analysis, and tries Astra 6.2 high for very detailed wor
 Delegated tasks follow the same guidance. Unavailable requested models should be
 reported, with a suitable available fallback rather than a false claim of use.
 
-Use the shared `advisor-council` skill for independent reviews and taste
-consultations. Opus 5.5 is the required council seat. The roster includes
+Use the shared `advisor-council` skill for non-trivial work or when asked for
+an advisor or council. Reviewers can work from a stable working copy, a commit,
+or a diff. External reviewers receive only approved excerpts, inline or as an
+attachment. Opus 5.5 is the required council seat. The roster includes
 Sol 6.2 high, Astra 6.2 high, Fable 5.2, Gemini Carbon and trial seats for Neon
 and Muse Wonder Full. The skill checks actual availability and records any
 missing seat. The OpenCode reviews use the executor's provider access and
