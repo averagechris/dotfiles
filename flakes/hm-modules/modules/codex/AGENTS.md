@@ -6,7 +6,7 @@ Turn larger work into bounded tasks with relevant context, acceptance criteria, 
 
 ## Advisor council
 
-Use the `advisor-council` skill for non-trivial work or when asked for an advisor or council.
+Use the `advisor-council` skill before finalizing non-trivial work or when asked for an advisor or council.
 
 ## Project environment
 

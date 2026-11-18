@@ -16,9 +16,9 @@ The API model `muse-wonder-1.0` is [Muse Wonder](https://dev.meta.ai/docs/muse-w
 
 ## External reviews
 
-Check the provider's terms for the material. Confirm a usable executor, CLI, authorized provider, exact model and variant. Check `opencode models --standalone` or the model picker. For unproven access, run a synthetic prompt first. Cloud and Dot sessions need their own tooling and provider access. A Dot shared install may be at `/workspace/shared/cloud-tools/bin/opencode`.
+Check the provider's terms for the material. Confirm a usable executor, CLI, authorized provider, exact model and variant. Check `opencode models --standalone` or the model picker.
 
-Run in a clean scratch directory with only the intended provider configured. Deny tool access. Put small diffs inline or attach larger excerpts with `--file`.
+Use a scratch directory and a clean environment with only PATH, an isolated HOME, and the intended provider credential. Deny tools and verify the setup with a harmless file-read test before sharing work. Put small diffs inline or attach larger excerpts with `--file`.
 
 ```sh
 OPENCODE_CONFIG_CONTENT='{"permissions":[{"action":"*","resource":"*","effect":"deny"}]}' \
@@ -26,4 +26,4 @@ opencode run --standalone --model 'openrouter/anthropic/claude-opus-5.5#high' \
   'Review this evidence independently. Give consequential findings with reasons: <approved evidence>'
 ```
 
-Report blocked seats without substituting. For Daybreak, record the actual model and tier.
+Cloud and Dot sessions need their own executor, CLI, and provider access. A Dot shared install may be at `/workspace/shared/cloud-tools/bin/opencode`. Report blocked seats without substituting. For Daybreak, record the model and tier.
