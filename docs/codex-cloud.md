@@ -45,8 +45,9 @@ separate executor with its own tools.
 ## Provider access
 
 Keep the environment private. For OpenRouter, configure a separately scoped
-`OPENROUTER_API_KEY` as a cloud network secret for `openrouter.ai`. Test the
-proxy-substituted key in a fresh task using the bundled runner:
+`OPENROUTER_API_KEY` as a cloud network secret for `openrouter.ai`. The bundled
+runner preserves standard HTTP proxy and CA environment variables. Verify that
+the proxy substitutes the key for OpenCode in a fresh task before sharing work:
 
 ```sh
 bash "$HOME/.agents/skills/advisor-council/scripts/review.sh" \

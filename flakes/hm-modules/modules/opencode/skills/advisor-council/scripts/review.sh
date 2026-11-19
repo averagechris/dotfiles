@@ -74,11 +74,28 @@ trap 'rm -rf -- "$work"' EXIT
 mkdir "$work/home" "$work/scratch"
 cd "$work/scratch"
 
-# Consume the credential in Bash and pass the remaining stdin to OpenCode.
-printf '%s\n%s' "$key" "$prompt" |
+# Keep proxy and certificate settings required by managed executors. Send
+# environment values over stdin so credentials stay out of process arguments.
+# shellcheck disable=SC2016
+run_opencode='
+  while IFS= read -r -d "" setting; do
+    if [[ -z $setting ]]; then exec opencode "$@"; fi
+    export "$setting"
+  done
+  exit 1
+'
+{
+  printf '%s\0' "OPENROUTER_API_KEY=$key"
+  for name in HTTP_PROXY HTTPS_PROXY ALL_PROXY NO_PROXY http_proxy https_proxy all_proxy no_proxy \
+    SSL_CERT_FILE SSL_CERT_DIR NODE_EXTRA_CA_CERTS; do
+    if [[ -n ${!name:-} ]]; then
+      printf '%s\0' "$name=${!name}"
+    fi
+  done
+  printf '\0%s' "$prompt"
+} |
   env -i PATH="$PATH" HOME="$work/home" OPENCODE_CONFIG_CONTENT="$config" \
-    OPENCODE_DISABLE_PROJECT_CONFIG=1 \
-    bash -c 'IFS= read -r OPENROUTER_API_KEY; export OPENROUTER_API_KEY; exec opencode "$@"' \
+    OPENCODE_DISABLE_PROJECT_CONFIG=1 bash -c "$run_opencode" \
     bash "${args[@]}" > "$work/events.jsonl" || status=$?
 
 # OpenCode can emit a provider error as a JSON event and still exit zero.
