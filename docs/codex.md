@@ -4,8 +4,8 @@ The Home Manager module at `flakes/hm-modules/modules/codex/` wraps the pinned
 upstream `programs.codex` module. It is exported as
 `homeManagerModules.codex`, imported by the default module, and enabled on
 `suremac`. It configures the existing desktop installation without installing a
-second CLI. The suremac host declares `model = "gpt-6.1-sol"` and
-`model_reasoning_effort = "low"` through `dotfiles.codex.settings`; permission
+second CLI. The suremac host declares `model = "gpt-6.2-sol"` and
+`model_reasoning_effort = "medium"` through `dotfiles.codex.settings`; permission
 defaults remain unchanged.
 
 ```nix
@@ -46,14 +46,14 @@ guidance is retained. `teach` shapes the explanation, `how` investigates mechani
 and `why` investigates rationale and history. All three deploy with the Codex
 module. Project discovery uses optional helper skills when available.
 
-`modules/agent-workflows.nix` registers seven portable skills independently of
-OpenCode: conventional-commits, test-curation, teach, project-map,
+`modules/agent-workflows.nix` registers eight portable skills independently of
+OpenCode: advisor-council, conventional-commits, test-curation, teach, project-map,
 impactful-writing, technical-writing, and rust-cargo. Their existing source
 directories remain under `modules/opencode/skills/`; both clients consume the
 same rendered sources. The registry retains strict patches, additive host
 instructions, full companion directories, and bundle audits.
 
-The Codex module also registers `how` and `why`, bringing its default set to nine.
+The Codex module also registers `how` and `why`, bringing its default set to ten.
 `modules/codex/skills.nix` adapts their existing OpenCode sources with checked
 replacements. It uses available Codex delegation and session-history tools,
 retains the evidence standards and complete reference directories, and leaves
@@ -93,24 +93,22 @@ never place decrypted material in Nix settings, prompt strings, or sources.
 
 ## Model selection and outside feedback
 
-The global guidance prioritizes budget efficiency. Sol at high reasoning chooses
-approaches and plans, then delegates clear implementation tasks to Luna. Routine
-work can start with Luna. Astra is reserved for consequential uncertainty that
-Sol at high reasoning cannot resolve.
+The global guidance uses Sol 6.2 at medium reasoning for most work, steps up to
+Sol 6.2 high for deeper analysis, and tries Astra 6.2 high for very detailed work.
+Delegated tasks follow the same guidance. Unavailable requested models should be
+reported, with a suitable available fallback rather than a false claim of use.
 
-For occasional outside-model feedback, agents can use
-`opencode run --model <provider/model#variant>`. Rare Wise-level consultations
-favor Fable 5.1 or Opus 5.5 for taste judgments about coherence, simplicity,
-wording, and user experience. The example uses
-`openrouter/anthropic/claude-fable-5.1#high` with a compact decision packet and
-analysis-only instructions. Sol retains planning and Luna handles clear
-implementation tasks. The documented example
-uses `--standalone` for a private server and `--file` to attach the packet.
-These calls use the host's OpenCode provider credentials and billing.
+Use the shared `advisor-council` skill before finalizing non-trivial work or
+when asked for an advisor or council. Reviewers can work from a stable working
+copy, a commit, or a diff. External reviewers receive only approved excerpts,
+inline or as an attachment. Opus 5.5 is the required council seat. The roster
+also includes Sol 6.2 high, Astra 6.2 high, Fable 5.2, Gemini Carbon, and a trial
+seat for Gemini Neon. The skill checks availability and records any missing seat. The OpenCode reviews use the executor's provider access and
+billing. See [Codex Cloud tooling](codex-cloud.md) for a reproducible Linux setup.
 
 Routing guidance is distinct from fallback defaults. The suremac TOML defaults
-are Sol 6.1 with low reasoning after activation. Explicit task model and reasoning
-selections implement the routing policy and take priority over fallback values.
+are Sol 6.2 with medium reasoning after activation. Explicit task model and
+reasoning selections implement the routing policy and take priority over fallback values.
 
 The official [configuration documentation](https://learn.chatgpt.com/docs/config-file/config-basic)
 documents user TOML defaults for the CLI and IDE, with higher-priority overrides.
@@ -121,8 +119,7 @@ matches the Nix declaration. Do not rewrite opaque desktop state to force it.
 
 Editing Nix does not activate settings. A full Darwin activation may apply other
 pending changes, so review the complete activation separately. A PR alone does
-not change the live TOML or desktop picker. The OpenCode CLI syntax was checked with the
-installed `opencode run --help`; no paid model call was needed for validation.
+not change the live TOML or desktop picker.
 
 ## Writable configuration
 
@@ -208,7 +205,7 @@ command. This is a service-user installation with its own ChatGPT login and
 owner workspace, independent of the workstation's Home Manager configuration.
 `flakes/hosts/thorny/personal-codex.nix` reuses the shared skill registry and
 renderer for this service account. NixOS links complete skill directories into
-its `~/.agents/skills` directory: the nine default Codex skills plus `memo` and
+its `~/.agents/skills` directory: the ten default Codex skills plus `memo` and
 `rdny-browser`. Its instructions retain Thorny's Codex model and sub-agent
 guidance. It uses the shared `how` adaptation and restricts `why` to repository
 history, documentation, issues, and incident investigation playbooks, omitting

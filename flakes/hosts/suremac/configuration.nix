@@ -604,8 +604,8 @@ in {
         Project dev shells may provide additional tools.
       '';
       settings = {
-        model = "gpt-6.1-sol";
-        model_reasoning_effort = "low";
+        model = "gpt-6.2-sol";
+        model_reasoning_effort = "medium";
         mcp_servers.sentry = {
           url = "https://mcp.sentry.dev/mcp";
           enabled = true;

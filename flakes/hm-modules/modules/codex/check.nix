@@ -41,6 +41,7 @@
   how = codexOnly.home.file.".agents/skills/how".source;
   why = codexOnly.home.file.".agents/skills/why".source;
   teach = codexWithTeach.home.file.".agents/skills/teach".source;
+  council = codexOnly.home.file.".agents/skills/advisor-council".source;
   skillsManifest = pkgs.writeText "codex-deployed-skills.json" (builtins.toJSON [
     {
       destination = ".agents/skills/how";
@@ -54,6 +55,10 @@
       destination = ".agents/skills/teach";
       source = toString teach;
     }
+    {
+      destination = ".agents/skills/advisor-council";
+      source = toString council;
+    }
   ]);
   valid = config: pkgs.lib.all (assertion: assertion.assertion) config.assertions;
 in
@@ -65,6 +70,9 @@ in
   assert !(both.home.file ? ".agents/skills/project-map");
   assert codexOnly.home.file ? ".agents/skills/how";
   assert codexOnly.home.file ? ".agents/skills/why";
+  assert both.xdg.configFile."opencode/skills/advisor-council".source == council;
+  assert !codexOnly.home.file.".agents/skills/advisor-council".recursive;
+  assert !(disabled.home.file ? ".agents/skills/advisor-council");
   assert !(disabled.home.file ? ".agents/skills/how");
   assert !(disabled.home.file ? ".agents/skills/why");
   assert codexWithTeach.home.file ? ".agents/skills/teach";

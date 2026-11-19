@@ -148,6 +148,7 @@
           ownerWorkspace = "/var/lib/zeroclaw-home/agents/owner/workspace";
         };
         expectedSkills = [
+          "advisor-council"
           "conventional-commits"
           "how"
           "impactful-writing"
