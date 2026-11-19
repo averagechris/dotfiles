@@ -2,16 +2,14 @@
 
 Home Manager module: `flakes/hm-modules/modules/helix/default.nix`.
 
-The module installs Helix with a curated tree-sitter runtime instead of the full
-upstream grammar set. This keeps daily language support while avoiding hundreds
-of rarely used grammar outputs in host closures.
+The module installs the stable Helix package from the repository's pinned
+nixpkgs, with a curated tree-sitter runtime. This keeps daily language support
+while avoiding hundreds of rarely used grammar outputs in host closures.
 
-The module passes `grammarPackageNames` to Helix's `includeGrammarIf` package
-option. Helix filters its grammar definitions before it fetches or builds their
-sources, so unselected grammars do not become evaluation-time fetches or build
-dependencies. The module then copies those same named grammar libraries into a
-curated runtime and makes `hx` use it through `HELIX_RUNTIME`. Runtime assembly
-fails if any configured grammar is missing rather than silently dropping it.
+The module uses `grammarPackageNames` to select nixpkgs' locked grammar sources
+before its Helix wrapper builds the runtime. Unknown names fail evaluation.
+An empty list installs the editor without parsers. The Helix 25.07.1 package
+does not provide the `shellcheckrc` grammar.
 
 Default grammar coverage focuses on:
 
@@ -36,6 +34,6 @@ programs.helix.grammarPackageNames = [
 ];
 ```
 
-Grammar names match files in Helix's runtime `grammars/` directory without the
-platform shared-library suffix, for example `typescript` for
-`typescript.dylib`/`typescript.so`.
+Use names from nixpkgs' `pkgs/by-name/he/helix/grammars.json`. The module also
+accepts `markdown_inline` and `ssh_client_config`, which map to
+`markdown-inline` and `sshclientconfig` in nixpkgs.

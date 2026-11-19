@@ -6,10 +6,6 @@
     nixpkgs.follows = "base-lib/nixpkgs";
     flake-utils.follows = "base-lib/flake-utils";
     home-manager.follows = "base-lib/home-manager";
-    helix = {
-      url = "github:helix-editor/helix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     starship-jj = {
       url = "github:averagechris/starship-jj";
       inputs.nixpkgs.follows = "nixpkgs";

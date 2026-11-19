@@ -54,11 +54,8 @@ CLI input; add one root `fleet-cli` input and follow its `nixpkgs`, `flake-utils
 `srht` inputs to the shared graph (`fleet-srht` remains the SourceHut package
 alias). A child flake such as `rdny` exposes `fleet` but no direct SourceHut CLI
 input, so root only its `fleet` input and do not invent a direct override.
-One intentional exception is `suremac/helix`, shared by `taro` in the root
-aggregator: it keeps Helix's own `nixpkgs` so
-the cached upstream Helix runtime can be fetched from `helix.cachix.org` instead
-of building Darwin grammars locally. The Home Manager module trims that runtime
-in the final profile closure.
+Helix comes from the shared nixpkgs pin. Its Home Manager module selects a
+subset of nixpkgs' locked grammars before the runtime is assembled.
 
 After changing input topology, regenerate locks from leaves toward the root with
 `nix flake update <path-input-name>` for the direct path inputs of the flake being

@@ -1,56 +1,27 @@
 {
   config,
-  inputs,
   lib,
   pkgs,
-  system,
   ...
 }: let
   cfg = config.programs.helix;
-  baseHelixPackage = inputs.helix.packages.${system}.default.override {
-    includeGrammarIf = grammar: lib.elem grammar.name cfg.grammarPackageNames;
+  grammarLocks = lib.importJSON (pkgs.path + "/pkgs/by-name/he/helix/grammars.json");
+  grammarLockNames = {
+    markdown_inline = "markdown-inline";
+    ssh_client_config = "sshclientconfig";
   };
-  baseHelixRuntime = baseHelixPackage.HELIX_DEFAULT_RUNTIME;
-  helixGrammarExtension = pkgs.stdenv.hostPlatform.extensions.sharedLibrary;
-  trimmedHelixRuntime = pkgs.runCommand "helix-runtime-curated-grammars" {} ''
-    mkdir -p "$out/grammars"
-
-    for dir in queries themes; do
-      if [[ -d "${baseHelixRuntime}/$dir" ]]; then
-        cp -R --no-preserve=ownership "${baseHelixRuntime}/$dir" "$out/$dir"
-      fi
-    done
-
-    if [[ -e "${baseHelixRuntime}/tutor" ]]; then
-      cp -R --no-preserve=ownership "${baseHelixRuntime}/tutor" "$out/tutor"
-    fi
-
-    for grammar in ${lib.escapeShellArgs cfg.grammarPackageNames}; do
-      src="${baseHelixRuntime}/grammars/$grammar${helixGrammarExtension}"
-      if [[ -e "$src" ]]; then
-        cp --no-preserve=ownership "$src" "$out/grammars/"
-      else
-        echo "missing Helix grammar: $grammar" >&2
-        exit 1
-      fi
-    done
-  '';
+  selectedGrammarLocks = map (name: grammarLockNames.${name} or name) cfg.grammarPackageNames;
+  unknownGrammarLocks = lib.subtractLists (builtins.attrNames grammarLocks) selectedGrammarLocks;
+  # Filter the package's grammar pins before nixpkgs builds its runtime.
   helixPackage =
-    pkgs.runCommand "${baseHelixPackage.name}-curated-grammars" {
-      inherit (baseHelixPackage) meta;
-      nativeBuildInputs = [pkgs.makeWrapper pkgs.removeReferencesTo];
-    } ''
-      mkdir -p "$out"
-      cp -R --no-preserve=ownership ${baseHelixPackage}/. "$out"
-      chmod -R u+w "$out"
-      rm -f "$out/nix-support/propagated-build-inputs"
-
-      if [[ -x "$out/bin/hx" ]]; then
-        remove-references-to -t ${baseHelixRuntime} "$out/bin/hx"
-        wrapProgram "$out/bin/hx" \
-          --set HELIX_RUNTIME ${trimmedHelixRuntime}
-      fi
-    '';
+    if selectedGrammarLocks == []
+    then pkgs.helix-unwrapped
+    else if unknownGrammarLocks != []
+    then throw "Unknown nixpkgs Helix grammars: ${lib.concatStringsSep ", " unknownGrammarLocks}"
+    else
+      pkgs.helix.override {
+        lockedGrammars = lib.getAttrs selectedGrammarLocks grammarLocks;
+      };
   gutters = ["diagnostics" "spacer" "diff"];
   statusline.center = [];
 
@@ -79,7 +50,6 @@ in {
         "python"
         "rust"
         "rust-format-args"
-        "shellcheckrc"
 
         # Web/frontend ecosystems.
         "astro"

@@ -9,7 +9,6 @@
 # - https://nix-community.cachix.org
 # - https://averagechris-dotfiles.cachix.org
 # - https://devenv.cachix.org
-# - https://helix.cachix.org
 #
 # Performance settings for suremac:
 # - fsync-metadata = false: on macOS, Nix's metadata flush uses F_FULLFSYNC,
@@ -46,7 +45,6 @@ SUBS=(
   "https://nix-community.cachix.org"
   "https://averagechris-dotfiles.cachix.org"
   "https://devenv.cachix.org"
-  "https://helix.cachix.org"
 )
 KEYS=(
   # Explicitly include the cache.nixos.org key: newer Determinate Nix versions
@@ -57,7 +55,6 @@ KEYS=(
   "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
   "averagechris-dotfiles.cachix.org-1:VwJkl5dG1+xGDY5x884mH/kVwwpgwBAdBKIF3BZiia4="
   "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw="
-  "helix.cachix.org-1:ejp9KQpR1FBI2onstMQ34yogDm4OgU2ru6lIwPvuCVs="
 )
 
 CUR_USER=$(id -un)

@@ -34,7 +34,7 @@ cause a burst of catch-up generations.
    cooldowns. Coordinate named shared inputs across the canonical locks in
    `maintenance/policy.json`, then refresh local path parents offline.
    Preserve original URLs, explicit revisions,
-   version tags, local topology, and suremac's separate Helix graph. Native Darwin
+   version tags, and local topology. Native Darwin
    validation builds both suremac and taro, while the Keychain attestation remains
    specific to suremac. Only enrolled Pi/Helium version and hash updates are
    eligible package edits.

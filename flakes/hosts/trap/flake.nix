@@ -19,7 +19,6 @@
     agenix.follows = "base-lib/agenix";
     deploy-rs.follows = "base-lib/deploy-rs";
     titlecase.follows = "base-lib/titlecase";
-    helix.follows = "hm-modules/helix";
     starship-jj.follows = "hm-modules/starship-jj";
     gander.follows = "hm-modules/gander";
   };

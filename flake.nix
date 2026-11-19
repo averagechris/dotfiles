@@ -32,7 +32,6 @@
       inputs.fleet-srht.follows = "fleet-srht";
       inputs.nitter-link.follows = "nitter-link";
       inputs.memo.follows = "memo";
-      inputs.helix.follows = "suremac/helix";
     };
     trap = {
       url = "path:./flakes/hosts/trap";
@@ -40,7 +39,6 @@
       inputs.nixos-modules.follows = "nixos-modules";
       inputs.hm-modules.follows = "hm-modules";
       inputs.nixos-hardware.follows = "nixos-hardware";
-      inputs.helix.follows = "hm-modules/helix";
       inputs.starship-jj.follows = "hm-modules/starship-jj";
       inputs.gander.follows = "hm-modules/gander";
     };
@@ -50,7 +48,6 @@
       inputs.nixos-modules.follows = "nixos-modules";
       inputs.hm-modules.follows = "hm-modules";
       inputs.nixos-hardware.follows = "nixos-hardware";
-      inputs.helix.follows = "hm-modules/helix";
       inputs.starship-jj.follows = "hm-modules/starship-jj";
       inputs.gander.follows = "hm-modules/gander";
       inputs.fleet.follows = "fleet";
@@ -70,7 +67,6 @@
       inputs.nixos-modules.follows = "nixos-modules";
       inputs.hm-modules.follows = "hm-modules";
       inputs.nixos-hardware.follows = "nixos-hardware";
-      inputs.helix.follows = "hm-modules/helix";
       inputs.starship-jj.follows = "hm-modules/starship-jj";
     };
     cruber = {
@@ -79,7 +75,6 @@
       inputs.nixos-modules.follows = "nixos-modules";
       inputs.hm-modules.follows = "hm-modules";
       inputs.nixos-hardware.follows = "nixos-hardware";
-      inputs.helix.follows = "hm-modules/helix";
       inputs.starship-jj.follows = "hm-modules/starship-jj";
     };
     tater = {
@@ -88,7 +83,6 @@
       inputs.nixos-modules.follows = "nixos-modules";
       inputs.hm-modules.follows = "hm-modules";
       inputs.nixos-hardware.follows = "nixos-hardware";
-      inputs.helix.follows = "hm-modules/helix";
       inputs.starship-jj.follows = "hm-modules/starship-jj";
       inputs.gander.follows = "hm-modules/gander";
       inputs.sideshow.follows = "sideshow";
@@ -120,7 +114,6 @@
       inputs.nixos-modules.follows = "nixos-modules";
       inputs.hm-modules.follows = "hm-modules";
       inputs.nixos-hardware.follows = "nixos-hardware";
-      inputs.helix.follows = "hm-modules/helix";
       inputs.starship-jj.follows = "hm-modules/starship-jj";
     };
     tootsie = {
@@ -129,7 +122,6 @@
       inputs.nixos-modules.follows = "nixos-modules";
       inputs.hm-modules.follows = "hm-modules";
       inputs.nixos-hardware.follows = "nixos-hardware";
-      inputs.helix.follows = "hm-modules/helix";
       inputs.starship-jj.follows = "hm-modules/starship-jj";
     };
 
