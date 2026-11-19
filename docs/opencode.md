@@ -913,9 +913,10 @@ requests. An invalid saved login can still affect regular OpenCode sessions.
 
 ## Experiential Labs on suremac
 
-Select `explabs/gpt-6-luna` from OpenCode's `/models` picker to send the primary
-model's requests through Experiential Labs. Delegated agents use their pinned
-models. The provider uses Chat Completions at `https://api.experientiallabs.ai/v1`.
+Select `explabs/deepseek-v4.1-flash` or `explabs/qwen3.8-27b` from OpenCode's
+`/models` picker to use an open-weight model through Experiential Labs.
+Delegated agents use their pinned models. The provider uses Chat Completions
+at `https://api.experientiallabs.ai/v1`.
 Add model slugs in the suremac host configuration using the inference key's
 `GET /v1/models` results. Model limits and base-rate estimates come from the
 gateway catalog.

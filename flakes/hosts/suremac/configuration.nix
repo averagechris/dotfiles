@@ -635,16 +635,30 @@ in {
       name = "Experiential Labs";
       package = "@opencode/ai/providers/openai-compatible";
       settings.baseURL = explabsBaseUrl;
-      models.gpt-6-luna = {
-        name = "gpt-6-luna";
-        limit = {
-          context = 1050000;
-          input = 922000;
-          output = 128000;
+      models = {
+        "deepseek-v4.1-flash" = {
+          name = "deepseek-v4.1-flash";
+          limit = {
+            context = 1048576;
+            input = 655360;
+            output = 393216;
+          };
+          cost = {
+            input = 0.3;
+            output = 1.2;
+          };
         };
-        cost = {
-          input = 0.1;
-          output = 0.5;
+        "qwen3.8-27b" = {
+          name = "qwen3.8-27b";
+          limit = {
+            context = 1000000;
+            input = 868928;
+            output = 131072;
+          };
+          cost = {
+            input = 0.32;
+            output = 2.4;
+          };
         };
       };
     };
