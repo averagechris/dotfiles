@@ -273,19 +273,9 @@ fn find_repo_root() -> Result<PathBuf, Box<dyn std::error::Error>> {
 }
 
 fn update_all_flakes(repo_root: &Path, config: &Config) -> Result<(), Box<dyn std::error::Error>> {
-    log_info("=== Updating shared module flakes ===");
+    log_info("=== Updating shared dependency flakes ===");
     update_flake(&repo_root.join("flakes/base-lib"), "base-lib", config)?;
-    update_flake(
-        &repo_root.join("flakes/nixos-modules"),
-        "nixos-modules",
-        config,
-    )?;
     update_flake(&repo_root.join("flakes/hm-modules"), "hm-modules", config)?;
-    update_flake(
-        &repo_root.join("flakes/darwin-modules"),
-        "darwin-modules",
-        config,
-    )?;
     println!();
 
     log_info("=== Updating host flakes ===");

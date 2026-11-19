@@ -1,15 +1,6 @@
 {
   description = "NixOS modules for dotfiles";
 
-  inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    flake-utils.url = "github:numtide/flake-utils";
-    base-lib = {
-      url = "path:../base-lib";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-  };
-
   outputs = {...}: {
     nixosModules = {
       common = ./modules/common.nix;

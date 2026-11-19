@@ -102,8 +102,9 @@ includes both the `cacert` 3.131.1 and uv 0.13.4 fixes. The channel revision
 `02c087f3fe673c9e317f206a627cb6b910336dbe` contains the NixOS system
 certificate blacklist, but predates that `cacert` fix, which is needed by
 Darwin and direct `pkgs.cacert` consumers. Keep `original.ref = "nixos-unstable"`
-and make all 15 canonical lockfiles use the same pinned revision. This snapshot
-also includes the [System76 module installation fix](https://github.com/NixOS/nixpkgs/pull/575724)
+and make every canonical lockfile in `maintenance/policy.json` use the same
+pinned revision. This snapshot also includes the
+[System76 module installation fix](https://github.com/NixOS/nixpkgs/pull/575724)
 needed for thorny to build with the newer kernel module certificate checks.
 
 OpenCode remains at its previously validated source revision. Its Darwin

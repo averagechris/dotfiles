@@ -36,31 +36,15 @@ jobs:
         run: |
           set -euo pipefail
 
-          lock_files=(
-            flake.lock
-            flakes/base-lib/flake.lock
-            flakes/darwin-modules/flake.lock
-            flakes/hm-modules/flake.lock
-            flakes/hosts/cruber/flake.lock
-            flakes/hosts/suremac/flake.lock
-            flakes/hosts/taro/flake.lock
-            flakes/hosts/tater/flake.lock
-            flakes/hosts/taz/flake.lock
-            flakes/hosts/thorny/flake.lock
-            flakes/hosts/tom/flake.lock
-            flakes/hosts/tootsie/flake.lock
-            flakes/hosts/trainwreck/flake.lock
-            flakes/hosts/trap/flake.lock
-            flakes/nixos-modules/flake.lock
-          )
+          lock_files="$(jq -er '.canonical_locks[]' maintenance/policy.json)"
           root_rev="$(jq -er '.nodes.nixpkgs.locked.rev' flake.lock)"
 
-          for lock_file in "${lock_files[@]}"; do
+          while IFS= read -r lock_file; do
             jq -e --arg rev "$root_rev" '
               .nodes.nixpkgs.locked.rev == $rev
               and .nodes.nixpkgs.original.ref == "nixos-unstable"
             ' "$lock_file" >/dev/null
-          done
+          done <<< "$lock_files"
 
           jq -e '.nodes["t3-code-nix"].inputs.nixpkgs == ["nixpkgs"]' \
             flake.lock >/dev/null

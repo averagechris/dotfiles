@@ -53,15 +53,15 @@ def policy(*locks: str) -> dict:
 
 
 class PolicyLockTests(unittest.TestCase):
-    def test_policy_covers_every_standalone_host_lock(self):
+    def test_policy_matches_repository_lockfiles(self):
         root = Path(__file__).resolve().parents[1]
         config, _ = load_policy(root)
-        actual_host_locks = {
+        actual_locks = {"flake.lock"} | {
             path.relative_to(root).as_posix()
-            for path in (root / "flakes/hosts").glob("*/flake.lock")
+            for pattern in ("*/flake.lock", "hosts/*/flake.lock")
+            for path in (root / "flakes").glob(pattern)
         }
-        self.assertTrue(actual_host_locks)
-        self.assertLessEqual(actual_host_locks, set(config["canonical_locks"]))
+        self.assertCountEqual(actual_locks, config["canonical_locks"])
 
     def test_repository_lock_graphs_are_eligible_without_source_changes(self):
         root = Path(__file__).resolve().parents[1]

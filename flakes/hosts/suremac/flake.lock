@@ -130,23 +130,6 @@
       }
     },
     "darwin-modules": {
-      "inputs": {
-        "base-lib": [
-          "base-lib"
-        ],
-        "darwin": [
-          "darwin"
-        ],
-        "flake-utils": [
-          "flake-utils"
-        ],
-        "home-manager": [
-          "home-manager"
-        ],
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
       "locked": {
         "path": "../../darwin-modules",
         "type": "path"

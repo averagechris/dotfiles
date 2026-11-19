@@ -135,12 +135,7 @@
 
     # Development dependencies
     base-lib.url = "path:./flakes/base-lib";
-    nixos-modules = {
-      url = "path:./flakes/nixos-modules";
-      inputs.base-lib.follows = "base-lib";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.flake-utils.follows = "flake-utils";
-    };
+    nixos-modules.url = "path:./flakes/nixos-modules";
     hm-modules = {
       url = "path:./flakes/hm-modules";
       inputs.base-lib.follows = "base-lib";
@@ -152,14 +147,7 @@
       inputs.fleet.follows = "fleet";
       inputs.fleet-srht.follows = "fleet-srht";
     };
-    darwin-modules = {
-      url = "path:./flakes/darwin-modules";
-      inputs.base-lib.follows = "base-lib";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.flake-utils.follows = "flake-utils";
-      inputs.home-manager.follows = "base-lib/home-manager";
-      inputs.darwin.follows = "base-lib/darwin";
-    };
+    darwin-modules.url = "path:./flakes/darwin-modules";
 
     # Shared dependencies
     nixpkgs.follows = "base-lib/nixpkgs";

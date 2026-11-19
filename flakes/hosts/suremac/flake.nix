@@ -15,14 +15,7 @@
       inputs.fleet.follows = "fleet";
       inputs.fleet-srht.follows = "fleet-srht";
     };
-    darwin-modules = {
-      url = "path:../../darwin-modules";
-      inputs.base-lib.follows = "base-lib";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.flake-utils.follows = "flake-utils";
-      inputs.home-manager.follows = "home-manager";
-      inputs.darwin.follows = "darwin";
-    };
+    darwin-modules.url = "path:../../darwin-modules";
     darwin.follows = "base-lib/darwin";
     home-manager.follows = "base-lib/home-manager";
     flake-utils.follows = "base-lib/flake-utils";

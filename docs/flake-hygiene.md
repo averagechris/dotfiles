@@ -21,13 +21,16 @@ import it. If a host pins a package flake that is already exposed by `hm-modules
 (for example `starship-jj`, `linear-cli`, or `gander`), make the host input
 follow the `hm-modules/...` input so the root lock keeps one node.
 
-Standalone host flakes should also make their local module path flakes follow the
-host's own shared graph. In a NixOS host flake, `nixos-modules.inputs.base-lib`
-should follow `base-lib`; `nixos-modules.inputs.nixpkgs` should follow `nixpkgs`;
-and `hm-modules` should follow the host's `base-lib`, `nixpkgs`, `flake-utils`,
-`home-manager`, and `base-lib/opencode` inputs. This keeps commands such as
-`nix flake check ./flakes/hosts/thorny --no-build` from locking a second copy of
-the shared module stack.
+The `nixos-modules` and `darwin-modules` flakes export local module paths. The host
+module system supplies their package sets and module arguments. Keep these flakes
+input-free, with no standalone lock or nested overrides. In a standalone host
+flake, use `nixos-modules.url = "path:../../nixos-modules";` or the equivalent
+Darwin path.
+
+A standalone host's `hm-modules` input should follow the host's `base-lib`,
+`nixpkgs`, `flake-utils`, `home-manager`, and `base-lib/opencode` inputs. This
+keeps commands such as `nix flake check ./flakes/hosts/thorny --no-build` from
+locking a second copy of the Home Manager graph.
 
 For standalone shared module flakes, prefer following `base-lib`'s graph rather
 than declaring a second root copy of common framework inputs. For example,
@@ -71,7 +74,7 @@ nix flake update hm-modules --offline \
 
 Do not use a bare `nix flake lock` for this migration. Bare locking can lazily
 retain path parents and leave the old graph in place. Large repeated groups of
-`base-lib_*`, `hm-modules_*`, `nixos-modules_*`, `home-manager_*`, or `opencode_*`
+`base-lib_*`, `hm-modules_*`, `home-manager_*`, or `opencode_*`
 nodes usually mean a new path input is not following the root graph.
 
 After input updates, remove stale overrides when Nix warns that an upstream input
@@ -83,8 +86,9 @@ For a deliberate intermediate nixpkgs pin, override the revision while retaining
 HEAD. Apply and validate the resolved `nodes.nixpkgs.locked` object in every
 standalone shared-module and host lock as well as the root lock.
 
-GitHub Actions checks that all 15 canonical locks share the root nixpkgs revision
-and retain the `nixos-unstable` ref. It also evaluates the flake and rebuilds the
+GitHub Actions reads the canonical lock list from `maintenance/policy.json`
+and checks that every listed lock shares the root nixpkgs revision and retains
+the `nixos-unstable` ref. It also evaluates the flake and rebuilds the
 OpenCode `node_modules` fixed-output derivation on x86_64 and ARM64 Linux. After a
 merge, rerun **Nix shared pin** with `workflow_dispatch` if either architecture had
 an infrastructure failure; do not treat a passing job on only one architecture as

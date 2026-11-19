@@ -295,25 +295,6 @@
       }
     },
     "darwin-modules": {
-      "inputs": {
-        "base-lib": [
-          "base-lib"
-        ],
-        "darwin": [
-          "base-lib",
-          "darwin"
-        ],
-        "flake-utils": [
-          "flake-utils"
-        ],
-        "home-manager": [
-          "base-lib",
-          "home-manager"
-        ],
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
       "locked": {
         "path": "./flakes/darwin-modules",
         "type": "path"
@@ -1645,17 +1626,6 @@
       }
     },
     "nixos-modules": {
-      "inputs": {
-        "base-lib": [
-          "base-lib"
-        ],
-        "flake-utils": [
-          "flake-utils"
-        ],
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
       "locked": {
         "path": "./flakes/nixos-modules",
         "type": "path"

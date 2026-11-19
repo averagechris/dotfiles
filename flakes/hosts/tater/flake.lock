@@ -1301,17 +1301,6 @@
       }
     },
     "nixos-modules": {
-      "inputs": {
-        "base-lib": [
-          "base-lib"
-        ],
-        "flake-utils": [
-          "flake-utils"
-        ],
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
       "locked": {
         "path": "../../nixos-modules",
         "type": "path"
