@@ -26,13 +26,20 @@ policy. The configuration does not add its contents to Codex context or
 
 ## Task routing and fallback
 
+Prefer suremac for threads Chris is likely to open and continue himself. The
+dot chooses the host at launch according to the adopted preference. The
+[dot task docs](https://learn.chatgpt.com/docs/dots/tasks-and-memory#assigned-work)
+describe local tasks on connected computers and follow-ups on the original
+host. If suremac is offline, do any useful prep and keep the takeover thread
+for suremac.
+
 The preferences reference the "Model selection" section of
 [`modules/codex/AGENTS.md`](../flakes/hm-modules/modules/codex/AGENTS.md)
 as the single routing policy source. They do not copy the policy or import
 OpenCode's named agent roster. Launch tasks with explicit model and reasoning
 selections when applying that policy.
 
-Suremac declares Sol 6.1 with low reasoning through `dotfiles.codex.settings`.
+Suremac declares Sol 6.2 with medium reasoning through `dotfiles.codex.settings`.
 This is an activation-time TOML fallback, separate from intentional task routing.
 Omitted desktop task selections use saved desktop defaults. Their relationship
 to TOML must be verified before reporting that the live desktop fallback changed.
