@@ -906,6 +906,11 @@ dotfiles.opencode.openrouterApiKeyFile = "/run/agenix/openrouter-api-key";
 
 The module exports `OPENROUTER_API_KEY` from that file in both Bash and Zsh shell initialization.
 
+The advisor council runner uses `OPENROUTER_API_KEY` first and reads
+`/run/agenix/openrouter-api-key` when the export is absent and the file is
+readable. Its isolated session keeps saved OpenCode credentials out of council
+requests. An invalid saved login can still affect regular OpenCode sessions.
+
 ## CircleCI token
 
 To provide a CircleCI token non-interactively, set:

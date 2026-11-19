@@ -103,8 +103,13 @@ when asked for an advisor or council. Reviewers can work from a stable working
 copy, a commit, or a diff. External reviewers receive only approved excerpts,
 inline or as an attachment. Opus 5.5 is the required council seat. The roster
 also includes Sol 6.2 high, Astra 6.2 high, Fable 5.2, Gemini Carbon, and a trial
-seat for Gemini Neon. The skill checks availability and records any missing seat. The OpenCode reviews use the executor's provider access and
-billing. See [Codex Cloud tooling](codex-cloud.md) for a reproducible Linux setup.
+seat for Gemini Neon. The skill checks availability and records any missing seat.
+Its bundled OpenRouter runner uses the executor's exported key or the local
+agenix key, with an isolated OpenCode session and tools denied. Routing follows
+OpenRouter's account and key policies. Pass `--zdr` before the model when the
+review requires zero data retention. Carbon can be available under normal
+routing and blocked under that restriction. See [Codex Cloud tooling](codex-cloud.md)
+for a reproducible Linux setup.
 
 Routing guidance is distinct from fallback defaults. The suremac TOML defaults
 are Sol 6.2 with medium reasoning after activation. Explicit task model and

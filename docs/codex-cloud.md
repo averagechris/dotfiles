@@ -45,8 +45,16 @@ separate executor with its own tools.
 ## Provider access
 
 Keep the environment private. For OpenRouter, configure a separately scoped
-`OPENROUTER_API_KEY` as a cloud network secret for `openrouter.ai`. Test that
-the OpenCode client can use the proxy-substituted value. Allow the package and
+`OPENROUTER_API_KEY` as a cloud network secret for `openrouter.ai`. The bundled
+runner preserves standard HTTP proxy and CA environment variables. Verify that
+the proxy substitutes the key for OpenCode in a fresh task before sharing work:
+
+```sh
+bash "$HOME/.agents/skills/advisor-council/scripts/review.sh" \
+  'openrouter/google/gemini-4-carbon#high' 'Reply with COUNCIL OK.'
+```
+
+The runner requires Bash, jq, and OpenCode on `PATH`. Allow the package and
 catalog domains required by the selected setup, including
 `registry.npmjs.org` for the portable install. Add only the necessary Nix
 source and cache domains if you use the flake path.
