@@ -913,10 +913,18 @@ requests. An invalid saved login can still affect regular OpenCode sessions.
 
 ## Experiential Labs on suremac
 
-Select `explabs/deepseek-v4.1-flash` or `explabs/qwen3.8-27b` from OpenCode's
-`/models` picker to use an open-weight model through Experiential Labs.
-Delegated agents use their pinned models. The provider uses Chat Completions
-at `https://api.experientiallabs.ai/v1`.
+Experiential Labs is an opt-in provider on suremac, primarily for ablated
+models. Select one of these in OpenCode's `/models` picker.
+
+- `explabs/deepseek-v4.1-flash-uncensored`
+- `explabs/glm-5.3-flash-uncensored`
+- `explabs/glm-5.3-uncensored`
+
+Standard DeepSeek V4.1 Flash and Qwen3.8-27B are also available for manual
+selection. Use Codex directly or an OpenRouter model for routine work.
+Delegated agents use their pinned models.
+
+The provider uses Chat Completions at `https://api.experientiallabs.ai/v1`.
 Add model slugs in the suremac host configuration using the inference key's
 `GET /v1/models` results. Model limits and base-rate estimates come from the
 gateway catalog.

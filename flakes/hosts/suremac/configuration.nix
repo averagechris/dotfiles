@@ -631,11 +631,53 @@ in {
     xdg.configFile."grem/PREFERENCES.md".source = ./grem/PREFERENCES.md;
     programs.opencode.enable = true;
     programs.opencode.settings.references = opencodeReferences;
+    # Use Experiential Labs mainly for ablated models. Select it per session.
+    # Use Codex directly or OpenRouter for routine work.
     programs.opencode.settings.providers.explabs = {
       name = "Experiential Labs";
       package = "@opencode/ai/providers/openai-compatible";
       settings.baseURL = explabsBaseUrl;
       models = {
+        "deepseek-v4.1-flash-uncensored" = {
+          name = "deepseek-v4.1-flash-uncensored";
+          capabilities.input = ["text"];
+          limit = {
+            context = 1048576;
+            input = 655360;
+            output = 393216;
+          };
+          cost = {
+            input = 0.225;
+            output = 0.9;
+          };
+        };
+        "glm-5.3-flash-uncensored" = {
+          name = "glm-5.3-flash-uncensored";
+          capabilities.input = ["text"];
+          limit = {
+            context = 1048576;
+            input = 917504;
+            output = 131072;
+          };
+          cost = {
+            input = 0.15;
+            output = 0.5;
+          };
+        };
+        "glm-5.3-uncensored" = {
+          name = "glm-5.3-uncensored";
+          capabilities.input = ["text"];
+          limit = {
+            context = 1048576;
+            input = 917504;
+            output = 131072;
+          };
+          cost = {
+            input = 1.4;
+            output = 4.4;
+          };
+        };
+        # Standard models for manual selection.
         "deepseek-v4.1-flash" = {
           name = "deepseek-v4.1-flash";
           limit = {
