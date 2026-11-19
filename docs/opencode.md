@@ -911,6 +911,27 @@ The advisor council runner uses `OPENROUTER_API_KEY` first and reads
 readable. Its isolated session keeps saved OpenCode credentials out of council
 requests. An invalid saved login can still affect regular OpenCode sessions.
 
+## Experiential Labs on suremac
+
+Select `explabs/gpt-6-luna` from OpenCode's `/models` picker to send the primary
+model's requests through Experiential Labs. Delegated agents use their pinned
+models. The provider uses Chat Completions at `https://api.experientiallabs.ai/v1`.
+Add model slugs in the suremac host configuration using the inference key's
+`GET /v1/models` results. Model limits and base-rate estimates come from the
+gateway catalog.
+[Experiential Labs OpenCode setup](https://platform.experientiallabs.ai/docs/coding-agents#opencode)
+
+An OpenCode plugin reads `/run/agenix/explabs-inference-api-key` when it sends
+a session request to the gateway. The admin key is available for privileged
+maintenance at `/run/agenix/explabs-admin-api-key`, owned by root with mode
+`0400`. Both `secrets/explabs-*-api-key.age` files encrypt to the suremac SSH
+recipient.
+
+To rotate a key, run `agenix -e explabs-inference-api-key.age` or
+`agenix -e explabs-admin-api-key.age` from `secrets/`, then activate suremac.
+After the first activation, run `opencode service restart` when any active
+sessions finish. Check the model with `opencode models | rg '^explabs/'`.
+
 ## CircleCI token
 
 To provide a CircleCI token non-interactively, set:
