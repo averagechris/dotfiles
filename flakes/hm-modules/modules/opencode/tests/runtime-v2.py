@@ -160,7 +160,8 @@ with server():
     override = shlex.split(exports)[1].split("=", 1)[1]
     agents = ready()
     save("agents", agents)
-    assert agents[0]["id"] == "orchestrator"
+    assert agents[0]["id"] == "build"
+    assert "advisor-council" in agents[0]["system"]
     assert {p.stem for p in (emitted / "agents").glob("*.md")} | {"explore"} <= {a["id"] for a in agents}
     for kind in ["skill", "command"]:
         actual = api("GET", f"/api/{kind}")["data"]

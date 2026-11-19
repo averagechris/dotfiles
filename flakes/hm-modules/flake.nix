@@ -510,7 +510,7 @@
           };
           unpinnedAgentPrompts = with agents; [build orchestrator plan];
         in
-          assert settings.default_agent == "orchestrator";
+          assert settings.default_agent == "build";
           assert settings.experimental.subagent_depth == 2;
           assert settings.agents.explore.model == "openrouter/~openai/gpt-luna-latest#medium";
           assert settings.compaction
@@ -547,10 +547,8 @@
             expected;
           assert lib.all (name: lib.hasInfix "model: ${expectedAgentModels.${name}}\n" (frontmatter agents.${name})) (builtins.attrNames expectedAgentModels);
           assert lib.all (prompt: !(lib.hasInfix "model:" (frontmatter prompt))) unpinnedAgentPrompts;
-          assert lib.hasInfix "Use this exceptional tier only" buildPrompt;
-          assert lib.hasInfix "return control to the caller for canonical routing" buildPrompt;
-          # Build re-delegation is constrained by orchestrator handoff guidance,
-          # not banned by permissions: keep its task allowances intact.
+          assert lib.hasInfix "Use the `advisor-council` skill" buildPrompt;
+          # Build can delegate scoped work.
           assert lib.hasInfix ''resource: "minion"'' (taskPermissions buildPrompt);
           assert lib.hasInfix ''resource: "wise"'' (taskPermissions buildPrompt);
           # Minion may only hand off research (explore) and mechanics (tiny);

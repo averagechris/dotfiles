@@ -1,5 +1,5 @@
-Route by residual uncertainty and consequence, using the cheapest agent likely
-to succeed:
+Use this policy after deciding to delegate. Route by residual uncertainty and
+consequence, using the cheapest agent likely to succeed:
 
 The scorecard is descriptive, not a weighted utility score or an instruction to
 maximize intelligence. For routine, reversible, verifiable work, cost and speed
@@ -12,8 +12,8 @@ by default. Select for cost-effective success with verification.
 - `luna`: bounded medium-complexity work or deterministic review that needs some
   reasoning. Escalate with evidence rather than looping when the task outgrows
   its clear boundary.
-- `minion`: the default and bulk implementation tier, and the default ordinary
-  behavioral reviewer. The orchestrator removes uncertainty with clear
+- `minion`: the default implementation delegate and ordinary behavioral
+  reviewer. The caller removes uncertainty with clear
   acceptance criteria, and Minion then reliably clears the required capability
   threshold; its routine coding value is independent of intrinsic model cost or
   raw score. It handles sustained coding, broader context, tool sequencing, and
@@ -30,7 +30,7 @@ by default. Select for cost-effective success with verification.
 
 Invest upfront in decomposition and hand Minion an implementation packet with
 scope, relevant context, constraints, acceptance criteria, and checks. The
-orchestrator defines normal tasks; Wise may define architecture or high-risk
+caller defines the task. Wise may define architecture or high-risk
 constraints when warranted. Once uncertainty becomes a checklist, hand routine
 implementation to Minion, bounded work to Luna, and mechanics to Tiny. A lower
 tier may retry or verify once after a miss, then escalate with the failed check

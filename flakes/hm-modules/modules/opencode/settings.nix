@@ -33,9 +33,7 @@
 in
   assert lib.assertMsg (compactionThreshold == 350000) "OpenCode compaction threshold must remain 350k tokens";
   assert lib.assertMsg (230000 < compactionThreshold) "230k-token OpenCode sessions must remain below automatic compaction"; {
-    # Make cost-aware decomposition and Minion-first routing the normal entry
-    # point instead of falling back to OpenCode's built-in Build agent.
-    default_agent = "orchestrator";
+    default_agent = "build";
 
     # Upstream defaults to 1, which lets only primary sessions delegate. Permit
     # one deliberate nested handoff while keeping deeper delegation bounded.

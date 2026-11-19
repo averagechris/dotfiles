@@ -10,6 +10,29 @@ Use native Codex delegation for the OpenAI seats when the requested selection is
 | **Claude Fable 5.2** | `openrouter/anthropic/claude-fable-5.2#high` | Open-ended design, simplicity and taste. Check [provider retention terms](https://openrouter.ai/anthropic/claude-fable-5.2) before including work material. |
 | **Gemini 4 Carbon** | `openrouter/google/gemini-4-carbon#high` | Defensive security or difficult reasoning. Record a specialized Carbon route separately if explicitly available. |
 | **Gemini 4 Neon** | `openrouter/google/gemini-4-neon`, effort from live catalog | Trial for an alternative perspective. Verify this entry and variant before using it. |
+| **Daybreak Blue** | Codex CLI `gpt-6-sol`, high | Optional defensive review of approved evidence. |
+
+## Daybreak Blue from OpenCode
+
+For defensive reviews, OpenCode can call Codex CLI through the bundled
+`scripts/review-daybreak.sh`. Prepare the review question and approved excerpts
+as text on standard input. Use it for threat modeling, security findings,
+remediation, and defensive regression checks.
+
+```sh
+bash scripts/review-daybreak.sh --login
+bash scripts/review-daybreak.sh < approved-review.txt
+```
+
+This seat needs Codex CLI 0.163.0 or later, `jq`, and an account with Daybreak
+access. The one-time sign-in stores the advisor's login in a dedicated Codex
+home under `${XDG_STATE_HOME:-$HOME/.local/state}/opencode/daybreak-codex`.
+Reserve that directory for the advisor. Each review requests Daybreak Blue
+in an ephemeral read-only session. Shell
+tools, web search, agents, apps, plugins, and hooks are disabled. OpenCode owns
+implementation and verification. Record the seat as unavailable if the account
+or CLI rejects it.
+[Daybreak CLI guide](https://help.openai.com/en/articles/20001607-using-daybreak-in-codex-cli)
 
 ## External reviews
 

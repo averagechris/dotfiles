@@ -169,8 +169,8 @@ oconf && opencode --standalone
 # has a pinned model in the deployed config).
 oconf openrouter/x-ai/grok-4.5 && opencode --standalone
 
-# Keep the normal orchestrator model, trial a coding model on specific agents.
-oconf openrouter/x-ai/grok-code minion build && opencode --standalone
+# Keep the Build session model and trial a coding model on specific agents.
+oconf openrouter/x-ai/grok-code minion wise && opencode --standalone
 
 # Optionally set a reasoning variant on the targeted agents.
 oconf -v high openrouter/some-new-model && opencode --standalone
@@ -209,8 +209,8 @@ Direct mode stays non-interactive for scripted use:
 # pinned model in the deployed config).
 oconf openrouter/x-ai/grok-4.5 && opencode --standalone
 
-# Keep the normal orchestrator model, trial a coding model on specific agents.
-oconf openrouter/x-ai/grok-code minion build && opencode --standalone
+# Keep the Build session model and trial a coding model on specific agents.
+oconf openrouter/x-ai/grok-code minion wise && opencode --standalone
 
 # Optionally set a reasoning variant on the targeted agents.
 oconf -v high openrouter/some-new-model && opencode --standalone
@@ -399,15 +399,15 @@ generates the system-prompt tool note from the configured list when
 the agent runtime tools or generated OpenCode config files in their Home Manager
 profile.
 
-The `orchestrator` is the generated OpenCode default agent, making decomposition
-and Minion-first routing the normal entry point. It uses the same open-by-default
-shell safety posture as Build, is tuned for ambitious projects, and can delegate
-work across five coding tiers. Tiny handles mechanical work, and Luna handles
-bounded work that needs more reasoning. Minion is the default implementation
-tier. The orchestrator supplies clear implementation packets so Minion performs
-the bulk of coding. Build inherits the session model and handles ambiguity,
-breadth, investigation, or coordination that planning cannot reasonably remove.
-Wise handles high-consequence work.
+Build is the default agent. It inherits the session model and owns
+implementation, investigation, and verification directly. It delegates scoped
+work when useful and loads `advisor-council` before finalizing non-trivial work
+or when asked for a council. Select `orchestrator` for delegation-heavy work
+that benefits from planning and separate implementation handoffs.
+
+Tiny handles mechanical work, Luna handles bounded work that needs more
+reasoning, Minion is the default implementation delegate, and Wise handles
+high-consequence work. Explore handles codebase research.
 
 OpenRouter's family aliases follow the latest model release automatically.
 
@@ -426,12 +426,9 @@ Wise also carries a stable judgment stance for high-consequence work: keep
 decisions falsifiable, treat implementation as design evidence, and make
 disagreement explicit.
 
-The repo-managed `test-curation` skill is conditional. When the orchestrator
-delegates review of a code change that added or materially changed tests, it tells
-that reviewer to load the skill. The orchestrator does not load it itself. The
-reviewer decides which changed tests deserve permanent retention; an implementation
-handoff may then remove low-value tests and run focused checks. Non-code work and
-changes without test changes do not carry this guidance.
+When Build or Orchestrator delegates review of added or materially changed
+tests, it asks the reviewer to load `test-curation`. The reviewer decides
+which changed tests deserve permanent retention and which focused checks to run.
 
 V2 stores the delegation limit at `experimental.subagent_depth = 2`.
 Upstream counts a direct subagent at depth one, so this permits one nested
@@ -921,6 +918,28 @@ The advisor council runner uses `OPENROUTER_API_KEY` first and reads
 `/run/agenix/openrouter-api-key` when the export is absent and the file is
 readable. Its isolated session keeps saved OpenCode credentials out of council
 requests. An invalid saved login can still affect regular OpenCode sessions.
+
+## Defensive security reviews
+
+Build handles threat modeling, static review, vulnerability triage, remediation,
+and defensive regression checks on authorized code and systems. Ask for an
+advisor or council when you want an independent review of the findings.
+The shared `advisor-council` skill offers Gemini Carbon and an optional Daybreak
+Blue seat for defensive analysis. Build verifies the advisors' findings and
+owns the final patch and checks.
+
+The Daybreak runner requests GPT-6 Sol at high reasoning with Daybreak Blue.
+It takes a review question and approved excerpts on standard input and opens
+an ephemeral read-only session. Set up the advisor's dedicated Codex CLI login
+once after activation.
+
+```sh
+bash ~/.config/opencode/skills/advisor-council/scripts/review-daybreak.sh --login
+```
+
+The seat needs Codex CLI 0.163.0 or later and an eligible account. The skill
+records a rejected seat as unavailable.
+[Daybreak CLI guide](https://help.openai.com/en/articles/20001607-using-daybreak-in-codex-cli)
 
 ## Experiential Labs on suremac
 
