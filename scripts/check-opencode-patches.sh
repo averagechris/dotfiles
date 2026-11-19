@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Check the opencode upstream patches for staleness.
 #
-# Each patch in flakes/hm-modules/modules/opencode/patches/ is dry-run against
+# Each patch in flakes/base-lib/patches/opencode/ is dry-run against
 # the *locked* upstream opencode source tree and classified:
 #
 #   needed  - applies forward cleanly (still doing work)
@@ -57,7 +57,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 ROOT="$(repo_root)"
-PATCHES_DIR="$ROOT/flakes/hm-modules/modules/opencode/patches"
+PATCHES_DIR="$ROOT/flakes/base-lib/patches/opencode"
 
 if [[ ! -d "$PATCHES_DIR" ]]; then
   echo "No patches found in $PATCHES_DIR"
@@ -77,7 +77,7 @@ if [[ -n "$SOURCE_OVERRIDE" ]]; then
   src="$SOURCE_OVERRIDE"
   rev="(provided)"
 else
-  lock="$ROOT/flakes/hm-modules/flake.lock"
+  lock="$ROOT/flakes/base-lib/flake.lock"
   if [[ ! -f "$lock" ]]; then
     echo "flake.lock not found: $lock" >&2
     exit 2
@@ -117,7 +117,7 @@ PY
 fi
 
 echo "Upstream source: $src (rev $rev)"
-echo "Checking ${#patches[@]} patch(es) in flakes/hm-modules/modules/opencode/patches/"
+echo "Checking ${#patches[@]} patch(es) in flakes/base-lib/patches/opencode/"
 echo
 
 stale=0

@@ -33,9 +33,12 @@
           }
         );
       in
-        final.callPackage "${opencode}/nix/opencode.nix" {
+        (final.callPackage "${opencode}/nix/opencode.nix" {
           inherit node_modules;
-        }
+        }).overrideAttrs (old: {
+          # Drop when upstream preserves unknown model release dates.
+          patches = (old.patches or []) ++ [../patches/opencode/show-models-without-release-date.patch];
+        })
       else prev.opencode;
 
     pi-coding-agent = final.callPackage ../packages/pi-coding-agent.nix {};
