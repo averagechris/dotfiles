@@ -503,16 +503,16 @@
           jjSkillRouting = blockAfter "## Jujutsu skill routing\n\n" "\n\n    Do not copy command manuals" orchestratorPrompt;
           frontmatter = blockAfter "---\n" "\n---";
           expectedAgentModels = {
-            tiny = "openrouter/openai/gpt-5.6-luna#low";
-            luna = "openrouter/openai/gpt-5.6-luna#high";
-            minion = "openrouter/openai/gpt-5.6-sol#low";
-            wise = "openrouter/anthropic/claude-fable-5.1#high";
+            tiny = "openrouter/~openai/gpt-luna-latest#low";
+            luna = "openrouter/~openai/gpt-luna-latest#high";
+            minion = "openrouter/~openai/gpt-sol-latest#low";
+            wise = "openrouter/~anthropic/claude-fable-latest#high";
           };
           unpinnedAgentPrompts = with agents; [build orchestrator plan];
         in
           assert settings.default_agent == "orchestrator";
           assert settings.experimental.subagent_depth == 2;
-          assert settings.agents.explore.model == "openrouter/openai/gpt-5.6-luna#medium";
+          assert settings.agents.explore.model == "openrouter/~openai/gpt-luna-latest#medium";
           assert settings.compaction
           == {
             auto = true;
@@ -525,6 +525,8 @@
             expected = [
               "~openai/gpt-sol-latest"
               "~openai/gpt-astra-latest"
+              "~openai/gpt-luna-latest"
+              "~anthropic/claude-fable-latest"
               "openai/gpt-5.6-sol"
               "openai/gpt-5.6-luna"
               "anthropic/claude-fable-5.1"

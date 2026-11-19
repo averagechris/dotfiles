@@ -35,17 +35,20 @@ This keeps OpenCode close to upstream releases while preserving the normal
 - on hosts with direnv enabled, a `dotfiles-direnv` plugin uses the same
   per-invocation hook, including the invocation's cwd and mutable environment,
   to load each working directory's direnv-allowed dev shell environment
-- local automatic compaction at 350,000 input tokens for the primary aliases
-  and pinned subagent models, with warming explicitly disabled
+- local automatic compaction at 350,000 input tokens for the OpenRouter model
+  aliases and previous subagent model pins, with warming explicitly disabled
 
 ## Long-session compaction
 
 The managed V2 configuration keeps local automatic compaction enabled, retains
-15,000 recent tokens, and uses the default 20,000-token buffer. For the current
-primary aliases and pinned OpenRouter agent models it overrides only the catalog
+15,000 recent tokens, and uses the default 20,000-token buffer. For the
+OpenRouter Sol, Astra, Luna, and Fable aliases it overrides the catalog
 `limit.input` value to 370,000 and selects `compaction.mode = "local"`. It does
 not enable provider-native compaction or replace catalog IDs, capabilities, or
 truthful context/output limits.
+
+The previous subagent model IDs retain that policy because resumed subagent
+sessions keep the model ID saved when they started.
 
 V2's automatic threshold is
 `min(input limit - buffer, context limit - max(output reserve, buffer))`.
@@ -399,14 +402,22 @@ profile.
 The `orchestrator` is the generated OpenCode default agent, making decomposition
 and Minion-first routing the normal entry point. It uses the same open-by-default
 shell safety posture as Build, is tuned for ambitious projects, and can delegate
-work across five coding tiers: `tiny`, `luna`, `minion`,
-`build`, and `wise`. Tiny uses GPT-5.6 Luna at `low` for mechanical work, while
-the distinct Luna tier uses the same model at `high` for bounded work requiring
-more reasoning. Minion uses GPT-5.6 Sol at `low` and is the default implementation
-tier: the orchestrator decomposes work and supplies clear implementation packets
-so Minion performs the bulk of coding. Build is reserved for ambiguity, breadth,
-investigation, or coordination that planning cannot reasonably remove. The
-higher-capability `wise` agent uses `openrouter/anthropic/claude-fable-5.1#high`.
+work across five coding tiers. Tiny handles mechanical work, and Luna handles
+bounded work that needs more reasoning. Minion is the default implementation
+tier. The orchestrator supplies clear implementation packets so Minion performs
+the bulk of coding. Build inherits the session model and handles ambiguity,
+breadth, investigation, or coordination that planning cannot reasonably remove.
+Wise handles high-consequence work.
+
+OpenRouter's family aliases follow the latest model release automatically.
+
+| Agent | OpenCode model |
+| --- | --- |
+| `tiny` | `openrouter/~openai/gpt-luna-latest#low` |
+| `luna` | `openrouter/~openai/gpt-luna-latest#high` |
+| `minion` | `openrouter/~openai/gpt-sol-latest#low` |
+| `wise` | `openrouter/~anthropic/claude-fable-latest#high` |
+
 All coding agents share one generated shell permission
 policy so safety-rule changes stay consistent across tiers. Their concise
 descriptions summarize the intended delegation tradeoff so primary agents can
@@ -506,7 +517,7 @@ when work or context no longer fits the packet.
 
 The built-in `explore` subagent keeps its upstream prompt and tools but is
 configured through `settings.agents.explore` to use
-`openrouter/openai/gpt-5.6-luna#medium`. This favors cheap,
+`openrouter/~openai/gpt-luna-latest#medium`. This favors cheap,
 parallel codebase research with a research-specific prompt and tool set; Tiny
 remains narrower and mechanical, while Luna handles bounded reasoned work.
 

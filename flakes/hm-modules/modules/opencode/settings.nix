@@ -16,6 +16,9 @@
   locallyCompactedModels = [
     "~openai/gpt-sol-latest"
     "~openai/gpt-astra-latest"
+    "~openai/gpt-luna-latest"
+    "~anthropic/claude-fable-latest"
+    # Resumed subagent sessions retain their original model IDs.
     "openai/gpt-5.6-sol"
     "openai/gpt-5.6-luna"
     "anthropic/claude-fable-5.1"
@@ -55,7 +58,7 @@ in
     # Keep the built-in exploration prompt and tools, but use a fast model with
     # enough reasoning for cross-file codebase research.
     agents.explore = {
-      model = "openrouter/openai/gpt-5.6-luna#medium";
+      model = "openrouter/~openai/gpt-luna-latest#medium";
     };
 
     # Managed jj workspaces and temporary files live outside the OpenCode

@@ -336,7 +336,7 @@ in {
     ---
     description: Cost-effective coder and reviewer for sustained routine work with broader context.
     mode: subagent
-    model: openrouter/openai/gpt-5.6-sol#low
+    model: openrouter/~openai/gpt-sol-latest#low
     request:
       body:
         temperature: 0.0
@@ -383,7 +383,7 @@ in {
     ---
     description: Cheapest delegate for mechanical logistics, exact checks, cleanup, and tiny deterministic edits.
     mode: subagent
-    model: openrouter/openai/gpt-5.6-luna#low
+    model: openrouter/~openai/gpt-luna-latest#low
     request:
       body:
         temperature: 0.0
@@ -442,7 +442,7 @@ in {
     ---
     description: Cost-effective delegate for bounded medium-complexity work and deterministic review needing reasoning.
     mode: subagent
-    model: openrouter/openai/gpt-5.6-luna#high
+    model: openrouter/~openai/gpt-luna-latest#high
     request:
       body:
         temperature: 0.0
@@ -501,7 +501,7 @@ in {
     ---
     description: Highest-capability delegate for difficult, high-stakes work; expensive.
     mode: subagent
-    model: openrouter/anthropic/claude-fable-5.1#high
+    model: openrouter/~anthropic/claude-fable-latest#high
     request:
       body:
         temperature: 0.0
