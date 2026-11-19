@@ -1,10 +1,10 @@
 # OpenCode patch lifecycle
 
-The Home Manager OpenCode module applies repository-owned patches to the source
+The shared base-lib overlay applies repository-owned patches to the source
 from the pinned `github:anomalyco/opencode/v2` flake input. The package is pinned
 at revision `8eff035bf45342bda2d37a884df1191cd9bf3e62`, OpenCode 2.0.26. The patch
-list lives in `flakes/hm-modules/modules/opencode/default.nix`, and patch files
-live beside the module under `patches/`.
+list lives in `flakes/base-lib/overlays/default.nix`, and patch files live under
+`flakes/base-lib/patches/opencode/` so the separately consumed flake includes them.
 
 Run `scripts/check-opencode-patches.sh` after changing a patch or updating the
 OpenCode input. It dry-runs every patch against the locked source and reports
@@ -14,7 +14,11 @@ test carried by a patch and build the patched Home Manager package.
 
 ## Active patches
 
-There are no active patches.
+`show-models-without-release-date.patch` keeps a non-positive V2 model release
+timestamp unknown when adapting it to the web app's legacy model shape. Without
+the patch, timestamp zero becomes `1970-01-01`, causing the model picker's age
+filter to hide config-defined models by default. Remove it when upstream
+preserves unknown release dates in this adapter.
 
 The retired environment-assignment patch stripped static assignment prefixes
 from permission resources produced by the legacy shell scanner. OpenCode's
