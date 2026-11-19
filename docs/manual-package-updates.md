@@ -41,6 +41,14 @@ update-flakes --manual-package helium-bin   # one manual package only
 update-flakes --skip-manual-package pi-coding-agent
 ```
 
+The flake updater, shared-pin CI, and scheduled maintenance share the
+`canonical_locks` list in `maintenance/policy.json`. List dependency locks
+before their consumers and put the root lock last. The updater works on a
+temporary copy of Git-tracked working files, including local edits to tracked
+flake declarations. Each parent sees the candidate locks produced for its
+children. `--check` reports the result without changing the checkout. Apply
+mode publishes the resulting locks after all flake updates succeed.
+
 The updater prefetches the manifest's release asset URLs with
 `nix store prefetch-file --json` and rewrites the package `version` plus fixed
 hashes in the referenced Nix file.
@@ -49,6 +57,10 @@ By default, `update-flakes` captures noisy child command output and prints only 
 compact progress summary plus actionable skips or failures. Pass `--show-output`
 or set `UPDATE_FLAKES_SHOW_OUTPUT=1` to stream full `nix flake update` output
 when debugging.
+
+To exercise check and apply with local Git flakes and an actual Nix store,
+run `cargo test --manifest-path tools/update-flakes/Cargo.toml --test lock_updates -- --ignored`
+from the Rust dev shell.
 
 ## Cooldowns
 

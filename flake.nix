@@ -415,7 +415,7 @@
         nativeBuildInputs = [pkgs.makeWrapper];
         postInstall = ''
           wrapProgram "$out/bin/update-flakes" \
-            --prefix PATH : ${pkgs.lib.makeBinPath [pkgs.curl pkgs.nix]}
+            --prefix PATH : ${pkgs.lib.makeBinPath [pkgs.curl pkgs.gitMinimal pkgs.nix]}
         '';
       };
 
