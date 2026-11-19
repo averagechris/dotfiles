@@ -112,6 +112,8 @@ Workspace names accept letters, numbers, `.`, `_`, and `-`. Bay rejects path sep
 
 Creation may copy local lint and environment files, clone configured build artifacts with copy-on-write, run `direnv allow`, and run repository `postcreate` hooks. These behaviors come from device and repository configuration, not from Bay-specific agent instructions. See [the shared engine reference](/docs/jj-workspaces.md) when you need to change or diagnose them.
 
+In colocated Git repositories, Bay converts newly created worktree links to absolute paths and removes `extensions.relativeworktrees`, because the libgit2 version used by Nix cannot open a repository with that extension. Recent Jujutsu versions create relative worktrees by default. If another worktree in the repository already uses relative paths, Bay leaves every link unchanged and prints a warning with the manual fix. Git's repair command would otherwise convert that worktree as well. Normalization failures produce warnings and never fail workspace creation.
+
 ## OpenCode integration
 
 When `dotfiles.opencode.bayWorktrees.enable` is enabled, OpenCode uses Bay for its worktree UI only when the server's canonical location is a Bay-recognized Jujutsu repository.
