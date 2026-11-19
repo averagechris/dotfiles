@@ -101,10 +101,9 @@ reported, with a suitable available fallback rather than a false claim of use.
 Use the shared `advisor-council` skill before finalizing non-trivial work or
 when asked for an advisor or council. Reviewers can work from a stable working
 copy, a commit, or a diff. External reviewers receive only approved excerpts,
-inline or as an attachment. Opus 5.5 is the required council seat. The roster includes
-Sol 6.2 high, Astra 6.2 high, Fable 5.2, Gemini Carbon and trial seats for Neon
-and Muse Wonder Full. The skill checks actual availability and records any
-missing seat. The OpenCode reviews use the executor's provider access and
+inline or as an attachment. Opus 5.5 is the required council seat. The roster
+also includes Sol 6.2 high, Astra 6.2 high, Fable 5.2, Gemini Carbon, and a trial
+seat for Gemini Neon. The skill checks availability and records any missing seat. The OpenCode reviews use the executor's provider access and
 billing. See [Codex Cloud tooling](codex-cloud.md) for a reproducible Linux setup.
 
 Routing guidance is distinct from fallback defaults. The suremac TOML defaults

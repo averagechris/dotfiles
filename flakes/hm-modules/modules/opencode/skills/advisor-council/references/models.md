@@ -10,9 +10,6 @@ Use native Codex delegation for the OpenAI seats when the requested selection is
 | **Claude Fable 5.2** | `openrouter/anthropic/claude-fable-5.2#high` | Open-ended design, simplicity and taste. Check [provider retention terms](https://openrouter.ai/anthropic/claude-fable-5.2) before including work material. |
 | **Gemini 4 Carbon** | `openrouter/google/gemini-4-carbon#high` | Defensive security or difficult reasoning. Record a specialized Carbon route separately if explicitly available. |
 | **Gemini 4 Neon** | `openrouter/google/gemini-4-neon`, effort from live catalog | Trial for an alternative perspective. Verify this entry and variant before using it. |
-| **Muse Wonder Full** | Muse Code only, with an entitled subscription and Contributor mode off | Writing, docs and occasional taste. Check `muse exec --help` and the account's model picker before trying it. |
-
-The API model `muse-wonder-1.0` is [Muse Wonder](https://dev.meta.ai/docs/muse-wonder). It is a different seat from Wonder Full, even at maximum effort. Use it only when requested or agreed.
 
 ## External reviews
 

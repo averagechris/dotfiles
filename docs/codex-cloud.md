@@ -53,8 +53,7 @@ source and cache domains if you use the flake path.
 
 Use a synthetic prompt to confirm that each intended provider and reasoning
 variant runs in a fresh task. Only share work packets with authorized
-providers. Muse Wonder Full has separate Muse Code access requirements and
-isn't installed by this bootstrap.
+providers.
 
 Save the environment, verify the setup report, and publish when ready. Start
 a new task in the published environment to verify the tools, skill and
