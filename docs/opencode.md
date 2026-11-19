@@ -933,7 +933,28 @@ models. Select one of these in OpenCode's `/models` picker.
 
 Standard DeepSeek V4.1 Flash and Qwen3.8-27B are also available for manual
 selection. Use Codex directly or an OpenRouter model for routine work.
-Delegated agents use their pinned models.
+
+Ask Orchestrator or Build to use a role name with one of these suffixes.
+For example, use `minion-glm-flash` for implementation with GLM 5.3 Flash.
+
+| Suffix | Experiential Labs model |
+| --- | --- |
+| `-glm` | `glm-5.3-uncensored` |
+| `-glm-flash` | `glm-5.3-flash-uncensored` |
+| `-deepseek-flash` | `deepseek-v4.1-flash-uncensored` |
+
+Each model has counterparts for Tiny, Explore, Luna, Minion, and Wise.
+OpenCode asks for permission unless the handoff has already been approved for
+the project. The counterparts inherit the original role's prompt and
+permissions. Tiny and Minion use low reasoning. Explore, Luna, and Wise use
+high reasoning, the next effort above low on these models.
+
+The gateway catalog reports zero data retention on every current route for
+standard `deepseek-v4.1-flash`. The managed OpenCode config uses the
+organization's gateway settings. Experiential Labs can also enforce ZDR per
+request with the `X-Gateway-ZDR: true` header on eligible accounts. Requests
+with that requirement skip gateway prompt and response capture.
+[Experiential Labs data controls](https://platform.experientiallabs.ai/docs/data-controls)
 
 The provider uses Chat Completions at `https://api.experientiallabs.ai/v1`.
 Add model slugs in the suremac host configuration using the inference key's

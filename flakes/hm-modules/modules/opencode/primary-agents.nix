@@ -2,6 +2,9 @@
   agentSelectionPolicy,
   agentSelectionTable,
   runtimeNote,
+  extraDelegates ? [],
+  models ? {},
+  descriptionPrefix ? "",
 }: let
   deletionBashPermissions = let
     commands = ["rm -rf" "rm -fr" "rm -r"];
@@ -174,6 +177,9 @@
   '';
   trimmedSharedBashPermissions = builtins.substring 0 ((builtins.stringLength sharedBashPermissions) - 1) sharedBashPermissions;
   indentedSharedBashPermissions = builtins.replaceStrings ["\n"] ["\n  "] trimmedSharedBashPermissions;
+  extraDelegationPermissions =
+    builtins.concatStringsSep "" (map (agent: "\n  - action: subagent\n    resource: \"${agent}\"\n    effect: ask")
+      extraDelegates);
 in {
   build = ''
     ---
@@ -226,7 +232,7 @@ in {
         effect: allow
       - action: subagent
         resource: "wise"
-        effect: allow
+        effect: allow${extraDelegationPermissions}
     ---
 
     You are the Build agent. Use this exceptional tier only when unresolved
@@ -288,7 +294,7 @@ in {
         effect: allow
       - action: subagent
         resource: "wise"
-        effect: allow
+        effect: allow${extraDelegationPermissions}
     ---
 
     You are an orchestrator agent. Delegation is the name of the game.
@@ -334,9 +340,9 @@ in {
 
   minion = ''
     ---
-    description: Cost-effective coder and reviewer for sustained routine work with broader context.
+    description: ${descriptionPrefix}Cost-effective coder and reviewer for sustained routine work with broader context.
     mode: subagent
-    model: openrouter/~openai/gpt-sol-latest#low
+    model: ${models.minion or "openrouter/~openai/gpt-sol-latest#low"}
     request:
       body:
         temperature: 0.0
@@ -381,9 +387,9 @@ in {
 
   tiny = ''
     ---
-    description: Cheapest delegate for mechanical logistics, exact checks, cleanup, and tiny deterministic edits.
+    description: ${descriptionPrefix}Cheapest delegate for mechanical logistics, exact checks, cleanup, and tiny deterministic edits.
     mode: subagent
-    model: openrouter/~openai/gpt-luna-latest#low
+    model: ${models.tiny or "openrouter/~openai/gpt-luna-latest#low"}
     request:
       body:
         temperature: 0.0
@@ -440,9 +446,9 @@ in {
 
   luna = ''
     ---
-    description: Cost-effective delegate for bounded medium-complexity work and deterministic review needing reasoning.
+    description: ${descriptionPrefix}Cost-effective delegate for bounded medium-complexity work and deterministic review needing reasoning.
     mode: subagent
-    model: openrouter/~openai/gpt-luna-latest#high
+    model: ${models.luna or "openrouter/~openai/gpt-luna-latest#high"}
     request:
       body:
         temperature: 0.0
@@ -499,9 +505,9 @@ in {
 
   wise = ''
     ---
-    description: Highest-capability delegate for difficult, high-stakes work; expensive.
+    description: ${descriptionPrefix}Highest-capability delegate for difficult, high-stakes work; expensive.
     mode: subagent
-    model: openrouter/~anthropic/claude-fable-latest#high
+    model: ${models.wise or "openrouter/~anthropic/claude-fable-latest#high"}
     request:
       body:
         temperature: 0.0

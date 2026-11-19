@@ -10,6 +10,15 @@
   ctxPackage = inputs.ctx.packages.${pkgs.stdenv.hostPlatform.system}.ctx;
   rdnyPackage = inputs.rdny.packages.${pkgs.stdenv.hostPlatform.system}.rdny;
   explabsBaseUrl = "https://api.experientiallabs.ai/v1";
+  explabsSubagentModels = {
+    deepseek-flash = "deepseek-v4.1-flash-uncensored";
+    glm = "glm-5.3-uncensored";
+    glm-flash = "glm-5.3-flash-uncensored";
+  };
+  explabsVariants = map (effort: {
+    id = effort;
+    body.reasoning_effort = effort;
+  });
   opencodeCliPreferences = {
     "$schema" = "https://opencode.ai/v2/cli.json";
     theme.name = "rosepine";
@@ -630,8 +639,9 @@ in {
     # Reference only. Adoption requires a separate request after review and merge.
     xdg.configFile."grem/PREFERENCES.md".source = ./grem/PREFERENCES.md;
     programs.opencode.enable = true;
+    dotfiles.opencode.explabsSubagentModels = explabsSubagentModels;
     programs.opencode.settings.references = opencodeReferences;
-    # Use Experiential Labs mainly for ablated models. Select it per session.
+    # Use Experiential Labs mainly for ablated models. Select it explicitly.
     # Use Codex directly or OpenRouter for routine work.
     programs.opencode.settings.providers.explabs = {
       name = "Experiential Labs";
@@ -641,6 +651,7 @@ in {
         "deepseek-v4.1-flash-uncensored" = {
           name = "deepseek-v4.1-flash-uncensored";
           capabilities.input = ["text"];
+          variants = explabsVariants ["none" "low" "high" "max"];
           limit = {
             context = 1048576;
             input = 655360;
@@ -654,6 +665,7 @@ in {
         "glm-5.3-flash-uncensored" = {
           name = "glm-5.3-flash-uncensored";
           capabilities.input = ["text"];
+          variants = explabsVariants ["low" "high" "max"];
           limit = {
             context = 1048576;
             input = 917504;
@@ -667,6 +679,7 @@ in {
         "glm-5.3-uncensored" = {
           name = "glm-5.3-uncensored";
           capabilities.input = ["text"];
+          variants = explabsVariants ["low" "high"];
           limit = {
             context = 1048576;
             input = 917504;
