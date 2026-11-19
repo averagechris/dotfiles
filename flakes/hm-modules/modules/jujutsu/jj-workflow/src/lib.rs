@@ -7694,6 +7694,78 @@ aliases = ["sammy", "Sam Smith"]
         let _ = fs::remove_dir_all(&dir);
     }
 
+    fn setup_git_worktree_test(name: &str) -> (PathBuf, PathBuf, PathBuf) {
+        let root = named_tempdir(name);
+        let group = root.join("projects");
+        let repo = group.join("demo");
+        fs::create_dir_all(&group).unwrap();
+        run(Command::new("jj").arg("git").arg("init").arg(&repo));
+        fs::write(repo.join("tracked.txt"), "hello\n").unwrap();
+        run(Command::new("git").current_dir(&repo).arg("add").arg("tracked.txt"));
+        run(Command::new("git").current_dir(&repo).args([
+            "-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "-m", "initial",
+        ]));
+        jj(&repo, &["status"]);
+        jj(&repo, &[
+            "config", "set", "--repo", "dotfiles.workspaces.project-groups",
+            &format!("[\"{}:ws\"]", group.display()),
+        ]);
+        jj(&repo, &["config", "set", "--repo", "dotfiles.workspaces.direnv-allow", "false"]);
+        let workspace = group.join("ws/demo/created");
+        (root, repo, workspace)
+    }
+
+    #[test]
+    fn ws_add_makes_colocated_git_worktree_links_absolute() {
+        let _guard = INTEGRATION_LOCK.lock().unwrap_or_else(|err| err.into_inner());
+        let (root, repo, workspace) = setup_git_worktree_test("absolute-git-worktree");
+        let old = env::current_dir().unwrap();
+        env::set_current_dir(&repo).unwrap();
+        run_ws(vec!["add".into(), "created".into(), "-r".into(), "@".into(), "-q".into()]).unwrap();
+        env::set_current_dir(old).unwrap();
+
+        let extension = Command::new("git").current_dir(&repo)
+            .args(["config", "--get", "extensions.relativeworktrees"]).output().unwrap();
+        assert!(!extension.status.success());
+        let git_file = fs::read_to_string(workspace.join(".git")).unwrap();
+        let gitdir = PathBuf::from(git_file.trim().strip_prefix("gitdir: ").unwrap());
+        assert!(gitdir.is_absolute(), "{git_file}");
+        let backlink = fs::read_to_string(gitdir.join("gitdir")).unwrap();
+        assert!(Path::new(backlink.trim()).is_absolute(), "{backlink}");
+        run(Command::new("jj").current_dir(&workspace).arg("st"));
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn ws_add_leaves_preexisting_relative_worktree_and_warns() {
+        let _guard = INTEGRATION_LOCK.lock().unwrap_or_else(|err| err.into_inner());
+        let (root, repo, _) = setup_git_worktree_test("existing-relative-git-worktree");
+        let relative = root.join("relative");
+        run(Command::new("git").current_dir(&repo)
+            .args(["worktree", "add", "--relative-paths", "--detach"])
+            .arg(&relative).arg("HEAD"));
+        let relative_before = fs::read_to_string(relative.join(".git")).unwrap();
+        assert!(!Path::new(relative_before.trim().strip_prefix("gitdir: ").unwrap()).is_absolute());
+
+        let old = env::current_dir().unwrap();
+        env::set_current_dir(&repo).unwrap();
+        let mut warnings = Vec::new();
+        run_ws_with_warning(
+            vec!["add".into(), "created".into(), "-r".into(), "@".into(), "-q".into()],
+            |warning| warnings.push(warning.to_string()),
+        ).unwrap();
+        env::set_current_dir(old).unwrap();
+
+        assert_eq!(fs::read_to_string(relative.join(".git")).unwrap(), relative_before);
+        let extension = Command::new("git").current_dir(&repo)
+            .args(["config", "--bool", "extensions.relativeworktrees"]).output().unwrap();
+        assert!(extension.status.success());
+        assert_eq!(warnings.len(), 1);
+        assert!(warnings[0].contains("git worktree repair --no-relative-paths"));
+        assert!(warnings[0].contains("git config --unset extensions.relativeworktrees"));
+        fs::remove_dir_all(root).unwrap();
+    }
+
     #[test]
     fn integration_runs_postcreate_and_preforget_hooks() {
         let _guard = INTEGRATION_LOCK.lock().unwrap();

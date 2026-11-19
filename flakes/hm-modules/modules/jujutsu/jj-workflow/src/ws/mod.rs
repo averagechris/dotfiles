@@ -472,6 +472,12 @@ where
         fetch_for_workspace(&config)?;
         infer_remote_integration_bookmark()?
     };
+    let preexisting_relative_worktree = ctx
+        .repo_root
+        .join(".git")
+        .exists()
+        .then(|| has_relative_git_worktree(&ctx.repo_root))
+        .flatten();
     let add_args = vec![
         OsString::from("workspace"),
         OsString::from("add"),
@@ -486,6 +492,7 @@ where
     } else {
         run_jj_status_os(add_args)?;
     }
+    normalize_git_worktree_links(&dest, preexisting_relative_worktree, warn);
     let mut copied_envrc = false;
     let mut venv_action = None;
     let mut direnv_allowed = false;
@@ -583,6 +590,93 @@ where
         }
     }
     Ok(())
+}
+
+fn git_common_dir(repo: &Path) -> Option<PathBuf> {
+    let output = Command::new("git")
+        .current_dir(repo)
+        .args(["rev-parse", "--path-format=absolute", "--git-common-dir"])
+        .output()
+        .ok()?;
+    output
+        .status
+        .success()
+        .then(|| PathBuf::from(String::from_utf8_lossy(&output.stdout).trim()))
+}
+
+fn has_relative_git_worktree(repo: &Path) -> Option<bool> {
+    let common = git_common_dir(repo)?;
+    let entries = match fs::read_dir(common.join("worktrees")) {
+        Ok(entries) => entries,
+        Err(err) if err.kind() == io::ErrorKind::NotFound => return Some(false),
+        Err(_) => return None,
+    };
+    for entry in entries.filter_map(|entry| entry.ok()) {
+        let backlink = fs::read_to_string(entry.path().join("gitdir")).ok()?;
+        let git_file = PathBuf::from(backlink.trim());
+        if !git_file.is_absolute() {
+            return Some(true);
+        }
+        let contents = fs::read_to_string(git_file).ok()?;
+        let target = contents.strip_prefix("gitdir: ")?.trim();
+        if !Path::new(target).is_absolute() {
+            return Some(true);
+        }
+    }
+    Some(false)
+}
+
+/// Keep jj-created colocated Git worktrees readable by libgit2 consumers such as Nix.
+/// This is best-effort because workspace creation has already succeeded.
+fn normalize_git_worktree_links<F>(dest: &Path, preexisting_relative: Option<bool>, warn: &mut F)
+where
+    F: FnMut(&str),
+{
+    if !dest.join(".git").is_file() {
+        return;
+    }
+    let extension_set = Command::new("git")
+        .current_dir(dest)
+        .args(["config", "--bool", "extensions.relativeworktrees"])
+        .output()
+        .is_ok_and(|output| output.status.success() && output.stdout.starts_with(b"true"));
+    if !extension_set && has_relative_git_worktree(dest) == Some(false) {
+        return;
+    }
+    let Some(preexisting_relative) = preexisting_relative else {
+        warn("Warning: could not inspect existing Git worktree links; Nix/libgit2 may not open this repository");
+        return;
+    };
+    if preexisting_relative {
+        warn("Warning: this repository has relative Git worktrees, so Nix/libgit2 cannot open it; fix with `git worktree repair --no-relative-paths && git config --unset extensions.relativeworktrees`");
+        return;
+    }
+
+    let repair = Command::new("git")
+        .current_dir(dest)
+        .args(["worktree", "repair", "--no-relative-paths"])
+        .output();
+    if !matches!(repair, Ok(ref output) if output.status.success()) {
+        let detail = repair
+            .as_ref()
+            .map(|output| String::from_utf8_lossy(&output.stderr).trim().to_string())
+            .unwrap_or_else(|err| err.to_string());
+        warn(&format!("Warning: could not make Git worktree links absolute: {detail}; Nix/libgit2 may not open this repository"));
+        return;
+    }
+    if extension_set {
+        let unset = Command::new("git")
+            .current_dir(dest)
+            .args(["config", "--unset", "extensions.relativeworktrees"])
+            .output();
+        if !matches!(unset, Ok(ref output) if output.status.success()) {
+            warn("Warning: could not unset extensions.relativeworktrees; Nix/libgit2 may not open this repository");
+            return;
+        }
+    }
+    if has_relative_git_worktree(dest) != Some(false) {
+        warn("Warning: relative Git worktree links remain after repair; Nix/libgit2 may not open this repository");
+    }
 }
 
 pub(crate) fn copy_jj_lint_config_if_needed(src: &Path, dest: &Path) -> Result<bool> {
