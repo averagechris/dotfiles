@@ -41,6 +41,15 @@ update-flakes --manual-package helium-bin   # one manual package only
 update-flakes --skip-manual-package pi-coding-agent
 ```
 
+The flake updater, shared-pin CI, and scheduled maintenance share the
+`canonical_locks` list in `maintenance/policy.json`. List dependency locks
+before their consumers and put the root lock last. The updater uses `git` or
+`jj` on PATH to copy tracked working files into a temporary directory,
+including local edits to tracked flake declarations. Each parent sees the
+candidate locks produced for its children. `--check` reports the result without
+changing the checkout. Apply
+mode publishes the resulting locks after all flake updates succeed.
+
 The updater prefetches the manifest's release asset URLs with
 `nix store prefetch-file --json` and rewrites the package `version` plus fixed
 hashes in the referenced Nix file.
@@ -49,6 +58,10 @@ By default, `update-flakes` captures noisy child command output and prints only 
 compact progress summary plus actionable skips or failures. Pass `--show-output`
 or set `UPDATE_FLAKES_SHOW_OUTPUT=1` to stream full `nix flake update` output
 when debugging.
+
+To exercise check and apply with local Git flakes and an actual Nix store,
+run `cargo test --manifest-path tools/update-flakes/Cargo.toml --test lock_updates -- --ignored`
+from the Rust dev shell.
 
 ## Cooldowns
 
@@ -102,8 +115,9 @@ includes both the `cacert` 3.131.1 and uv 0.13.4 fixes. The channel revision
 `02c087f3fe673c9e317f206a627cb6b910336dbe` contains the NixOS system
 certificate blacklist, but predates that `cacert` fix, which is needed by
 Darwin and direct `pkgs.cacert` consumers. Keep `original.ref = "nixos-unstable"`
-and make all 15 canonical lockfiles use the same pinned revision. This snapshot
-also includes the [System76 module installation fix](https://github.com/NixOS/nixpkgs/pull/575724)
+and make every canonical lockfile in `maintenance/policy.json` use the same
+pinned revision. This snapshot also includes the
+[System76 module installation fix](https://github.com/NixOS/nixpkgs/pull/575724)
 needed for thorny to build with the newer kernel module certificate checks.
 
 OpenCode remains at its previously validated source revision. Its Darwin

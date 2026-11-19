@@ -82,7 +82,7 @@ This directory contains the modular flake-based architecture for the dotfiles re
 #### `nixos-modules/flake.nix`
 **Purpose**: Shared NixOS modules used by multiple hosts.
 
-**Exports**: NixOS modules for common functionality
+**Exports**: Local module paths. Hosts supply the package set and module arguments, so this flake has no inputs or lockfile.
 
 #### `hm-modules/flake.nix`
 **Purpose**: Shared home-manager modules for user configuration.
@@ -92,7 +92,7 @@ This directory contains the modular flake-based architecture for the dotfiles re
 #### `darwin-modules/flake.nix`
 **Purpose**: Shared nix-darwin modules for macOS-specific configuration.
 
-**Exports**: Darwin modules for macOS-specific settings
+**Exports**: Local module paths. Hosts supply the package set and module arguments, so this flake has no inputs or lockfile.
 
 ### Host flakes (`hosts/*/flake.nix`)
 

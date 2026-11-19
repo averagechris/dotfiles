@@ -31,9 +31,10 @@ cause a burst of catch-up generations.
 
 1. Resolve current main, trusted policy hash, and a unique run identifier.
 2. Run the trusted-base Rust updater in a secretless GitHub job with normal
-   cooldowns. Coordinate named shared inputs across all 15 canonical locks, then
-   refresh local path parents offline. Preserve original URLs, explicit revisions,
-   version tags, local topology, and suremac's separate Helix graph. Native Darwin
+   cooldowns. Coordinate named shared inputs across the canonical locks in
+   `maintenance/policy.json`, then refresh local path parents offline.
+   Preserve original URLs, explicit revisions,
+   version tags, and local topology. Native Darwin
    validation builds both suremac and taro, while the Keychain attestation remains
    specific to suremac. Only enrolled Pi/Helium version and hash updates are
    eligible package edits.
