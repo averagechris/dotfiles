@@ -31,6 +31,8 @@ in {
   "openrouter-api-key-personal.age".publicKeys =
     systems-keys ++ trainwreck-keys ++ [tater-key];
   "granola-token.age".publicKeys = [suremac-key];
+  "explabs-admin-api-key.age".publicKeys = [suremac-key];
+  "explabs-inference-api-key.age".publicKeys = [suremac-key];
   "opencode-sure-stack-context.age".publicKeys = [suremac-key];
 
   # Kubeconfig fragment for the Sure EKS clusters reachable directly via AWS SSO

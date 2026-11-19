@@ -9,6 +9,7 @@
 }: let
   ctxPackage = inputs.ctx.packages.${pkgs.stdenv.hostPlatform.system}.ctx;
   rdnyPackage = inputs.rdny.packages.${pkgs.stdenv.hostPlatform.system}.rdny;
+  explabsBaseUrl = "https://api.experientiallabs.ai/v1";
   opencodeCliPreferences = {
     "$schema" = "https://opencode.ai/v2/cli.json";
     theme.name = "rosepine";
@@ -243,6 +244,18 @@ in {
 
     granola-token = {
       file = ../../../secrets/granola-token.age;
+      owner = "chris";
+      mode = "0400";
+    };
+
+    explabs-admin-api-key = {
+      file = ../../../secrets/explabs-admin-api-key.age;
+      owner = "root";
+      mode = "0400";
+    };
+
+    explabs-inference-api-key = {
+      file = ../../../secrets/explabs-inference-api-key.age;
       owner = "chris";
       mode = "0400";
     };
@@ -618,6 +631,97 @@ in {
     xdg.configFile."grem/PREFERENCES.md".source = ./grem/PREFERENCES.md;
     programs.opencode.enable = true;
     programs.opencode.settings.references = opencodeReferences;
+    # Use Experiential Labs mainly for ablated models. Select it per session.
+    # Use Codex directly or OpenRouter for routine work.
+    programs.opencode.settings.providers.explabs = {
+      name = "Experiential Labs";
+      package = "@opencode/ai/providers/openai-compatible";
+      settings.baseURL = explabsBaseUrl;
+      models = {
+        "deepseek-v4.1-flash-uncensored" = {
+          name = "deepseek-v4.1-flash-uncensored";
+          capabilities.input = ["text"];
+          limit = {
+            context = 1048576;
+            input = 655360;
+            output = 393216;
+          };
+          cost = {
+            input = 0.225;
+            output = 0.9;
+          };
+        };
+        "glm-5.3-flash-uncensored" = {
+          name = "glm-5.3-flash-uncensored";
+          capabilities.input = ["text"];
+          limit = {
+            context = 1048576;
+            input = 917504;
+            output = 131072;
+          };
+          cost = {
+            input = 0.15;
+            output = 0.5;
+          };
+        };
+        "glm-5.3-uncensored" = {
+          name = "glm-5.3-uncensored";
+          capabilities.input = ["text"];
+          limit = {
+            context = 1048576;
+            input = 917504;
+            output = 131072;
+          };
+          cost = {
+            input = 1.4;
+            output = 4.4;
+          };
+        };
+        # Standard models for manual selection.
+        "deepseek-v4.1-flash" = {
+          name = "deepseek-v4.1-flash";
+          limit = {
+            context = 1048576;
+            input = 655360;
+            output = 393216;
+          };
+          cost = {
+            input = 0.3;
+            output = 1.2;
+          };
+        };
+        "qwen3.8-27b" = {
+          name = "qwen3.8-27b";
+          limit = {
+            context = 1000000;
+            input = 868928;
+            output = 131072;
+          };
+          cost = {
+            input = 0.32;
+            output = 2.4;
+          };
+        };
+      };
+    };
+    # Inject the token at request time so it stays out of OpenCode's config API.
+    xdg.configFile."opencode/plugins/explabs-auth.js".text = ''
+      import { readFile } from "node:fs/promises"
+
+      export default {
+        id: "explabs-auth",
+        async setup(ctx) {
+          await ctx.session.hook("http.request", async ({ request }) => {
+            if (request.url !== ${builtins.toJSON "${explabsBaseUrl}/chat/completions"}) {
+              throw new Error("Unexpected Experiential Labs inference URL")
+            }
+            const key = (await readFile(${builtins.toJSON config.age.secrets.explabs-inference-api-key.path}, "utf8")).trim()
+            if (!key) throw new Error("The Experiential Labs inference key is empty")
+            request.headers.set("authorization", "Bearer " + key)
+          }, { providerID: "explabs" })
+        },
+      }
+    '';
     programs.t3code = {
       enable = true;
       package = inputs.t3-code-nix.packages.${pkgs.system}.t3code-opencode-v2;
