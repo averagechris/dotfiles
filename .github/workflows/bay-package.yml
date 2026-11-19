@@ -23,7 +23,7 @@ permissions:
 jobs:
   build:
     name: Build jj-workflow package
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v31
