@@ -235,53 +235,20 @@
 
   outputs = inputs @ {
     self,
-    suremac,
-    taro,
-    trap,
-    thorny,
-    tom,
-    cruber,
-    tater,
-    trainwreck,
-    taz,
-    tootsie,
     base-lib,
     flake-utils,
     deploy-rs,
     ...
   }: let
     inherit (base-lib) lib;
+    nixosHosts = {inherit (inputs) cruber tater taz thorny tom tootsie trainwreck trap;};
+    darwinHosts = {inherit (inputs) suremac taro;};
+    hosts = builtins.attrValues (nixosHosts // darwinHosts);
   in
     {
-      # Re-export all NixOS configurations
-      nixosConfigurations = {
-        inherit (trap.nixosConfigurations) trap;
-        inherit (thorny.nixosConfigurations) thorny;
-        inherit (tom.nixosConfigurations) tom;
-        inherit (cruber.nixosConfigurations) cruber;
-        inherit (tater.nixosConfigurations) tater;
-        inherit (trainwreck.nixosConfigurations) trainwreck;
-        inherit (taz.nixosConfigurations) taz;
-        inherit (tootsie.nixosConfigurations) tootsie;
-      };
-
-      # Re-export all Darwin configurations
-      darwinConfigurations = {
-        inherit (suremac.darwinConfigurations) suremac;
-        inherit (taro.darwinConfigurations) taro;
-      };
-
-      # Re-export all deploy nodes
-      deploy.nodes = {
-        inherit (trap.deploy.nodes) trap;
-        inherit (thorny.deploy.nodes) thorny;
-        inherit (tom.deploy.nodes) tom;
-        inherit (cruber.deploy.nodes) cruber;
-        inherit (tater.deploy.nodes) tater;
-        inherit (trainwreck.deploy.nodes) trainwreck;
-        inherit (taz.deploy.nodes) taz;
-        inherit (tootsie.deploy.nodes) tootsie;
-      };
+      nixosConfigurations = builtins.mapAttrs (name: host: host.nixosConfigurations.${name}) nixosHosts;
+      darwinConfigurations = builtins.mapAttrs (name: host: host.darwinConfigurations.${name}) darwinHosts;
+      deploy.nodes = builtins.mapAttrs (name: host: host.deploy.nodes.${name}) nixosHosts;
     }
     // flake-utils.lib.eachDefaultSystem (system: let
       pkgs = inputs.nixpkgs.legacyPackages.${system};
@@ -333,49 +300,41 @@
       # catches regressions without needing to run per-host flake checks
       # manually. Strict duplicates (same value under the same name) are kept
       # once; name collisions with different values throw.
-      checks = lib.mergeFlakeChecks [
-        {
-          maintenance =
-            pkgs.runCommand "dotfiles-maintenance-tests" {
-              nativeBuildInputs = [pkgs.bash pkgs.git pkgs.jq pkgs.openssl pkgs.python3];
-            } ''
-              export HOME="$TMPDIR/home"
-              mkdir -p "$HOME"
-              export PYTHONDONTWRITEBYTECODE=1
-              export GIT_CONFIG_GLOBAL=/dev/null
-              export GIT_AUTHOR_NAME="Maintenance tests" GIT_COMMITTER_NAME="Maintenance tests"
-              export GIT_AUTHOR_EMAIL="tests@example.invalid" GIT_COMMITTER_EMAIL="tests@example.invalid"
-              cd ${self}
-              python3 -m unittest discover -s tests -p 'test_maintenance_*.py'
-              python3 tests/test_self_deploy.py
-              touch "$out"
-            '';
-          michi-codex =
-            pkgs.runCommand "michi-codex-tests" {
-              nativeBuildInputs = [pkgs.git (pkgs.python3.withPackages (ps: [ps.websocket-client]))];
-            } ''
-              export PYTHONDONTWRITEBYTECODE=1
-              ${pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isLinux ''
-                # State-machine fixtures fsync frequently; keep their deadlines
-                # independent of contention on the builder's persistent disk.
-                export TMPDIR="$(mktemp -d /dev/shm/michi-codex.XXXXXX)"
-                trap 'rm -rf "$TMPDIR"' EXIT
-              ''}
-              cd ${self}
-              python3 -m unittest discover -s tests -p 'test_michi_codex*.py'
-              touch "$out"
-            '';
-        }
-        suremac.checks.${system} or {}
-        trap.checks.${system} or {}
-        thorny.checks.${system} or {}
-        tom.checks.${system} or {}
-        cruber.checks.${system} or {}
-        tater.checks.${system} or {}
-        trainwreck.checks.${system} or {}
-        taz.checks.${system} or {}
-        tootsie.checks.${system} or {}
-      ];
+      checks = lib.mergeFlakeChecks ([
+          {
+            maintenance =
+              pkgs.runCommand "dotfiles-maintenance-tests" {
+                nativeBuildInputs = [pkgs.bash pkgs.git pkgs.jq pkgs.openssl pkgs.python3];
+              } ''
+                export HOME="$TMPDIR/home"
+                mkdir -p "$HOME"
+                export PYTHONDONTWRITEBYTECODE=1
+                export GIT_CONFIG_GLOBAL=/dev/null
+                export GIT_AUTHOR_NAME="Maintenance tests" GIT_COMMITTER_NAME="Maintenance tests"
+                export GIT_AUTHOR_EMAIL="tests@example.invalid" GIT_COMMITTER_EMAIL="tests@example.invalid"
+                cd ${self}
+                python3 -m unittest discover -s tests -p 'test_maintenance_*.py'
+                python3 tests/test_self_deploy.py
+                touch "$out"
+              '';
+            michi-codex =
+              pkgs.runCommand "michi-codex-tests" {
+                nativeBuildInputs = [pkgs.git (pkgs.python3.withPackages (ps: [ps.websocket-client]))];
+              } ''
+                export PYTHONDONTWRITEBYTECODE=1
+                ${pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isLinux ''
+                  # State-machine fixtures fsync frequently; keep their deadlines
+                  # independent of contention on the builder's persistent disk.
+                  export TMPDIR="$(mktemp -d /dev/shm/michi-codex.XXXXXX)"
+                  trap 'rm -rf "$TMPDIR"' EXIT
+                ''}
+                cd ${self}
+                python3 -m unittest discover -s tests -p 'test_michi_codex*.py'
+                touch "$out"
+              '';
+          }
+        ]
+        ++ map (host: host.checks.${system} or {}) hosts);
 
       packages.${armVmPackageName "hyprland-greetd-vm-test"} = hyprlandGreetdVmTest;
       packages.${armVmPackageName "hyprland-greetd-vm-driver"} = hyprlandGreetdVmTest.driver;

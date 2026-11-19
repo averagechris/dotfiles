@@ -16,6 +16,10 @@ host = {
 };
 ```
 
+After adding the input, register its name in the root `nixosHosts` or
+`darwinHosts` set. Those sets drive the system exports, deploy nodes, and host
+check aggregation.
+
 Darwin hosts should follow `darwin-modules` instead of `nixos-modules` when they
 import it. If a host pins a package flake that is already exposed by `hm-modules`
 (for example `starship-jj`, `linear-cli`, or `gander`), make the host input
