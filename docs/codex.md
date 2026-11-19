@@ -159,6 +159,13 @@ Sentry's OAuth flow once with `codex mcp login sentry`. OAuth credentials remain
 in Codex's runtime-owned credential store. This does not change GUI plugin
 installation or management.
 
+The [Whimsical remote MCP](https://whimsical.com/learn/integrations/mcp) is also
+enabled on `suremac` at `https://mcp.whimsical.com/mcp`. After host activation,
+run `codex mcp login whimsical` and select the intended Whimsical workspace.
+The remote server needs no local Whimsical app; each connection is bound to one
+workspace. OAuth credentials stay in Codex's runtime-owned credential store,
+not in these dotfiles. Start a new Codex chat after connecting.
+
 ## Environment and activation
 
 The Codex guidance uses `direnv exec <workdir> <command>` to load project
