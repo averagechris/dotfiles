@@ -43,10 +43,11 @@ update-flakes --skip-manual-package pi-coding-agent
 
 The flake updater, shared-pin CI, and scheduled maintenance share the
 `canonical_locks` list in `maintenance/policy.json`. List dependency locks
-before their consumers and put the root lock last. The updater works on a
-temporary copy of Git-tracked working files, including local edits to tracked
-flake declarations. Each parent sees the candidate locks produced for its
-children. `--check` reports the result without changing the checkout. Apply
+before their consumers and put the root lock last. The updater uses `git` or
+`jj` on PATH to copy tracked working files into a temporary directory,
+including local edits to tracked flake declarations. Each parent sees the
+candidate locks produced for its children. `--check` reports the result without
+changing the checkout. Apply
 mode publishes the resulting locks after all flake updates succeed.
 
 The updater prefetches the manifest's release asset URLs with

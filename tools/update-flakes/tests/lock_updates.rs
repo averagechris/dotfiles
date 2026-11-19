@@ -152,4 +152,14 @@ fn check_predicts_apply_in_a_relative_worktree() {
     let check = assert_success(update(&worktree, true));
     assert!(check.contains("child is up to date"), "{check}");
     assert!(check.contains("top-level is up to date"), "{check}");
+
+    fs::remove_file(&child).unwrap();
+    let check = assert_success(update(&worktree, true));
+    assert!(
+        check.contains("Updates available for child: <new lock file>"),
+        "{check}"
+    );
+    assert!(!child.exists());
+    assert_success(update(&worktree, false));
+    assert!(child.is_file());
 }

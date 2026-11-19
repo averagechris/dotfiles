@@ -311,7 +311,7 @@ fn update_all_flakes(repo_root: &Path, config: &Config) -> Result<(), Box<dyn st
         .iter()
         .map(|lock| {
             let path = snapshot.path().join(lock);
-            fs::read(&path).map_err(|err| format!("Cannot read {}: {err}", lock.display()))
+            read_lock(&path).map_err(|err| format!("Cannot read {}: {err}", lock.display()))
         })
         .collect::<Result<Vec<_>, _>>()?;
 
@@ -325,15 +325,21 @@ fn update_all_flakes(repo_root: &Path, config: &Config) -> Result<(), Box<dyn st
         let mut pending = Vec::new();
         for (lock, original) in locks.iter().zip(original) {
             let target = repo_root.join(lock);
-            if fs::read(&target)? != original {
+            if read_lock(&target)? != original {
                 return Err(format!("Lock changed during update: {}", lock.display()).into());
             }
-            let updated = fs::read(snapshot.path().join(lock))?;
-            if updated != original {
+            let updated_path = snapshot.path().join(lock);
+            let updated = fs::read(&updated_path)?;
+            if original.as_ref() != Some(&updated) {
                 let mut staged = tempfile::NamedTempFile::new_in(target.parent().unwrap())?;
+                let mode_source = if original.is_some() {
+                    &target
+                } else {
+                    &updated_path
+                };
                 staged
                     .as_file()
-                    .set_permissions(fs::metadata(&target)?.permissions())?;
+                    .set_permissions(fs::metadata(mode_source)?.permissions())?;
                 staged.write_all(&updated)?;
                 pending.push((staged, target));
             }
@@ -345,17 +351,39 @@ fn update_all_flakes(repo_root: &Path, config: &Config) -> Result<(), Box<dyn st
     Ok(())
 }
 
+fn read_lock(path: &Path) -> std::io::Result<Option<Vec<u8>>> {
+    match fs::read(path) {
+        Ok(bytes) => Ok(Some(bytes)),
+        Err(err) if err.kind() == ErrorKind::NotFound => Ok(None),
+        Err(err) => Err(err),
+    }
+}
+
 fn snapshot_tracked_files(
     repo_root: &Path,
     snapshot: &Path,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let tracked = Command::new("git")
-        .args(["ls-files", "--deduplicate", "-z"])
-        .current_dir(repo_root)
-        .output()?;
+    let mut command = if repo_root.join(".jj").exists() && !repo_root.join(".git").exists() {
+        let mut jj = Command::new("jj");
+        jj.args([
+            "--no-pager",
+            "--ignore-working-copy",
+            "file",
+            "list",
+            "--template",
+            r#"path ++ "\0""#,
+        ]);
+        jj
+    } else {
+        let mut git = Command::new("git");
+        git.args(["ls-files", "--deduplicate", "-z"]);
+        git
+    };
+    let tracked = command.current_dir(repo_root).output()?;
     if !tracked.status.success() {
         return Err(format!(
-            "git ls-files failed: {}",
+            "Could not list tracked files with {}: {}",
+            command.get_program().to_string_lossy(),
             String::from_utf8_lossy(&tracked.stderr)
         )
         .into());
@@ -409,7 +437,7 @@ fn update_flake(
     let mut update_inputs = Vec::new();
     let lock_path = flake_path.join("flake.lock");
 
-    if !config.ignore_cooldown {
+    if !config.ignore_cooldown && lock_path.exists() {
         for input in list_updateable_inputs(&lock_path)? {
             if config.cooldown_inputs.contains(&input) {
                 has_cooldown_input = true;
@@ -437,7 +465,7 @@ fn update_flake(
         update_inputs
     };
 
-    let before = fs::read(&lock_path)?;
+    let before = read_lock(&lock_path)?;
     let dir = if directory.as_os_str().is_empty() {
         Path::new(".")
     } else {
@@ -463,7 +491,11 @@ fn update_flake(
     }
 
     if config.check_only {
-        let changed = changed_lock_nodes(&before, &fs::read(&lock_path)?)?;
+        let after = fs::read(&lock_path)?;
+        let changed = match before {
+            Some(before) => changed_lock_nodes(&before, &after)?,
+            None => vec!["<new lock file>".to_string()],
+        };
         if changed.is_empty() {
             log_info(&format!("  {flake_name} is up to date"));
         } else {
