@@ -234,6 +234,10 @@ the server to finish loading and check `opencode models` before retrying.
 
 ### Verifying the V2 integration without activation
 
+The `opencode-deployed-skills` flake check reads the configured skill sources
+from the Nix store. Its manifest keeps each source as a derivation dependency
+so the check can read it in a sandbox.
+
 Run the opt-in runtime check with the built binary and the emitted Home Manager
 `opencode` directory, containing `opencode.json`, agents, skills, commands, and
 both local plugins:

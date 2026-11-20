@@ -113,7 +113,7 @@
         skillFiles = pkgs.lib.filterAttrs (name: _: pkgs.lib.hasPrefix "opencode/skills/" name) files;
         manifest = pkgs.writeText "opencode-deployed-skills.json" (builtins.toJSON (map (destination: {
           inherit destination;
-          source = toString skillFiles.${destination}.source;
+          source = "${skillFiles.${destination}.source}";
         }) (builtins.attrNames skillFiles)));
       in
         pkgs.runCommand "opencode-deployed-skills" {

@@ -48,6 +48,11 @@ setting. After activating the updated system and fixing the daemon export,
 verify both underlying bundles explicitly, then remove the two overrides and
 their copied bundle. The copy is a snapshot and does not receive later CA updates.
 
+On 2026-11-20, the nix-darwin system bundle rejected both test chains while
+Determinate's Keychain export accepted both. Keep the client override until
+the exported bundle passes the same checks. Track the daemon fix in
+[dotfiles #60](https://github.com/averagechris/dotfiles/issues/60).
+
 ### `fsync-metadata = false` and parallel agents
 
 Nix's store database (`/nix/var/nix/db/db.sqlite`) allows one writer at a
