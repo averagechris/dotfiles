@@ -855,6 +855,7 @@ in {
     dotfiles.shell.yazi.enable = true;
     programs.opencode.enable = true;
     dotfiles.opencode.openrouterApiKeyFile = "/run/agenix/openrouter-api-key";
+    dotfiles.t3code.openrouterApiKeyFile = "/run/agenix/openrouter-api-key";
     dotfiles.sideshow.enable = true;
     dotfiles.rdny = {
       enable = true;
