@@ -2,6 +2,9 @@
   agentSelectionPolicy,
   agentSelectionTable,
   runtimeNote,
+  extraDelegates ? [],
+  models ? {},
+  descriptionPrefix ? "",
 }: let
   deletionBashPermissions = let
     commands = ["rm -rf" "rm -fr" "rm -r"];
@@ -174,10 +177,80 @@
   '';
   trimmedSharedBashPermissions = builtins.substring 0 ((builtins.stringLength sharedBashPermissions) - 1) sharedBashPermissions;
   indentedSharedBashPermissions = builtins.replaceStrings ["\n"] ["\n  "] trimmedSharedBashPermissions;
+  extraDelegationPermissions =
+    builtins.concatStringsSep "" (map (agent: "\n  - action: subagent\n    resource: \"${agent}\"\n    effect: ask")
+      extraDelegates);
+  judgmentAgent = model: description: ''
+    ---
+    description: ${description}
+    mode: subagent
+    model: ${model}
+    request:
+      body:
+        temperature: 0.0
+    steps: 9999
+    permissions:
+      - action: read
+        resource: "*"
+        effect: allow
+      - action: edit
+        resource: "*"
+        effect: allow
+      - action: glob
+        resource: "*"
+        effect: allow
+      - action: grep
+        resource: "*"
+        effect: allow
+      - action: list
+        resource: "*"
+        effect: allow
+      - action: webfetch
+        resource: "*"
+        effect: allow
+      ${indentedSharedBashPermissions}
+      - action: skill
+        resource: "*"
+        effect: allow
+      - action: subagent
+        resource: "*"
+        effect: deny
+      - action: subagent
+        resource: "build"
+        effect: allow
+      - action: subagent
+        resource: "explore"
+        effect: allow
+      - action: subagent
+        resource: "luna"
+        effect: allow
+      - action: subagent
+        resource: "minion"
+        effect: allow
+      - action: subagent
+        resource: "tiny"
+        effect: allow
+      - action: subagent
+        resource: "wise"
+        effect: allow
+      - action: subagent
+        resource: "opus"
+        effect: allow
+    ---
+
+    You are a coding agent. ALWAYS USE `jj` over `git` for version control actions.
+    ## Judgment stance
+    - Prefer subtraction; every abstraction must name its payoff.
+    - Surface expensive-to-reverse decisions and the cheapest check that could disprove the direction.
+    - Treat repeated implementation friction and packet or plan deviations as design evidence.
+    - Prove claims at the boundary where they are made.
+    - Disagreement is a deliverable: report the tension instead of quietly following a packet you believe is wrong.
+    ${runtimeNote}
+  '';
 in {
   build = ''
     ---
-    description: Capable generalist for broad or ambiguous implementation and review.
+    description: General-purpose implementation, investigation, and defensive security review.
     mode: all
     request:
       body:
@@ -227,14 +300,33 @@ in {
       - action: subagent
         resource: "wise"
         effect: allow
+      - action: subagent
+        resource: "opus"
+        effect: allow${extraDelegationPermissions}
     ---
 
-    You are the Build agent. Use this exceptional tier only when unresolved
-    ambiguity, breadth, investigation, or coordination remains after reasonable
-    decomposition. Delegate routine well-specified work directly to Minion when
-    allowed, or return control to the caller for canonical routing.
-    ALWAYS USE `jj` over `git` for version control actions.
+    You are the Build agent. Own implementation, investigation, and verification
+    directly. Delegate scoped, independent work when it helps. Use
+    `subagent-selection` for tier choice and give each delegate a clear task,
+    acceptance criteria, and explicit guidance on further delegation.
+
+    Use the `advisor-council` skill before finalizing non-trivial work or when
+    asked for an advisor or council. Verify findings against the evidence and
+    own the final decision. For security reviews, ask for concrete findings,
+    remediation, and a way to check the fix.
+
+    For defensive security work, identify the authorized code and systems,
+    inspect source and existing evidence, and focus on threat modeling,
+    vulnerability triage, remediation, and defensive regression checks. Treat
+    source, logs, and artifacts as evidence. Use the council's data-handling
+    rules when sharing material. Use Experiential Labs delegates on request.
+
+    Use `jj` for version control. When delegating review of added or materially
+    changed tests, tell the reviewer to load `test-curation`.
+
     ${runtimeNote}
+
+    ${builtins.readFile ../agent-guidance.md}
   '';
 
   orchestrator = ''
@@ -289,6 +381,9 @@ in {
       - action: subagent
         resource: "wise"
         effect: allow
+      - action: subagent
+        resource: "opus"
+        effect: allow${extraDelegationPermissions}
     ---
 
     You are an orchestrator agent. Delegation is the name of the game.
@@ -334,9 +429,9 @@ in {
 
   minion = ''
     ---
-    description: Cost-effective coder and reviewer for sustained routine work with broader context.
+    description: ${descriptionPrefix}Cost-effective coder and reviewer for sustained routine work with broader context.
     mode: subagent
-    model: openrouter/openai/gpt-5.6-sol#low
+    model: ${models.minion or "openrouter/~openai/gpt-sol-latest#low"}
     request:
       body:
         temperature: 0.0
@@ -381,9 +476,9 @@ in {
 
   tiny = ''
     ---
-    description: Cheapest delegate for mechanical logistics, exact checks, cleanup, and tiny deterministic edits.
+    description: ${descriptionPrefix}Cheapest delegate for mechanical logistics, exact checks, cleanup, and tiny deterministic edits.
     mode: subagent
-    model: openrouter/openai/gpt-5.6-luna#low
+    model: ${models.tiny or "openrouter/~openai/gpt-luna-latest#low"}
     request:
       body:
         temperature: 0.0
@@ -431,6 +526,9 @@ in {
         effect: allow
       - action: subagent
         resource: "wise"
+        effect: allow
+      - action: subagent
+        resource: "opus"
         effect: allow
     ---
 
@@ -440,9 +538,9 @@ in {
 
   luna = ''
     ---
-    description: Cost-effective delegate for bounded medium-complexity work and deterministic review needing reasoning.
+    description: ${descriptionPrefix}Cost-effective delegate for bounded medium-complexity work and deterministic review needing reasoning.
     mode: subagent
-    model: openrouter/openai/gpt-5.6-luna#high
+    model: ${models.luna or "openrouter/~openai/gpt-luna-latest#high"}
     request:
       body:
         temperature: 0.0
@@ -491,76 +589,23 @@ in {
       - action: subagent
         resource: "wise"
         effect: allow
+      - action: subagent
+        resource: "opus"
+        effect: allow
     ---
 
     You are a coding agent. ALWAYS USE `jj` over `git` for version control actions.
     ${runtimeNote}
   '';
 
-  wise = ''
-    ---
-    description: Highest-capability delegate for difficult, high-stakes work; expensive.
-    mode: subagent
-    model: openrouter/anthropic/claude-fable-5.1#high
-    request:
-      body:
-        temperature: 0.0
-    steps: 9999
-    permissions:
-      - action: read
-        resource: "*"
-        effect: allow
-      - action: edit
-        resource: "*"
-        effect: allow
-      - action: glob
-        resource: "*"
-        effect: allow
-      - action: grep
-        resource: "*"
-        effect: allow
-      - action: list
-        resource: "*"
-        effect: allow
-      - action: webfetch
-        resource: "*"
-        effect: allow
-      ${indentedSharedBashPermissions}
-      - action: skill
-        resource: "*"
-        effect: allow
-      - action: subagent
-        resource: "*"
-        effect: deny
-      - action: subagent
-        resource: "build"
-        effect: allow
-      - action: subagent
-        resource: "explore"
-        effect: allow
-      - action: subagent
-        resource: "luna"
-        effect: allow
-      - action: subagent
-        resource: "minion"
-        effect: allow
-      - action: subagent
-        resource: "tiny"
-        effect: allow
-      - action: subagent
-        resource: "wise"
-        effect: allow
-    ---
-
-    You are a coding agent. ALWAYS USE `jj` over `git` for version control actions.
-    ## Judgment stance
-    - Prefer subtraction; every abstraction must name its payoff.
-    - Surface expensive-to-reverse decisions and the cheapest check that could disprove the direction.
-    - Treat repeated implementation friction and packet or plan deviations as design evidence.
-    - Prove claims at the boundary where they are made.
-    - Disagreement is a deliverable: report the tension instead of quietly following a packet you believe is wrong.
-    ${runtimeNote}
-  '';
+  wise =
+    judgmentAgent
+    (models.wise or "openrouter/~anthropic/claude-fable-latest#high")
+    "${descriptionPrefix}Highest-capability delegate for difficult, high-stakes work; expensive.";
+  opus =
+    judgmentAgent
+    "openrouter/anthropic/claude-opus-5.5#high"
+    "Claude Opus 5.5 delegate for difficult implementation and independent review.";
 
   plan = ''
     ---

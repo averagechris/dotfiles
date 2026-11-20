@@ -1,5 +1,5 @@
-Route by residual uncertainty and consequence, using the cheapest agent likely
-to succeed:
+Use this policy after deciding to delegate. Route by residual uncertainty and
+consequence, using the cheapest agent likely to succeed:
 
 The scorecard is descriptive, not a weighted utility score or an instruction to
 maximize intelligence. For routine, reversible, verifiable work, cost and speed
@@ -12,8 +12,8 @@ by default. Select for cost-effective success with verification.
 - `luna`: bounded medium-complexity work or deterministic review that needs some
   reasoning. Escalate with evidence rather than looping when the task outgrows
   its clear boundary.
-- `minion`: the default and bulk implementation tier, and the default ordinary
-  behavioral reviewer. The orchestrator removes uncertainty with clear
+- `minion`: the default implementation delegate and ordinary behavioral
+  reviewer. The caller removes uncertainty with clear
   acceptance criteria, and Minion then reliably clears the required capability
   threshold; its routine coding value is independent of intrinsic model cost or
   raw score. It handles sustained coding, broader context, tool sequencing, and
@@ -26,11 +26,13 @@ by default. Select for cost-effective success with verification.
   cross-system contracts, competing architectures, failed or conflicting
   lower-tier attempts, or taste-heavy simplification where the wrong direction
   is costly.
+- `opus`: the same high-consequence role as Wise, using Claude Opus 5.5 for
+  difficult implementation or an independent review.
 - `explore`: focused codebase research rather than implementation.
 
 Invest upfront in decomposition and hand Minion an implementation packet with
 scope, relevant context, constraints, acceptance criteria, and checks. The
-orchestrator defines normal tasks; Wise may define architecture or high-risk
+caller defines the task. Wise may define architecture or high-risk
 constraints when warranted. Once uncertainty becomes a checklist, hand routine
 implementation to Minion, bounded work to Luna, and mechanics to Tiny. A lower
 tier may retry or verify once after a miss, then escalate with the failed check
@@ -65,8 +67,8 @@ bypasses the intended routing context. This is guidance, not a permission ban.
 - Use Luna for bounded deterministic review needing some reasoning.
 - Use Minion by default for ordinary behavioral review.
 - Use Build for broad or ambiguous review.
-- Use Wise only for high-consequence, adversarial, or cross-system review. Allow
-  one initial Wise review and at most one follow-up to validate blocker or
+- Use Wise or Opus only for high-consequence, adversarial, or cross-system
+  review. Allow one initial review and at most one follow-up to validate blocker or
   high-severity remediation or a material high-risk design change, even when
   localized. Do not repeat Wise review merely because a blocker remains: a
   further pass requires materially different remediation or design, or a new

@@ -24,7 +24,8 @@ dotfiles.codex = {
 ## Shared guidance and skills
 
 `modules/agent-guidance.md` supplies concise explanations, smaller changes,
-behavioral checks, and design judgment to Codex and the OpenCode orchestrator.
+behavioral checks, and design judgment to Codex and OpenCode's Build and
+Orchestrator agents.
 Codex adds model-selection guidance and a command for loading direnv project
 environments in desktop sessions.
 The global guidance prefers installed CLIs for tasks they support, uses command
@@ -103,7 +104,9 @@ when asked for an advisor or council. Reviewers can work from a stable working
 copy, a commit, or a diff. External reviewers receive only approved excerpts,
 inline or as an attachment. Opus 5.5 is the required council seat. The roster
 also includes Sol 6.2 high, Astra 6.2 high, Fable 5.2, Gemini Carbon, and a trial
-seat for Gemini Neon. The skill checks availability and records any missing seat.
+seat for Gemini Neon. OpenCode can also call the optional Daybreak Blue seat
+through Codex CLI for defensive reviews. See [OpenCode security reviews](opencode.md#defensive-security-reviews).
+The skill checks availability and records any missing seat.
 Its bundled OpenRouter runner uses the executor's exported key or the local
 agenix key, with an isolated OpenCode session and tools denied. Routing follows
 OpenRouter's account and key policies. Pass `--zdr` before the model when the

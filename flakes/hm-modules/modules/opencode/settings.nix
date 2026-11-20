@@ -16,6 +16,10 @@
   locallyCompactedModels = [
     "~openai/gpt-sol-latest"
     "~openai/gpt-astra-latest"
+    "~openai/gpt-luna-latest"
+    "~anthropic/claude-fable-latest"
+    "anthropic/claude-opus-5.5"
+    # Resumed subagent sessions retain their original model IDs.
     "openai/gpt-5.6-sol"
     "openai/gpt-5.6-luna"
     "anthropic/claude-fable-5.1"
@@ -30,9 +34,7 @@
 in
   assert lib.assertMsg (compactionThreshold == 350000) "OpenCode compaction threshold must remain 350k tokens";
   assert lib.assertMsg (230000 < compactionThreshold) "230k-token OpenCode sessions must remain below automatic compaction"; {
-    # Make cost-aware decomposition and Minion-first routing the normal entry
-    # point instead of falling back to OpenCode's built-in Build agent.
-    default_agent = "orchestrator";
+    default_agent = "build";
 
     # Upstream defaults to 1, which lets only primary sessions delegate. Permit
     # one deliberate nested handoff while keeping deeper delegation bounded.
@@ -55,7 +57,7 @@ in
     # Keep the built-in exploration prompt and tools, but use a fast model with
     # enough reasoning for cross-file codebase research.
     agents.explore = {
-      model = "openrouter/openai/gpt-5.6-luna#medium";
+      model = "openrouter/~openai/gpt-luna-latest#medium";
     };
 
     # Managed jj workspaces and temporary files live outside the OpenCode

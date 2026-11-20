@@ -39,6 +39,30 @@
     }
   ];
   cfg = config.dotfiles.opencode;
+  explabsRoleEfforts = {
+    tiny = "low";
+    luna = "high";
+    minion = "low";
+    wise = "high";
+  };
+  agentArgs = {
+    inherit runtimeNote;
+    extraDelegates = lib.concatMap (suffix:
+      map (role: "${role}-${suffix}") (builtins.attrNames explabsRoleEfforts ++ ["explore"]))
+    (builtins.attrNames cfg.explabsSubagentModels);
+    agentSelectionPolicy = builtins.readFile ./agent-selection-policy.md;
+    agentSelectionTable = builtins.readFile ./agent-selection-table.md;
+  };
+  agents = import ./primary-agents.nix agentArgs;
+  explabsAgents = lib.mergeAttrsList (lib.mapAttrsToList (suffix: model: let
+    variants = import ./primary-agents.nix (agentArgs
+      // {
+        models = lib.mapAttrs (_: effort: "explabs/${model}#${effort}") explabsRoleEfforts;
+        descriptionPrefix = "Use only when requested. Experiential Labs ${model}. ";
+      });
+  in
+    lib.mapAttrs' (role: _: lib.nameValuePair "${role}-${suffix}" variants.${role}) explabsRoleEfforts)
+  cfg.explabsSubagentModels);
   # V2's fixed-output derivation still copies every node_modules tree after the
   # build. Remove this override when upstream installs directly into $out or an
   # output-equivalence check proves its replacement preserves the same tree.
@@ -143,6 +167,12 @@ in {
   imports = [../agent-workflows.nix];
 
   options.dotfiles.opencode = {
+    explabsSubagentModels = lib.mkOption {
+      type = lib.types.attrsOf lib.types.str;
+      default = {};
+      description = "Agent name suffixes and their Experiential Labs model IDs.";
+    };
+
     openrouterApiKeyFile = lib.mkOption {
       type = lib.types.nullOr lib.types.path;
       default = null;
@@ -250,11 +280,7 @@ in {
         # flakes/hm-modules/modules/opencode/commands/.
         commands.what = ./commands/what.md;
 
-        agents = import ./primary-agents.nix {
-          inherit runtimeNote;
-          agentSelectionPolicy = builtins.readFile ./agent-selection-policy.md;
-          agentSelectionTable = builtins.readFile ./agent-selection-table.md;
-        };
+        agents = agents // explabsAgents;
 
         # ============================================================================
         # SKILLS - Reusable knowledge for agents
@@ -279,6 +305,32 @@ in {
         # option machinery or point V2 at writable config in the Nix store.
 
         settings = import ./settings.nix {inherit lib pkgs managedJjWorkspaceExternalDirectories;};
+      };
+
+      # OpenCode registers built-in Explore before local plugins. Clone it here
+      # so the variants follow its upstream prompt and tool permissions.
+      xdg.configFile."opencode/plugins/explabs-explore.js" = lib.mkIf (cfg.explabsSubagentModels != {}) {
+        text = ''
+          export default {
+            id: "explabs-explore",
+            async setup(ctx) {
+              await ctx.agent.transform((editor) => {
+                const explore = editor.get("explore")
+                if (!explore) return
+                for (const [suffix, model] of Object.entries(${builtins.toJSON cfg.explabsSubagentModels})) {
+                  const id = "explore-" + suffix
+                  editor.update(id, (agent) => {
+                    Object.assign(agent, structuredClone(explore), {
+                      name: id,
+                      description: "Use only when requested. Explore with Experiential Labs " + model + ".",
+                      model: { providerID: "explabs", id: model, variant: "high" },
+                    })
+                  })
+                }
+              })
+            }
+          }
+        '';
       };
 
       # OpenCode-specific CLI knowledge uses the shared registry.

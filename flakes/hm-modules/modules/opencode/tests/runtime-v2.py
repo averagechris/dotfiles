@@ -50,8 +50,10 @@ assert all(m.get("disabled") is True for m in config.get("mcp", {}).get("servers
 assert config["compaction"] == {"auto": True, "keep": {"tokens": 15000}, "buffer": 20000}
 assert config["warming"] is False
 compacted_models = config["providers"]["openrouter"]["models"]
-for model_id in ["~openai/gpt-sol-latest", "~openai/gpt-astra-latest", "openai/gpt-5.6-sol",
-                 "openai/gpt-5.6-luna", "anthropic/claude-fable-5.1"]:
+for model_id in ["~openai/gpt-sol-latest", "~openai/gpt-astra-latest",
+                 "~openai/gpt-luna-latest", "~anthropic/claude-fable-latest",
+                 "anthropic/claude-opus-5.5",
+                 "openai/gpt-5.6-sol", "openai/gpt-5.6-luna", "anthropic/claude-fable-5.1"]:
     policy = compacted_models[model_id]
     assert policy == {"limit": {"input": 370000}, "compaction": {"mode": "local"}}
     threshold = min(policy["limit"]["input"] - config["compaction"]["buffer"],
@@ -159,7 +161,8 @@ with server():
     override = shlex.split(exports)[1].split("=", 1)[1]
     agents = ready()
     save("agents", agents)
-    assert agents[0]["id"] == "orchestrator"
+    assert agents[0]["id"] == "build"
+    assert "advisor-council" in agents[0]["system"]
     assert {p.stem for p in (emitted / "agents").glob("*.md")} | {"explore"} <= {a["id"] for a in agents}
     for kind in ["skill", "command"]:
         actual = api("GET", f"/api/{kind}")["data"]
