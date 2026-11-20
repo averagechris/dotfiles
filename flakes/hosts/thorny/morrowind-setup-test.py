@@ -58,10 +58,11 @@ class SetupTests(unittest.TestCase):
         self.write_files(self.game, "Morrowind.ini")
         self.write_files(self.game_data, "Morrowind.esm", "Tribunal.esm", "Bloodmoon.esm")
 
-    def archive(self, filename, entry):
+    def archive(self, filename, *entries):
         archive = self.downloads / filename
         with zipfile.ZipFile(archive, "w") as zipped:
-            zipped.writestr(entry, "asset")
+            for entry in entries:
+                zipped.writestr(entry, "asset")
         return archive
 
     @staticmethod
@@ -147,6 +148,35 @@ class SetupTests(unittest.TestCase):
         self.assertEqual((self.save_dir / "existing.omwsave").read_text(), "fixture")
         self.assertEqual(setup.setup_tr(), 0)
         self.assertEqual(self.cfg.read_text(), updated)
+
+    def test_repair_leaves_configured_custom_assets_in_place(self):
+        self.stage_tr()
+        self.assertEqual(setup.setup_tr(), 0)
+        destination = self.mods / "Tamriel Rebuilt"
+        custom_assets = destination / "custom-textures"
+        self.write_files(custom_assets, "texture.dds")
+        original = self.cfg.read_text() + f'data="{custom_assets}"\n'
+        self.cfg.write_text(original)
+        (destination / "TR_Mainland.esm").unlink()
+        archive = self.archive("Tamriel_Rebuilt_26.08a.7z", "TR_Mainland.esm", "tamrielrebuilt.omwscripts")
+        stage = setup.stage
+
+        def stage_fixture(pattern, target, checksum, **kwargs):
+            if target == destination:
+                checksum = hashlib.sha256(archive.read_bytes()).hexdigest()
+            return stage(pattern, target, checksum, **kwargs)
+
+        with (
+            patch.object(setup, "stage", side_effect=stage_fixture),
+            patch.object(setup.subprocess, "run", side_effect=self.extract_stub),
+        ):
+            for stage_only in (False, True):
+                with self.subTest(stage_only=stage_only):
+                    with self.assertRaisesRegex(setup.SetupError, "would remove configured data directory"):
+                        setup.setup_tr(stage_only=stage_only)
+                    self.assertEqual((custom_assets / "texture.dds").read_text(), "fixture")
+                    self.assertEqual(self.cfg.read_text(), original)
+                    self.assertFalse(any(self.mods.glob("Tamriel Rebuilt.previous-*")))
 
     def test_unknown_plugin_leaves_existing_config_in_place(self):
         self.stage_tr()

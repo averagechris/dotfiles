@@ -78,6 +78,7 @@ def extract_archive(archive, destination, valid):
         (temp / ".morrowind-setup-ready").touch()
         backup = None
         if destination.exists():
+            protect_configured_data_dirs(destination, temp)
             stamp = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
             backup = destination.with_name(f"{destination.name}.previous-{stamp}")
             os.replace(destination, backup)
@@ -226,6 +227,34 @@ def config_entry(line):
     if not separator or key.lstrip().startswith("#"):
         return "", ""
     return key.strip().casefold(), value.strip().strip('"')
+
+
+def protect_configured_data_dirs(destination, replacement):
+    destination = Path(os.path.abspath(destination))
+    resolved_destination = destination.resolve()
+    for config_root, _ in PROFILE_ROOTS.values():
+        config = config_root / "openmw/openmw.cfg"
+        if not config.is_file():
+            continue
+        for line in config.read_text(errors="replace").splitlines():
+            key, value = config_entry(line)
+            if key != "data":
+                continue
+            path = Path(os.path.abspath(config.parent / value))
+            if not path.is_dir():
+                continue
+            if path.is_relative_to(destination):
+                subdir = path.relative_to(destination)
+            else:
+                resolved_path = path.resolve()
+                if not resolved_path.is_relative_to(resolved_destination):
+                    continue
+                subdir = resolved_path.relative_to(resolved_destination)
+            if not (replacement / subdir).is_dir():
+                raise SetupError(
+                    f"Replacing {destination} would remove configured data directory {path} in {config}. "
+                    "Move the data outside the staged mod and update the profile before rerunning setup."
+                )
 
 
 def managed_data_path(value, data_dirs, mod_roots):

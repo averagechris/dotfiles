@@ -147,7 +147,10 @@ Setup checks newly extracted archives against the SHA-256 hashes above and
 validates their layout before moving them into place. It reuses an existing
 staged mod when the layout still validates. If an extraction is incomplete,
 provide the matching archive and rerun setup. The helper keeps the previous
-directory beside the replacement.
+directory beside the replacement. If the replacement would remove a data
+directory still in use by either profile, setup leaves the extraction in
+place. Move the custom data outside the staged mod and update the profile's
+data path before rerunning setup.
 
 After importing the game, setup initializes a missing `launcher.cfg` with
 `firstrun=false` so the launcher opens the prepared profile without offering
