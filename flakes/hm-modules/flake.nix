@@ -76,6 +76,7 @@
         granola = ./modules/granola.nix;
         rdny = ./modules/rdny.nix;
         sideshow = ./modules/sideshow.nix;
+        t3code = ./modules/t3code.nix;
         linearCli = ./modules/linear-cli;
         nitterLink = ./modules/nitter-link.nix;
         ghostty-fix = ./modules/ghostty-fix.nix;

@@ -63,6 +63,8 @@ in {
     port = 2222;
   };
 
+  launchd.user.envVariables.T3CODE_DISABLE_AUTO_UPDATE = "1";
+
   environment.systemPackages = with pkgs; [
     gitMinimal
     nh
@@ -240,7 +242,10 @@ in {
 
   home-manager.users.chris = {pkgs, ...}: {
     home.stateVersion = "26.05";
-    imports = [inputs.hm-modules.homeManagerModules.default];
+    imports = [
+      inputs.hm-modules.homeManagerModules.default
+      inputs.hm-modules.homeManagerModules.t3code
+    ];
 
     dotfiles.shell = {
       enable = true;

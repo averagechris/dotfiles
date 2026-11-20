@@ -65,6 +65,11 @@
       url = "github:averagechris/hister";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    t3-code-nix = {
+      url = "github:LisaScheers/t3-code-nix";
+      inputs.home-manager.follows = "home-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     memo = {
       url = "github:averagechris/memo/c7261dbd1db31f9947e2efc16e65cb43ed05389a";
       inputs.nixpkgs.follows = "nixpkgs";
