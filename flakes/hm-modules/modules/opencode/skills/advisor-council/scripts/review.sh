@@ -84,6 +84,8 @@ run_opencode='
   done
   exit 1
 '
+started=$SECONDS
+printf 'Council review: starting %s\n' "$model" >&2
 {
   printf '%s\0' "OPENROUTER_API_KEY=$key"
   for name in HTTP_PROXY HTTPS_PROXY ALL_PROXY NO_PROXY http_proxy https_proxy all_proxy no_proxy \
@@ -96,7 +98,16 @@ run_opencode='
 } |
   env -i PATH="$PATH" HOME="$work/home" OPENCODE_CONFIG_CONTENT="$config" \
     OPENCODE_DISABLE_PROJECT_CONFIG=1 bash -c "$run_opencode" \
-    bash "${args[@]}" > "$work/events.jsonl" || status=$?
+    bash "${args[@]}" |
+  tee "$work/events.jsonl" |
+  jq --unbuffered -Rr '
+    fromjson?
+    | if .type == "step_start" then "OpenCode started a response step"
+      elif .type == "text" then "OpenCode received a response block"
+      elif .type == "error" then "OpenCode reported an error (checking for recovery)"
+      else empty end
+    | "Council review: " + .
+  ' >&2 || status=$?
 
 # OpenCode can emit a provider error as a JSON event and still exit zero.
 # It can also recover from an error and produce a successful text response.
@@ -109,5 +120,6 @@ if ! jq -ser --argjson status "${status:-0}" '
     elif $status != 0 or (.text | length) == 0 then error("OpenCode returned no successful review")
     else .text[] end
 ' "$work/events.jsonl"; then
-  die "OpenRouter request failed for $model"
+  die "review failed for $model after $((SECONDS - started))s"
 fi
+printf 'Council review: completed %s in %ss\n' "$model" "$((SECONDS - started))" >&2

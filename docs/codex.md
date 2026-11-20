@@ -109,7 +109,10 @@ review is identified as such. The lead verifies material findings before signoff
 OpenCode can also call the optional Daybreak Blue seat through Codex CLI for
 defensive reviews. See [OpenCode security reviews](opencode.md#defensive-security-reviews).
 Its bundled OpenRouter runner uses the executor's exported key or the local
-agenix key, with an isolated OpenCode session and tools denied. Routing follows
+agenix key, with an isolated OpenCode session and tools denied. Keep the runner
+in a managed background process so slower reviews can finish while other seats
+work. It reports progress and failures on stderr and writes the completed
+review to stdout. Routing follows
 OpenRouter's account and key policies. Pass `--zdr` before the model when the
 review requires zero data retention. Carbon can be available under normal
 routing and blocked under that restriction. See [Codex Cloud tooling](codex-cloud.md)
