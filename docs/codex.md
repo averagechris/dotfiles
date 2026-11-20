@@ -99,13 +99,19 @@ Sol 6.2 high for deeper analysis, and tries Astra 6.2 high for very detailed wor
 Delegated tasks follow the same guidance. Unavailable requested models should be
 reported, with a suitable available fallback rather than a false claim of use.
 
-Use the shared `advisor-council` skill before finalizing non-trivial work or
-when asked for an advisor or council. The default panel is Opus 5.5, Astra 6.2,
-and Sol 6.2, all at high effort. A full council adds the other applicable seats.
-Code readiness requires two independent models to inspect the implementation
-unless the user explicitly requests a single reviewer. Each seat reports its
-scope. External seats receive approved diffs or excerpts, and a design-only
-review is identified as such. The lead verifies material findings before signoff.
+Use the shared `advisor-council` skill at consequential planning and
+implementation decisions and before marking substantial work ready. The default
+panel is Opus 5.5, GPT-6.2 Sol, and Gemini 4 Carbon, all at high effort. Use the
+reviewers the user requests. A full council adds every applicable seat.
+
+Two independent models must review the final implementation before code is
+ready unless the user explicitly requests one reviewer. Verify substantive
+findings before signoff. Allow three rounds by default and extend the review
+when verified fixes resolve consequential findings. Proactive escalation on
+behalf of the panel requires all active reviewers to agree that the user's
+attention would change the outcome. Ordinary task updates report any remaining
+blockers, dissent, and unavailable reviewers.
+
 OpenCode can also call the optional Daybreak Blue seat through Codex CLI for
 defensive reviews. See [OpenCode security reviews](opencode.md#defensive-security-reviews).
 Its bundled OpenRouter runner uses the executor's exported key or the local

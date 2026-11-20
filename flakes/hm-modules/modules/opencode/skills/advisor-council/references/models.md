@@ -4,13 +4,12 @@ Use native Codex delegation for the OpenAI seats when the requested selection is
 
 | Advisor | Selection | Lens |
 | --- | --- | --- |
-| **Claude Opus 5.5** | `openrouter/anthropic/claude-opus-5.5#high` | Default panel. Independent code and design judgment; sufficient alone for quick reviews or low-complexity work. |
-| **GPT-6.2 Sol** | Codex `gpt-6.2-sol`, high | Practical implementation, validation, and tradeoffs. |
+| **Claude Opus 5.5** | `openrouter/anthropic/claude-opus-5.5#high` | Default panel seat. Independent code and design review. |
+| **GPT-6.2 Sol** | Codex `gpt-6.2-sol`, high | Default panel seat. Practical implementation, validation, and tradeoffs. |
 | **GPT-6.2 Astra** | Codex `gpt-6.2-astra`, high | Deep architecture, correctness, and failure modes. |
 | **Claude Fable 5.2** | `openrouter/anthropic/claude-fable-5.2#high` | Open-ended design, simplicity and taste. Check [provider retention terms](https://openrouter.ai/anthropic/claude-fable-5.2) before including work material. |
-| **Gemini 4 Carbon** | `openrouter/google/gemini-4-carbon#high` | Default panel seat with Opus and Sol. Defensive security or difficult reasoning. Record a specialized Carbon route separately if explicitly available. |
+| **Gemini 4 Carbon** | `openrouter/google/gemini-4-carbon#high` | Default panel seat. Defensive security and complex reasoning. |
 | **Gemini 4 Neon** | `openrouter/google/gemini-4-neon`, effort from live catalog | Trial for an alternative perspective. Verify this entry and variant before using it. |
-| **GLM 5.3 Uncensored** | `explabs/glm-5.3-uncensored` | Unguarded reasoning prioritized alongside Daybreak Blue, Carbon, and Neon in cybersecurity contexts. Not an OpenRouter route: use native OpenCode delegation rather than the bundled `review.sh`. |
 | **Daybreak Blue** | Codex CLI `gpt-6-sol`, high | Optional defensive review of approved evidence. |
 
 ## Daybreak Blue from OpenCode
@@ -35,15 +34,11 @@ implementation and verification. Record the seat as unavailable if the account
 or CLI rejects it.
 [Daybreak CLI guide](https://help.openai.com/en/articles/20001607-using-daybreak-in-codex-cli)
 
-`--cyber-access-program` selects the tier: `standard`, `daybreak_blue`, or
-`daybreak_red`. As of CLI 0.171.0-alpha.13, `daybreak_blue` rides only on
-`gpt-6-sol`, `gpt-6-luna`, `gpt-reserve`, and the GPT-5.6 generation — newer
-GPT releases expose `standard` only until the program propagates, so pin
-`gpt-6-sol` when Daybreak matters more than freshness. `daybreak_red` exists on
-the same flag but requires enrollment beyond daybreak_blue. The host `codex`
-binary ships inside ChatGPT.app at
-`/Applications/ChatGPT.app/Contents/Resources/codex-cli/bin/codex`; confirm it
-resolves on PATH inside any executor running `review-daybreak.sh`.
+The runner selects `daybreak_blue` with `gpt-6-sol`. Availability varies by
+account, model, and CLI version. Run `command -v codex`, `codex --version`,
+and `codex exec --help` in the executor that will run the review. The installed
+CLI may expose additional programs. Check eligibility for the selected model
+and account using the Daybreak guide above.
 
 ## External reviews
 
