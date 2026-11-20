@@ -96,19 +96,29 @@ never place decrypted material in Nix settings, prompt strings, or sources.
 
 The global guidance uses Sol 6.2 at medium reasoning for most work, steps up to
 Sol 6.2 high for deeper analysis, and tries Astra 6.2 high for very detailed work.
-Delegated tasks follow the same guidance. Unavailable requested models should be
-reported, with a suitable available fallback rather than a false claim of use.
+Delegated tasks follow the same guidance. When a requested task model is
+unavailable, report which fallback actually ran.
 
-Use the shared `advisor-council` skill before finalizing non-trivial work or
-when asked for an advisor or council. The default panel is Opus 5.5, Astra 6.2,
-and Sol 6.2, all at high effort. A full council adds the other applicable seats.
-Code readiness requires two independent models to inspect the implementation
-unless the user explicitly requests a single reviewer. Each seat reports its
-scope. External seats receive approved diffs or excerpts, and a design-only
-review is identified as such. The lead verifies material findings before signoff.
+Use the shared `advisor-council` skill at consequential planning and
+implementation decisions and before marking substantial work ready. The default
+panel is Opus 5.5, GPT-6.2 Sol, and Gemini 4 Carbon, all at high effort. Use the
+reviewers the user requests. A full council adds every applicable seat.
+
+Two independent models must review the final implementation before code is
+ready unless the user explicitly asks for a single reviewer for signoff. Verify
+substantive findings before signoff. When more than three rounds are needed,
+continue only if the preceding round verified a consequential fix.
+
+Before the panel proactively seeks the user's attention, ask every available
+reviewer assigned to that decision whether it would change the outcome.
+Escalate only when at least one reviewer votes yes and every available
+reviewer assigned to the decision agrees. Ordinary task updates report
+blockers, dissent, and unavailable reviewers. The skill defines how to stop a
+review and report its outcome. [Advisor council skill](../flakes/hm-modules/modules/opencode/skills/advisor-council/SKILL.md)
+
 OpenCode can also call the optional Daybreak Blue seat through Codex CLI for
 defensive reviews. See [OpenCode security reviews](opencode.md#defensive-security-reviews).
-Its bundled OpenRouter runner uses the executor's exported key or the local
+The skill's bundled OpenRouter runner uses the executor's exported key or the local
 agenix key, with an isolated OpenCode session and tools denied. Keep the runner
 in a managed background process so slower reviews can finish while other seats
 work. It reports progress and failures on stderr and writes the completed

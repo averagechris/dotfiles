@@ -4,11 +4,11 @@ Use native Codex delegation for the OpenAI seats when the requested selection is
 
 | Advisor | Selection | Lens |
 | --- | --- | --- |
-| **Claude Opus 5.5** | `openrouter/anthropic/claude-opus-5.5#high` | Default panel. Independent code and design judgment. |
-| **GPT-6.2 Sol** | Codex `gpt-6.2-sol`, high | Practical implementation, validation, and tradeoffs. |
+| **Claude Opus 5.5** | `openrouter/anthropic/claude-opus-5.5#high` | Default panel seat. Independent code and design review. |
+| **GPT-6.2 Sol** | Codex `gpt-6.2-sol`, high | Default panel seat. Practical implementation, validation, and tradeoffs. |
 | **GPT-6.2 Astra** | Codex `gpt-6.2-astra`, high | Deep architecture, correctness, and failure modes. |
 | **Claude Fable 5.2** | `openrouter/anthropic/claude-fable-5.2#high` | Open-ended design, simplicity and taste. Check [provider retention terms](https://openrouter.ai/anthropic/claude-fable-5.2) before including work material. |
-| **Gemini 4 Carbon** | `openrouter/google/gemini-4-carbon#high` | Defensive security or difficult reasoning. Record a specialized Carbon route separately if explicitly available. |
+| **Gemini 4 Carbon** | `openrouter/google/gemini-4-carbon#high` | Default panel seat. Defensive security and complex reasoning. |
 | **Gemini 4 Neon** | `openrouter/google/gemini-4-neon`, effort from live catalog | Trial for an alternative perspective. Verify this entry and variant before using it. |
 | **Daybreak Blue** | Codex CLI `gpt-6-sol`, high | Optional defensive review of approved evidence. |
 
@@ -24,14 +24,17 @@ bash scripts/review-daybreak.sh --login
 bash scripts/review-daybreak.sh < approved-review.txt
 ```
 
-This seat needs Codex CLI 0.163.0 or later, `jq`, and an account with Daybreak
-access. The one-time sign-in stores the advisor's login in a dedicated Codex
-home under `${XDG_STATE_HOME:-$HOME/.local/state}/opencode/daybreak-codex`.
-Reserve that directory for the advisor. Each review requests Daybreak Blue
-in an ephemeral read-only session. Shell
-tools, web search, agents, apps, plugins, and hooks are disabled. OpenCode owns
-implementation and verification. Record the seat as unavailable if the account
-or CLI rejects it.
+This seat requires `jq`, a Daybreak-enabled account, and a Codex CLI that
+supports `--cyber-access-program`. In the executor that will run the review,
+check `command -v codex`, `codex --version`, and `codex exec --help`. Consult
+the guide for current model and account eligibility.
+
+The login command stores credentials in a dedicated Codex home under
+`${XDG_STATE_HOME:-$HOME/.local/state}/opencode/daybreak-codex`. Reserve that
+directory for the advisor. The runner requests `daybreak_blue` with `gpt-6-sol`
+in an ephemeral, read-only session. Shell tools, web search, agents, apps,
+plugins, and hooks are disabled. OpenCode owns implementation and verification.
+Record the seat as unavailable if the account or CLI rejects it.
 [Daybreak CLI guide](https://help.openai.com/en/articles/20001607-using-daybreak-in-codex-cli)
 
 ## External reviews
