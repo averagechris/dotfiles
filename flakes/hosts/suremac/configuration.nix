@@ -611,6 +611,7 @@ in {
     ];
     dotfiles.codex = {
       enable = true;
+      desktopCliBinDir = "/Applications/ChatGPT.app/Contents/Resources/codex-cli/bin";
       extraInstructions = let
         tools = builtins.sort (a: b: a.name < b.name) (
           builtins.filter (tool: !(builtins.elem tool.name ["gander" "ctx" "showboat"]))

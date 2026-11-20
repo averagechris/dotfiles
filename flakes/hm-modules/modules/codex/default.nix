@@ -29,6 +29,12 @@ in {
       default = null;
       description = "Optional Codex CLI package; null uses the separately installed desktop app.";
     };
+    desktopCliBinDir = lib.mkOption {
+      type = lib.types.nullOr lib.types.nonEmptyStr;
+      default = null;
+      example = "/Applications/ChatGPT.app/Contents/Resources/codex-cli/bin";
+      description = "Directory containing the desktop app's bundled Codex CLI to add to the session PATH.";
+    };
     settings = lib.mkOption {
       inherit (tomlFormat) type;
       default = {};
@@ -42,6 +48,8 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
+    home.sessionPath = lib.optional (cfg.desktopCliBinDir != null) cfg.desktopCliBinDir;
+
     dotfiles.agentSkills = lib.mapAttrs (_: source: {
       source = lib.mkDefault source;
       targets = lib.mkDefault ["codex"];
