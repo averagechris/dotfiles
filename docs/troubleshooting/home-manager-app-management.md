@@ -1,51 +1,46 @@
 # Home Manager App Management permission fails on macOS
 
-## Symptoms
-
-- `darwin-rebuild switch` fails during home-manager activation with:
-  `permission denied when trying to update apps`
-- System Settings > Privacy & Security > App Management does not keep your terminal emulator
-
-## Cause
-
-Home Manager's macOS app copying uses `targets.darwin.copyApps` and checks the
-App Management TCC permission. If your terminal emulator is installed from
-the Nix store (e.g., WezTerm via Nix), the app bundle path changes between
-rebuilds and macOS removes the permission.
-
-## Fix (dotfiles recommended for Nix-installed terminals)
-
-Disable the App Management check for the affected host:
-
-```nix
-home-manager.users.chris = {
-  targets.darwin.copyApps.enableChecks = false;
-};
-```
-
-This keeps app copying enabled but skips the permission check.
-
-## Alternative
-
-Run `darwin-rebuild` from a stable, system-installed terminal app (like
-`/System/Applications/Utilities/Terminal.app`) and grant App Management to that
-app. This only works reliably if the terminal app path is stable (non-Nix).
-
-## Related issue: rsync permission denied in Home Manager Apps
-
-If you see errors like:
-
-```
-rsync: [generator] failed to set permissions on "~/Applications/Home Manager Apps/.": Permission denied (13)
-rsync: [generator] delete_file: unlink(WezTerm.app) failed: Permission denied (13)
-```
-
-The `~/Applications/Home Manager Apps` directory (or app bundles inside it)
-may be owned by `root` from a previous activation run. Reset the directory
-ownership and re-run the switch:
+Home Manager copies managed apps into `~/Applications/Home Manager Apps` during
+a Darwin switch. macOS can block updates to an existing signed app even when
+your account owns it. If `copyApps` reports `Operation not permitted (1)` and
+rsync exits with code 23, check the directory and app named in the error. For
+example, on suremac:
 
 ```bash
-sudo rm -rf "/Users/chris/Applications/Home Manager Apps"
-sudo mkdir -p "/Users/chris/Applications/Home Manager Apps"
-sudo chown -R chris:staff "/Users/chris/Applications/Home Manager Apps"
+ls -ledO@ "$HOME/Applications/Home Manager Apps" \
+  "$HOME/Applications/Home Manager Apps/T3 Code (Beta).app"
+```
+
+Open Apple's Terminal, enable it under **System Settings → Privacy & Security
+→ App Management**, then quit and reopen Terminal. Retry the switch from your
+dotfiles checkout. Use your host name, such as `suremac`:
+
+```bash
+nh darwin switch . --hostname suremac
+```
+
+Terminal has a stable installation path. macOS can drop an App Management
+grant when a Nix-installed terminal moves to a new store path.
+
+If Terminal still reports code 23 for one app, quit that app and use Finder to
+move just the affected bundle out of `Home Manager Apps` to a backup location.
+Retry the switch and verify the replacement launches. For T3 Code, thread
+history and settings live under `~/.t3`.
+
+On suremac, `targets.darwin.copyApps.enableChecks = false` skips Home Manager's
+preflight probe. macOS still enforces App Management during the copy.
+
+If rsync reports `Permission denied (13)`, check the owner of `Home Manager
+Apps` and the affected bundle. If the directory is root-owned, restore its
+ownership so rsync can create and remove entries:
+
+```bash
+sudo chown "$(id -un):$(id -gn)" "$HOME/Applications/Home Manager Apps"
+```
+
+If the affected bundle is a root-owned directory, restore its ownership before
+retrying:
+
+```bash
+sudo chown -R "$(id -un):$(id -gn)" "$HOME/Applications/Home Manager Apps/<affected app>.app"
 ```
