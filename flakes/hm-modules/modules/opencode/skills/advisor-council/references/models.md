@@ -24,21 +24,18 @@ bash scripts/review-daybreak.sh --login
 bash scripts/review-daybreak.sh < approved-review.txt
 ```
 
-This seat needs Codex CLI 0.163.0 or later, `jq`, and an account with Daybreak
-access. The one-time sign-in stores the advisor's login in a dedicated Codex
-home under `${XDG_STATE_HOME:-$HOME/.local/state}/opencode/daybreak-codex`.
-Reserve that directory for the advisor. Each review requests Daybreak Blue
-in an ephemeral read-only session. Shell
-tools, web search, agents, apps, plugins, and hooks are disabled. OpenCode owns
-implementation and verification. Record the seat as unavailable if the account
-or CLI rejects it.
-[Daybreak CLI guide](https://help.openai.com/en/articles/20001607-using-daybreak-in-codex-cli)
+This seat requires `jq`, a Daybreak-enabled account, and a Codex CLI that
+supports `--cyber-access-program`. In the executor that will run the review,
+check `command -v codex`, `codex --version`, and `codex exec --help`. Consult
+the guide for current model and account eligibility.
 
-The runner selects `daybreak_blue` with `gpt-6-sol`. Availability varies by
-account, model, and CLI version. Run `command -v codex`, `codex --version`,
-and `codex exec --help` in the executor that will run the review. The installed
-CLI may expose additional programs. Check eligibility for the selected model
-and account using the Daybreak guide above.
+The login command stores credentials in a dedicated Codex home under
+`${XDG_STATE_HOME:-$HOME/.local/state}/opencode/daybreak-codex`. Reserve that
+directory for the advisor. The runner requests `daybreak_blue` with `gpt-6-sol`
+in an ephemeral, read-only session. Shell tools, web search, agents, apps,
+plugins, and hooks are disabled. OpenCode owns implementation and verification.
+Record the seat as unavailable if the account or CLI rejects it.
+[Daybreak CLI guide](https://help.openai.com/en/articles/20001607-using-daybreak-in-codex-cli)
 
 ## External reviews
 
