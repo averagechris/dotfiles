@@ -20,13 +20,25 @@
       inputs.t3-code-nix.follows = "t3-code-nix";
       inputs.memo.follows = "memo";
     };
+    taro = {
+      url = "path:./flakes/hosts/taro";
+      inputs.base-lib.follows = "base-lib";
+      inputs.hm-modules.follows = "hm-modules";
+      inputs.darwin-modules.follows = "darwin-modules";
+      inputs.starship-jj.follows = "hm-modules/starship-jj";
+      inputs.linear-cli.follows = "hm-modules/linear-cli";
+      inputs.gander.follows = "hm-modules/gander";
+      inputs.fleet.follows = "fleet";
+      inputs.fleet-srht.follows = "fleet-srht";
+      inputs.nitter-link.follows = "nitter-link";
+      inputs.memo.follows = "memo";
+    };
     trap = {
       url = "path:./flakes/hosts/trap";
       inputs.base-lib.follows = "base-lib";
       inputs.nixos-modules.follows = "nixos-modules";
       inputs.hm-modules.follows = "hm-modules";
       inputs.nixos-hardware.follows = "nixos-hardware";
-      inputs.helix.follows = "hm-modules/helix";
       inputs.starship-jj.follows = "hm-modules/starship-jj";
       inputs.gander.follows = "hm-modules/gander";
     };
@@ -36,7 +48,6 @@
       inputs.nixos-modules.follows = "nixos-modules";
       inputs.hm-modules.follows = "hm-modules";
       inputs.nixos-hardware.follows = "nixos-hardware";
-      inputs.helix.follows = "hm-modules/helix";
       inputs.starship-jj.follows = "hm-modules/starship-jj";
       inputs.gander.follows = "hm-modules/gander";
       inputs.fleet.follows = "fleet";
@@ -56,7 +67,6 @@
       inputs.nixos-modules.follows = "nixos-modules";
       inputs.hm-modules.follows = "hm-modules";
       inputs.nixos-hardware.follows = "nixos-hardware";
-      inputs.helix.follows = "hm-modules/helix";
       inputs.starship-jj.follows = "hm-modules/starship-jj";
     };
     cruber = {
@@ -65,7 +75,6 @@
       inputs.nixos-modules.follows = "nixos-modules";
       inputs.hm-modules.follows = "hm-modules";
       inputs.nixos-hardware.follows = "nixos-hardware";
-      inputs.helix.follows = "hm-modules/helix";
       inputs.starship-jj.follows = "hm-modules/starship-jj";
     };
     tater = {
@@ -74,7 +83,6 @@
       inputs.nixos-modules.follows = "nixos-modules";
       inputs.hm-modules.follows = "hm-modules";
       inputs.nixos-hardware.follows = "nixos-hardware";
-      inputs.helix.follows = "hm-modules/helix";
       inputs.starship-jj.follows = "hm-modules/starship-jj";
       inputs.gander.follows = "hm-modules/gander";
       inputs.sideshow.follows = "sideshow";
@@ -106,7 +114,6 @@
       inputs.nixos-modules.follows = "nixos-modules";
       inputs.hm-modules.follows = "hm-modules";
       inputs.nixos-hardware.follows = "nixos-hardware";
-      inputs.helix.follows = "hm-modules/helix";
       inputs.starship-jj.follows = "hm-modules/starship-jj";
     };
     tootsie = {
@@ -115,18 +122,12 @@
       inputs.nixos-modules.follows = "nixos-modules";
       inputs.hm-modules.follows = "hm-modules";
       inputs.nixos-hardware.follows = "nixos-hardware";
-      inputs.helix.follows = "hm-modules/helix";
       inputs.starship-jj.follows = "hm-modules/starship-jj";
     };
 
     # Development dependencies
     base-lib.url = "path:./flakes/base-lib";
-    nixos-modules = {
-      url = "path:./flakes/nixos-modules";
-      inputs.base-lib.follows = "base-lib";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.flake-utils.follows = "flake-utils";
-    };
+    nixos-modules.url = "path:./flakes/nixos-modules";
     hm-modules = {
       url = "path:./flakes/hm-modules";
       inputs.base-lib.follows = "base-lib";
@@ -138,14 +139,7 @@
       inputs.fleet.follows = "fleet";
       inputs.fleet-srht.follows = "fleet-srht";
     };
-    darwin-modules = {
-      url = "path:./flakes/darwin-modules";
-      inputs.base-lib.follows = "base-lib";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.flake-utils.follows = "flake-utils";
-      inputs.home-manager.follows = "base-lib/home-manager";
-      inputs.darwin.follows = "base-lib/darwin";
-    };
+    darwin-modules.url = "path:./flakes/darwin-modules";
 
     # Shared dependencies
     nixpkgs.follows = "base-lib/nixpkgs";
@@ -241,51 +235,20 @@
 
   outputs = inputs @ {
     self,
-    suremac,
-    trap,
-    thorny,
-    tom,
-    cruber,
-    tater,
-    trainwreck,
-    taz,
-    tootsie,
     base-lib,
     flake-utils,
     deploy-rs,
     ...
   }: let
     inherit (base-lib) lib;
+    nixosHosts = {inherit (inputs) cruber tater taz thorny tom tootsie trainwreck trap;};
+    darwinHosts = {inherit (inputs) suremac taro;};
+    hosts = builtins.attrValues (nixosHosts // darwinHosts);
   in
     {
-      # Re-export all NixOS configurations
-      nixosConfigurations = {
-        inherit (trap.nixosConfigurations) trap;
-        inherit (thorny.nixosConfigurations) thorny;
-        inherit (tom.nixosConfigurations) tom;
-        inherit (cruber.nixosConfigurations) cruber;
-        inherit (tater.nixosConfigurations) tater;
-        inherit (trainwreck.nixosConfigurations) trainwreck;
-        inherit (taz.nixosConfigurations) taz;
-        inherit (tootsie.nixosConfigurations) tootsie;
-      };
-
-      # Re-export all Darwin configurations
-      darwinConfigurations = {
-        inherit (suremac.darwinConfigurations) suremac;
-      };
-
-      # Re-export all deploy nodes
-      deploy.nodes = {
-        inherit (trap.deploy.nodes) trap;
-        inherit (thorny.deploy.nodes) thorny;
-        inherit (tom.deploy.nodes) tom;
-        inherit (cruber.deploy.nodes) cruber;
-        inherit (tater.deploy.nodes) tater;
-        inherit (trainwreck.deploy.nodes) trainwreck;
-        inherit (taz.deploy.nodes) taz;
-        inherit (tootsie.deploy.nodes) tootsie;
-      };
+      nixosConfigurations = builtins.mapAttrs (name: host: host.nixosConfigurations.${name}) nixosHosts;
+      darwinConfigurations = builtins.mapAttrs (name: host: host.darwinConfigurations.${name}) darwinHosts;
+      deploy.nodes = builtins.mapAttrs (name: host: host.deploy.nodes.${name}) nixosHosts;
     }
     // flake-utils.lib.eachDefaultSystem (system: let
       pkgs = inputs.nixpkgs.legacyPackages.${system};
@@ -337,34 +300,41 @@
       # catches regressions without needing to run per-host flake checks
       # manually. Strict duplicates (same value under the same name) are kept
       # once; name collisions with different values throw.
-      checks = lib.mergeFlakeChecks [
-        {
-          michi-codex =
-            pkgs.runCommand "michi-codex-tests" {
-              nativeBuildInputs = [pkgs.git (pkgs.python3.withPackages (ps: [ps.websocket-client]))];
-            } ''
-              export PYTHONDONTWRITEBYTECODE=1
-              ${pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isLinux ''
-                # State-machine fixtures fsync frequently; keep their deadlines
-                # independent of contention on the builder's persistent disk.
-                export TMPDIR="$(mktemp -d /dev/shm/michi-codex.XXXXXX)"
-                trap 'rm -rf "$TMPDIR"' EXIT
-              ''}
-              cd ${self}
-              python3 -m unittest discover -s tests -p 'test_michi_codex*.py'
-              touch "$out"
-            '';
-        }
-        suremac.checks.${system} or {}
-        trap.checks.${system} or {}
-        thorny.checks.${system} or {}
-        tom.checks.${system} or {}
-        cruber.checks.${system} or {}
-        tater.checks.${system} or {}
-        trainwreck.checks.${system} or {}
-        taz.checks.${system} or {}
-        tootsie.checks.${system} or {}
-      ];
+      checks = lib.mergeFlakeChecks ([
+          {
+            maintenance =
+              pkgs.runCommand "dotfiles-maintenance-tests" {
+                nativeBuildInputs = [pkgs.bash pkgs.git pkgs.jq pkgs.openssl pkgs.python3];
+              } ''
+                export HOME="$TMPDIR/home"
+                mkdir -p "$HOME"
+                export PYTHONDONTWRITEBYTECODE=1
+                export GIT_CONFIG_GLOBAL=/dev/null
+                export GIT_AUTHOR_NAME="Maintenance tests" GIT_COMMITTER_NAME="Maintenance tests"
+                export GIT_AUTHOR_EMAIL="tests@example.invalid" GIT_COMMITTER_EMAIL="tests@example.invalid"
+                cd ${self}
+                python3 -m unittest discover -s tests -p 'test_maintenance_*.py'
+                python3 tests/test_self_deploy.py
+                touch "$out"
+              '';
+            michi-codex =
+              pkgs.runCommand "michi-codex-tests" {
+                nativeBuildInputs = [pkgs.git (pkgs.python3.withPackages (ps: [ps.websocket-client]))];
+              } ''
+                export PYTHONDONTWRITEBYTECODE=1
+                ${pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isLinux ''
+                  # State-machine fixtures fsync frequently; keep their deadlines
+                  # independent of contention on the builder's persistent disk.
+                  export TMPDIR="$(mktemp -d /dev/shm/michi-codex.XXXXXX)"
+                  trap 'rm -rf "$TMPDIR"' EXIT
+                ''}
+                cd ${self}
+                python3 -m unittest discover -s tests -p 'test_michi_codex*.py'
+                touch "$out"
+              '';
+          }
+        ]
+        ++ map (host: host.checks.${system} or {}) hosts);
 
       packages.${armVmPackageName "hyprland-greetd-vm-test"} = hyprlandGreetdVmTest;
       packages.${armVmPackageName "hyprland-greetd-vm-driver"} = hyprlandGreetdVmTest.driver;
@@ -383,6 +353,17 @@
         name = "deploy-quiet";
         runtimeInputs = [pkgs.nix];
         text = builtins.readFile ./scripts/deploy-quiet.sh;
+      };
+
+      packages.pair-taro = pkgs.writeShellApplication {
+        name = "pair-taro";
+        text = builtins.readFile ./scripts/pair-taro.sh;
+      };
+
+      apps.pair-taro = {
+        type = "app";
+        program = "${self.packages.${system}.pair-taro}/bin/pair-taro";
+        meta.description = "Pair suremac and taro for public-key SSH on the LAN";
       };
 
       packages.update-flakes = pkgs.rustPlatform.buildRustPackage {
@@ -477,6 +458,26 @@
 
       # agenix package
       packages.agenix = base-lib.inputs.agenix.packages.${system}.default;
+
+      packages.${
+        if pkgs.stdenv.hostPlatform.isLinux
+        then "cloud-tools"
+        else null
+      } = pkgs.buildEnv {
+        name = "dotfiles-cloud-tools";
+        paths = with pkgs; [
+          (pkgs.extend base-lib.overlays.default).opencode
+          direnv
+          gh
+          git
+          jq
+          jujutsu
+          nodejs
+          pnpm
+          ripgrep
+        ];
+        pathsToLink = ["/bin"];
+      };
 
       # Development shell
       devShells.default = pkgs.mkShell {

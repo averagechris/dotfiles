@@ -1,0 +1,14 @@
+---
+name: advisor-council
+description: Always convene independent reviewers before finalizing non-trivial work or when asked for an advisor or council.
+---
+
+# Advisor council
+
+1. **Convene the panel.** Request Opus 5.5, GPT-6.2 Astra, and GPT-6.2 Sol, all at high effort. Honor an explicitly requested lineup or single reviewer. A full council uses every applicable [roster seat](references/models.md). Give each reviewer fresh context and request independent, read-only findings before sharing other verdicts. Run them in parallel when possible.
+2. **Frame the decision.** Give each reviewer the user's goal, acceptance criteria, constraints, and existing system behavior. Ask them to challenge the chosen design and identify a simpler way to meet the goal. For implementation review, provide the stable commit, PR diff, or working copy, including staged, unstaged, and relevant untracked changes. Include the callers, configuration, and tests needed to understand the behavior.
+3. **Give reviewers the implementation.** Authorized reviewers can inspect the checkout directly. For external seats, inspect files before sharing and route OpenRouter seats through the [bundled runner](references/models.md#external-reviews) with approved diffs or excerpts. Exclude secrets and customer data. Ask each seat to identify the evidence it inspected and any missing context. Count reviews of design prose or pseudocode as design feedback.
+4. **Check the failure that matters.** Prioritize security and correctness, then performance and simplicity. For credential or session changes, ask each implementation reviewer why the application needs to retain each credential. Trace tokens and bearer session identifiers through the actual backend, serializer, and configuration. Verify with synthetic values that ordinary access to a row, backup, or log reveals no reusable credential or bearer handle. Signing or encoding leaves data readable. Treat either exposure as a blocker.
+5. **Close findings before signoff.** Check each consequential finding against the code or a test of the reported failure. Fix blockers before presenting the change as ready. Record evidence for dismissed findings and who accepted any remaining risk. Code readiness requires two independent reviewer models to inspect the final implementation unless the user explicitly requests one. After a material fix, re-review the changed behavior at the same minimum and carry forward verified coverage of unaffected code. Label partial panels and report incomplete coverage when the minimum is unmet. Report the models, effort, revision, scope, and material disagreements. Get authorization before posting results.
+
+For a defensive security review, choose Gemini Carbon or the optional [Daybreak Blue seat](references/models.md#daybreak-blue-from-opencode) when the evidence can be sent to that provider. In OpenCode, run the Daybreak seat through the bundled Codex CLI runner with approved excerpts.

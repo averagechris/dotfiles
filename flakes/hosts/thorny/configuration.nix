@@ -554,6 +554,7 @@ in {
     ./hardware.nix
     ./morrowind.nix
     ./zeroclaw.nix
+    ./maintenance.nix
     inputs.agenix.nixosModules.default
     inputs.nixos-hardware.nixosModules.system76
     inputs.nixos-hardware.nixosModules.common-cpu-amd
@@ -576,7 +577,10 @@ in {
     pkgs.xdg-desktop-portal-gtk
   ];
 
-  boot.initrd.luks.devices.root.device = "/dev/sda2";
+  boot.initrd.luks.devices.root = {
+    device = "/dev/sda2";
+    allowDiscards = true;
+  };
   networking.hostName = "thorny";
 
   networking.wireless.interfaces = ["wlp6s0"];
@@ -880,6 +884,7 @@ in {
     };
 
     programs.meganz.enable = true;
+    programs.gh.enable = true;
     programs.signal.enable = false;
     programs.helium.enable = false;
     programs.helium.extension-simple-pip-helper.enable = false;
@@ -888,6 +893,10 @@ in {
     programs.opencode.enable = true;
     xdg.configFile."hut/config".source = hutConfig;
     services.network-manager-applet.enable = true;
-    home.packages = [pkgs.claude-code pkgs.hut];
+    home.packages = [
+      pkgs.claude-code
+      pkgs.hut
+      (pkgs.callPackage ../../base-lib/packages/chatgpt-desktop.nix {})
+    ];
   };
 }

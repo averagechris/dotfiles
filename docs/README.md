@@ -2,11 +2,13 @@
 
 ## Configuration
 
+- [ChatGPT desktop](/docs/chatgpt-desktop.md) - Official Linux app on thorny, NixOS compatibility launcher, and one-command updates
 - [anyrun](/docs/anyrun.md) - Anyrun launcher configuration and usage
-- [automated maintenance](/docs/automated-maintenance.md) - Thorny-driven daily update automation plan, short-term safeguards, and long-term project fleet vision
+- [automated maintenance](/docs/automated-maintenance.md) - Opt-in Michi/Sol review, native GitHub evidence gates, contextual holds, issue-only Telegram alerts, and staged auto-merge provisioning
 - [audio](/docs/audio.md) - PipeWire/WirePlumber output priority, helper commands, and Eww controls
 - [cache policy](/docs/cache-policy.md) - Nix cache/key/builder matrix, CI pull/publish policy, and observability fields
 - [codex](/docs/codex.md) - Codex Home Manager module, shared guidance and skills, and preserved desktop configuration
+- [Codex Cloud](/docs/codex-cloud.md) - Reproducible Linux tooling and advisor council setup for managed environments
 - [ctx](/docs/ctx.md) - Ctx local agent-history search CLI package and frequent background indexing job
 - [deploy](/docs/deploy.md) - deploy-rs, quiet deploy wrapper, Darwin switch notes, and activation wrapper architecture
 - [flake performance audit](/docs/flake-performance-audit.md) - 2026-07-09
@@ -43,6 +45,7 @@
 - [sideshow](/docs/sideshow.md) - Sideshow slide-deck CLI package, Home Manager module, config file, host enablement, and OpenCode skill
 - [sure-stack-context](/docs/sure-stack-context.md) - suremac private OpenCode stack-context skill for Datadog, Sentry, and Kubernetes investigations
 - [suremac](/docs/suremac.md) - macOS host settings, Determinate Nix daemon settings and parallel-agent tuning, automatic time zone behavior, Spaces desktop shortcuts, Rust `sccache`, and dev cache cleanup
+- [taro](/docs/taro.md) - Personal MacBook bootstrap, native apps, LAN SSH pairing, and personal Tailscale enrollment
 - [dev-cache](/docs/dev-cache.md) - `dotfiles.devCache` module: sccache, periodic nix GC, cargo-sweep, Docker pruning, and the darwin root GC reminder
 - [tater desktop testing](/docs/tater-desktop-testing.md) - Static and runtime checks for tater's Hyprland, greetd, Eww, display, and Wi-Fi setup
 - [tater power and thermal tuning](/docs/tater-power-thermal.md) - ThinkPad T14s power, thermal, and fan-management tuning notes

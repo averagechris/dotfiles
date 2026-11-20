@@ -4,12 +4,7 @@
   inputs = {
     base-lib.url = "path:../../base-lib";
     nixpkgs.follows = "base-lib/nixpkgs";
-    nixos-modules = {
-      url = "path:../../nixos-modules";
-      inputs.base-lib.follows = "base-lib";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.flake-utils.follows = "flake-utils";
-    };
+    nixos-modules.url = "path:../../nixos-modules";
     hm-modules = {
       url = "path:../../hm-modules";
       inputs.base-lib.follows = "base-lib";
@@ -27,7 +22,6 @@
     agenix.follows = "base-lib/agenix";
     deploy-rs.follows = "base-lib/deploy-rs";
     titlecase.follows = "base-lib/titlecase";
-    helix.follows = "hm-modules/helix";
     starship-jj.follows = "hm-modules/starship-jj";
     gander.follows = "hm-modules/gander";
     fleet = {
@@ -148,6 +142,7 @@
           ownerWorkspace = "/var/lib/zeroclaw-home/agents/owner/workspace";
         };
         expectedSkills = [
+          "advisor-council"
           "conventional-commits"
           "how"
           "impactful-writing"

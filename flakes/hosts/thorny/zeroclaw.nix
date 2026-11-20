@@ -25,6 +25,8 @@
   };
   rdnyPackage = inputs.rdny.packages.${pkgs.stdenv.hostPlatform.system}.rdny;
   ownerWorkspace = "/var/lib/zeroclaw-home/agents/owner/workspace";
+  remoteUser = "chris";
+  remoteHome = config.users.users.${remoteUser}.home;
   gitCredentialEnvironment = {
     GIT_CONFIG_COUNT = "1";
     GIT_CONFIG_KEY_0 = "credential.https://github.com.helper";
@@ -163,7 +165,25 @@
       codexOwnerCli
       codexSessions
     ]
-    ++ personalCodex.packages;
+    ++ personalCodex.packages
+    ++ lib.optional config.dotfiles.maintenance.enable config.dotfiles.maintenance.package;
+  remoteShellPackages = with pkgs; [
+    gh
+    git
+    jujutsu
+    ripgrep
+    jq
+    curl
+    fd
+    openssh
+    direnv
+    nix
+    nodejs
+    python3
+    bubblewrap
+    codexPackage
+    rdnyPackage
+  ];
 
   # Keep the parent path valid in a clean checkout. A missing path literal is
   # rejected during Nix evaluation before pathExists can disable the feature.
@@ -341,23 +361,20 @@ in {
     wantedBy = ["multi-user.target"];
     after = ["network-online.target"];
     wants = ["network-online.target"];
-    unitConfig.ConditionPathExists = "${ownerWorkspace}/.codex/auth.json";
-    path = ownerShellPackages ++ [codexPackage pkgs.bubblewrap pkgs.nix pkgs.direnv pkgs.nodejs pkgs.python3];
-    environment =
-      gitCredentialEnvironment
-      // {
-        HOME = ownerWorkspace;
-        CODEX_HOME = "${ownerWorkspace}/.codex";
-        SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
-      };
+    unitConfig.ConditionPathExists = "${remoteHome}/.codex/auth.json";
+    path = ["${remoteHome}/.nix-profile" "/etc/profiles/per-user/${remoteUser}"] ++ remoteShellPackages;
+    environment = {
+      HOME = remoteHome;
+      CODEX_HOME = "${remoteHome}/.codex";
+      SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
+    };
     serviceConfig =
       codexSandbox
       // {
         Type = "simple";
-        User = "zeroclaw-home";
-        Group = "zeroclaw-home";
-        WorkingDirectory = ownerWorkspace;
-        ExecStartPre = "+${lib.getExe pkgs.python3} ${codexTokenScript} /run/michi-codex-remote-gh.env";
+        User = remoteUser;
+        Group = config.users.users.${remoteUser}.group;
+        WorkingDirectory = remoteHome;
         ExecStart = lib.escapeShellArgs [
           (lib.getExe codexPackage)
           "-c"
@@ -383,15 +400,15 @@ in {
           "app-server"
           "--remote-control"
           "--listen"
-          "unix://${ownerWorkspace}/.codex/michi-app-server.sock"
+          "unix://${remoteHome}/.codex/michi-app-server.sock"
         ];
-        ExecStopPost = "+${pkgs.coreutils}/bin/rm -f /run/michi-codex-remote-gh.env";
-        EnvironmentFile = "-/run/michi-codex-remote-gh.env";
         # Codex's socket alias targets /tmp; share only this private runtime
         # directory with owner clients, keeping the resolved Unix path short.
         RuntimeDirectory = "michi-codex-remote";
         RuntimeDirectoryMode = "0700";
-        BindPaths = codexSandbox.BindPaths ++ ["/run/michi-codex-remote:/tmp"];
+        ProtectHome = false;
+        BindPaths = ["/run/michi-codex-remote:/tmp"];
+        ReadWritePaths = [remoteHome];
         Restart = "on-failure";
         RestartSec = "10s";
         KillSignal = "SIGINT";
@@ -405,6 +422,7 @@ in {
   systemd.services.zeroclaw-home.serviceConfig = lib.mkIf secretExists {
     ExecStartPost = ["+${lib.getExe publishBrowserNamespace}"];
     ExecStopPost = ["+${pkgs.coreutils}/bin/rm -f /run/zeroclaw-home-browser-userns"];
+    ReadWritePaths = lib.mkIf config.dotfiles.maintenance.enable (lib.mkAfter ["/var/lib/dotfiles-maintenance-requests"]);
   };
   systemd.services.zeroclaw-home.environment = lib.mkIf secretExists gitCredentialEnvironment;
 
@@ -521,43 +539,45 @@ in {
             require_approval_for_medium_risk = false;
             workspace_only = true;
             shell_env_passthrough = ["GH_TOKEN" "TG_OWNER_ID"] ++ builtins.attrNames gitCredentialEnvironment;
-            allowed_commands = [
-              "git"
-              "gh"
-              "jj"
-              "rg"
-              "jq"
-              "curl"
-              "fd"
-              "rdny"
-              "michi-codex"
-              "codex"
-              "michi-codex-sessions"
-              "npm"
-              "cargo"
-              "ls"
-              "cat"
-              "grep"
-              "find"
-              "echo"
-              "pwd"
-              "wc"
-              "head"
-              "tail"
-              "date"
-              "df"
-              "du"
-              "uname"
-              "uptime"
-              "hostname"
-              "python"
-              "python3"
-              "pip"
-              "node"
-              "free"
-              "ffmpeg"
-              "ffprobe"
-            ];
+            allowed_commands =
+              [
+                "git"
+                "gh"
+                "jj"
+                "rg"
+                "jq"
+                "curl"
+                "fd"
+                "rdny"
+                "michi-codex"
+                "codex"
+                "michi-codex-sessions"
+                "npm"
+                "cargo"
+                "ls"
+                "cat"
+                "grep"
+                "find"
+                "echo"
+                "pwd"
+                "wc"
+                "head"
+                "tail"
+                "date"
+                "df"
+                "du"
+                "uname"
+                "uptime"
+                "hostname"
+                "python"
+                "python3"
+                "pip"
+                "node"
+                "free"
+                "ffmpeg"
+                "ffprobe"
+              ]
+              ++ lib.optional config.dotfiles.maintenance.enable "michi-maintenance";
           };
           guests = {
             max_tool_result_chars = 524288;

@@ -4,8 +4,8 @@ The Home Manager module at `flakes/hm-modules/modules/codex/` wraps the pinned
 upstream `programs.codex` module. It is exported as
 `homeManagerModules.codex`, imported by the default module, and enabled on
 `suremac`. It configures the existing desktop installation without installing a
-second CLI. The suremac host declares `model = "gpt-6.1-sol"` and
-`model_reasoning_effort = "low"` through `dotfiles.codex.settings`; permission
+second CLI. The suremac host declares `model = "gpt-6.2-sol"` and
+`model_reasoning_effort = "medium"` through `dotfiles.codex.settings`; permission
 defaults remain unchanged.
 
 ```nix
@@ -24,7 +24,8 @@ dotfiles.codex = {
 ## Shared guidance and skills
 
 `modules/agent-guidance.md` supplies concise explanations, smaller changes,
-behavioral checks, and design judgment to Codex and the OpenCode orchestrator.
+behavioral checks, and design judgment to Codex and OpenCode's Build and
+Orchestrator agents.
 Codex adds model-selection guidance and a command for loading direnv project
 environments in desktop sessions.
 The global guidance prefers installed CLIs for tasks they support, uses command
@@ -46,14 +47,14 @@ guidance is retained. `teach` shapes the explanation, `how` investigates mechani
 and `why` investigates rationale and history. All three deploy with the Codex
 module. Project discovery uses optional helper skills when available.
 
-`modules/agent-workflows.nix` registers seven portable skills independently of
-OpenCode: conventional-commits, test-curation, teach, project-map,
+`modules/agent-workflows.nix` registers eight portable skills independently of
+OpenCode: advisor-council, conventional-commits, test-curation, teach, project-map,
 impactful-writing, technical-writing, and rust-cargo. Their existing source
 directories remain under `modules/opencode/skills/`; both clients consume the
 same rendered sources. The registry retains strict patches, additive host
 instructions, full companion directories, and bundle audits.
 
-The Codex module also registers `how` and `why`, bringing its default set to nine.
+The Codex module also registers `how` and `why`, bringing its default set to ten.
 `modules/codex/skills.nix` adapts their existing OpenCode sources with checked
 replacements. It uses available Codex delegation and session-history tools,
 retains the evidence standards and complete reference directories, and leaves
@@ -93,24 +94,30 @@ never place decrypted material in Nix settings, prompt strings, or sources.
 
 ## Model selection and outside feedback
 
-The global guidance prioritizes budget efficiency. Sol at high reasoning chooses
-approaches and plans, then delegates clear implementation tasks to Luna. Routine
-work can start with Luna. Astra is reserved for consequential uncertainty that
-Sol at high reasoning cannot resolve.
+The global guidance uses Sol 6.2 at medium reasoning for most work, steps up to
+Sol 6.2 high for deeper analysis, and tries Astra 6.2 high for very detailed work.
+Delegated tasks follow the same guidance. Unavailable requested models should be
+reported, with a suitable available fallback rather than a false claim of use.
 
-For occasional outside-model feedback, agents can use
-`opencode run --model <provider/model#variant>`. Rare Wise-level consultations
-favor Fable 5.1 or Opus 5.5 for taste judgments about coherence, simplicity,
-wording, and user experience. The example uses
-`openrouter/anthropic/claude-fable-5.1#high` with a compact decision packet and
-analysis-only instructions. Sol retains planning and Luna handles clear
-implementation tasks. The documented example
-uses `--standalone` for a private server and `--file` to attach the packet.
-These calls use the host's OpenCode provider credentials and billing.
+Use the shared `advisor-council` skill before finalizing non-trivial work or
+when asked for an advisor or council. The default panel is Opus 5.5, Astra 6.2,
+and Sol 6.2, all at high effort. A full council adds the other applicable seats.
+Code readiness requires two independent models to inspect the implementation
+unless the user explicitly requests a single reviewer. Each seat reports its
+scope. External seats receive approved diffs or excerpts, and a design-only
+review is identified as such. The lead verifies material findings before signoff.
+OpenCode can also call the optional Daybreak Blue seat through Codex CLI for
+defensive reviews. See [OpenCode security reviews](opencode.md#defensive-security-reviews).
+Its bundled OpenRouter runner uses the executor's exported key or the local
+agenix key, with an isolated OpenCode session and tools denied. Routing follows
+OpenRouter's account and key policies. Pass `--zdr` before the model when the
+review requires zero data retention. Carbon can be available under normal
+routing and blocked under that restriction. See [Codex Cloud tooling](codex-cloud.md)
+for a reproducible Linux setup.
 
 Routing guidance is distinct from fallback defaults. The suremac TOML defaults
-are Sol 6.1 with low reasoning after activation. Explicit task model and reasoning
-selections implement the routing policy and take priority over fallback values.
+are Sol 6.2 with medium reasoning after activation. Explicit task model and
+reasoning selections implement the routing policy and take priority over fallback values.
 
 The official [configuration documentation](https://learn.chatgpt.com/docs/config-file/config-basic)
 documents user TOML defaults for the CLI and IDE, with higher-priority overrides.
@@ -121,8 +128,7 @@ matches the Nix declaration. Do not rewrite opaque desktop state to force it.
 
 Editing Nix does not activate settings. A full Darwin activation may apply other
 pending changes, so review the complete activation separately. A PR alone does
-not change the live TOML or desktop picker. The OpenCode CLI syntax was checked with the
-installed `opencode run --help`; no paid model call was needed for validation.
+not change the live TOML or desktop picker.
 
 ## Writable configuration
 
@@ -158,6 +164,13 @@ configuration with `nh darwin switch . --hostname suremac`, then complete
 Sentry's OAuth flow once with `codex mcp login sentry`. OAuth credentials remain
 in Codex's runtime-owned credential store. This does not change GUI plugin
 installation or management.
+
+The [Whimsical remote MCP](https://whimsical.com/learn/integrations/mcp) is also
+enabled on `suremac` at `https://mcp.whimsical.com/mcp`. After host activation,
+run `codex mcp login whimsical` and select the intended Whimsical workspace.
+The remote server needs no local Whimsical app; each connection is bound to one
+workspace. OAuth credentials stay in Codex's runtime-owned credential store,
+not in these dotfiles. Start a new Codex chat after connecting.
 
 ## Environment and activation
 
@@ -201,12 +214,12 @@ command. This is a service-user installation with its own ChatGPT login and
 owner workspace, independent of the workstation's Home Manager configuration.
 `flakes/hosts/thorny/personal-codex.nix` reuses the shared skill registry and
 renderer for this service account. NixOS links complete skill directories into
-its `~/.agents/skills` directory: the nine default Codex skills plus `memo` and
+its `~/.agents/skills` directory: the ten default Codex skills plus `memo` and
 `rdny-browser`. Its instructions retain Thorny's Codex model and sub-agent
 guidance. It uses the shared `how` adaptation and restricts `why` to repository
 history, documentation, issues, and incident investigation playbooks, omitting
 work-specific sources.
-The owner shell, queued worker, and remote Codex server receive the personal
+The owner shell and queued worker receive the personal
 `memo` and `showboat` CLIs alongside the existing coding and browser
 tools. History remains available through `michi-codex-sessions`.
 The tater and thorny Linux flakes serialize Memo's Rust test harness with
@@ -250,3 +263,12 @@ normal temporary directory.
 ```sh
 direnv exec . nix build --no-link .#checks.x86_64-linux.michi-codex
 ```
+
+### Phone host identity
+
+The phone's `michi-codex-remote.service` runs as workstation user `chris`, with
+the real home and existing `.codex` profile. It uses that user's SSH and Git
+configuration rather than the bot profile's wrappers or credential environment.
+The bot shell and queued worker retain their isolated service-user profile.
+See [phone access](zeroclaw.md#phone-access) for self-deploy behavior, pairing
+and live identity checks. Existing workstation Codex configuration is preserved.

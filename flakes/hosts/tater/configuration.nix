@@ -886,6 +886,7 @@ in {
       index.enable = true;
     };
     programs.meganz.enable = true;
+    programs.gh.enable = true;
     programs.helium.enable = true;
     programs.helium.extension-simple-pip-helper.enable = true;
     programs.nitter-link = {

@@ -3,9 +3,11 @@ use serde::Deserialize;
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
 use std::env;
-use std::ffi::{OsStr, OsString};
+use std::ffi::OsStr;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::io::{ErrorKind, Write};
+use std::os::unix::ffi::OsStrExt;
+use std::path::{Component, Path, PathBuf};
 use std::process::{Command, Stdio};
 
 const DEFAULT_COOLDOWN_DAYS: i64 = 7;
@@ -29,6 +31,11 @@ struct Config {
 #[derive(Debug, Deserialize)]
 struct Manifest {
     packages: Vec<ManualPackage>,
+}
+
+#[derive(Deserialize)]
+struct LockPolicy {
+    canonical_locks: Vec<PathBuf>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -79,7 +86,6 @@ struct GithubRelease {
 #[derive(Debug)]
 struct CommandOutput {
     stdout: String,
-    stderr: String,
 }
 
 fn main() {
@@ -90,7 +96,7 @@ fn main() {
 }
 
 fn run() -> Result<(), Box<dyn std::error::Error>> {
-    let repo_root = find_repo_root()?;
+    let repo_root = find_repo_root()?.canonicalize()?;
     let mut config = parse_args(&repo_root)?;
 
     env::set_current_dir(&repo_root)?;
@@ -273,50 +279,153 @@ fn find_repo_root() -> Result<PathBuf, Box<dyn std::error::Error>> {
 }
 
 fn update_all_flakes(repo_root: &Path, config: &Config) -> Result<(), Box<dyn std::error::Error>> {
-    log_info("=== Updating shared module flakes ===");
-    update_flake(&repo_root.join("flakes/base-lib"), "base-lib", config)?;
-    update_flake(
-        &repo_root.join("flakes/nixos-modules"),
-        "nixos-modules",
-        config,
-    )?;
-    update_flake(&repo_root.join("flakes/hm-modules"), "hm-modules", config)?;
-    update_flake(
-        &repo_root.join("flakes/darwin-modules"),
-        "darwin-modules",
-        config,
-    )?;
-    println!();
+    let policy_path = repo_root.join("maintenance/policy.json");
+    let policy_file = fs::File::open(policy_path)?;
+    if config.check_only {
+        policy_file.lock_shared()?;
+    } else {
+        policy_file.lock()?;
+    }
+    let policy: LockPolicy = serde_json::from_reader(&policy_file)?;
+    let locks = policy.canonical_locks;
+    if locks.last().map(PathBuf::as_path) != Some(Path::new("flake.lock")) {
+        return Err("canonical_locks must end with the root flake.lock".into());
+    }
+    let mut seen = HashSet::new();
+    for lock in &locks {
+        if lock.file_name() != Some(OsStr::new("flake.lock"))
+            || !lock
+                .components()
+                .all(|part| matches!(part, Component::Normal(_)))
+            || !seen.insert(lock)
+        {
+            return Err(format!("Invalid or duplicate canonical lock: {}", lock.display()).into());
+        }
+    }
 
-    log_info("=== Updating host flakes ===");
-    let hosts_dir = repo_root.join("flakes/hosts");
-    let mut hosts = fs::read_dir(&hosts_dir)?
-        .filter_map(Result::ok)
-        .filter(|entry| entry.file_type().map(|ty| ty.is_dir()).unwrap_or(false))
-        .collect::<Vec<_>>();
-    hosts.sort_by_key(|entry| entry.file_name());
-    for host in hosts {
-        let name = host.file_name().to_string_lossy().to_string();
-        update_flake(&host.path(), &format!("hosts/{name}"), config)?;
+    // In both modes, update a tracked copy in dependency order. Parents can
+    // then read candidate child locks without changing the original checkout.
+    let snapshot = tempfile::tempdir()?;
+    snapshot_tracked_files(repo_root, snapshot.path())?;
+    let original = locks
+        .iter()
+        .map(|lock| {
+            let path = snapshot.path().join(lock);
+            read_lock(&path).map_err(|err| format!("Cannot read {}: {err}", lock.display()))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+
+    for lock in &locks {
+        let directory = lock.parent().expect("validated relative lockfile");
+        update_flake(snapshot.path(), directory, config)?;
     }
     println!();
 
-    log_info("=== Updating top-level flake ===");
-    update_flake(repo_root, "top-level", config)?;
-    println!();
+    if !config.check_only {
+        let mut pending = Vec::new();
+        for (lock, original) in locks.iter().zip(original) {
+            let target = repo_root.join(lock);
+            if read_lock(&target)? != original {
+                return Err(format!("Lock changed during update: {}", lock.display()).into());
+            }
+            let updated_path = snapshot.path().join(lock);
+            let updated = fs::read(&updated_path)?;
+            if original.as_ref() != Some(&updated) {
+                let mut staged = tempfile::NamedTempFile::new_in(target.parent().unwrap())?;
+                let mode_source = if original.is_some() {
+                    &target
+                } else {
+                    &updated_path
+                };
+                staged
+                    .as_file()
+                    .set_permissions(fs::metadata(mode_source)?.permissions())?;
+                staged.write_all(&updated)?;
+                pending.push((staged, target));
+            }
+        }
+        for (staged, target) in pending {
+            staged.persist(target)?;
+        }
+    }
+    Ok(())
+}
 
+fn read_lock(path: &Path) -> std::io::Result<Option<Vec<u8>>> {
+    match fs::read(path) {
+        Ok(bytes) => Ok(Some(bytes)),
+        Err(err) if err.kind() == ErrorKind::NotFound => Ok(None),
+        Err(err) => Err(err),
+    }
+}
+
+fn snapshot_tracked_files(
+    repo_root: &Path,
+    snapshot: &Path,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let mut command = if repo_root.join(".jj").exists() && !repo_root.join(".git").exists() {
+        let mut jj = Command::new("jj");
+        jj.args([
+            "--no-pager",
+            "--ignore-working-copy",
+            "file",
+            "list",
+            "--template",
+            r#"path ++ "\0""#,
+        ]);
+        jj
+    } else {
+        let mut git = Command::new("git");
+        git.args(["ls-files", "--deduplicate", "-z"]);
+        git
+    };
+    let tracked = command.current_dir(repo_root).output()?;
+    if !tracked.status.success() {
+        return Err(format!(
+            "Could not list tracked files with {}: {}",
+            command.get_program().to_string_lossy(),
+            String::from_utf8_lossy(&tracked.stderr)
+        )
+        .into());
+    }
+    for file in tracked
+        .stdout
+        .split(|byte| *byte == 0)
+        .filter(|file| !file.is_empty())
+    {
+        let file = Path::new(OsStr::from_bytes(file));
+        let source = repo_root.join(file);
+        let target = snapshot.join(file);
+        let metadata = match fs::symlink_metadata(&source) {
+            Ok(metadata) => metadata,
+            Err(err) if err.kind() == ErrorKind::NotFound => continue,
+            Err(err) => return Err(err.into()),
+        };
+        fs::create_dir_all(target.parent().unwrap())?;
+        if metadata.is_symlink() {
+            std::os::unix::fs::symlink(fs::read_link(source)?, target)?;
+        } else if metadata.is_file() {
+            fs::copy(source, target)?;
+        }
+    }
     Ok(())
 }
 
 fn update_flake(
-    flake_path: &Path,
-    flake_name: &str,
+    snapshot: &Path,
+    directory: &Path,
     config: &Config,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    if !flake_path.join("flake.nix").exists() {
-        log_warn(&format!("Skipping {flake_name}: no flake.nix found"));
-        return Ok(());
-    }
+    let flake_path = snapshot.join(directory);
+    let flake_name = if directory.as_os_str().is_empty() {
+        "top-level".into()
+    } else {
+        directory
+            .strip_prefix("flakes")
+            .unwrap_or(directory)
+            .display()
+            .to_string()
+    };
 
     if config.check_only {
         log_info(&format!("Checking {flake_name}..."));
@@ -332,7 +441,7 @@ fn update_flake(
         for input in list_updateable_inputs(&lock_path)? {
             if config.cooldown_inputs.contains(&input) {
                 has_cooldown_input = true;
-                if input_passes_cooldown(flake_name, flake_path, &input, config)? {
+                if input_passes_cooldown(&flake_name, &flake_path, &input, config)? {
                     update_inputs.push(input);
                 }
             } else {
@@ -356,28 +465,37 @@ fn update_flake(
         update_inputs
     };
 
-    if config.check_only {
-        // `nix flake update` has no --dry-run; write the candidate lock to a
-        // temp file with --output-lock-file and diff it against the real one.
-        let candidate_lock = std::env::temp_dir().join(format!(
-            "update-flakes-check-{}-{}.lock",
-            std::process::id(),
-            flake_name.replace(['/', ' '], "-")
-        ));
-        let mut args = vec!["flake".to_string(), "update".to_string()];
-        args.extend(input_args);
-        args.extend([
-            "--flake".to_string(),
-            flake_path.display().to_string(),
-            "--output-lock-file".to_string(),
-            candidate_lock.display().to_string(),
-        ]);
-        let output = run_capture("nix", &args)?;
-        if config.show_output {
-            print_command_output(&output);
+    let before = read_lock(&lock_path)?;
+    let dir = if directory.as_os_str().is_empty() {
+        Path::new(".")
+    } else {
+        directory
+    };
+    let mut args = vec!["flake".to_string(), "update".to_string()];
+    args.extend(input_args);
+    args.extend([
+        "--flake".to_string(),
+        format!("path:.?dir={}", dir.display()),
+        "--output-lock-file".to_string(),
+        lock_path.display().to_string(),
+    ]);
+    let mut command = Command::new("nix");
+    command.current_dir(snapshot).args(&args);
+    if config.show_output {
+        let status = command.status()?;
+        if !status.success() {
+            return Err(format!("nix flake update for {flake_name} failed with {status}").into());
         }
-        let changed = changed_lock_nodes(&lock_path, &candidate_lock)?;
-        let _ = fs::remove_file(&candidate_lock);
+    } else {
+        capture_command(&mut command)?;
+    }
+
+    if config.check_only {
+        let after = fs::read(&lock_path)?;
+        let changed = match before {
+            Some(before) => changed_lock_nodes(&before, &after)?,
+            None => vec!["<new lock file>".to_string()],
+        };
         if changed.is_empty() {
             log_info(&format!("  {flake_name} is up to date"));
         } else {
@@ -386,11 +504,6 @@ fn update_flake(
                 changed.join(", ")
             ));
         }
-    } else {
-        let mut args = vec!["flake".to_string(), "update".to_string()];
-        args.extend(input_args);
-        args.extend(["--flake".to_string(), flake_path.display().to_string()]);
-        run_status("nix", &args, config.show_output)?;
     }
 
     Ok(())
@@ -413,73 +526,48 @@ fn list_updateable_inputs(lock_path: &Path) -> Result<Vec<String>, Box<dyn std::
         let Some(node_ref) = node_ref.as_str() else {
             continue;
         };
-        let Some(node) = nodes.get(node_ref).and_then(Value::as_object) else {
-            continue;
-        };
-        let input_type = node
-            .get("original")
-            .and_then(|original| original.get("type"))
-            .or_else(|| node.get("locked").and_then(|locked| locked.get("type")))
-            .and_then(Value::as_str);
-
-        if input_type == Some("path") {
-            continue;
+        if nodes.contains_key(node_ref) {
+            inputs.push(name.clone());
         }
-        inputs.push(name.clone());
     }
 
     Ok(inputs)
 }
 
-/// Compare two flake.lock files and return the names of nodes whose locked
-/// source changed, using the candidate lock as the reference for node names.
+/// Compare both complete lock graphs, including removed nodes and follows edges.
 fn changed_lock_nodes(
-    current_lock: &Path,
-    candidate_lock: &Path,
+    current_lock: &[u8],
+    candidate_lock: &[u8],
 ) -> Result<Vec<String>, Box<dyn std::error::Error>> {
-    if !candidate_lock.exists() {
-        return Err(format!(
-            "nix flake update did not write candidate lock {}",
-            candidate_lock.display()
-        )
-        .into());
-    }
-    if !current_lock.exists() {
-        return Ok(vec!["<new lock file>".to_string()]);
-    }
-
-    let read_nodes =
-        |path: &Path| -> Result<serde_json::Map<String, Value>, Box<dyn std::error::Error>> {
-            let lock: Value = serde_json::from_str(&fs::read_to_string(path)?)?;
-            Ok(lock
-                .get("nodes")
-                .and_then(Value::as_object)
-                .cloned()
-                .unwrap_or_default())
-        };
-    let current_nodes = read_nodes(current_lock)?;
-    let candidate_nodes = read_nodes(candidate_lock)?;
+    let current: Value = serde_json::from_slice(current_lock)?;
+    let candidate: Value = serde_json::from_slice(candidate_lock)?;
+    let current_nodes = current["nodes"]
+        .as_object()
+        .ok_or("current lock has no nodes")?;
+    let candidate_nodes = candidate["nodes"]
+        .as_object()
+        .ok_or("candidate lock has no nodes")?;
 
     let mut changed = Vec::new();
-    for (name, candidate_node) in &candidate_nodes {
+    for name in current_nodes.keys().chain(candidate_nodes.keys()) {
         if name == "root" {
             continue;
         }
-        let candidate_locked = candidate_node.get("locked");
-        let current_locked = current_nodes.get(name).and_then(|node| node.get("locked"));
-        if candidate_locked != current_locked {
+        if current_nodes.get(name) != candidate_nodes.get(name) {
             // Nested duplicates are suffixed like `ctx_2`; report the base name.
             let base = name
                 .rsplit_once('_')
                 .filter(|(_, suffix)| suffix.chars().all(|c| c.is_ascii_digit()))
                 .map_or(name.as_str(), |(base, _)| base);
             let base = base.to_string();
-            if !changed.contains(&base) {
-                changed.push(base);
-            }
+            changed.push(base);
         }
     }
+    if changed.is_empty() && current != candidate {
+        changed.push("<input graph>".to_string());
+    }
     changed.sort();
+    changed.dedup();
     Ok(changed)
 }
 
@@ -905,7 +993,7 @@ fn github_api_get(endpoint: &str) -> Result<CommandOutput, Box<dyn std::error::E
     if !output.status.success() {
         return Err(format!("curl failed with status {}\n{stderr}", output.status).into());
     }
-    Ok(CommandOutput { stdout, stderr })
+    Ok(CommandOutput { stdout })
 }
 
 fn parse_github_release(
@@ -1020,65 +1108,23 @@ fn absolutize(repo_root: &Path, path: &Path) -> PathBuf {
     }
 }
 
-fn run_status<I, S>(
-    program: &str,
-    args: I,
-    show_output: bool,
-) -> Result<(), Box<dyn std::error::Error>>
-where
-    I: IntoIterator<Item = S>,
-    S: AsRef<OsStr>,
-{
-    let args = args
-        .into_iter()
-        .map(|arg| arg.as_ref().to_os_string())
-        .collect::<Vec<OsString>>();
-
-    if show_output {
-        let status = Command::new(program).args(&args).status()?;
-        if !status.success() {
-            return Err(format!("{program} failed with status {status}").into());
-        }
-    } else {
-        let output = Command::new(program)
-            .args(&args)
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .output()?;
-        if !output.status.success() {
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            return Err(format!(
-                "{program} failed with status {}\nstdout:\n{}\nstderr:\n{}",
-                output.status, stdout, stderr
-            )
-            .into());
-        }
-    }
-    Ok(())
-}
-
 fn run_capture<I, S>(program: &str, args: I) -> Result<CommandOutput, Box<dyn std::error::Error>>
 where
     I: IntoIterator<Item = S>,
     S: AsRef<OsStr>,
 {
-    let output = Command::new(program)
-        .args(args)
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .output()?;
+    capture_command(Command::new(program).args(args))
+}
+
+fn capture_command(command: &mut Command) -> Result<CommandOutput, Box<dyn std::error::Error>> {
+    let output = command.output()?;
     let stdout = String::from_utf8_lossy(&output.stdout).to_string();
     let stderr = String::from_utf8_lossy(&output.stderr).to_string();
     if !output.status.success() {
+        let program = command.get_program().to_string_lossy();
         return Err(format!("{program} failed with status {}\n{stderr}", output.status).into());
     }
-    Ok(CommandOutput { stdout, stderr })
-}
-
-fn print_command_output(output: &CommandOutput) {
-    print!("{}", output.stdout);
-    eprint!("{}", output.stderr);
+    Ok(CommandOutput { stdout })
 }
 
 fn log_info(message: &str) {

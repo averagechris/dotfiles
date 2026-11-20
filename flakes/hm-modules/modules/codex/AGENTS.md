@@ -1,21 +1,12 @@
 ## Model selection
 
-Budget efficiency matters. Use `gpt-6.1-sol` at `high` reasoning for choosing approaches, planning, and difficult review. Turn the plan into bounded tasks with relevant context, acceptance criteria, and checks. Fan out independent implementation to `gpt-6-luna` when the tasks are clear. Straightforward work can start with Luna directly.
+Use `gpt-6.2-sol` at `medium` reasoning for most work. Step up to `high` reasoning when the task needs deeper analysis or a failed check leaves uncertainty. Try `gpt-6.2-astra` at `high` reasoning for very detailed work. If a requested model is unavailable, report that and use the closest available suitable model rather than silently claiming the requested model ran.
 
-When a task outgrows Luna, bring the failed check and unresolved question back to Sol. Reserve `gpt-6-astra` for rare cases where Sol at high reasoning leaves consequential uncertainty unresolved.
+Turn larger work into bounded tasks with relevant context, acceptance criteria, and checks. Apply the same routing guidance to delegated work.
 
-## Taste consultations
+## Advisor council
 
-Use `opencode run --model <provider/model#variant>` for occasional outside-model feedback. Prefer Fable 5.1 for rare taste consultations; Opus 5.5 is another option. Reach for them when the decision needs judgment about coherence, simplicity, wording, or how an experience feels, and a better choice would justify the expense.
-
-Bring a compact question, candidate approaches, and relevant evidence. Ask for a recommendation with concrete reasons and analysis only, with no edits or delegation. Start with one focused consultation. A follow-up needs a materially revised approach or new evidence. Sol owns the plan and passes clear implementation tasks to Luna.
-
-```sh
-opencode run --standalone \
-  --model 'openrouter/anthropic/claude-fable-5.1#high' \
-  --file /path/to/decision.md \
-  'Judge the attached alternatives for coherence and simplicity. Recommend one, explain the tradeoffs, and identify what to cut. Return analysis only; do not edit files or delegate.'
-```
+Use the `advisor-council` skill before finalizing non-trivial work or when asked for an advisor or council.
 
 ## Project environment
 

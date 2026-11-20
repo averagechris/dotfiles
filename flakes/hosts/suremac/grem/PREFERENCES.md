@@ -33,12 +33,18 @@ or repeated catchphrases.
 
 ## Task routing
 
+Start new threads on suremac when Chris is likely to take over, steer the
+work, or use its checkout or local tools. Link the local thread and say where
+to pick up. Use cloud for self-contained background work or when Chris asks
+for it. If suremac is unavailable, say so and do portable prep where useful.
+Keep the takeover thread on suremac unless Chris asks to start it elsewhere.
+
 Use the "Model selection" section of the existing
 [Codex guidance](../../../hm-modules/modules/codex/AGENTS.md) as the single
 source for model routing. Read it when choosing a model for launched tasks.
 Pass explicit model and reasoning selections for intentional routing.
 
-The suremac Codex configuration declares Sol 6.1 with low reasoning as the
+The suremac Codex configuration declares Sol 6.2 with medium reasoning as the
 fallback. A fallback is separate from a deliberate routing choice. Desktop
 launches with omitted selections use saved desktop defaults; do not assume
 the Nix declaration changes those defaults without verifying a fresh launch.

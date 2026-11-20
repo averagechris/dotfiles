@@ -35,17 +35,21 @@ This keeps OpenCode close to upstream releases while preserving the normal
 - on hosts with direnv enabled, a `dotfiles-direnv` plugin uses the same
   per-invocation hook, including the invocation's cwd and mutable environment,
   to load each working directory's direnv-allowed dev shell environment
-- local automatic compaction at 350,000 input tokens for the primary aliases
-  and pinned subagent models, with warming explicitly disabled
+- local automatic compaction at 350,000 input tokens for the managed OpenRouter
+  models, with warming explicitly disabled
 
 ## Long-session compaction
 
 The managed V2 configuration keeps local automatic compaction enabled, retains
-15,000 recent tokens, and uses the default 20,000-token buffer. For the current
-primary aliases and pinned OpenRouter agent models it overrides only the catalog
+15,000 recent tokens, and uses the default 20,000-token buffer. For the
+OpenRouter Sol, Astra, Luna, and Fable aliases and the pinned Opus model it
+overrides the catalog
 `limit.input` value to 370,000 and selects `compaction.mode = "local"`. It does
 not enable provider-native compaction or replace catalog IDs, capabilities, or
 truthful context/output limits.
+
+The previous subagent model IDs retain that policy because resumed subagent
+sessions keep the model ID saved when they started.
 
 V2's automatic threshold is
 `min(input limit - buffer, context limit - max(output reserve, buffer))`.
@@ -166,8 +170,8 @@ oconf && opencode --standalone
 # has a pinned model in the deployed config).
 oconf openrouter/x-ai/grok-4.5 && opencode --standalone
 
-# Keep the normal orchestrator model, trial a coding model on specific agents.
-oconf openrouter/x-ai/grok-code minion build && opencode --standalone
+# Keep the Build session model and trial a coding model on specific agents.
+oconf openrouter/x-ai/grok-code minion wise && opencode --standalone
 
 # Optionally set a reasoning variant on the targeted agents.
 oconf -v high openrouter/some-new-model && opencode --standalone
@@ -206,8 +210,8 @@ Direct mode stays non-interactive for scripted use:
 # pinned model in the deployed config).
 oconf openrouter/x-ai/grok-4.5 && opencode --standalone
 
-# Keep the normal orchestrator model, trial a coding model on specific agents.
-oconf openrouter/x-ai/grok-code minion build && opencode --standalone
+# Keep the Build session model and trial a coding model on specific agents.
+oconf openrouter/x-ai/grok-code minion wise && opencode --standalone
 
 # Optionally set a reasoning variant on the targeted agents.
 oconf -v high openrouter/some-new-model && opencode --standalone
@@ -396,31 +400,36 @@ generates the system-prompt tool note from the configured list when
 the agent runtime tools or generated OpenCode config files in their Home Manager
 profile.
 
-The `orchestrator` is the generated OpenCode default agent, making decomposition
-and Minion-first routing the normal entry point. It uses the same open-by-default
-shell safety posture as Build, is tuned for ambitious projects, and can delegate
-work across five coding tiers: `tiny`, `luna`, `minion`,
-`build`, and `wise`. Tiny uses GPT-5.6 Luna at `low` for mechanical work, while
-the distinct Luna tier uses the same model at `high` for bounded work requiring
-more reasoning. Minion uses GPT-5.6 Sol at `low` and is the default implementation
-tier: the orchestrator decomposes work and supplies clear implementation packets
-so Minion performs the bulk of coding. Build is reserved for ambiguity, breadth,
-investigation, or coordination that planning cannot reasonably remove. The
-higher-capability `wise` agent uses `openrouter/anthropic/claude-fable-5.1#high`.
+Build is the default agent. It inherits the session model and owns
+implementation, investigation, and verification directly. It delegates scoped
+work when useful and loads `advisor-council` before finalizing non-trivial work
+or when asked for a council. Select `orchestrator` for delegation-heavy work
+that benefits from planning and separate implementation handoffs.
+
+Tiny handles mechanical work, Luna handles bounded work that needs more
+reasoning, and Minion is the default implementation delegate. Wise and Opus
+handle high-consequence work. Explore handles codebase research.
+
+OpenRouter's family aliases follow the latest model release automatically.
+
+| Agent | OpenCode model |
+| --- | --- |
+| `tiny` | `openrouter/~openai/gpt-luna-latest#low` |
+| `luna` | `openrouter/~openai/gpt-luna-latest#high` |
+| `minion` | `openrouter/~openai/gpt-sol-latest#low` |
+| `wise` | `openrouter/~anthropic/claude-fable-latest#high` |
+| `opus` | `openrouter/anthropic/claude-opus-5.5#high` |
+
 All coding agents share one generated shell permission
 policy so safety-rule changes stay consistent across tiers. Their concise
 descriptions summarize the intended delegation tradeoff so primary agents can
 choose effectively from the subagent tool.
-Wise also carries a stable judgment stance for high-consequence work: keep
-decisions falsifiable, treat implementation as design evidence, and make
-disagreement explicit.
+Wise and Opus share a prompt that asks them to keep decisions falsifiable,
+treat implementation as design evidence, and make disagreement explicit.
 
-The repo-managed `test-curation` skill is conditional. When the orchestrator
-delegates review of a code change that added or materially changed tests, it tells
-that reviewer to load the skill. The orchestrator does not load it itself. The
-reviewer decides which changed tests deserve permanent retention; an implementation
-handoff may then remove low-value tests and run focused checks. Non-code work and
-changes without test changes do not carry this guidance.
+When Build or Orchestrator delegates review of added or materially changed
+tests, it asks the reviewer to load `test-curation`. The reviewer decides
+which changed tests deserve permanent retention and which focused checks to run.
 
 V2 stores the delegation limit at `experimental.subagent_depth = 2`.
 Upstream counts a direct subagent at depth one, so this permits one nested
@@ -506,7 +515,7 @@ when work or context no longer fits the packet.
 
 The built-in `explore` subagent keeps its upstream prompt and tools but is
 configured through `settings.agents.explore` to use
-`openrouter/openai/gpt-5.6-luna#medium`. This favors cheap,
+`openrouter/~openai/gpt-luna-latest#medium`. This favors cheap,
 parallel codebase research with a research-specific prompt and tool set; Tiny
 remains narrower and mechanical, while Luna handles bounded reasoned work.
 
@@ -807,6 +816,10 @@ modules register bundled or repo-managed skills with `dotfiles.agentSkills`, so
 rendering, patching, extension, and per-skill enablement happen uniformly at
 build time. Current examples include:
 
+- `advisor-council`, for independent reviews before finalizing non-trivial work
+  or when asked for an advisor or council. OpenCode and Codex share the
+  [three-reviewer default and implementation review requirements](codex.md#model-selection-and-outside-feedback).
+
 - `architect`, for explicit design work and expensive-to-reverse boundaries; it
   does not trigger for routine features, clear-precedent placement, explanation,
   critique, implemented-diff review, or mere multi-file breadth
@@ -902,6 +915,84 @@ dotfiles.opencode.openrouterApiKeyFile = "/run/agenix/openrouter-api-key";
 ```
 
 The module exports `OPENROUTER_API_KEY` from that file in both Bash and Zsh shell initialization.
+
+The advisor council runner uses `OPENROUTER_API_KEY` first and reads
+`/run/agenix/openrouter-api-key` when the export is absent and the file is
+readable. Its isolated session keeps saved OpenCode credentials out of council
+requests. An invalid saved login can still affect regular OpenCode sessions.
+
+## Defensive security reviews
+
+Build handles threat modeling, static review, vulnerability triage, remediation,
+and defensive regression checks on authorized code and systems. Ask for an
+advisor or council when you want an independent review of the findings.
+The shared `advisor-council` skill offers Gemini Carbon and an optional Daybreak
+Blue seat for defensive analysis. Build verifies the advisors' findings and
+owns the final patch and checks.
+
+The Daybreak runner requests GPT-6 Sol at high reasoning with Daybreak Blue.
+It takes a review question and approved excerpts on standard input and opens
+an ephemeral read-only session. Set up the advisor's dedicated Codex CLI login
+once after activation.
+
+```sh
+bash ~/.config/opencode/skills/advisor-council/scripts/review-daybreak.sh --login
+```
+
+The seat needs Codex CLI 0.163.0 or later and an eligible account. The skill
+records a rejected seat as unavailable.
+[Daybreak CLI guide](https://help.openai.com/en/articles/20001607-using-daybreak-in-codex-cli)
+
+## Experiential Labs on suremac
+
+Experiential Labs is an opt-in provider on suremac, primarily for ablated
+models. Select one of these in OpenCode's `/models` picker.
+
+- `explabs/deepseek-v4.1-flash-uncensored`
+- `explabs/glm-5.3-flash-uncensored`
+- `explabs/glm-5.3-uncensored`
+
+Standard DeepSeek V4.1 Flash and Qwen3.8-27B are also available for manual
+selection. Use Codex directly or an OpenRouter model for routine work.
+
+Ask Orchestrator or Build to use a role name with one of these suffixes.
+For example, use `minion-glm-flash` for implementation with GLM 5.3 Flash.
+
+| Suffix | Experiential Labs model |
+| --- | --- |
+| `-glm` | `glm-5.3-uncensored` |
+| `-glm-flash` | `glm-5.3-flash-uncensored` |
+| `-deepseek-flash` | `deepseek-v4.1-flash-uncensored` |
+
+Each model has counterparts for Tiny, Explore, Luna, Minion, and Wise.
+OpenCode asks for permission unless the handoff has already been approved for
+the project. The counterparts inherit the original role's prompt and
+permissions. Tiny and Minion use low reasoning. Explore, Luna, and Wise use
+high reasoning, the next effort above low on these models.
+
+The gateway catalog reports zero data retention on every current route for
+standard `deepseek-v4.1-flash`. The managed OpenCode config uses the
+organization's gateway settings. Experiential Labs can also enforce ZDR per
+request with the `X-Gateway-ZDR: true` header on eligible accounts. Requests
+with that requirement skip gateway prompt and response capture.
+[Experiential Labs data controls](https://platform.experientiallabs.ai/docs/data-controls)
+
+The provider uses Chat Completions at `https://api.experientiallabs.ai/v1`.
+Add model slugs in the suremac host configuration using the inference key's
+`GET /v1/models` results. Model limits and base-rate estimates come from the
+gateway catalog.
+[Experiential Labs OpenCode setup](https://platform.experientiallabs.ai/docs/coding-agents#opencode)
+
+An OpenCode plugin reads `/run/agenix/explabs-inference-api-key` when it sends
+a session request to the gateway. The admin key is available for privileged
+maintenance at `/run/agenix/explabs-admin-api-key`, owned by root with mode
+`0400`. Both `secrets/explabs-*-api-key.age` files encrypt to the suremac SSH
+recipient.
+
+To rotate a key, run `agenix -e explabs-inference-api-key.age` or
+`agenix -e explabs-admin-api-key.age` from `secrets/`, then activate suremac.
+After the first activation, run `opencode service restart` when any active
+sessions finish. Check the model with `opencode models | rg '^explabs/'`.
 
 ## CircleCI token
 

@@ -1,0 +1,48 @@
+diff -ruN a/packages/app/src/runtime/server/global-sync/utils.test.ts b/packages/app/src/runtime/server/global-sync/utils.test.ts
+--- a/packages/app/src/runtime/server/global-sync/utils.test.ts	2026-11-19 13:13:15.418080951 -0800
++++ b/packages/app/src/runtime/server/global-sync/utils.test.ts	2026-11-19 13:13:24.765447368 -0800
+@@ -81,8 +81,32 @@
+       capabilities: { toolcall: true, attachment: true },
+       cost: { input: 1, output: 2 },
+       variants: { high: {} },
++      release_date: "1970-01-01",
+     })
+   })
++
++  test("leaves non-positive release dates unknown", () => {
++    const result = normalizeProviderList(
++      [{ id: "custom", name: "Custom", package: "@ai-sdk/openai-compatible" }] as ProviderListOutput["data"],
++      [
++        {
++          id: "custom-model",
++          modelID: "custom-model",
++          providerID: "custom",
++          name: "Custom Model",
++          capabilities: { tools: true, input: ["text"], output: ["text"] },
++          variants: [],
++          time: { released: 0 },
++          cost: [],
++          status: "active",
++          enabled: true,
++          limit: { context: 128_000, output: 8_192 },
++        },
++      ] as ModelListOutput["data"],
++    )
++
++    expect(result.all.get("custom")?.models["custom-model"]?.release_date).toBe("")
++  })
+ })
+ 
+ describe("normalizeProjectInfo", () => {
+diff -ruN a/packages/app/src/runtime/server/global-sync/utils.ts b/packages/app/src/runtime/server/global-sync/utils.ts
+--- a/packages/app/src/runtime/server/global-sync/utils.ts	2026-11-19 13:13:15.407124035 -0800
++++ b/packages/app/src/runtime/server/global-sync/utils.ts	2026-11-19 13:13:20.781422944 -0800
+@@ -112,7 +112,7 @@
+       status: model.status,
+       options: model.settings ?? {},
+       headers: model.headers ?? {},
+-      release_date: new Date(model.time.released).toISOString().slice(0, 10),
++      release_date: model.time.released > 0 ? new Date(model.time.released).toISOString().slice(0, 10) : "",
+       variants: Object.fromEntries(model.variants.map((variant) => [variant.id, variant.settings ?? {}])),
+     }
+   }

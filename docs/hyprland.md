@@ -14,6 +14,34 @@ requires an ELF executable. Upstream's default shell wrapper fails that check.
 The binary wrapper supports the package's runtime environment flags and keeps
 the compositor launch environment intact.
 
+## Login returns to ReGreet
+
+If authentication succeeds but the session immediately closes, check shell
+startup before assuming Hyprland crashed. Greetd sources `/etc/profile` and
+`~/.profile` through `/bin/sh` before executing the selected session. Output from
+that shell goes to the login VT, so the error may be absent from the journal.
+
+From SSH, reproduce that startup without opening a compositor:
+
+```bash
+/bin/sh -c '[ -f /etc/profile ] && . /etc/profile; [ -f "$HOME/.profile" ] && . "$HOME/.profile"; exec printf "login shell reached session command\n"'
+```
+
+On thorny, an unmanaged `~/.profile` from 2023 contained
+`export XDG_DATA_DIRS:...` instead of an assignment. This exited the shell before
+Hyprland started. Backing up the file and correcting the assignment restored
+login. Keep exports in this file POSIX-compatible, for example:
+
+```bash
+export XDG_DATA_DIRS="${XDG_DATA_DIRS:+$XDG_DATA_DIRS:}/usr/share:/var/lib/flatpak/exports/share:$HOME/.local/share/flatpak/exports/share"
+```
+
+`sudo journalctl -u greetd` shows authentication/session timing;
+`sudo tail -50 /var/log/regreet/log` shows the selected launch command.
+`Hyprland --verify-config` checks the compositor configuration independently.
+After correcting a profile error, retry login without restarting greetd or
+rebooting.
+
 ## GTK theme package
 
 Hyprland workstations use `pkgs.rose-pine-gtk-modern`, a repository-managed

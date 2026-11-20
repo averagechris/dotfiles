@@ -118,3 +118,53 @@ If tater gets a dedicated `chris@tater` user SSH key, add it to
 `flakes/base-lib/ssh-keys/default.nix` as `chris.tater` and include it in
 suremac's authorized keys so normal user-initiated SSH from tater to suremac does
 not need the host key identity.
+
+## Mac-to-Mac access
+
+The Darwin configurations provide `ssh taro-lan` on suremac and
+`ssh suremac-lan` on taro. They connect as `chris` over Bonjour on port 2222,
+using `~/.ssh/id_ed25519` and Apple's Keychain integration. The aliases live in
+the system SSH config and leave `~/.ssh/config` user-owned.
+
+Both Macs use `dotfiles.customSshd` on port 2222. It reads
+`~/.ssh/authorized_keys` and nix-darwin's declarative
+`/etc/ssh/nix_authorized_keys.d/%u` through `AuthorizedKeysCommand /bin/cat`.
+Taro's configuration authorizes suremac's existing user key and pins suremac's
+host key, both from `flakes/base-lib/ssh-keys/default.nix`.
+
+After taro's first activation, apply this revision on suremac and run pairing
+from its checkout:
+
+```bash
+nh darwin switch . --hostname suremac
+nix run .#pair-taro
+```
+
+Before accepting taro's host key on the first connection, compare its fingerprint
+with this command run directly on taro:
+
+```bash
+ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub
+```
+
+`pair-taro` runs as `chris` on suremac. It connects using suremac's key, creates
+an Ed25519 key on taro if needed, and asks for its passphrase interactively.
+It then retrieves only the public key, adds it to suremac's user-owned
+`~/.ssh/authorized_keys`, and checks a reverse login. Existing keys are preserved;
+rerunning pairing does not duplicate the authorization. Private keys stay on
+their own Macs. If suremac's authorized-keys file is a symlink, pairing stops
+instead of modifying a managed target.
+
+Verify both directions:
+
+```bash
+# On suremac
+ssh taro-lan hostname
+# On taro
+ssh suremac-lan hostname
+```
+
+Expect `taro` and `suremac`, respectively. The legacy `ssh-lan` discovery helpers
+use port 22 and do not discover taro; use the Mac aliases above. For service
+failures, inspect `sudo launchctl print system/org.nixos.dotfiles-custom-sshd`
+and `/var/log/dotfiles-custom-sshd.log` on the affected Mac.

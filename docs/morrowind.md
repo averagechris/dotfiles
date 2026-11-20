@@ -11,9 +11,9 @@ Steam app `22320`. If Steam disables Install, select
 Proton under the game's Compatibility properties to allow the download.
 OpenMW runs the game natively; the original Windows executable need not run.
 
-The profiles' launchers and all mod archives are installed on thorny as of
-October 27, 2026. The Nix changes still need to reach `main` so a future
-automatic deployment preserves the packages.
+The profiles' launchers and all mod archives were installed on thorny on
+October 27, 2026. The host configuration includes the launchers in future
+deployments.
 
 ## Commands and profile files
 
@@ -165,5 +165,5 @@ All selected archives extracted successfully. The actual plugins' master
 dependencies are satisfied in the generated order. Separate-profile checks
 used these real mods with synthetic base-game fixtures to verify plugin and
 asset isolation, save paths, backups, reruns, and unknown-plugin refusal.
-The Steam download is now installed and the Rebirth launcher has been opened
-on the desktop. In-game testing is in progress.
+Rebirth has been played successfully on thorny. Tamriel Rebuilt validation
+covered profile setup and plugin dependencies.

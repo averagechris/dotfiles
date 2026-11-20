@@ -6,10 +6,6 @@
     nixpkgs.follows = "base-lib/nixpkgs";
     flake-utils.follows = "base-lib/flake-utils";
     home-manager.follows = "base-lib/home-manager";
-    helix = {
-      url = "github:helix-editor/helix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     starship-jj = {
       url = "github:averagechris/starship-jj";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -375,7 +371,7 @@
           buildPrompt = agents.build;
           orchestratorPrompt = agents.orchestrator;
           minionPrompt = agents.minion;
-          delegatedPrompts = with agents; [build minion tiny luna wise];
+          delegatedPrompts = with agents; [build minion tiny luna wise opus];
           codingPrompts = delegatedPrompts ++ [orchestratorPrompt];
           blockAfter = marker: terminator: prompt:
             builtins.head (lib.splitString terminator (builtins.elemAt (lib.splitString marker prompt) 1));
@@ -507,16 +503,17 @@
           jjSkillRouting = blockAfter "## Jujutsu skill routing\n\n" "\n\n    Do not copy command manuals" orchestratorPrompt;
           frontmatter = blockAfter "---\n" "\n---";
           expectedAgentModels = {
-            tiny = "openrouter/openai/gpt-5.6-luna#low";
-            luna = "openrouter/openai/gpt-5.6-luna#high";
-            minion = "openrouter/openai/gpt-5.6-sol#low";
-            wise = "openrouter/anthropic/claude-fable-5.1#high";
+            tiny = "openrouter/~openai/gpt-luna-latest#low";
+            luna = "openrouter/~openai/gpt-luna-latest#high";
+            minion = "openrouter/~openai/gpt-sol-latest#low";
+            wise = "openrouter/~anthropic/claude-fable-latest#high";
+            opus = "openrouter/anthropic/claude-opus-5.5#high";
           };
           unpinnedAgentPrompts = with agents; [build orchestrator plan];
         in
-          assert settings.default_agent == "orchestrator";
+          assert settings.default_agent == "build";
           assert settings.experimental.subagent_depth == 2;
-          assert settings.agents.explore.model == "openrouter/openai/gpt-5.6-luna#medium";
+          assert settings.agents.explore.model == "openrouter/~openai/gpt-luna-latest#medium";
           assert settings.compaction
           == {
             auto = true;
@@ -529,6 +526,9 @@
             expected = [
               "~openai/gpt-sol-latest"
               "~openai/gpt-astra-latest"
+              "~openai/gpt-luna-latest"
+              "~anthropic/claude-fable-latest"
+              "anthropic/claude-opus-5.5"
               "openai/gpt-5.6-sol"
               "openai/gpt-5.6-luna"
               "anthropic/claude-fable-5.1"
@@ -549,12 +549,11 @@
             expected;
           assert lib.all (name: lib.hasInfix "model: ${expectedAgentModels.${name}}\n" (frontmatter agents.${name})) (builtins.attrNames expectedAgentModels);
           assert lib.all (prompt: !(lib.hasInfix "model:" (frontmatter prompt))) unpinnedAgentPrompts;
-          assert lib.hasInfix "Use this exceptional tier only" buildPrompt;
-          assert lib.hasInfix "return control to the caller for canonical routing" buildPrompt;
-          # Build re-delegation is constrained by orchestrator handoff guidance,
-          # not banned by permissions: keep its task allowances intact.
+          assert lib.hasInfix "Use the `advisor-council` skill" buildPrompt;
+          # Build can delegate scoped work.
           assert lib.hasInfix ''resource: "minion"'' (taskPermissions buildPrompt);
           assert lib.hasInfix ''resource: "wise"'' (taskPermissions buildPrompt);
+          assert lib.hasInfix ''resource: "opus"'' (taskPermissions buildPrompt);
           # Minion may only hand off research (explore) and mechanics (tiny);
           # the exact block keeps every other agent, including upstream
           # built-ins, behind the deny-all default.
