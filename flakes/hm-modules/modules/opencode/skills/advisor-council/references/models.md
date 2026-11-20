@@ -4,7 +4,7 @@ Use native Codex delegation for the OpenAI seats when the requested selection is
 
 | Advisor | Selection | Lens |
 | --- | --- | --- |
-| **Claude Opus 5.5** | `openrouter/anthropic/claude-opus-5.5#high` | Required council seat. Independent code and design judgment. |
+| **Claude Opus 5.5** | `openrouter/anthropic/claude-opus-5.5#high` | Default panel. Independent code and design judgment. |
 | **GPT-6.2 Sol** | Codex `gpt-6.2-sol`, high | Practical implementation, validation, and tradeoffs. |
 | **GPT-6.2 Astra** | Codex `gpt-6.2-astra`, high | Deep architecture, correctness, and failure modes. |
 | **Claude Fable 5.2** | `openrouter/anthropic/claude-fable-5.2#high` | Open-ended design, simplicity and taste. Check [provider retention terms](https://openrouter.ai/anthropic/claude-fable-5.2) before including work material. |

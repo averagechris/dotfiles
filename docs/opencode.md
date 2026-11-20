@@ -816,8 +816,9 @@ modules register bundled or repo-managed skills with `dotfiles.agentSkills`, so
 rendering, patching, extension, and per-skill enablement happen uniformly at
 build time. Current examples include:
 
-- `advisor-council`, for independent feedback before finalizing non-trivial
-  work or when asked for an advisor or council. Codex uses the same skill.
+- `advisor-council`, for independent reviews before finalizing non-trivial work
+  or when asked for an advisor or council. OpenCode and Codex share the
+  [three-reviewer default and implementation review requirements](codex.md#model-selection-and-outside-feedback).
 
 - `architect`, for explicit design work and expensive-to-reverse boundaries; it
   does not trigger for routine features, clear-precedent placement, explanation,

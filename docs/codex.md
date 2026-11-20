@@ -100,13 +100,14 @@ Delegated tasks follow the same guidance. Unavailable requested models should be
 reported, with a suitable available fallback rather than a false claim of use.
 
 Use the shared `advisor-council` skill before finalizing non-trivial work or
-when asked for an advisor or council. Reviewers can work from a stable working
-copy, a commit, or a diff. External reviewers receive only approved excerpts,
-inline or as an attachment. Opus 5.5 is the required council seat. The roster
-also includes Sol 6.2 high, Astra 6.2 high, Fable 5.2, Gemini Carbon, and a trial
-seat for Gemini Neon. OpenCode can also call the optional Daybreak Blue seat
-through Codex CLI for defensive reviews. See [OpenCode security reviews](opencode.md#defensive-security-reviews).
-The skill checks availability and records any missing seat.
+when asked for an advisor or council. The default panel is Opus 5.5, Astra 6.2,
+and Sol 6.2, all at high effort. A full council adds the other applicable seats.
+Code readiness requires two independent models to inspect the implementation
+unless the user explicitly requests a single reviewer. Each seat reports its
+scope. External seats receive approved diffs or excerpts, and a design-only
+review is identified as such. The lead verifies material findings before signoff.
+OpenCode can also call the optional Daybreak Blue seat through Codex CLI for
+defensive reviews. See [OpenCode security reviews](opencode.md#defensive-security-reviews).
 Its bundled OpenRouter runner uses the executor's exported key or the local
 agenix key, with an isolated OpenCode session and tools denied. Routing follows
 OpenRouter's account and key policies. Pass `--zdr` before the model when the
