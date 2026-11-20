@@ -2,6 +2,8 @@
 """Set up isolated Rebirth and Tamriel Rebuilt profiles for OpenMW."""
 
 import argparse
+import fcntl
+import hashlib
 import os
 import re
 import shutil
@@ -12,8 +14,8 @@ from pathlib import Path
 
 
 HOME = Path.home()
-DATA_HOME = Path(os.environ.get("XDG_DATA_HOME", HOME / ".local/share"))
-CONFIG_HOME = Path(os.environ.get("XDG_CONFIG_HOME", HOME / ".config"))
+DATA_HOME = Path(os.environ.get("XDG_DATA_HOME") or HOME / ".local/share")
+CONFIG_HOME = Path(os.environ.get("XDG_CONFIG_HOME") or HOME / ".config")
 # Mods and downloads are intentionally shared. Only OpenMW configuration and
 # user data (including saves) live under per-profile roots.
 OPENMW_HOME = DATA_HOME / "openmw"
@@ -25,6 +27,10 @@ PROFILE_ROOTS = {
 }
 CONFIG = None
 CFG = None
+
+
+class SetupError(Exception):
+    pass
 
 
 def say(message):
@@ -44,21 +50,22 @@ def find_archives(pattern):
     return sorted(set(candidates), key=lambda path: (path.stat().st_mtime_ns, str(path)), reverse=True)
 
 
-def has_files(root, expected):
-    if not root.is_dir():
-        return False
-    if isinstance(expected, str):
-        expected = (expected,)
-    found = {
-        path.name.casefold()
-        for path in root.rglob("*")
-        if path.is_dir() or (path.is_file() and path.stat().st_size > 0)
-    }
-    groups = expected if expected and isinstance(expected[0], tuple) else (expected,)
-    return any(all(name.casefold() in found for name in group) for group in groups)
+def nonempty_file(path):
+    return path.is_file() and path.stat().st_size > 0
 
 
-def extract_archive(archive, destination, expected):
+def matching_plugins(root, names):
+    return {path for name in names for path in find_files(root, name)}
+
+
+def staged_tree(root, pattern):
+    trees = [path for path in root.glob(pattern) if path.is_dir()]
+    if len(trees) == 1 and any(nonempty_file(file) for file in trees[0].rglob("*")):
+        return trees[0]
+    return None
+
+
+def extract_archive(archive, destination, valid):
     with tempfile.TemporaryDirectory(prefix=f".{destination.name}.extract-", dir=MODS) as temp_name:
         temp = Path(temp_name)
         say(f"Extracting {archive.name} to {destination}")
@@ -66,34 +73,55 @@ def extract_archive(archive, destination, expected):
             subprocess.run(["unrar", "x", "-o+", "-idq", str(archive), f"{temp}/"], check=True)
         else:
             subprocess.run(["7zz", "x", "-y", f"-o{temp}", str(archive)], check=True)
-        if not has_files(temp, expected):
-            groups = (expected,) if isinstance(expected, str) else expected
-            names = [name for group in groups for name in (group if isinstance(group, tuple) else (group,))]
-            say(f"Archive did not contain the expected files {', '.join(names)}; {destination} was left unchanged.")
-            return False
+        if not valid(temp):
+            raise SetupError(f"{archive.name} has an invalid or ambiguous layout. Left {destination} in place.")
         (temp / ".morrowind-setup-ready").touch()
+        backup = None
         if destination.exists():
             stamp = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
             backup = destination.with_name(f"{destination.name}.previous-{stamp}")
             os.replace(destination, backup)
             say(f"Moved incomplete prior extraction to {backup}")
-        os.replace(temp, destination)
-    return True
+        try:
+            os.replace(temp, destination)
+        except OSError:
+            if backup is not None:
+                os.replace(backup, destination)
+            raise
 
 
-def stage(pattern, destination, expected, required=False):
-    if (destination / ".morrowind-setup-ready").is_file() and has_files(destination, expected):
-        say(f"Already extracted: {destination}")
+def stage(pattern, destination, checksum, *, required=False, files=(), directories=(), trees=(), plugins=()):
+    def valid(root):
+        if not root.is_dir():
+            return False
+        if not all(nonempty_file(root / path) for path in files):
+            return False
+        if not all((root / path).is_dir() for path in directories):
+            return False
+        if not all(staged_tree(root, pattern) for pattern in trees):
+            return False
+        for subdir, names in plugins:
+            matches = matching_plugins(root / subdir, names)
+            if len(matches) != 1 or not nonempty_file(next(iter(matches))):
+                return False
         return True
+
+    if (destination / ".morrowind-setup-ready").is_file() and valid(destination):
+        say(f"Already extracted: {destination}")
+        return destination
     archives = find_archives(pattern)
-    archive = archives[0] if archives else None
-    if archive is None:
-        if required:
-            say(f"Missing archive matching {pattern.pattern!r} in {DOWNLOADS} or ~/Downloads")
-        return not required
-    if len(archives) > 1:
-        say(f"Found {len(archives)} matching archives; using newest: {archive}")
-    return extract_archive(archive, destination, expected)
+    if not archives and not required and not destination.exists():
+        return None
+    for archive in archives:
+        with archive.open("rb") as stream:
+            if hashlib.file_digest(stream, "sha256").hexdigest() != checksum:
+                continue
+        extract_archive(archive, destination, valid)
+        return destination
+    raise SetupError(
+        f"{destination.name}: expected an archive matching {pattern.pattern!r} in {DOWNLOADS} "
+        f"or ~/Downloads with SHA-256 {checksum}. Left {destination} in place."
+    )
 
 
 def steam_libraries():
@@ -137,11 +165,15 @@ def find_game():
     return None
 
 
-def mod_data_dirs(mod_root, plugin):
-    matches = find_files(mod_root, plugin)
-    if len(matches) != 1:
-        return [], matches
-    return [matches[0].parent], matches
+def require_game():
+    game = find_game()
+    if game is None:
+        raise SetupError("Install Morrowind, Tribunal, and Bloodmoon in Steam, then rerun setup.")
+    return game
+
+
+def staged_plugin(root, names):
+    return next(iter(matching_plugins(root, names)))
 
 
 def existing_content():
@@ -187,28 +219,50 @@ def import_game_fallbacks(game_data, ini):
         ]
 
 
-def write_profile_config(profile, data_dirs, ordered_plugins, fallbacks):
+def config_entry(line):
+    key, separator, value = line.partition("=")
+    if not separator or key.lstrip().startswith("#"):
+        return "", ""
+    return key.strip().casefold(), value.strip().strip('"')
+
+
+def managed_data_path(value, data_dirs, mod_roots):
+    path = (CONFIG / value).resolve()
+    return (
+        path in data_dirs
+        or any(path.is_relative_to(root) for root in mod_roots)
+        or tuple(part.casefold() for part in path.parts[-4:]) == ("steamapps", "common", "morrowind", "data files")
+    )
+
+
+def write_profile_config(profile, data_dirs, ordered_plugins, fallbacks, managed_roots):
     existing_lines = CFG.read_text(errors="replace").splitlines() if CFG.exists() else []
-    preserved_lines = [
-        line for line in existing_lines
-        if not re.match(r"\s*(?:content|user-data|data-local)\s*=", line, re.IGNORECASE)
-        and line.strip() != "# Generated by morrowind-setup; OpenMW Launcher may edit this file."
-    ]
-    existing_keys = {
-        match.group(1).strip().casefold()
-        for line in preserved_lines
-        if (match := re.match(r"\s*([^#=]+?)\s*=", line))
-    }
-    preserved_data = {
-        match.group(1).strip().strip('"').casefold()
-        for line in preserved_lines
-        if (match := re.match(r"\s*data\s*=\s*(.*?)\s*$", line, re.IGNORECASE))
-    }
     unique_data_dirs = list(dict.fromkeys(path.resolve() for path in data_dirs))
-    lines = ["# Generated by morrowind-setup; OpenMW Launcher may edit this file.", *preserved_lines]
+    mod_roots = [path.resolve() for path in managed_roots]
+    header = "# Generated by morrowind-setup; OpenMW Launcher may edit this file."
+    game_archives = [line for line in fallbacks if config_entry(line)[0] == "fallback-archive"]
+    archive_names = {config_entry(line)[1].casefold() for line in game_archives}
+    preserved_lines = []
+    existing_fallbacks = set()
+    for line in existing_lines:
+        key, value = config_entry(line)
+        if line.strip() == header or key in {"content", "user-data", "data-local"}:
+            continue
+        if key == "data" and managed_data_path(value, unique_data_dirs, mod_roots):
+            continue
+        if key == "fallback-archive" and value.casefold() in archive_names:
+            continue
+        if key == "fallback":
+            existing_fallbacks.add(value.partition(",")[0].strip().casefold())
+        preserved_lines.append(line)
+
+    lines = [header, *game_archives]
+    lines.extend(f'data="{path}"' for path in unique_data_dirs)
+    lines.extend(preserved_lines)
     lines.extend(
-        f'data="{path}"' for path in unique_data_dirs
-        if str(path).casefold() not in preserved_data
+        line for line in fallbacks
+        if config_entry(line)[0] == "fallback"
+        and config_entry(line)[1].partition(",")[0].strip().casefold() not in existing_fallbacks
     )
     lines.extend(f"content={plugin}" for plugin in ordered_plugins)
     profile_data = PROFILE_ROOTS[profile][1] / "openmw"
@@ -216,167 +270,109 @@ def write_profile_config(profile, data_dirs, ordered_plugins, fallbacks):
     (profile_data / "data").mkdir(parents=True, exist_ok=True)
     lines.append(f'user-data="{profile_data}"')
     lines.append(f'data-local="{profile_data / "data"}"')
-    lines.extend(
-        line for line in fallbacks
-        if line.split("=", 1)[0].strip().casefold() not in existing_keys
-    )
-
     CONFIG.mkdir(parents=True, exist_ok=True)
     if CFG.exists():
         stamp = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
         backup = CFG.with_name(f"openmw.cfg.bak-{stamp}")
         shutil.copy2(CFG, backup)
         say(f"Backed up existing config to {backup}")
-    temp_cfg = CFG.with_suffix(".cfg.tmp")
-    temp_cfg.write_text("\n".join(lines) + "\n")
-    os.replace(temp_cfg, CFG)
-    launcher_cfg = CONFIG / "launcher.cfg"
-    if not launcher_cfg.exists():
-        launcher_cfg.write_text("[General]\nfirstrun=false\n")
+    with tempfile.NamedTemporaryFile(mode="w", prefix=".openmw.cfg-", dir=CONFIG, delete=False) as stream:
+        temp_cfg = Path(stream.name)
+        try:
+            stream.write("\n".join(lines) + "\n")
+            stream.close()
+            try:
+                with (CONFIG / "launcher.cfg").open("x") as launcher:
+                    launcher.write("[General]\nfirstrun=false\n")
+            except FileExistsError:
+                pass
+            os.replace(temp_cfg, CFG)
+        finally:
+            temp_cfg.unlink(missing_ok=True)
     say(f"OpenMW {profile} config written: {CFG}")
     say("Enabled content: " + ", ".join(ordered_plugins))
 
 
-def setup_tr(stage_only=False):
-    MODS.mkdir(parents=True, exist_ok=True)
-    DOWNLOADS.mkdir(parents=True, exist_ok=True)
-
-    required_archives = [
-        stage(re.compile(r"tamriel[_ -]?rebuilt.*\.7z$", re.IGNORECASE), MODS / "Tamriel Rebuilt", ("TR_Mainland.esm", "tamrielrebuilt.omwscripts"), True),
-        stage(re.compile(r"tamriel[_ -]?data.*26\.08.*hd.*\.7z$", re.IGNORECASE), MODS / "Tamriel Data HD", ("Tamriel_Data.esm", "Tamriel_Data.omwscripts"), True),
-    ]
-    if not all(required_archives):
+def configure_profile(profile, game_root, game_data, ini, data_dirs, plugins, managed_roots):
+    ordered_plugins = ["Morrowind.esm", "Tribunal.esm", "Bloodmoon.esm", *(path.name for path in plugins)]
+    if refuse_unknown_content(profile, ordered_plugins):
         return 1
+    fallbacks = import_game_fallbacks(game_data, ini)
+    if fallbacks is None:
+        return 1
+    write_profile_config(profile, data_dirs, ordered_plugins, fallbacks, managed_roots)
+    say(f"Game files: {game_root}")
+    return 0
 
-    pfp_staged = stage(
+
+def setup_tr(stage_only=False):
+    tr_main = ("TR_Mainland.esm",)
+    tr_scripts = ("tamrielrebuilt.omwscripts",)
+    td_main = ("Tamriel_Data.esm",)
+    td_scripts = ("Tamriel_Data.omwscripts",)
+    pfp_names = ("Patch for Purists.esm", "Patch for Purists.esp")
+    delay_names = ("Expansion Delay.esp",)
+
+    tr_root = stage(
+        re.compile(r"tamriel[_ -]?rebuilt.*\.7z$", re.IGNORECASE),
+        MODS / "Tamriel Rebuilt", "31d1f45469291cd71408fe7b795ded0e593fab226796aa35b1b86b588825c0bc",
+        required=True, plugins=((".", tr_main), (".", tr_scripts)),
+    )
+    td_root = stage(
+        re.compile(r"tamriel[_ -]?data.*26\.08.*hd.*\.7z$", re.IGNORECASE),
+        MODS / "Tamriel Data HD", "da5b37375434c265c47f484c4f005cf7e279bcaa1cccc39bf56c92d5bf8f5cda",
+        required=True, plugins=((".", td_main), (".", td_scripts)),
+    )
+    pfp_root = stage(
         re.compile(r"patch[_ -]+for[_ -]+purists.*\.(?:7z|zip)$", re.IGNORECASE),
-        MODS / "Patch for Purists",
-        (("Patch for Purists.esm",), ("Patch for Purists.esp",)),
+        MODS / "Patch for Purists", "e8ccaeb08c224b28c385f3c78b7f9f04ea8cbdacd786f5e56766587f856f4786", plugins=((".", pfp_names),),
     )
-    delay_staged = stage(
+    delay_root = stage(
         re.compile(r"expansion[_ -]+delay.*\.(?:7z|zip)$", re.IGNORECASE),
-        MODS / "Expansion Delay",
-        (("Expansion Delay.ESP",), ("Expansion Delay.esp",)),
+        MODS / "Expansion Delay", "09f34ff768f54765ea15e7a85b36b6cfd80ade412ebc9359ba9aed77908ffe72", plugins=((".", delay_names),),
     )
-    mop_staged = stage(
+    mop_root = stage(
         re.compile(r"morrowind[_ -]+optimization[_ -]+patch.*\.(?:7z|zip)$", re.IGNORECASE),
-        MODS / "Morrowind Optimization Patch",
-        ("Meshes",),
+        MODS / "Morrowind Optimization Patch", "270da1846414b1213f67d1a40f1c065e14e7859a486c3cb184779452a80b9d71",
+        trees=("**/00 Core",),
     )
-
     if stage_only:
         say("TR profile archives staged; Steam game discovery was skipped.")
         return 0
 
-    tr_root = MODS / "Tamriel Rebuilt"
-    td_root = MODS / "Tamriel Data HD"
-    tr_dirs, tr_plugins = mod_data_dirs(tr_root, "TR_Mainland.esm")
-    td_dirs, td_plugins = mod_data_dirs(td_root, "Tamriel_Data.esm")
-    tr_scripts = find_files(tr_root, "tamrielrebuilt.omwscripts")
-    td_scripts = find_files(td_root, "Tamriel_Data.omwscripts")
-    if len(tr_plugins) != 1 or len(tr_scripts) != 1:
-        say(f"Expected one TR_Mainland.esm and tamrielrebuilt.omwscripts under {tr_root}")
-        return 1
-    if len(td_plugins) != 1 or len(td_scripts) != 1:
-        say(f"Expected one Tamriel_Data.esm and Tamriel_Data.omwscripts in the HD archive under {td_root}")
-        return 1
-
-    game = find_game()
-    if game is None:
-        say("Morrowind, Tribunal, Bloodmoon, and Morrowind.ini were not found in Steam libraries.")
-        say("Install Morrowind in Steam, then run morrowind-setup again.")
-        return 1
-    game_root, game_data, ini = game
-
-    pfp_root = MODS / "Patch for Purists"
-    pfp_dirs, pfp_plugins = mod_data_dirs(pfp_root, "Patch for Purists.esm") if pfp_staged and pfp_root.exists() else ([], [])
-    if not pfp_plugins and pfp_staged and pfp_root.exists():
-        pfp_dirs, pfp_plugins = mod_data_dirs(pfp_root, "Patch for Purists.esp")
-    delay_root = MODS / "Expansion Delay"
-    delay_dirs, delay_plugins = mod_data_dirs(delay_root, "Expansion Delay.ESP") if delay_staged and delay_root.exists() else ([], [])
-    if not delay_plugins and delay_staged and delay_root.exists():
-        delay_dirs, delay_plugins = mod_data_dirs(delay_root, "Expansion Delay.esp")
-    pfp_plugin = pfp_plugins[0].name if pfp_plugins else None
-    delay_plugin = delay_plugins[0].name if delay_plugins else None
-
-    ordered_plugins = ["Morrowind.esm", "Tribunal.esm", "Bloodmoon.esm"]
-    if pfp_plugin:
-        ordered_plugins.append(pfp_plugin)
-    ordered_plugins.extend([
-        "Tamriel_Data.esm",
-        "Tamriel_Data.omwscripts",
-        "TR_Mainland.esm",
-        "tamrielrebuilt.omwscripts",
+    game_root, game_data, ini = require_game()
+    plugins = []
+    if pfp_root:
+        plugins.append(staged_plugin(pfp_root, pfp_names))
+    plugins.extend([
+        staged_plugin(td_root, td_main),
+        staged_plugin(td_root, td_scripts),
+        staged_plugin(tr_root, tr_main),
+        staged_plugin(tr_root, tr_scripts),
     ])
-    if delay_plugin:
-        ordered_plugins.append(delay_plugin)
+    if "tr_factions.esp" in existing_content():
+        matches = find_files(tr_root, "TR_Factions.esp")
+        if len(matches) != 1 or not nonempty_file(matches[0]):
+            raise SetupError("Expected one TR_Factions.esp for the existing Tamriel Rebuilt configuration.")
+        plugins.append(matches[0])
+    if delay_root:
+        plugins.append(staged_plugin(delay_root, delay_names))
 
-    if refuse_unknown_content("TR", ordered_plugins):
-        return 1
-
-    fallbacks = import_game_fallbacks(game_data, ini)
-    if fallbacks is None:
-        return 1
-
-    mop_root = MODS / "Morrowind Optimization Patch"
-    mop_core = next(
-        (path for path in mop_root.rglob("*") if path.is_dir() and path.name.casefold() == "00 core"),
-        None,
-    ) if mop_staged else None
-    data_dirs = [game_data, *pfp_dirs, *td_dirs, *tr_dirs, *delay_dirs]
-    if mop_core:
-        data_dirs.append(mop_core)
-    write_profile_config("tr", data_dirs, ordered_plugins, fallbacks)
-    say(f"Game files: {game_root}")
-    say("Enabled content: " + ", ".join(ordered_plugins))
-    if not pfp_plugin:
-        say("Patch for Purists is unavailable or has no recognized plugin; it was not enabled.")
-    if not delay_plugin:
-        say("Expansion Delay is unavailable or has no recognized plugin; it was not enabled.")
-    if not mop_core:
-        say("Morrowind Optimization Patch is unavailable; the optional core was not installed.")
-    return 0
+    data_dirs = [game_data, *(path.parent for path in plugins)]
+    if mop_root:
+        data_dirs.append(staged_tree(mop_root, "**/00 Core"))
+    managed_roots = [MODS / name for name in (
+        "Tamriel Rebuilt", "Tamriel Data HD", "Patch for Purists",
+        "Expansion Delay", "Morrowind Optimization Patch",
+    )]
+    return configure_profile("tr", game_root, game_data, ini, data_dirs, plugins, managed_roots)
 
 
 def setup_rebirth(stage_only=False):
-    MODS.mkdir(parents=True, exist_ok=True)
-    DOWNLOADS.mkdir(parents=True, exist_ok=True)
-
-    met_root = MODS / "Morrowind Enhanced Textures"
-    met_staged = stage(
-        re.compile(r"morrowind[_ -]+enhanced[_ -]+textures[_ -]+6\.1.*\.zip$", re.IGNORECASE),
-        met_root,
-        "textures",
-        True,
-    )
-    if not met_staged:
-        return 1
-    met_data = met_root / "MET 6-1 main"
-    met_textures = met_data / "textures"
-    if not met_textures.is_dir() or not any(path.is_file() and path.stat().st_size > 0 for path in met_textures.rglob("*")):
-        say(f"MET 6.1 did not contain the expected non-empty textures directory: {met_textures}")
-        return 1
-
-    rebirth_root = MODS / "Morrowind Rebirth"
-    rebirth_staged = stage(
-        re.compile(r"morrowind[_ -]+rebirth[_ -]+7\.2.*\.rar$", re.IGNORECASE),
-        rebirth_root,
-        ("Morrowind Rebirth [Main].ESP", "Morrowind Patch Project v1.6.6 [For Rebirth].esm"),
-        True,
-    )
-    if not rebirth_staged:
-        return 1
-
-    rebirth_data = rebirth_root / "Data Files"
-    patch_dir = rebirth_root / "Compability Patches"
-    main_plugin = rebirth_data / "Morrowind Rebirth [Main].ESP"
-    patch_plugin = patch_dir / "Morrowind Patch Project v1.6.6 [For Rebirth].esm"
-    if not main_plugin.is_file() or not patch_plugin.is_file():
-        say("The Rebirth archive did not contain the expected canonical main plugin and Rebirth patch paths.")
-        say(f"Expected: {main_plugin}")
-        say(f"Expected: {patch_plugin}")
-        return 1
-
+    rebirth_data = "Data Files"
+    patch_dir = "Compability Patches"
+    main_plugin = "Morrowind Rebirth [Main].ESP"
+    patch_plugin = "Morrowind Patch Project v1.6.6 [For Rebirth].esm"
     addon_names = [
         "Morrowind Rebirth - Birthsigns [Addon].ESP",
         "Morrowind Rebirth - Game Settings [Addon].ESP",
@@ -385,123 +381,73 @@ def setup_rebirth(stage_only=False):
         "Morrowind Rebirth - Skills [Addon].ESP",
         "Morrowind Rebirth - Tools [Addon].ESP",
     ]
-    addon_plugins = [rebirth_data / name for name in addon_names]
-    missing_addons = [path.name for path in addon_plugins if not path.is_file()]
-    if missing_addons:
-        say("The Rebirth archive is missing expected addon plugins:")
-        for name in missing_addons:
-            say(f"  {name}")
-        return 1
-
-    familiar_root = MODS / "Familiar Faces"
-    familiar_staged = stage(
-        re.compile(r"familiar[_ -]+faces.*\.zip$", re.IGNORECASE),
-        familiar_root,
-        "Meshes",
-        True,
-    )
-    if not familiar_staged:
-        return 1
-    if not any(path.is_file() and path.stat().st_size > 0 for path in (familiar_root / "Meshes").rglob("*")):
-        say(f"Familiar Faces did not contain non-empty mesh assets under {familiar_root / 'Meshes'}")
-        return 1
-
-    herbalism_root = MODS / "Graphic Herbalism"
-    herbalism_staged = stage(
-        re.compile(r"graphic[_ -]+herbalism.*openmw.*\.7z$", re.IGNORECASE),
-        herbalism_root,
-        "00 Core + Vanilla Meshes",
-        True,
-    )
-    if not herbalism_staged:
-        return 1
-    herbalism_core = herbalism_root / "00 Core + Vanilla Meshes"
-    if not herbalism_core.is_dir() or not any(path.is_file() and path.stat().st_size > 0 for path in herbalism_core.rglob("*")):
-        say(f"Graphic Herbalism did not contain the expected non-empty core data directory: {herbalism_core}")
-        return 1
-
-    glow_root = MODS / "Glow in the Dahrk"
-    glow_modules = [
+    glow_modules = (
         "00 Core",
         "01 Hi Res Window Texture Replacer",
         "03 Nord Glass Windows",
         "05 Raven Rock Glass Windows",
-    ]
-    glow_staged = stage(
+    )
+    glow_plugin = ("GITD_WL_RR_Interiors.esp",)
+    lgnpc_plugin = ("LGNPC_Merged_Lt.esp",)
+
+    met_root = stage(
+        re.compile(r"morrowind[_ -]+enhanced[_ -]+textures[_ -]+6\.1.*\.zip$", re.IGNORECASE),
+        MODS / "Morrowind Enhanced Textures", "3f029c979f80c8c92095b60c50ee688352c3ca36f036ab32a52201a119c9e52f",
+        required=True, trees=("MET 6-1 main/textures",),
+    )
+    rebirth_root = stage(
+        re.compile(r"morrowind[_ -]+rebirth[_ -]+7\.2.*\.rar$", re.IGNORECASE),
+        MODS / "Morrowind Rebirth", "8f31db65c01e41744842c10151a3a5259e1e57668e6f89e444b10a73a2a20ee0",
+        required=True,
+        files=(
+            f"{patch_dir}/{patch_plugin}",
+            *(f"{rebirth_data}/{name}" for name in (main_plugin, *addon_names)),
+        ),
+    )
+    familiar_root = stage(
+        re.compile(r"familiar[_ -]+faces.*\.zip$", re.IGNORECASE),
+        MODS / "Familiar Faces", "650f44032fec42a423a11b06f550b38d878c1b2f92b62ac6d94329287364d162", required=True, trees=("Meshes",),
+    )
+    herbalism_core = "00 Core + Vanilla Meshes"
+    herbalism_root = stage(
+        re.compile(r"graphic[_ -]+herbalism.*openmw.*\.7z$", re.IGNORECASE),
+        MODS / "Graphic Herbalism", "3ae31e146fa1ccf6ed82d0e2dc85fe317ef14c0c72202ca383e9ca0b57745c0c", required=True, trees=(herbalism_core,),
+    )
+    glow_root = stage(
         re.compile(r"glow[_ -]+in[_ -]+the[_ -]+dahrk[_ -]+2\.11\.2.*\.7z$", re.IGNORECASE),
-        glow_root,
-        tuple(glow_modules),
-        True,
+        MODS / "Glow in the Dahrk", "d31b57bb48c084c6b77b2eb768afae9f225f3e4fbb59feecdb123fb940f1c6c4",
+        required=True, directories=glow_modules, plugins=((glow_modules[-1], glow_plugin),),
     )
-    if not glow_staged:
-        return 1
-    missing_glow_modules = [name for name in glow_modules if not (glow_root / name).is_dir()]
-    if missing_glow_modules:
-        say("Glow in the Dahrk archive is missing required legacy OpenMW modules:")
-        for name in missing_glow_modules:
-            say(f"  {name}")
-        return 1
-    glow_plugins = find_files(glow_root / "05 Raven Rock Glass Windows", "GITD_WL_RR_Interiors.esp")
-    if len(glow_plugins) != 1:
-        say(f"Expected one GITD_WL_RR_Interiors.esp in {glow_root / '05 Raven Rock Glass Windows'}")
-        return 1
-
-    lgnpc_root = MODS / "LGNPC Dialogue Only"
-    lgnpc_staged = stage(
+    lgnpc_root = stage(
         re.compile(r"lgnpc[_ -]+merged[_ -]+lt.*\.zip$", re.IGNORECASE),
-        lgnpc_root,
-        "LGNPC_Merged_Lt.esp",
+        MODS / "LGNPC Dialogue Only", "3be2f3f53248976f0a7671ec424830393cddb4fc412bc2e3111c405318a7ddc6", plugins=((".", lgnpc_plugin),),
     )
-    if not lgnpc_staged:
-        say("Optional LGNPC Dialogue Only archive was found but did not validate; the profile was not changed.")
-        return 1
-    lgnpc_plugins = find_files(lgnpc_root, "LGNPC_Merged_Lt.esp") if lgnpc_root.is_dir() else []
-    if len(lgnpc_plugins) > 1:
-        say(f"Expected at most one LGNPC_Merged_Lt.esp under {lgnpc_root}")
-        return 1
-
     if stage_only:
-        say("Rebirth profile archive staged; Steam game discovery was skipped.")
+        say("Rebirth profile archives staged; Steam game discovery was skipped.")
         return 0
 
-    game = find_game()
-    if game is None:
-        say("Morrowind, Tribunal, Bloodmoon, and Morrowind.ini were not found in Steam libraries.")
-        say("Install Morrowind in Steam, then run morrowind-setup --profile rebirth again.")
-        return 1
-    game_root, game_data, ini = game
-
-    ordered_plugins = [
-        "Morrowind.esm",
-        "Tribunal.esm",
-        "Bloodmoon.esm",
-        patch_plugin.name,
-        main_plugin.name,
-        *[path.name for path in addon_plugins],
+    game_root, game_data, ini = require_game()
+    plugins = [
+        rebirth_root / patch_dir / patch_plugin,
+        *(rebirth_root / rebirth_data / name for name in (main_plugin, *addon_names)),
+        staged_plugin(glow_root / glow_modules[-1], glow_plugin),
     ]
-    ordered_plugins.append(glow_plugins[0].name)
-    if lgnpc_plugins:
-        ordered_plugins.append(lgnpc_plugins[0].name)
-    if refuse_unknown_content("Rebirth", ordered_plugins):
-        return 1
-
-    fallbacks = import_game_fallbacks(game_data, ini)
-    if fallbacks is None:
-        return 1
-
+    data_dirs = [
+        game_data, met_root / "MET 6-1 main", rebirth_root / rebirth_data,
+        rebirth_root / patch_dir, familiar_root,
+    ]
     familiar_optional = familiar_root / "(optional) Redguard Female Teeth Texture Fix"
-    data_dirs = [game_data, met_data, rebirth_data, patch_dir, familiar_root]
     if familiar_optional.is_dir():
         data_dirs.append(familiar_optional)
-    data_dirs.append(herbalism_core)
-    data_dirs.extend(glow_root / name for name in glow_modules)
-    if lgnpc_plugins:
-        data_dirs.append(lgnpc_plugins[0].parent)
-    write_profile_config("rebirth", data_dirs, ordered_plugins, fallbacks)
-    say(f"Game files: {game_root}")
-    if not lgnpc_plugins:
-        say("Optional LGNPC Dialogue Only archive was not found; it was not enabled.")
-    return 0
+    data_dirs.append(herbalism_root / herbalism_core)
+    data_dirs.extend(glow_root / module for module in glow_modules)
+    if lgnpc_root:
+        plugins.append(staged_plugin(lgnpc_root, lgnpc_plugin))
+        data_dirs.append(plugins[-1].parent)
+    managed_roots = [
+        met_root, rebirth_root, familiar_root, herbalism_root, glow_root, MODS / "LGNPC Dialogue Only",
+    ]
+    return configure_profile("rebirth", game_root, game_data, ini, data_dirs, plugins, managed_roots)
 
 
 def main():
@@ -519,17 +465,22 @@ def main():
     )
     args = parser.parse_args()
     profiles = ("rebirth", "tr") if args.profile == "all" else (args.profile,)
-    result = 0
-    for profile in profiles:
-        global CONFIG, CFG
-        config_root, _data_root = PROFILE_ROOTS[profile]
-        CONFIG = config_root / "openmw"
-        CFG = CONFIG / "openmw.cfg"
-        if profile == "tr":
-            current = setup_tr(stage_only=args.stage_only)
-        else:
-            current = setup_rebirth(stage_only=args.stage_only)
-        result = max(result, current)
+    OPENMW_HOME.mkdir(parents=True, exist_ok=True)
+    with (OPENMW_HOME / ".morrowind-setup.lock").open("a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        result = 0
+        for profile in profiles:
+            global CONFIG, CFG
+            config_root, _data_root = PROFILE_ROOTS[profile]
+            CONFIG = config_root / "openmw"
+            CFG = CONFIG / "openmw.cfg"
+            setup = setup_tr if profile == "tr" else setup_rebirth
+            try:
+                current = setup(stage_only=args.stage_only)
+            except SetupError as error:
+                say(str(error))
+                current = 1
+            result = max(result, current)
     return result
 
 

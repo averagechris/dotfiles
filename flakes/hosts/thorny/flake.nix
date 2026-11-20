@@ -106,6 +106,13 @@
     deploy.nodes.thorny = lib.mkDeploy self.nixosConfigurations.thorny;
 
     checks.${system} = {
+      thorny-morrowind-setup = pkgs.runCommand "thorny-morrowind-setup" {nativeBuildInputs = [pkgs.python3];} ''
+        cp ${./morrowind-setup.py} morrowind-setup.py
+        cp ${./morrowind-setup-test.py} morrowind-setup-test.py
+        python3 -B morrowind-setup-test.py
+        touch "$out"
+      '';
+
       thorny-scheduling-config = let
         scheduling = import ./michi/scheduling-policy.nix {inherit (pkgs) lib;};
         inherit (scheduling) settings schedulingTools;

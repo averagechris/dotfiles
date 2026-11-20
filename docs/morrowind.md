@@ -37,9 +37,10 @@ Rebirth** and **Morrowind Tamriel Rebuilt** entries.
 | Rebirth | `~/.config/morrowind/rebirth/openmw/openmw.cfg` | `~/.local/share/morrowind/rebirth/openmw/saves/` |
 | Tamriel Rebuilt | `~/.config/morrowind/tr/openmw/openmw.cfg` | `~/.local/share/morrowind/tr/openmw/saves/` |
 
-The setup leaves the original `~/.config/openmw/` and
-`~/.local/share/openmw/saves/` in place and does not use them for either
-profile. Archives and staged mods are shared in `~/.local/share/openmw/`, under
+The original `~/.config/openmw/` and `~/.local/share/openmw/saves/` stay in
+place. To continue an older playthrough, back up the original saves and copy
+them into the matching profile's saves directory after verifying its plugin
+list. Archives and staged mods are shared in `~/.local/share/openmw/`, under
 `downloads/` and `mods/`.
 
 ## Morrowind Rebirth
@@ -58,7 +59,7 @@ Version` copies.
 | Familiar Faces | 2.1, [Nexus 50093](https://www.nexusmods.com/morrowind/mods/50093) | After Rebirth; the archive also includes the optional Redguard Teeth fix |
 | Graphic Herbalism | 1.04, [Nexus 46599](https://www.nexusmods.com/morrowind/mods/46599) | Install only its core files and vanilla meshes, after Rebirth |
 | Glow in the Dahrk | 2.11.2, [legacy OpenMW release](https://www.nexusmods.com/morrowind/mods/45886) | Use `00 Core`, `01 Hi Res Window Texture Replacer`, `03 Nord Glass Windows`, and `05 Raven Rock Glass Windows`; enable `GITD_WL_RR_Interiors.esp` |
-| LGNPC Dialogue Only merged | [Official download](http://lgnpc.org/dialogue-only-downloads) | Included in this setup; the merged archive supplies `LGNPC_Merged_Lt.ESP` |
+| LGNPC Dialogue Only merged | [Official download](http://lgnpc.org/dialogue-only-downloads) | Optional. The merged archive supplies `LGNPC_Merged_Lt.ESP` |
 
 The generated content order is `Morrowind.esm`, `Tribunal.esm`,
 `Bloodmoon.esm`, the Rebirth Patch Project file, the Rebirth main plugin, its
@@ -128,9 +129,9 @@ tamrielrebuilt.omwscripts
 Expansion Delay.ESP  (if installed)
 ```
 
-Morrowind Optimization Patch contributes its `00 Core` meshes and has no
-plugin. `TR_Factions.esp` stays disabled by default because it changes faction
-dialogue and progression. Enable it only if you want those changes. Start a new
+Morrowind Optimization Patch contributes its `00 Core` meshes. `TR_Factions.esp`
+stays disabled by default because it changes faction dialogue and progression.
+Setup preserves it if you enable it in the launcher. Start a new
 character after a major TR update. Do not enable stale `TR_Travels.esp` or
 `TR_Preview.esp` files; TR includes Firemoth, so do not load `Siege at
 Firemoth.esp` alongside it.
@@ -140,17 +141,24 @@ Firemoth.esp` alongside it.
 Setup makes timestamped `openmw.cfg.bak-*` backups beside the selected
 profile's config and refuses to replace an unknown plugin list. Launchers
 automatically run setup only when that profile's `openmw.cfg` is missing, so
-normal launcher edits persist. The helper does not upgrade an already-staged
-mod just because a newer archive is downloaded.
+normal launcher edits persist.
+
+Setup checks newly extracted archives against the SHA-256 hashes above and
+validates their layout before moving them into place. It reuses an existing
+staged mod when the layout still validates. If an extraction is incomplete,
+provide the matching archive and rerun setup. The helper keeps the previous
+directory beside the replacement.
 
 After importing the game, setup initializes a missing `launcher.cfg` with
 `firstrun=false` so the launcher opens the prepared profile without offering
 the installation wizard. Existing launcher preferences are preserved.
 
 If a launcher shows the wrong plugins, check the selected profile's
-`openmw.cfg` and rerun setup for that profile. Keep each profile's configuration
-and save directory together when making a backup. Do not copy mod files into
-Steam's game installation.
+`openmw.cfg` and rerun setup for that profile. Setup restores the managed
+asset order, keeps custom data paths after the managed paths, and restores
+missing game archives and fallback settings. Keep each profile's configuration
+and save directory together when making a backup, especially before updating
+OpenMW.
 
 OpenMW reads the game data installed by Steam and runs without Proton. The
 [OpenMW modding guide](https://modding-openmw.com/tips/installing-mods/)
@@ -167,3 +175,7 @@ used these real mods with synthetic base-game fixtures to verify plugin and
 asset isolation, save paths, backups, reruns, and unknown-plugin refusal.
 Rebirth has been played successfully on thorny. Tamriel Rebuilt validation
 covered profile setup and plugin dependencies.
+
+The `thorny-morrowind-setup` flake check runs in Linux CI with synthetic
+fixtures for archive recovery, plugin ambiguity, asset order, and profile
+isolation. It needs neither Steam nor the mod downloads.

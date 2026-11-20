@@ -15,6 +15,7 @@ explicit_checks=(
   ".#checks.x86_64-linux.tater-hyprland-home-config"
   ".#checks.x86_64-linux.thorny-hyprland-greeter-config"
   ".#checks.x86_64-linux.thorny-hyprland-home-config"
+  ".#checks.x86_64-linux.thorny-morrowind-setup"
 )
 
 usage() {
