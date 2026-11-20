@@ -46,6 +46,15 @@ bash scripts/review.sh 'openrouter/google/gemini-4-carbon#high' \
 
 Use the same command with the roster selection for other OpenRouter seats. Put small approved excerpts in the prompt or pass larger ones as file arguments. The runner supplies the explicit reasoning variant when the local catalog is stale. Verify trial selections such as Neon against the current catalog first.
 
+Launch the runner in a managed background process and keep its process handle.
+Use short tool yields and poll the same process while the other seats work.
+Avoid wrapper timeouts unless the task has a deadline. High-effort reviews can
+take several minutes without new output, so let quiet seats finish after other
+reviews return. The runner reports status on stderr and the completed review on
+stdout. Use the process exit to confirm the outcome. Retry a transient failure
+once with the same model, effort, and routing when useful. If a task deadline
+ends the wait, report the seat as interrupted and say which deadline applied.
+
 Normal routing inherits OpenRouter's account and key policies. Pass `--zdr` or `--deny-data-collection` before the model when the material requires those restrictions. The two controls are independent. Carbon can be reachable under normal routing and have no eligible endpoint under `--zdr`. If a required filter blocks a seat, report it as unavailable without retrying under looser restrictions.
 
 Cloud and Dot sessions need their own executor, CLI, and provider access. A Dot shared install may be at `/workspace/shared/cloud-tools/bin/opencode`. An authentication error from the runner means the selected key needs attention. Saved OpenCode credentials are outside the isolated session. Report blocked seats without substituting. For Daybreak, record the model and tier.
