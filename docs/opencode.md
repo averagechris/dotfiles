@@ -35,14 +35,15 @@ This keeps OpenCode close to upstream releases while preserving the normal
 - on hosts with direnv enabled, a `dotfiles-direnv` plugin uses the same
   per-invocation hook, including the invocation's cwd and mutable environment,
   to load each working directory's direnv-allowed dev shell environment
-- local automatic compaction at 350,000 input tokens for the OpenRouter model
-  aliases and previous subagent model pins, with warming explicitly disabled
+- local automatic compaction at 350,000 input tokens for the managed OpenRouter
+  models, with warming explicitly disabled
 
 ## Long-session compaction
 
 The managed V2 configuration keeps local automatic compaction enabled, retains
 15,000 recent tokens, and uses the default 20,000-token buffer. For the
-OpenRouter Sol, Astra, Luna, and Fable aliases it overrides the catalog
+OpenRouter Sol, Astra, Luna, and Fable aliases and the pinned Opus model it
+overrides the catalog
 `limit.input` value to 370,000 and selects `compaction.mode = "local"`. It does
 not enable provider-native compaction or replace catalog IDs, capabilities, or
 truthful context/output limits.
@@ -406,8 +407,8 @@ or when asked for a council. Select `orchestrator` for delegation-heavy work
 that benefits from planning and separate implementation handoffs.
 
 Tiny handles mechanical work, Luna handles bounded work that needs more
-reasoning, Minion is the default implementation delegate, and Wise handles
-high-consequence work. Explore handles codebase research.
+reasoning, and Minion is the default implementation delegate. Wise and Opus
+handle high-consequence work. Explore handles codebase research.
 
 OpenRouter's family aliases follow the latest model release automatically.
 
@@ -417,14 +418,14 @@ OpenRouter's family aliases follow the latest model release automatically.
 | `luna` | `openrouter/~openai/gpt-luna-latest#high` |
 | `minion` | `openrouter/~openai/gpt-sol-latest#low` |
 | `wise` | `openrouter/~anthropic/claude-fable-latest#high` |
+| `opus` | `openrouter/anthropic/claude-opus-5.5#high` |
 
 All coding agents share one generated shell permission
 policy so safety-rule changes stay consistent across tiers. Their concise
 descriptions summarize the intended delegation tradeoff so primary agents can
 choose effectively from the subagent tool.
-Wise also carries a stable judgment stance for high-consequence work: keep
-decisions falsifiable, treat implementation as design evidence, and make
-disagreement explicit.
+Wise and Opus share a prompt that asks them to keep decisions falsifiable,
+treat implementation as design evidence, and make disagreement explicit.
 
 When Build or Orchestrator delegates review of added or materially changed
 tests, it asks the reviewer to load `test-curation`. The reviewer decides

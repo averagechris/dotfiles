@@ -18,6 +18,7 @@
     "~openai/gpt-astra-latest"
     "~openai/gpt-luna-latest"
     "~anthropic/claude-fable-latest"
+    "anthropic/claude-opus-5.5"
     # Resumed subagent sessions retain their original model IDs.
     "openai/gpt-5.6-sol"
     "openai/gpt-5.6-luna"

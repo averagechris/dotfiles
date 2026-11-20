@@ -371,7 +371,7 @@
           buildPrompt = agents.build;
           orchestratorPrompt = agents.orchestrator;
           minionPrompt = agents.minion;
-          delegatedPrompts = with agents; [build minion tiny luna wise];
+          delegatedPrompts = with agents; [build minion tiny luna wise opus];
           codingPrompts = delegatedPrompts ++ [orchestratorPrompt];
           blockAfter = marker: terminator: prompt:
             builtins.head (lib.splitString terminator (builtins.elemAt (lib.splitString marker prompt) 1));
@@ -507,6 +507,7 @@
             luna = "openrouter/~openai/gpt-luna-latest#high";
             minion = "openrouter/~openai/gpt-sol-latest#low";
             wise = "openrouter/~anthropic/claude-fable-latest#high";
+            opus = "openrouter/anthropic/claude-opus-5.5#high";
           };
           unpinnedAgentPrompts = with agents; [build orchestrator plan];
         in
@@ -527,6 +528,7 @@
               "~openai/gpt-astra-latest"
               "~openai/gpt-luna-latest"
               "~anthropic/claude-fable-latest"
+              "anthropic/claude-opus-5.5"
               "openai/gpt-5.6-sol"
               "openai/gpt-5.6-luna"
               "anthropic/claude-fable-5.1"
@@ -551,6 +553,7 @@
           # Build can delegate scoped work.
           assert lib.hasInfix ''resource: "minion"'' (taskPermissions buildPrompt);
           assert lib.hasInfix ''resource: "wise"'' (taskPermissions buildPrompt);
+          assert lib.hasInfix ''resource: "opus"'' (taskPermissions buildPrompt);
           # Minion may only hand off research (explore) and mechanics (tiny);
           # the exact block keeps every other agent, including upstream
           # built-ins, behind the deny-all default.

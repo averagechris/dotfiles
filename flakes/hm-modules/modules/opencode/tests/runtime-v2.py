@@ -52,6 +52,7 @@ assert config["warming"] is False
 compacted_models = config["providers"]["openrouter"]["models"]
 for model_id in ["~openai/gpt-sol-latest", "~openai/gpt-astra-latest",
                  "~openai/gpt-luna-latest", "~anthropic/claude-fable-latest",
+                 "anthropic/claude-opus-5.5",
                  "openai/gpt-5.6-sol", "openai/gpt-5.6-luna", "anthropic/claude-fable-5.1"]:
     policy = compacted_models[model_id]
     assert policy == {"limit": {"input": 370000}, "compaction": {"mode": "local"}}

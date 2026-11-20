@@ -180,6 +180,73 @@
   extraDelegationPermissions =
     builtins.concatStringsSep "" (map (agent: "\n  - action: subagent\n    resource: \"${agent}\"\n    effect: ask")
       extraDelegates);
+  judgmentAgent = model: description: ''
+    ---
+    description: ${description}
+    mode: subagent
+    model: ${model}
+    request:
+      body:
+        temperature: 0.0
+    steps: 9999
+    permissions:
+      - action: read
+        resource: "*"
+        effect: allow
+      - action: edit
+        resource: "*"
+        effect: allow
+      - action: glob
+        resource: "*"
+        effect: allow
+      - action: grep
+        resource: "*"
+        effect: allow
+      - action: list
+        resource: "*"
+        effect: allow
+      - action: webfetch
+        resource: "*"
+        effect: allow
+      ${indentedSharedBashPermissions}
+      - action: skill
+        resource: "*"
+        effect: allow
+      - action: subagent
+        resource: "*"
+        effect: deny
+      - action: subagent
+        resource: "build"
+        effect: allow
+      - action: subagent
+        resource: "explore"
+        effect: allow
+      - action: subagent
+        resource: "luna"
+        effect: allow
+      - action: subagent
+        resource: "minion"
+        effect: allow
+      - action: subagent
+        resource: "tiny"
+        effect: allow
+      - action: subagent
+        resource: "wise"
+        effect: allow
+      - action: subagent
+        resource: "opus"
+        effect: allow
+    ---
+
+    You are a coding agent. ALWAYS USE `jj` over `git` for version control actions.
+    ## Judgment stance
+    - Prefer subtraction; every abstraction must name its payoff.
+    - Surface expensive-to-reverse decisions and the cheapest check that could disprove the direction.
+    - Treat repeated implementation friction and packet or plan deviations as design evidence.
+    - Prove claims at the boundary where they are made.
+    - Disagreement is a deliverable: report the tension instead of quietly following a packet you believe is wrong.
+    ${runtimeNote}
+  '';
 in {
   build = ''
     ---
@@ -232,6 +299,9 @@ in {
         effect: allow
       - action: subagent
         resource: "wise"
+        effect: allow
+      - action: subagent
+        resource: "opus"
         effect: allow${extraDelegationPermissions}
     ---
 
@@ -310,6 +380,9 @@ in {
         effect: allow
       - action: subagent
         resource: "wise"
+        effect: allow
+      - action: subagent
+        resource: "opus"
         effect: allow${extraDelegationPermissions}
     ---
 
@@ -454,6 +527,9 @@ in {
       - action: subagent
         resource: "wise"
         effect: allow
+      - action: subagent
+        resource: "opus"
+        effect: allow
     ---
 
     You are a coding agent. ALWAYS USE `jj` over `git` for version control actions.
@@ -513,76 +589,23 @@ in {
       - action: subagent
         resource: "wise"
         effect: allow
+      - action: subagent
+        resource: "opus"
+        effect: allow
     ---
 
     You are a coding agent. ALWAYS USE `jj` over `git` for version control actions.
     ${runtimeNote}
   '';
 
-  wise = ''
-    ---
-    description: ${descriptionPrefix}Highest-capability delegate for difficult, high-stakes work; expensive.
-    mode: subagent
-    model: ${models.wise or "openrouter/~anthropic/claude-fable-latest#high"}
-    request:
-      body:
-        temperature: 0.0
-    steps: 9999
-    permissions:
-      - action: read
-        resource: "*"
-        effect: allow
-      - action: edit
-        resource: "*"
-        effect: allow
-      - action: glob
-        resource: "*"
-        effect: allow
-      - action: grep
-        resource: "*"
-        effect: allow
-      - action: list
-        resource: "*"
-        effect: allow
-      - action: webfetch
-        resource: "*"
-        effect: allow
-      ${indentedSharedBashPermissions}
-      - action: skill
-        resource: "*"
-        effect: allow
-      - action: subagent
-        resource: "*"
-        effect: deny
-      - action: subagent
-        resource: "build"
-        effect: allow
-      - action: subagent
-        resource: "explore"
-        effect: allow
-      - action: subagent
-        resource: "luna"
-        effect: allow
-      - action: subagent
-        resource: "minion"
-        effect: allow
-      - action: subagent
-        resource: "tiny"
-        effect: allow
-      - action: subagent
-        resource: "wise"
-        effect: allow
-    ---
-
-    You are a coding agent. ALWAYS USE `jj` over `git` for version control actions.
-    ## Judgment stance
-    - Prefer subtraction; every abstraction must name its payoff.
-    - Surface expensive-to-reverse decisions and the cheapest check that could disprove the direction.
-    - Treat repeated implementation friction and packet or plan deviations as design evidence.
-    - Prove claims at the boundary where they are made.
-    - Disagreement is a deliverable: report the tension instead of quietly following a packet you believe is wrong.
-    ${runtimeNote}
-  '';
+  wise =
+    judgmentAgent
+    (models.wise or "openrouter/~anthropic/claude-fable-latest#high")
+    "${descriptionPrefix}Highest-capability delegate for difficult, high-stakes work; expensive.";
+  opus =
+    judgmentAgent
+    "openrouter/anthropic/claude-opus-5.5#high"
+    "Claude Opus 5.5 delegate for difficult implementation and independent review.";
 
   plan = ''
     ---
