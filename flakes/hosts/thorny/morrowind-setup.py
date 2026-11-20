@@ -90,13 +90,11 @@ def extract_archive(archive, destination, valid):
             raise
 
 
-def stage(pattern, destination, checksum, *, required=False, files=(), directories=(), trees=(), plugins=()):
+def stage(pattern, destination, checksum, *, required=False, files=(), trees=(), plugins=()):
     def valid(root):
         if not root.is_dir():
             return False
         if not all(nonempty_file(root / path) for path in files):
-            return False
-        if not all((root / path).is_dir() for path in directories):
             return False
         if not all(staged_tree(root, pattern) for pattern in trees):
             return False
@@ -110,8 +108,12 @@ def stage(pattern, destination, checksum, *, required=False, files=(), directori
         say(f"Already extracted: {destination}")
         return destination
     archives = find_archives(pattern)
-    if not archives and not required and not destination.exists():
-        return None
+    if not archives and not required:
+        if not destination.exists():
+            return None
+        if valid(destination):
+            say(f"Using existing extraction: {destination}")
+            return destination
     for archive in archives:
         with archive.open("rb") as stream:
             if hashlib.file_digest(stream, "sha256").hexdigest() != checksum:
@@ -230,7 +232,7 @@ def managed_data_path(value, data_dirs, mod_roots):
     path = (CONFIG / value).resolve()
     return (
         path in data_dirs
-        or any(path.is_relative_to(root) for root in mod_roots)
+        or (not path.is_dir() and any(path.is_relative_to(root) for root in mod_roots))
         or tuple(part.casefold() for part in path.parts[-4:]) == ("steamapps", "common", "morrowind", "data files")
     )
 
@@ -416,7 +418,7 @@ def setup_rebirth(stage_only=False):
     glow_root = stage(
         re.compile(r"glow[_ -]+in[_ -]+the[_ -]+dahrk[_ -]+2\.11\.2.*\.7z$", re.IGNORECASE),
         MODS / "Glow in the Dahrk", "d31b57bb48c084c6b77b2eb768afae9f225f3e4fbb59feecdb123fb940f1c6c4",
-        required=True, directories=glow_modules, plugins=((glow_modules[-1], glow_plugin),),
+        required=True, trees=glow_modules, plugins=((glow_modules[-1], glow_plugin),),
     )
     lgnpc_root = stage(
         re.compile(r"lgnpc[_ -]+merged[_ -]+lt.*\.zip$", re.IGNORECASE),
@@ -468,6 +470,8 @@ def main():
     OPENMW_HOME.mkdir(parents=True, exist_ok=True)
     with (OPENMW_HOME / ".morrowind-setup.lock").open("a") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
+        MODS.mkdir(exist_ok=True)
+        DOWNLOADS.mkdir(exist_ok=True)
         result = 0
         for profile in profiles:
             global CONFIG, CFG
