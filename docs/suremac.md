@@ -225,29 +225,9 @@ not configured because work has migrated away from that service.
 
 ### T3 Code desktop
 
-Home Manager installs the pinned T3 Code desktop from `t3-code-nix` and keeps
-its built-in auto-update disabled. Its desktop-managed OpenCode provider uses a
-private, separately pinned OpenCode 2 binary from the same flake; this does not
-replace or modify the existing `programs.opencode` package and configuration.
-T3 Code follows the shared `nixpkgs` pin, currently revision
-`e4d4e5154c52da44a9e5a4895d270cffa1ecb6fc`. That package set supplies Electron
-44 and the package version matching the pinned OpenCode `node_modules`
-fixed-output hash. Letting the shared input advance without checking both can
-therefore break the build even when the T3 Code source is unchanged.
-T3 Code starts its own backend on port 3773, so no separate `services.t3code`
-launchd service is enabled.
-
-The mutable T3 Code user settings are merged on a future Home Manager
-activation. To update T3 Code, first test the fork with its own lock file and
-check it against the repository's shared `nixpkgs`. When that shared pin is
-bumped, update the canonical locks in `maintenance/policy.json` together and
-verify Electron 44 and the OpenCode fixed-output hash still match. Refresh the T3 source in both the
-root and standalone suremac lock graphs with:
-
-```bash
-nix flake update t3-code-nix
-nix flake update t3-code-nix --flake ./flakes/hosts/suremac
-```
+Home Manager installs upstream stable T3 Code and points it at the host's
+OpenCode package. See [T3 Code](t3-code.md) for updates and migration from the
+previous fork build.
 
 The Datadog Pup CLI is installed in Home Manager as `pup` and exposed to
 OpenCode agents as a host-specific Datadog tool. `suremac` also installs the

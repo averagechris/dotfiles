@@ -837,6 +837,7 @@ in {
     home.stateVersion = "26.05";
     imports = [
       inputs.hm-modules.homeManagerModules.default
+      inputs.hm-modules.homeManagerModules.t3code
       inputs.pip-chrome-extension.homeManagerModules.default
       inputs.hm-modules.homeManagerModules.ghostty-fix
     ];

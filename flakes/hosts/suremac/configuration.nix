@@ -284,6 +284,8 @@ in {
   };
 
   nixpkgs.config.allowUnfree = true;
+  launchd.user.envVariables.T3CODE_DISABLE_AUTO_UPDATE = "1";
+
   environment.systemPackages = with pkgs; [
     gitMinimal
     nh
@@ -516,7 +518,7 @@ in {
     ];
     imports = [
       inputs.hm-modules.homeManagerModules.default
-      inputs.t3-code-nix.homeModules.t3code
+      inputs.hm-modules.homeManagerModules.t3code
       ./aws.nix
     ];
     targets.darwin.copyApps.enableChecks = false;
@@ -735,18 +737,6 @@ in {
         },
       }
     '';
-    programs.t3code = {
-      enable = true;
-      package = inputs.t3-code-nix.packages.${pkgs.system}.t3code-opencode-v2;
-      userSettings.providerInstances.opencode = {
-        driver = "opencode";
-        enabled = true;
-        config = {
-          enabled = true;
-          binaryPath = "${inputs.t3-code-nix.packages.${pkgs.system}.opencode-v2}/bin/opencode";
-        };
-      };
-    };
     # The pinned Home Manager module only manages the obsolete V1 tui.json.
     # cli.json remains client-owned so settings changed in the TUI survive;
     # activation only enforces this host's selected keys via a recursive merge.

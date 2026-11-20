@@ -32,6 +32,7 @@
       inputs.fleet-srht.follows = "fleet-srht";
       inputs.nitter-link.follows = "nitter-link";
       inputs.memo.follows = "memo";
+      inputs.t3-code-nix.follows = "t3-code-nix";
     };
     trap = {
       url = "path:./flakes/hosts/trap";
@@ -60,6 +61,7 @@
       inputs.systems.follows = "systems";
       inputs.memo.follows = "memo";
       inputs.rdny.follows = "rdny";
+      inputs.t3-code-nix.follows = "t3-code-nix";
     };
     tom = {
       url = "path:./flakes/hosts/tom";
@@ -99,6 +101,7 @@
       inputs.nitter-link.follows = "nitter-link";
       inputs.systems.follows = "systems";
       inputs.memo.follows = "memo";
+      inputs.t3-code-nix.follows = "t3-code-nix";
     };
     trainwreck = {
       url = "path:./flakes/hosts/trainwreck";
@@ -223,7 +226,7 @@
       inputs.fleet.follows = "fleet";
     };
     t3-code-nix = {
-      url = "github:averagechris/t3-code-nix/opencode-v2-pin";
+      url = "github:LisaScheers/t3-code-nix";
       inputs.home-manager.follows = "base-lib/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };

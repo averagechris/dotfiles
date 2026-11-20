@@ -66,7 +66,7 @@
       inputs.fleet.follows = "fleet";
     };
     t3-code-nix = {
-      url = "github:averagechris/t3-code-nix/opencode-v2-pin";
+      url = "github:LisaScheers/t3-code-nix";
       inputs.home-manager.follows = "home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };

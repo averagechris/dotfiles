@@ -89,6 +89,11 @@
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    t3-code-nix = {
+      url = "github:LisaScheers/t3-code-nix";
+      inputs.home-manager.follows = "home-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     memo = {
       url = "github:averagechris/memo";
       inputs.nixpkgs.follows = "nixpkgs";

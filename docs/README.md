@@ -44,6 +44,7 @@
 - [sideshow](/docs/sideshow.md) - Sideshow slide-deck CLI package, Home Manager module, config file, host enablement, and OpenCode skill
 - [sure-stack-context](/docs/sure-stack-context.md) - suremac private OpenCode stack-context skill for Datadog, Sentry, and Kubernetes investigations
 - [suremac](/docs/suremac.md) - macOS host settings, Determinate Nix daemon settings and parallel-agent tuning, automatic time zone behavior, Spaces desktop shortcuts, Rust `sccache`, and dev cache cleanup
+- [T3 Code](/docs/t3-code.md) - Upstream stable desktop on thorny, tater, suremac, and taro, with the shared OpenCode package
 - [taro](/docs/taro.md) - Personal MacBook bootstrap, native apps, LAN SSH pairing, and personal Tailscale enrollment
 - [dev-cache](/docs/dev-cache.md) - `dotfiles.devCache` module: sccache, periodic nix GC, cargo-sweep, Docker pruning, and the darwin root GC reminder
 - [tater desktop testing](/docs/tater-desktop-testing.md) - Static and runtime checks for tater's Hyprland, greetd, Eww, display, and Wi-Fi setup
