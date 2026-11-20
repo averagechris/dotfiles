@@ -13,6 +13,8 @@ dotfiles.codex = {
   enable = true;
   # Optional CLI installation on hosts without the desktop app:
   # package = pkgs.codex;
+  # Optional PATH entry for the desktop app's existing CLI:
+  # desktopCliBinDir = "/Applications/ChatGPT.app/Contents/Resources/codex-cli/bin";
   settings = {
     # Declare only defaults you want enforced at Home Manager activation:
     # model_reasoning_effort = "medium";
@@ -20,6 +22,13 @@ dotfiles.codex = {
   # extraInstructions = "<additional host-specific guidance>";
 };
 ```
+
+## Desktop CLI on PATH
+
+On `suremac`, `dotfiles.codex.desktopCliBinDir` adds the ChatGPT app's bundled
+CLI directory to the Home Manager session PATH. The `codex` command uses the
+copy that ships with each desktop app update. After activation, open a fresh
+terminal session and run `command -v codex` and `codex --version` to confirm it.
 
 ## Shared guidance and skills
 

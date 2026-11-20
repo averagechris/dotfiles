@@ -14,6 +14,12 @@ requires OpenCode 2.0.18 or newer for its OpenCode 2 integration. Authenticate
 OpenCode on each host before starting threads. Home Manager merges the provider
 settings into `~/.t3/userdata/settings.json` during activation.
 
+On `suremac`, the [Codex module](codex.md#desktop-cli-on-path) puts the ChatGPT
+app's bundled CLI on the session PATH. Restart T3 Code after activation so
+its backend picks up the path. For an existing Codex provider with a custom
+**Binary path**, use the bundled CLI at
+`/Applications/ChatGPT.app/Contents/Resources/codex-cli/bin/codex`.
+
 On `suremac`, this replaces the fork desktop and its separate OpenCode 2.0.8
 pin. On first launch, upstream T3 Code copies existing thread history into its
 new database. The first new message in an imported thread starts a fresh
