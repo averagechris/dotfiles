@@ -24,7 +24,8 @@ dotfiles.codex = {
 ## Shared guidance and skills
 
 `modules/agent-guidance.md` supplies concise explanations, smaller changes,
-behavioral checks, and design judgment to Codex and the OpenCode orchestrator.
+behavioral checks, and design judgment to Codex and OpenCode's Build and
+Orchestrator agents.
 Codex adds model-selection guidance and a command for loading direnv project
 environments in desktop sessions.
 The global guidance prefers installed CLIs for tasks they support, uses command
