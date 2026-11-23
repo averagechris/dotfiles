@@ -521,6 +521,19 @@ in {
       inputs.hm-modules.homeManagerModules.t3code
       ./aws.nix
     ];
+
+    dotfiles.t3code.openrouterApiKeyFile = config.age.secrets.openrouter-api-key.path;
+    programs.t3code.userSettings = {
+      # The mutable settings merge preserves omitted fields. Clear the
+      # external URL so T3 launches the wrapped OpenCode binary, while keeping
+      # the server password in T3's separate secret store for rollback.
+      providerInstances.opencode.config = {
+        serverUrl = "";
+      };
+      defaultThreadEnvMode = "worktree";
+      idleCompaction = "beforeCacheExpires";
+      compactIdleThreads = true;
+    };
     targets.darwin.copyApps.enableChecks = false;
     home.activation.trampolineApps = inputs.home-manager.lib.hm.dag.entryAfter ["writeBoundary"] ''
       fromDir="$HOME/Applications/Home Manager Apps"
