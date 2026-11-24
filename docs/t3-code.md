@@ -8,6 +8,14 @@ Silicon and x86-64 Linux. Open T3 Code from the desktop launcher or run
 in-app update checks. On macOS, activation sets the same flag for the current
 login session.
 
+Home Manager sets `T3CODE_TELEMETRY_ENABLED=false` to disable product analytics
+and `T3CODE_OTEL_SDK_DISABLED=true` to disable OpenTelemetry export in the
+desktop app and its backend. A Home Manager launch agent exports both flags
+to the macOS GUI session at login so Finder launches receive them. The Linux
+desktop entry passes both flags directly. After activation, fully quit and
+reopen T3 Code. Use a fresh login shell for terminal launches. Mobile
+diagnostics and T3 Connect activity publishing have their own controls.
+
 The shared Home Manager module enables the OpenCode provider and sets its binary
 path to the host's existing `programs.opencode.package`. Upstream T3 Code
 requires OpenCode 2.0.18 or newer for its OpenCode 2 integration. Authenticate
