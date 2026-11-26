@@ -1,6 +1,6 @@
 ---
 name: review-queue
-description: Catch up on GitHub pull requests awaiting the user's review, including drafts and PRs added to that queue. Run independent advisors, score uncertain PRs, and comment or approve straightforward, high-confidence PRs on the owner's queue.
+description: Use when asked to check or catch up on the user's GitHub PR review queue.
 ---
 
 # Review queue
