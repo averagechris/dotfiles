@@ -24,6 +24,17 @@ requires OpenCode 2.0.18 or newer for its OpenCode 2 integration. Authenticate
 OpenCode on each host before starting threads. Home Manager merges the provider
 settings into `~/.t3/userdata/settings.json` during activation.
 
+Codex and OpenCode threads can use the shared `review-queue` skill to review
+assigned GitHub PRs. The skill uses T3's inline HTML for clickable advisor
+scorecards when those tools are available. See the shared
+[review queue workflow](codex.md#shared-guidance-and-skills).
+
+A recurring T3 task can keep queue recaps in one thread. A 30-minute interval
+has no weekday selector. Put a timezone-aware weekday check before any GitHub
+access in the task prompt, and use a persistent copy of the skill on the
+executor. Automatic approval requires an action that can attach the review to
+the reviewed commit. T3's native review action currently has no commit field.
+
 On `suremac` and `tater`, the shared module instead points T3 Code at an
 OpenCode launcher. The launcher reads the existing owner-only agenix OpenRouter
 key file when T3 starts OpenCode and exports `OPENROUTER_API_KEY` only to that

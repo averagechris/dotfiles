@@ -5,6 +5,7 @@
     "test-curation"
     "teach"
     "project-map"
+    "review-queue"
     "impactful-writing"
     "technical-writing"
     "rust-cargo"

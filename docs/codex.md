@@ -47,14 +47,14 @@ guidance is retained. `teach` shapes the explanation, `how` investigates mechani
 and `why` investigates rationale and history. All three deploy with the Codex
 module. Project discovery uses optional helper skills when available.
 
-`modules/agent-workflows.nix` registers eight portable skills independently of
+`modules/agent-workflows.nix` registers nine portable skills independently of
 OpenCode: advisor-council, conventional-commits, test-curation, teach, project-map,
-impactful-writing, technical-writing, and rust-cargo. Their existing source
+review-queue, impactful-writing, technical-writing, and rust-cargo. Their source
 directories remain under `modules/opencode/skills/`; both clients consume the
 same rendered sources. The registry retains strict patches, additive host
 instructions, full companion directories, and bundle audits.
 
-The Codex module also registers `how` and `why`, bringing its default set to ten.
+The Codex module also registers `how` and `why`, bringing its default set to eleven.
 `modules/codex/skills.nix` adapts their existing OpenCode sources with checked
 replacements. It uses available Codex delegation and session-history tools,
 retains the evidence standards and complete reference directories, and leaves
@@ -91,6 +91,16 @@ management, or ctx history assumptions still need explicit adaptation before
 opting into Codex. Host CLI skills remain OpenCode-only unless
 a host adds Codex to their targets. Private skill appendices are not migrated;
 never place decrypted material in Nix settings, prompt strings, or sources.
+
+Use `review-queue` with "catch me up on my review queue" to review direct
+GitHub requests across repositories, including drafts. It uses independent
+source-based reviews and opens a full scorecard for uncertain verdicts. A
+request to review the owner's queue authorizes clear, evidence-backed technical
+comments. Straightforward PRs are approved automatically when two independent
+source reviews meet the score thresholds, the final verdict has high confidence,
+and the approval can be attached to the reviewed commit. Substantive taste and
+architecture choices go to the user. "Just list them" and "draft only" keep the
+pass read-only.
 
 ## Model selection and outside feedback
 
@@ -227,7 +237,7 @@ command. This is a service-user installation with its own ChatGPT login and
 owner workspace, independent of the workstation's Home Manager configuration.
 `flakes/hosts/thorny/personal-codex.nix` reuses the shared skill registry and
 renderer for this service account. NixOS links complete skill directories into
-its `~/.agents/skills` directory: the ten default Codex skills plus `memo` and
+its `~/.agents/skills` directory: the eleven default Codex skills plus `memo` and
 `rdny-browser`. Its instructions retain Thorny's Codex model and sub-agent
 guidance. It uses the shared `how` adaptation and restricts `why` to repository
 history, documentation, issues, and incident investigation playbooks, omitting
