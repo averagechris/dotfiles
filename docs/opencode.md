@@ -823,6 +823,9 @@ build time. Current examples include:
 - `advisor-council`, for independent reviews before finalizing non-trivial work
   or when asked for an advisor or council. OpenCode and Codex share the
   [three-reviewer default and implementation review requirements](codex.md#model-selection-and-outside-feedback).
+- `review-queue`, for triaging assigned GitHub reviews, posting clear technical
+  comments, approving straightforward PRs, and scoring uncertain ones. See the shared
+  [review queue workflow](codex.md#shared-guidance-and-skills).
 
 - `architect`, for explicit design work and expensive-to-reverse boundaries; it
   does not trigger for routine features, clear-precedent placement, explanation,

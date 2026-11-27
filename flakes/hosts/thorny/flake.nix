@@ -161,6 +161,7 @@
           "memo"
           "project-map"
           "rdny-browser"
+          "review-queue"
           "rust-cargo"
           "teach"
           "technical-writing"
